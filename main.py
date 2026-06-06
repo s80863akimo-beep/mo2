@@ -140,7 +140,7 @@ def get_calendar_service():
 # ─────────────────────────────────────────────
 # API 路由
 # ─────────────────────────────────────────────
-
+@app.get("/api/sync")
 @app.post("/api/sync")
 def sync_calendar(year: int | None = None, month: int | None = None):
     """
