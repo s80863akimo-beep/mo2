@@ -10,7 +10,7 @@ app = FastAPI(title="摸摸頭 momohair 同步 API")
 # 100% 放行所有連線，讓 Netlify 按鈕絕對暢通
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://coruscating-piroshki-52f23a.netlify.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
