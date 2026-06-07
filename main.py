@@ -104,7 +104,13 @@ def parse_service_text(description: str) -> str:
 
 def calc_amount(service_text: str) -> int:
     """對 service_text 用 SORTED_KEYS 做貪婪比對，累加並回傳總金額。"""
-    remaining = service_text
+    # 移除中括號及圓括號內容，避免大分類標籤與備註干擾比對
+    cleaned = service_text
+    cleaned = re.sub(r"\[.*?\]", " ", cleaned)
+    cleaned = re.sub(r"（.*?）", " ", cleaned)
+    cleaned = re.sub(r"\(.*?\)", " ", cleaned)
+    
+    remaining = cleaned
     total = 0
     for key in SORTED_KEYS:
         if key in remaining:
@@ -140,8 +146,8 @@ def get_calendar_service():
 # ─────────────────────────────────────────────
 # API 路由
 # ─────────────────────────────────────────────
+
 @app.get("/api/sync")
-@app.post("/api/sync")
 def sync_calendar(year: int | None = None, month: int | None = None):
     """
     拉取指定年月（預設本月）的 Google Calendar 事件，
@@ -251,14 +257,27 @@ def sync_calendar(year: int | None = None, month: int | None = None):
         category = classify_service(service_text)
         event_date = get_event_date(event)
 
+        # 從事件描述第一行提取姓名並清理
+        lines = [line.strip() for line in desc.splitlines() if line.strip()]
+        customer_name = "預約顧客"
+        if lines:
+            first_line = lines[0]
+            name = re.sub(r"-?[mM][oO][mM][oO]", "", first_line).strip()
+            name = re.sub(r"[\(（].*?[\)）]", "", name).strip()
+            name = re.sub(r"^[mM][oO][mM][oO]", "", name).strip()
+            if name:
+                customer_name = name
+
         monthly_revenue += amount
 
         orders.append({
-            "order_id":  order_id,
-            "service":   service_text,
-            "category":  category,
-            "amount":    amount,
-            "date":      event_date,
+            "order_id":      order_id,
+            "customer_name": customer_name,
+            "customerName":  customer_name,  # 前後端相容
+            "service":       service_text,
+            "category":      category,
+            "amount":        amount,
+            "date":          event_date,
         })
 
         if event_date:
