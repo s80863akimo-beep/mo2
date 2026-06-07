@@ -258,12 +258,11 @@ def sync_calendar(year: int | None = None, month: int | None = None):
         category = classify_service(service_text)
         event_date = get_event_date(event)
 
-        # 從事件描述第一行提取姓名並清理
-        lines = [line.strip() for line in desc.splitlines() if line.strip()]
+        # 從事件標題（summary）提取姓名並清理
+        summary = event.get("summary", "") or ""
         customer_name = "預約顧客"
-        if lines:
-            first_line = lines[0]
-            name = re.sub(r"-?[mM][oO][mM][oO]", "", first_line).strip()
+        if summary:
+            name = re.sub(r"-?[mM][oO][mM][oO]", "", summary).strip()
             name = re.sub(r"[\(（].*?[\)）]", "", name).strip()
             name = re.sub(r"^[mM][oO][mM][oO]", "", name).strip()
             if name:
