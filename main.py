@@ -148,6 +148,7 @@ def get_calendar_service():
 # ─────────────────────────────────────────────
 
 @app.get("/api/sync")
+@app.post("/api/sync")
 def sync_calendar(year: int | None = None, month: int | None = None):
     """
     拉取指定年月（預設本月）的 Google Calendar 事件，
