@@ -202,8 +202,15 @@ def sync_calendar(year: int | None = None, month: int | None = None):
     m = month or now.month
     today_str = now.strftime("%Y-%m-%d")
 
-    # 計算本月起訖（UTC）
-    time_min = datetime(y, m, 1, tzinfo=TW).astimezone(timezone.utc).isoformat()
+    # 計算同步範圍：包含指定月份與前一個月（共兩個月，利於跨月對帳）
+    if m == 1:
+        prev_y = y - 1
+        prev_m = 12
+    else:
+        prev_y = y
+        prev_m = m - 1
+
+    time_min = datetime(prev_y, prev_m, 1, tzinfo=TW).astimezone(timezone.utc).isoformat()
     if m == 12:
         time_max = datetime(y + 1, 1, 1, tzinfo=TW).astimezone(timezone.utc).isoformat()
     else:
