@@ -75,11 +75,7 @@ app = FastAPI(title="摸摸頭 momohair 同步 API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://coruscating-piroshki-52f23a.netlify.app",  # 正式前端網域
-        "http://localhost:3000",   # 本地開發用
-        "http://127.0.0.1:5500",   # Live Server 開發用
-    ],
+    allow_origins=["*"],  # 私人內部工具，允許所有來源
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
