@@ -79,7 +79,6 @@ app.add_middleware(
         "https://coruscating-piroshki-52f23a.netlify.app",  # 正式前端網域
         "http://localhost:3000",   # 本地開發用
         "http://127.0.0.1:5500",   # Live Server 開發用
-        "*",                        # 若上線後仍有問題可暫時保留，確認後移除
     ],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
