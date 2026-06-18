@@ -49,6 +49,9 @@ PRICE_TABLE: dict[str, int] = {
 SORTED_KEYS = sorted(PRICE_TABLE.keys(), key=len, reverse=True)
 
 PAYMENT_ALIASES = {
+    "現金＋儲值扣款": "現金＋儲值扣款",
+    "現金+儲值扣款": "現金＋儲值扣款",
+    "混合付款": "現金＋儲值扣款",
     "現金": "現金",
     "cash": "現金",
     "儲值扣款": "儲值扣款",
@@ -138,11 +141,17 @@ def parse_payment_method(description: str, service_text: str) -> str:
         ["Payment Method", "Payment", "付款方式", "付款", "金流"],
     )
     candidate = (raw or "").strip().lower()
+    if (("現金" in candidate and ("儲值扣款" in candidate or "儲值付款" in candidate))
+            or "混合付款" in candidate):
+        return "現金＋儲值扣款"
     for alias, normalized in PAYMENT_ALIASES.items():
         if alias.lower() in candidate:
             return normalized
 
     combined = f"{description}\n{service_text}".lower()
+    if (("現金" in combined and ("儲值扣款" in combined or "儲值付款" in combined))
+            or "混合付款" in combined):
+        return "現金＋儲值扣款"
     if "儲值扣款" in combined or "儲值付款" in combined:
         return "儲值扣款"
     if "儲值進帳" in combined or "儲值入帳" in combined or "儲值專用" in combined:
@@ -159,6 +168,15 @@ def parse_explicit_amount(description: str) -> int | None:
     if not match:
         return None
     return int(match.group(1).replace(",", ""))
+
+
+def parse_cash_amount(description: str) -> int | None:
+    """解析混合付款中的現金金額。"""
+    raw = parse_labeled_value(description, ["Cash Amount", "現金金額", "現金付款"])
+    if not raw:
+        return None
+    match = re.search(r"(?:NT\$|TWD|\$)?\s*([0-9][0-9,]*)", raw, re.IGNORECASE)
+    return int(match.group(1).replace(",", "")) if match else None
 
 
 def parse_customer_name(summary: str) -> str:
@@ -236,6 +254,7 @@ def fetch_calendar_events(service, calendar_id: str, time_min: str, time_max: st
                 timeMin=time_min,
                 timeMax=time_max,
                 singleEvents=True,
+                showDeleted=True,
                 orderBy="startTime",
                 maxResults=2500,
                 pageToken=page_token,
@@ -339,6 +358,7 @@ def sync_calendar(
 
     seen_orders: set[str] = set()
     orders: list[dict] = []
+    cancelled_event_ids: list[str] = []
     selected_month_revenue = 0
     selected_month_cash_in = 0
     range_revenue = 0
@@ -352,6 +372,7 @@ def sync_calendar(
         "cancelled": 0,
         "missing_date": 0,
         "zero_amount": 0,
+        "invalid_mixed_payment": 0,
     }
 
     # 每日統計用的資料結構
@@ -370,6 +391,8 @@ def sync_calendar(
     for event in events:
         if event.get("status") == "cancelled":
             diagnostics["cancelled"] += 1
+            if event.get("id"):
+                cancelled_event_ids.append(event["id"])
             continue
         desc = event.get("description", "") or ""
         if not desc:
@@ -379,16 +402,27 @@ def sync_calendar(
         order_id = parse_order_id(desc)
         if not order_id:
             diagnostics["missing_order_id"] += 1
-            continue
-        if order_id in seen_orders:
+        source_event_id = event.get("id")
+        dedupe_id = source_event_id or order_id
+        if not dedupe_id:
             diagnostics["duplicates"] += 1
             continue
-        seen_orders.add(order_id)
+        if dedupe_id in seen_orders:
+            diagnostics["duplicates"] += 1
+            continue
+        seen_orders.add(dedupe_id)
 
         service_text = parse_service_text(desc)
         explicit_amount = parse_explicit_amount(desc)
         amount = explicit_amount if explicit_amount is not None else calc_amount(service_text)
         payment_method = parse_payment_method(desc, service_text)
+        parsed_cash_amount = parse_cash_amount(desc) if payment_method == "現金＋儲值扣款" else None
+        cash_amount = min(amount, max(0, parsed_cash_amount or 0))
+        prepaid_amount = amount - cash_amount if payment_method == "現金＋儲值扣款" else 0
+        if payment_method == "現金＋儲值扣款" and (
+            parsed_cash_amount is None or cash_amount <= 0 or cash_amount >= amount
+        ):
+            diagnostics["invalid_mixed_payment"] += 1
         category = classify_service(service_text)
         event_date = get_event_date(event)
         if not event_date:
@@ -403,18 +437,28 @@ def sync_calendar(
 
         if payment_method != "儲值進帳":
             range_revenue += amount
-        if payment_method != "儲值扣款":
+        if payment_method == "現金＋儲值扣款":
+            range_cash_in += cash_amount
+        elif payment_method != "儲值扣款":
             range_cash_in += amount
         is_selected_month = event_date.startswith(selected_month_prefix)
         if is_selected_month:
-            payment_summary[payment_method] += amount
+            if payment_method == "現金＋儲值扣款":
+                payment_summary["現金"] += cash_amount
+                payment_summary["儲值扣款"] += prepaid_amount
+            else:
+                payment_summary[payment_method] += amount
             if payment_method != "儲值進帳":
                 selected_month_revenue += amount
-            if payment_method != "儲值扣款":
+            if payment_method == "現金＋儲值扣款":
+                selected_month_cash_in += cash_amount
+            elif payment_method != "儲值扣款":
                 selected_month_cash_in += amount
 
         orders.append({
+            "sourceEventId": source_event_id,
             "order_id":      order_id,
+            "orderId":       order_id,
             "customer_name": customer_name,
             "customerName":  customer_name,  # 前後端相容
             "service":       service_text,
@@ -423,6 +467,7 @@ def sync_calendar(
             "amount":        amount,
             "date":          event_date,
             "paymentMethod": payment_method,
+            "cashAmount":    cash_amount if payment_method == "現金＋儲值扣款" else None,
         })
         diagnostics["orders_parsed"] += 1
 
@@ -486,6 +531,7 @@ def sync_calendar(
         ),
         "range_order_count": len(orders),
         "orders":          orders,
+        "cancelledEventIds": cancelled_event_ids,
         "daily_revenue":   daily_revenue,
         "range_daily_revenue": range_daily_revenue,
         "payment_summary": payment_summary,
