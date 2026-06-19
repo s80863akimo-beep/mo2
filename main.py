@@ -10,7 +10,8 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from collections import defaultdict
 
-from fastapi import FastAPI, HTTPException, Query
+import httpx
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -18,6 +19,50 @@ from dotenv import load_dotenv
 
 load_dotenv()
 logger = logging.getLogger("momohair.sync")
+
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
+SUPABASE_PUBLISHABLE_KEY = os.getenv(
+    "SUPABASE_PUBLISHABLE_KEY",
+    os.getenv("SUPABASE_ANON_KEY", ""),
+)
+REQUIRE_AUTH = os.getenv("REQUIRE_AUTH", "false").lower() == "true"
+
+
+def supabase_auth_configured() -> bool:
+    return bool(SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY)
+
+
+async def get_current_user(
+    authorization: str | None = Header(default=None),
+) -> dict | None:
+    """需要時向 Supabase Auth 驗證 Bearer token；未啟用時維持本機相容模式。"""
+    if not REQUIRE_AUTH:
+        return None
+    if not supabase_auth_configured():
+        raise HTTPException(status_code=503, detail="Supabase 登入尚未完成伺服器設定")
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="請先登入")
+
+    access_token = authorization.split(" ", 1)[1].strip()
+    if not access_token:
+        raise HTTPException(status_code=401, detail="登入憑證無效")
+
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            response = await client.get(
+                f"{SUPABASE_URL}/auth/v1/user",
+                headers={
+                    "apikey": SUPABASE_PUBLISHABLE_KEY,
+                    "Authorization": f"Bearer {access_token}",
+                },
+            )
+    except httpx.HTTPError as exc:
+        logger.warning("Supabase auth verification failed: %s", exc)
+        raise HTTPException(status_code=503, detail="登入驗證服務暫時無法連線") from exc
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=401, detail="登入已失效，請重新登入")
+    return response.json()
 
 # ─────────────────────────────────────────────
 # 官方精準價目表（key 長度由長到短，避免短字截斷長字）
@@ -271,11 +316,22 @@ def fetch_calendar_events(service, calendar_id: str, time_min: str, time_max: st
 # API 路由
 # ─────────────────────────────────────────────
 
+@app.get("/api/config")
+def public_config():
+    """前端登入所需的公開設定；絕不回傳 service_role 或資料庫密碼。"""
+    return {
+        "supabase_url": SUPABASE_URL if supabase_auth_configured() else "",
+        "supabase_publishable_key": SUPABASE_PUBLISHABLE_KEY if supabase_auth_configured() else "",
+        "auth_configured": supabase_auth_configured(),
+        "auth_required": REQUIRE_AUTH,
+    }
+
 @app.get("/api/sync")
 @app.post("/api/sync")
 def sync_calendar(
     year: int | None = Query(default=None, ge=2020, le=2100),
     month: int | None = Query(default=None, ge=1, le=12),
+    _current_user: dict | None = Depends(get_current_user),
 ):
     """
     拉取指定年月（預設本月）的 Google Calendar 事件，
@@ -548,5 +604,7 @@ def health_check():
         "service": "momohair-calendar-sync",
         "timezone": str(TW),
         "configured": bool(os.getenv("GOOGLE_API_KEY") and os.getenv("CALENDAR_ID")),
+        "auth_configured": supabase_auth_configured(),
+        "auth_required": REQUIRE_AUTH,
         "time": datetime.now(tz=TW).isoformat(),
     }
