@@ -595,8 +595,8 @@
         <span class="px-2 py-0.5 rounded-full" :class="online ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'">
           {{ online ? '● 已連線' : '● 離線模式' }}
         </span>
-        <span v-if="authUser" class="px-2 py-0.5 rounded-full" :class="cloudStatus === 'error' ? 'bg-rose-50 text-rose-600' : cloudMigrationNeeded ? 'bg-amber-50 text-amber-700' : 'bg-violet-50 text-violet-600'">
-          {{ cloudStatus === 'syncing' ? '☁️ 雲端同步中' : cloudMigrationNeeded ? '☁️ 待首次搬移' : cloudReady ? '☁️ 雲端已連接' : '☁️ 雲端準備中' }}
+        <span v-if="authUser" class="px-2 py-0.5 rounded-full" :class="cloudStatus === 'error' ? 'bg-rose-50 text-rose-600' : cloudStatus === 'conflict' ? 'bg-amber-50 text-amber-700' : cloudMigrationNeeded ? 'bg-amber-50 text-amber-700' : 'bg-violet-50 text-violet-600'">
+          {{ cloudStatus === 'syncing' ? '☁️ 雲端同步中' : cloudStatus === 'conflict' ? '⚠️ 等待處理衝突' : cloudMigrationNeeded ? '☁️ 待首次搬移' : cloudReady ? '☁️ 雲端已連接' : '☁️ 雲端準備中' }}
         </span>
         <button v-if="!isStandalone" @click="showIosGuide = true" class="px-2 py-0.5 rounded-full bg-sky-50 text-sky-600">加入 iPhone 主畫面</button>
         <span v-else class="px-2 py-0.5 rounded-full bg-sky-50 text-sky-600">主畫面 App 模式</span>
@@ -2903,6 +2903,23 @@
       </button>
     </nav>
 
+    <!-- 多裝置版本衝突處理 -->
+    <transition name="fade">
+      <div v-if="cloudConflict" class="fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl w-full max-w-md macaron-shadow-lg border border-amber-100 overflow-hidden">
+          <div class="p-6 space-y-3">
+            <div class="text-3xl text-center">⚠️</div>
+            <h3 class="text-base font-black text-slate-800 text-center">另一台裝置已修改這筆資料</h3>
+            <p class="text-xs font-semibold text-slate-500 text-center leading-relaxed">{{ cloudConflict.label }} 的雲端版本較新。系統已暫停同步並保留本機內容。</p>
+          </div>
+          <div class="grid grid-cols-2 border-t border-amber-100">
+            <button @click="useCloudConflictVersion" class="min-h-[54px] px-3 text-sky-700 text-xs font-black border-r border-amber-100 hover:bg-sky-50">使用雲端版本</button>
+            <button @click="keepLocalConflictVersion" class="min-h-[54px] px-3 text-amber-700 text-xs font-black hover:bg-amber-50">保留本機並覆蓋</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- 自訂確認對話框 Modal（取代瀏覽器原生 confirm，風格一致） -->
     <transition name="fade">
       <div v-if="confirmModal.show" 
@@ -3152,6 +3169,9 @@
           cloudSyncInFlight: false,
           cloudSyncPending: false,
           cloudApplying: false,
+          cloudBaseline: {},
+          cloudConflict: null,
+          cloudVersionPollTimer: null,
           authForm: {
             email: '',
             password: ''
@@ -4309,6 +4329,10 @@
           });
         }
       },
+      beforeUnmount() {
+        if (this.cloudVersionPollTimer) clearInterval(this.cloudVersionPollTimer);
+        if (this.cloudSyncTimer) clearTimeout(this.cloudSyncTimer);
+      },
       methods: {
         generateStableId(prefix) {
           const randomPart = window.crypto && crypto.randomUUID
@@ -5107,12 +5131,15 @@
           }
           localStorage.removeItem('momo_auth_session');
           if (this.cloudSyncTimer) clearTimeout(this.cloudSyncTimer);
+          if (this.cloudVersionPollTimer) clearInterval(this.cloudVersionPollTimer);
           this.authSession = null;
           this.authUser = null;
           this.cloudReady = false;
           this.cloudMigrationNeeded = false;
           this.cloudStatus = 'idle';
           this.cloudMessage = '尚未連接雲端資料';
+          this.cloudBaseline = {};
+          this.cloudConflict = null;
           this.showAuthSheet = this.authConfig.required;
           this.showToast('已登出雲端帳號');
         },
@@ -5182,7 +5209,7 @@
             const detail = await response.text().catch(() => '');
             throw new Error(`Supabase ${table} ${method} 失敗 (${response.status})${detail ? `：${detail.slice(0, 180)}` : ''}`);
           }
-          if (response.status === 204 || method === 'DELETE') return null;
+          if (response.status === 204) return null;
           const text = await response.text();
           return text ? JSON.parse(text) : null;
         },
@@ -5205,6 +5232,182 @@
           const results = await Promise.all(tables.map(table => this.fetchCloudRows(table)));
           return Object.fromEntries(tables.map((table, index) => [table, results[index]]));
         },
+        versionedTableConfigs() {
+          return {
+            customers: { keys: ['id'], conflict: 'id', label: '顧客資料' },
+            orders: { keys: ['id'], conflict: 'id', label: '業績資料' },
+            expenses: { keys: ['id'], conflict: 'id', label: '支出資料' },
+            inventory: { keys: ['id'], conflict: 'id', label: '庫存資料' },
+            crm_profiles: { keys: ['customer_id'], conflict: 'customer_id', label: 'CRM 配方與備註' },
+            closeouts: { keys: ['closeout_date'], conflict: 'owner_id,closeout_date', label: '打烊紀錄' },
+            service_configs: { keys: ['name'], conflict: 'owner_id,name', label: '服務定價' }
+          };
+        },
+        cloudRowKey(table, row) {
+          const config = this.versionedTableConfigs()[table];
+          return config ? config.keys.map(key => String(row?.[key] ?? '')).join('::') : String(row?.id || '');
+        },
+        cloudFingerprint(row) {
+          const clean = {};
+          Object.keys(row || {}).sort().forEach(key => {
+            if (['owner_id', 'version', 'created_at', 'updated_at', 'id'].includes(key)) return;
+            clean[key] = row[key];
+          });
+          return JSON.stringify(clean);
+        },
+        captureCloudBaseline(snapshot) {
+          const baseline = {};
+          Object.keys(this.versionedTableConfigs()).forEach(table => {
+            baseline[table] = {};
+            (snapshot[table] || []).forEach(row => {
+              baseline[table][this.cloudRowKey(table, row)] = {
+                version: Number(row.version) || 1,
+                fingerprint: this.cloudFingerprint(row),
+                row
+              };
+            });
+          });
+          this.cloudBaseline = baseline;
+        },
+        setCloudBaselineRow(table, row) {
+          if (!this.cloudBaseline[table]) this.cloudBaseline[table] = {};
+          const key = this.cloudRowKey(table, row);
+          this.cloudBaseline[table][key] = {
+            version: Number(row.version) || 1,
+            fingerprint: this.cloudFingerprint(row),
+            row
+          };
+          this.applyLocalVersion(table, key, Number(row.version) || 1);
+        },
+        applyLocalVersion(table, key, version) {
+          const configs = {
+            customers: this.customers,
+            orders: this.orders,
+            expenses: this.expenses,
+            inventory: this.inventory,
+            service_configs: this.servicesConfig
+          };
+          const rows = configs[table];
+          if (Array.isArray(rows)) {
+            const config = this.versionedTableConfigs()[table];
+            const row = rows.find(item => config.keys.map(field => String(item[field === 'customer_id' ? 'customerId' : field] ?? '')).join('::') === key);
+            if (row) row.version = version;
+          }
+        },
+        async fetchCurrentCloudRow(table, payload) {
+          const config = this.versionedTableConfigs()[table];
+          const filters = [`owner_id=eq.${encodeURIComponent(this.authUser.id)}`];
+          config.keys.forEach(key => filters.push(`${encodeURIComponent(key)}=eq.${encodeURIComponent(payload[key])}`));
+          const rows = await this.cloudRequest(table, { query: `select=*&${filters.join('&')}` });
+          return Array.isArray(rows) ? rows[0] || null : null;
+        },
+        editableCloudBody(config, payload) {
+          const body = { ...payload };
+          ['owner_id', 'version', 'created_at', 'updated_at', 'id', ...config.keys].forEach(key => delete body[key]);
+          return body;
+        },
+        makeVersionConflict(table, payload, cloudRow, operation = 'update') {
+          const error = new Error('另一台裝置已修改這筆資料');
+          error.code = 'VERSION_CONFLICT';
+          error.conflict = {
+            table,
+            key: this.cloudRowKey(table, payload),
+            label: this.versionedTableConfigs()[table]?.label || table,
+            localPayload: payload,
+            cloudRow,
+            operation
+          };
+          return error;
+        },
+        async syncVersionedRow(table, payload) {
+          const config = this.versionedTableConfigs()[table];
+          const key = this.cloudRowKey(table, payload);
+          const baseline = this.cloudBaseline[table]?.[key];
+          if (baseline && baseline.fingerprint === this.cloudFingerprint(payload)) return false;
+
+          if (!baseline) {
+            const rows = await this.cloudRequest(table, {
+              method: 'POST',
+              query: `on_conflict=${encodeURIComponent(config.conflict)}`,
+              body: [{ ...payload, version: 1 }],
+              prefer: 'resolution=ignore-duplicates,return=representation'
+            });
+            if (!Array.isArray(rows) || !rows.length) {
+              const cloudRow = await this.fetchCurrentCloudRow(table, payload);
+              throw this.makeVersionConflict(table, payload, cloudRow);
+            }
+            this.setCloudBaselineRow(table, rows[0]);
+            return true;
+          }
+
+          const filters = [`owner_id=eq.${encodeURIComponent(this.authUser.id)}`, `version=eq.${baseline.version}`];
+          config.keys.forEach(field => filters.push(`${encodeURIComponent(field)}=eq.${encodeURIComponent(payload[field])}`));
+          const rows = await this.cloudRequest(table, {
+            method: 'PATCH',
+            query: filters.join('&'),
+            body: this.editableCloudBody(config, payload),
+            prefer: 'return=representation'
+          });
+          if (!Array.isArray(rows) || !rows.length) {
+            const cloudRow = await this.fetchCurrentCloudRow(table, payload);
+            throw this.makeVersionConflict(table, payload, cloudRow);
+          }
+          this.setCloudBaselineRow(table, rows[0]);
+          return true;
+        },
+        async syncVersionedChanges(payloads) {
+          let changed = 0;
+          for (const table of Object.keys(this.versionedTableConfigs())) {
+            for (const payload of payloads[table] || []) {
+              if (await this.syncVersionedRow(table, payload)) changed += 1;
+            }
+          }
+          await this.upsertCloudRows('prepaid_ledger', payloads.prepaid_ledger, 'id', true);
+          return changed;
+        },
+        hasLocalVersionedChanges() {
+          if (!this.authUser || !Object.keys(this.cloudBaseline || {}).length) return false;
+          const payloads = this.buildCloudPayloads();
+          return Object.keys(this.versionedTableConfigs()).some(table =>
+            (payloads[table] || []).some(row => {
+              const baseline = this.cloudBaseline[table]?.[this.cloudRowKey(table, row)];
+              return !baseline || baseline.fingerprint !== this.cloudFingerprint(row);
+            })
+          );
+        },
+        startCloudVersionPolling() {
+          if (this.cloudVersionPollTimer) clearInterval(this.cloudVersionPollTimer);
+          this.cloudVersionPollTimer = setInterval(() => this.checkRemoteVersions(), 60000);
+        },
+        async checkRemoteVersions() {
+          if (!this.cloudReady || this.cloudApplying || this.cloudSyncInFlight || this.cloudConflict || document.hidden) return;
+          try {
+            const configs = this.versionedTableConfigs();
+            let changed = false;
+            for (const [table, config] of Object.entries(configs)) {
+              const fields = [...config.keys, 'version'].join(',');
+              const rows = await this.cloudRequest(table, { query: `select=${fields}` });
+              const remote = Object.fromEntries((rows || []).map(row => [this.cloudRowKey(table, row), Number(row.version) || 1]));
+              const local = this.cloudBaseline[table] || {};
+              if (Object.keys(remote).length !== Object.keys(local).length
+                || Object.entries(remote).some(([key, version]) => local[key]?.version !== version)) {
+                changed = true;
+                break;
+              }
+            }
+            if (!changed) return;
+            if (this.hasLocalVersionedChanges()) {
+              this.cloudMessage = '另一台裝置有更新；完成本機修改時會進行版本檢查';
+              return;
+            }
+            const snapshot = await this.fetchCloudSnapshot();
+            this.applyCloudSnapshot(snapshot);
+            this.cloudMessage = `已接收其他裝置更新 · ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
+            this.showToast('☁️ 已載入另一台裝置的最新資料');
+          } catch (error) {
+            console.warn('Remote version check skipped:', error);
+          }
+        },
         applyCloudSnapshot(snapshot) {
           this.cloudApplying = true;
           try {
@@ -5213,7 +5416,8 @@
               name: row.name,
               gender: row.gender || '女',
               createdAt: row.created_at,
-              updatedAt: row.updated_at
+              updatedAt: row.updated_at,
+              version: Number(row.version) || 1
             }));
             const customerById = new Map(this.customers.map(customer => [customer.id, customer]));
             this.orders = (snapshot.orders || []).map(row => {
@@ -5232,7 +5436,8 @@
                 sourceEventId: row.source_event_id || null,
                 orderId: row.external_order_id || row.id,
                 syncStatus: row.sync_status || 'active',
-                lastSyncedAt: row.updated_at || row.created_at
+                lastSyncedAt: row.updated_at || row.created_at,
+                version: Number(row.version) || 1
               };
             });
             this.prepaidLedger = (snapshot.prepaid_ledger || []).map(row => ({
@@ -5255,13 +5460,15 @@
               date: row.expense_date,
               category: row.category,
               amount: Number(row.amount) || 0,
-              notes: row.notes || ''
+              notes: row.notes || '',
+              version: Number(row.version) || 1
             }));
             this.inventory = (snapshot.inventory || []).map(row => ({
               id: row.id,
               name: row.name,
               stock: Number(row.stock) || 0,
-              notes: row.notes || ''
+              notes: row.notes || '',
+              version: Number(row.version) || 1
             }));
             this.crmNotes = {};
             this.crmFormulas = {};
@@ -5277,15 +5484,18 @@
               serviceRevenue: Number(row.service_revenue) || 0,
               expenses: Number(row.expenses) || 0,
               note: row.note || '',
-              completedAt: row.completed_at
+              completedAt: row.completed_at,
+              version: Number(row.version) || 1
             }]));
             if ((snapshot.service_configs || []).length) {
               this.servicesConfig = snapshot.service_configs.map(row => ({
                 name: row.name,
                 duration: Number(row.duration_minutes) || 0,
-                price: Number(row.price) || 0
+                price: Number(row.price) || 0,
+                version: Number(row.version) || 1
               }));
             }
+            this.captureCloudBaseline(snapshot);
             this.saveToLocalStorage();
           } finally {
             this.cloudApplying = false;
@@ -5320,6 +5530,7 @@
               this.cloudMessage = `雲端資料已載入 · ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
               this.runIntegrityCheck(false);
               await this.createAutomaticBackup({ silent: true });
+              this.startCloudVersionPolling();
               return;
             }
 
@@ -5464,14 +5675,18 @@
           this.cloudMessage = initialMigration ? '正在搬移本機資料到 Supabase…' : '正在同步雲端資料…';
           try {
             const payloads = this.buildCloudPayloads();
-            await this.upsertCloudRows('customers', payloads.customers, 'id');
-            await this.upsertCloudRows('orders', payloads.orders, 'id');
-            await this.upsertCloudRows('prepaid_ledger', payloads.prepaid_ledger, 'id', true);
-            await this.upsertCloudRows('expenses', payloads.expenses, 'id');
-            await this.upsertCloudRows('inventory', payloads.inventory, 'id');
-            await this.upsertCloudRows('crm_profiles', payloads.crm_profiles, 'customer_id');
-            await this.upsertCloudRows('closeouts', payloads.closeouts, 'owner_id,closeout_date');
-            await this.upsertCloudRows('service_configs', payloads.service_configs, 'owner_id,name');
+            if (initialMigration) {
+              await this.upsertCloudRows('customers', payloads.customers, 'id');
+              await this.upsertCloudRows('orders', payloads.orders, 'id');
+              await this.upsertCloudRows('prepaid_ledger', payloads.prepaid_ledger, 'id', true);
+              await this.upsertCloudRows('expenses', payloads.expenses, 'id');
+              await this.upsertCloudRows('inventory', payloads.inventory, 'id');
+              await this.upsertCloudRows('crm_profiles', payloads.crm_profiles, 'customer_id');
+              await this.upsertCloudRows('closeouts', payloads.closeouts, 'owner_id,closeout_date');
+              await this.upsertCloudRows('service_configs', payloads.service_configs, 'owner_id,name');
+            } else {
+              await this.syncVersionedChanges(payloads);
+            }
             this.cloudReady = true;
             this.cloudMigrationNeeded = false;
             this.cloudStatus = 'synced';
@@ -5484,9 +5699,16 @@
             return true;
           } catch (error) {
             console.error('Cloud sync failed:', error);
-            this.cloudStatus = 'error';
-            this.cloudMessage = '雲端同步失敗，本機資料已保留';
-            this.showToast(`雲端同步失敗：${error.message}`, 'error', 7000);
+            if (error.code === 'VERSION_CONFLICT') {
+              this.cloudConflict = error.conflict;
+              this.cloudStatus = 'conflict';
+              this.cloudMessage = '偵測到其他裝置修改，請選擇要保留的版本';
+              this.showToast('⚠️ 另一台裝置已修改同一筆資料，同步已暫停', 'error', 8000);
+            } else {
+              this.cloudStatus = 'error';
+              this.cloudMessage = '雲端同步失敗，本機資料已保留';
+              this.showToast(`雲端同步失敗：${error.message}`, 'error', 7000);
+            }
             return false;
           } finally {
             this.cloudSyncInFlight = false;
@@ -5515,12 +5737,53 @@
         async deleteCloudRecord(table, column, value) {
           if (!this.cloudReady || !this.authUser || !value) return;
           try {
-            const query = `${encodeURIComponent(column)}=eq.${encodeURIComponent(value)}&owner_id=eq.${encodeURIComponent(this.authUser.id)}`;
-            await this.cloudRequest(table, { method: 'DELETE', query, prefer: 'return=minimal' });
+            const config = this.versionedTableConfigs()[table];
+            const key = String(value);
+            const baseline = this.cloudBaseline[table]?.[key];
+            const filters = [
+              `${encodeURIComponent(column)}=eq.${encodeURIComponent(value)}`,
+              `owner_id=eq.${encodeURIComponent(this.authUser.id)}`
+            ];
+            if (baseline) filters.push(`version=eq.${baseline.version}`);
+            const rows = await this.cloudRequest(table, {
+              method: 'DELETE',
+              query: filters.join('&'),
+              prefer: 'return=representation'
+            });
+            if (baseline && (!Array.isArray(rows) || !rows.length)) {
+              const payload = baseline.row || { [column]: value };
+              const cloudRow = await this.fetchCurrentCloudRow(table, payload);
+              const error = this.makeVersionConflict(table, payload, cloudRow, 'delete');
+              this.cloudConflict = error.conflict;
+              this.cloudStatus = 'conflict';
+              this.cloudMessage = '刪除前偵測到其他裝置修改，請選擇版本';
+              return;
+            }
+            if (this.cloudBaseline[table]) delete this.cloudBaseline[table][key];
           } catch (error) {
             console.error(`Cloud delete failed for ${table}:`, error);
             this.cloudStatus = 'error';
             this.cloudMessage = '雲端刪除失敗，請稍後重新同步';
+          }
+        },
+        async useCloudConflictVersion() {
+          this.cloudConflict = null;
+          await this.reloadCloudData();
+        },
+        async keepLocalConflictVersion() {
+          const conflict = this.cloudConflict;
+          if (!conflict) return;
+          if (conflict.cloudRow) this.setCloudBaselineRow(conflict.table, conflict.cloudRow);
+          else if (this.cloudBaseline[conflict.table]) delete this.cloudBaseline[conflict.table][conflict.key];
+          this.cloudConflict = null;
+          this.cloudStatus = 'synced';
+          if (conflict.operation === 'delete') {
+            const config = this.versionedTableConfigs()[conflict.table];
+            await this.deleteCloudRecord(conflict.table, config.keys[0], conflict.localPayload[config.keys[0]]);
+            this.showToast('已依你的選擇刪除雲端資料');
+          } else {
+            this.queueCloudSync(0);
+            this.showToast('已保留本機版本，正在重新同步');
           }
         },
         async migrateLocalDataToSupabase() {
@@ -5530,6 +5793,7 @@
             try {
               const snapshot = await this.fetchCloudSnapshot();
               this.applyCloudSnapshot(snapshot);
+              this.startCloudVersionPolling();
             } catch (error) {
               console.warn('Post-migration reload skipped:', error);
             }
@@ -5545,6 +5809,7 @@
             const snapshot = await this.fetchCloudSnapshot();
             this.createPreCloudBackup();
             this.applyCloudSnapshot(snapshot);
+            this.startCloudVersionPolling();
             this.cloudStatus = 'synced';
             this.cloudLastSync = new Date().toISOString();
             localStorage.setItem('momo_cloud_last_sync', this.cloudLastSync);
@@ -6168,9 +6433,30 @@
           this.newInventory.notes = '';
           this.showInventoryForm = false;
         },
-        adjustStock(item, diff) {
-          item.stock = Math.max(0, (Number(item.stock) || 0) + diff);
-          this.saveInventory();
+        async adjustStock(item, diff) {
+          const previousStock = Number(item.stock) || 0;
+          item.stock = Math.max(0, previousStock + diff);
+          localStorage.setItem('momo_inventory', JSON.stringify(this.inventory));
+          if (!this.cloudReady || !this.authUser) {
+            this.saveInventory();
+            return;
+          }
+          try {
+            const result = await this.cloudRequest('rpc/adjust_inventory_stock', {
+              method: 'POST',
+              body: { p_item_id: item.id, p_delta: diff }
+            });
+            const row = Array.isArray(result) ? result[0] : result;
+            if (!row?.id) throw new Error('庫存更新未回傳資料');
+            item.stock = Number(row.stock) || 0;
+            item.version = Number(row.version) || item.version || 1;
+            this.setCloudBaselineRow('inventory', row);
+            localStorage.setItem('momo_inventory', JSON.stringify(this.inventory));
+          } catch (error) {
+            item.stock = previousStock;
+            localStorage.setItem('momo_inventory', JSON.stringify(this.inventory));
+            this.showToast(`庫存更新失敗：${error.message}`, 'error', 7000);
+          }
         },
         toggleInventoryEditor(id) {
           this.expandedInventoryId = this.expandedInventoryId === id ? null : id;
