@@ -6,6 +6,7 @@
 import re
 import os
 import logging
+from pathlib import Path
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from collections import defaultdict
@@ -13,12 +14,14 @@ from collections import defaultdict
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from dotenv import load_dotenv
 
 load_dotenv()
 logger = logging.getLogger("momohair.sync")
+BASE_DIR = Path(__file__).resolve().parent
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 SUPABASE_PUBLISHABLE_KEY = os.getenv(
@@ -608,3 +611,33 @@ def health_check():
         "auth_required": REQUIRE_AUTH,
         "time": datetime.now(tz=TW).isoformat(),
     }
+
+
+@app.get("/", include_in_schema=False)
+def frontend():
+    return FileResponse(BASE_DIR / "index.html", media_type="text/html")
+
+
+@app.get("/manifest.webmanifest", include_in_schema=False)
+def pwa_manifest():
+    return FileResponse(
+        BASE_DIR / "manifest.webmanifest",
+        media_type="application/manifest+json",
+    )
+
+
+@app.get("/service-worker.js", include_in_schema=False)
+def service_worker():
+    return FileResponse(
+        BASE_DIR / "service-worker.js",
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
+@app.get("/icons/{filename}", include_in_schema=False)
+def pwa_icon(filename: str):
+    allowed = {"icon-192.png", "icon-512.png", "apple-touch-icon.png"}
+    if filename not in allowed:
+        raise HTTPException(status_code=404, detail="Icon not found")
+    return FileResponse(BASE_DIR / "icons" / filename, media_type="image/png")
