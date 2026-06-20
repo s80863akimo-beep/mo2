@@ -562,6 +562,15 @@
                     🔄 重新載入雲端資料
                   </button>
                   <div class="px-4 py-1 text-[10px] font-bold text-slate-400">{{ cloudMessage }}</div>
+                  <button v-if="cloudReady" @click="createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-emerald-50 text-emerald-700 flex items-center gap-2 disabled:opacity-50">
+                    {{ backupStatus === 'saving' ? '⏳ 備份建立中…' : '🛡️ 立即建立雲端備份' }}
+                  </button>
+                  <button @click="runIntegrityCheck(true)" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-sky-50 text-sky-700 flex items-center gap-2">
+                    🔎 檢查資料完整性
+                  </button>
+                  <div class="px-4 pb-1 text-[10px] font-bold" :class="integrityReport?.status === 'ok' ? 'text-emerald-600' : integrityReport ? 'text-amber-600' : 'text-slate-400'">
+                    {{ backupSummaryText }} · {{ integritySummaryText }}
+                  </div>
                   <div class="h-px bg-orange-100 my-1"></div>
                   <button @click="exportCSV" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-macaron-peach-500 flex items-center gap-2 transition-colors">
                     📊 匯出當期業績 (CSV)
@@ -636,7 +645,12 @@
               </div>
               <button v-if="cloudMigrationNeeded" @click="showMobileTools = false; migrateLocalDataToSupabase()" :disabled="cloudStatus === 'syncing'" class="w-full min-h-[50px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">☁️ 首次搬移到 Supabase</button>
               <button v-else-if="cloudReady" @click="showMobileTools = false; reloadCloudData()" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="w-full min-h-[50px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">🔄 重新載入雲端資料</button>
+              <div class="grid grid-cols-2 gap-2">
+                <button v-if="cloudReady" @click="showMobileTools = false; createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="min-h-[50px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black disabled:opacity-50">🛡️ 雲端備份</button>
+                <button @click="showMobileTools = false; runIntegrityCheck(true)" class="min-h-[50px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black">🔎 完整性檢查</button>
+              </div>
               <p v-if="authUser" class="px-1 text-[10px] font-bold text-slate-400">{{ cloudMessage }}</p>
+              <p class="px-1 text-[10px] font-bold" :class="integrityReport?.status === 'ok' ? 'text-emerald-600' : integrityReport ? 'text-amber-600' : 'text-slate-400'">{{ backupSummaryText }} · {{ integritySummaryText }}</p>
             </section>
 
             <section class="space-y-2">
@@ -796,6 +810,17 @@
                 </button>
               </div>
             </div>
+          </section>
+
+          <section v-if="syncError" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-xs font-black text-rose-700">{{ syncError.title }}</div>
+              <div class="text-[10px] text-rose-600 font-semibold mt-0.5">{{ syncError.message }}</div>
+              <div class="text-[9px] text-rose-400 font-bold mt-1">上次嘗試：{{ formatDateTime(syncError.at) }} · 本機資料未受影響</div>
+            </div>
+            <button @click="retryCalendarSync" :disabled="syncing" class="min-h-[38px] px-4 rounded-xl bg-rose-500 text-white text-xs font-black disabled:opacity-50 whitespace-nowrap">
+              {{ syncing ? '重新同步中…' : '重新同步' }}
+            </button>
           </section>
 
           <section v-if="syncReport" class="rounded-2xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
@@ -1222,6 +1247,14 @@
                 </button>
               </div>
             </div>
+          </section>
+
+          <section v-if="syncError" class="border border-rose-200 bg-rose-50 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-xs font-black text-rose-700">{{ syncError.title }}</div>
+              <div class="text-[10px] text-rose-600 font-semibold line-clamp-2">{{ syncError.message }}</div>
+            </div>
+            <button @click="retryCalendarSync" :disabled="syncing" class="min-h-[38px] px-3 rounded-xl bg-rose-500 text-white text-[11px] font-black disabled:opacity-50 whitespace-nowrap">重試</button>
           </section>
 
           <section v-if="syncReport" class="border rounded-xl px-4 py-3 flex items-center justify-between gap-3"
@@ -3125,6 +3158,10 @@
           },
           lastSyncTime: localStorage.getItem('momo_last_sync_time') || null,
           syncReport: safeParse(localStorage.getItem('momo_sync_report'), null),
+          syncError: safeParse(localStorage.getItem('momo_sync_error'), null),
+          backupStatus: 'idle',
+          lastBackupAt: localStorage.getItem('momo_last_backup_at') || null,
+          integrityReport: safeParse(localStorage.getItem('momo_integrity_report'), null),
           closeoutRecords: {},
           closeoutCashCount: null,
           closeoutNote: '',
@@ -3224,6 +3261,17 @@
         dailyGreeting() {
           const day = new Date().getDate(); // 1~31
           return dailyGreetings[(day - 1) % dailyGreetings.length];
+        },
+        backupSummaryText() {
+          if (this.backupStatus === 'saving') return '雲端備份中';
+          if (this.backupStatus === 'error') return '雲端備份失敗';
+          if (!this.lastBackupAt) return '尚無自動備份';
+          return `最近備份 ${this.formatDateTime(this.lastBackupAt)}`;
+        },
+        integritySummaryText() {
+          if (!this.integrityReport) return '尚未檢查完整性';
+          if (this.integrityReport.status === 'ok') return '資料完整';
+          return `${this.integrityReport.errorCount || 0} 錯誤、${this.integrityReport.warningCount || 0} 提醒`;
         },
         yearOptions() {
           // 動態產生：當年前後各一年 + 資料中出現的年份
@@ -4854,6 +4902,44 @@
             this.toast.show = false;
           }, duration);
         },
+        formatDateTime(value) {
+          if (!value) return '—';
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return '—';
+          return date.toLocaleString('zh-TW', {
+            month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
+          });
+        },
+        setCalendarSyncError(error, status = 0, detail = '') {
+          const isTimeout = error?.name === 'AbortError';
+          const isOffline = !navigator.onLine;
+          let title = '行事曆同步失敗';
+          let message = detail || error?.message || '伺服器暫時無法回應';
+          if (isOffline) {
+            title = '目前沒有網路連線';
+            message = '恢復網路後按「重新同步」，本機資料仍會保留。';
+          } else if (isTimeout) {
+            title = '伺服器回應逾時';
+            message = 'Render 可能正在喚醒，請等待約 30 秒後重新同步。';
+          } else if (status === 401) {
+            title = '登入已過期';
+            message = '請重新登入 Supabase，再按「重新同步」。';
+            this.showAuthSheet = true;
+          } else if (status >= 500) {
+            title = '雲端伺服器暫時異常';
+            message = 'Google Calendar 或 Render 暫時無法回應，請稍後重新同步。';
+          }
+          this.syncError = { title, message: String(message).slice(0, 240), status, at: new Date().toISOString() };
+          localStorage.setItem('momo_sync_error', JSON.stringify(this.syncError));
+          this.showToast(`${title}：${message}`, 'error', 8000);
+        },
+        clearCalendarSyncError() {
+          this.syncError = null;
+          localStorage.removeItem('momo_sync_error');
+        },
+        retryCalendarSync() {
+          if (!this.syncing) this.syncFromApi();
+        },
 
         // Supabase Authentication
         async fetchWithTimeout(url, options = {}, timeoutMs = 3000) {
@@ -5232,6 +5318,8 @@
               this.cloudLastSync = new Date().toISOString();
               localStorage.setItem('momo_cloud_last_sync', this.cloudLastSync);
               this.cloudMessage = `雲端資料已載入 · ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
+              this.runIntegrityCheck(false);
+              await this.createAutomaticBackup({ silent: true });
               return;
             }
 
@@ -5391,6 +5479,8 @@
             localStorage.setItem(this.cloudMigrationKey(), '1');
             localStorage.setItem('momo_cloud_last_sync', this.cloudLastSync);
             this.cloudMessage = `雲端已同步 · ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
+            this.runIntegrityCheck(false);
+            await this.createAutomaticBackup({ silent: true });
             return true;
           } catch (error) {
             console.error('Cloud sync failed:', error);
@@ -5459,6 +5549,8 @@
             this.cloudLastSync = new Date().toISOString();
             localStorage.setItem('momo_cloud_last_sync', this.cloudLastSync);
             this.cloudMessage = `雲端資料已重新載入 · ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
+            this.runIntegrityCheck(false);
+            await this.createAutomaticBackup({ silent: true });
             this.showToast('☁️ 已重新載入 Supabase 資料');
           } catch (error) {
             this.cloudStatus = 'error';
@@ -5501,6 +5593,7 @@
           if (this.authConfig.required && !this.authSession?.access_token) {
             this.authError = '請先登入後再同步行事曆';
             this.showAuthSheet = true;
+            this.setCalendarSyncError(new Error('尚未登入'), 401);
             return;
           }
           // 全年模式下提示用戶選擇月份
@@ -5541,7 +5634,7 @@
           } catch (e) {
             if (primaryApi === productionApi) {
               console.error('API Sync Error:', e);
-              this.showToast(`無法連接伺服器，請稍後重試 (${e.message})`, 'error');
+              this.setCalendarSyncError(e);
               this.syncing = false;
               return;
             }
@@ -5555,7 +5648,7 @@
               });
             } catch (err) {
               console.error('API Sync Error:', err);
-              this.showToast(`無法連接伺服器，已啟用本機離線運作 (${err.message})`, 'error');
+              this.setCalendarSyncError(err);
               this.syncing = false;
               return;
             }
@@ -5563,7 +5656,11 @@
 
           try {
             if (!response.ok) {
-              throw new Error(`HTTP 錯誤狀態碼: ${response.status}`);
+              const detail = await response.text().catch(() => '');
+              const error = new Error(`HTTP ${response.status}`);
+              error.httpStatus = response.status;
+              error.detail = detail;
+              throw error;
             }
 
             const resData = await response.json();
@@ -5575,12 +5672,20 @@
               localStorage.setItem('momo_last_sync_time', this.lastSyncTime);
               this.syncReport = { ...report, syncedAt: new Date().toISOString(), period: `${this.selectedYear}-${this.selectedMonth}` };
               localStorage.setItem('momo_sync_report', JSON.stringify(this.syncReport));
+              this.clearCalendarSyncError();
+              this.runIntegrityCheck(false);
+              await this.createAutomaticBackup({ silent: true });
             } else {
               throw new Error('伺服器回傳之資料格式有誤');
             }
           } catch (e) {
             console.error('API Sync Error:', e);
-            this.showToast(`同步失敗: ${e.message}`, 'error');
+            let detail = e.detail || '';
+            try {
+              const parsed = detail ? JSON.parse(detail) : null;
+              detail = parsed?.detail || detail;
+            } catch (_) {}
+            this.setCalendarSyncError(e, e.httpStatus || 0, detail);
           } finally {
             this.syncing = false;
           }
@@ -6099,10 +6204,10 @@
           }, 1000); // 1-second debounce
         },
 
-        // --- Data Tools Actions ---
-        exportBackup() {
-          const data = {
+        buildBackupData() {
+          return {
             schemaVersion: this.dataSchemaVersion,
+            createdAt: new Date().toISOString(),
             momo_orders: this.orders,
             momo_expenses: this.expenses,
             momo_inventory: this.inventory,
@@ -6113,6 +6218,143 @@
             momo_closeoutRecords: this.closeoutRecords,
             momo_servicesConfig: this.servicesConfig
           };
+        },
+        runIntegrityCheck(showResult = true) {
+          const issues = [];
+          const addIssue = (severity, code, message) => {
+            if (issues.length < 100) issues.push({ severity, code, message });
+          };
+          const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))
+            && !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
+          const checkDuplicateIds = (label, rows) => {
+            const seen = new Set();
+            (rows || []).forEach(row => {
+              if (!row?.id) addIssue('error', `${label}_missing_id`, `${label}有缺少 ID 的資料`);
+              else if (seen.has(row.id)) addIssue('error', `${label}_duplicate_id`, `${label}出現重複 ID：${row.id}`);
+              else seen.add(row.id);
+            });
+          };
+
+          checkDuplicateIds('顧客', this.customers);
+          checkDuplicateIds('業績', this.orders);
+          checkDuplicateIds('支出', this.expenses);
+          checkDuplicateIds('庫存', this.inventory);
+          checkDuplicateIds('儲值帳本', this.prepaidLedger);
+
+          const customerIds = new Set(this.customers.map(customer => customer.id).filter(Boolean));
+          const sourceEvents = new Set();
+          this.customers.forEach(customer => {
+            if (!String(customer.name || '').trim()) addIssue('error', 'customer_missing_name', `顧客 ${customer.id || '未知'} 缺少姓名`);
+          });
+          this.orders.forEach(order => {
+            if (!customerIds.has(order.customerId)) addIssue('error', 'order_orphan_customer', `業績 ${order.id || '未知'} 找不到對應顧客`);
+            if (!validDate(order.date)) addIssue('error', 'order_invalid_date', `業績 ${order.id || '未知'} 日期格式錯誤`);
+            if (!Number.isFinite(Number(order.amount)) || Number(order.amount) < 0) addIssue('error', 'order_invalid_amount', `業績 ${order.id || '未知'} 金額錯誤`);
+            if (!['現金', '儲值扣款', '現金＋儲值扣款', '儲值進帳'].includes(order.paymentMethod)) addIssue('error', 'order_invalid_payment', `業績 ${order.id || '未知'} 付款方式錯誤`);
+            if (order.paymentMethod === '現金＋儲值扣款' && !(Number(order.cashAmount) > 0 && Number(order.cashAmount) < Number(order.amount))) {
+              addIssue('error', 'order_invalid_mixed_payment', `業績 ${order.id || '未知'} 混合付款金額錯誤`);
+            }
+            if (order.sourceEventId) {
+              if (sourceEvents.has(order.sourceEventId)) addIssue('error', 'duplicate_calendar_event', `Google 行事曆事件重複：${order.sourceEventId}`);
+              sourceEvents.add(order.sourceEventId);
+            }
+          });
+          this.expenses.forEach(expense => {
+            if (!validDate(expense.date)) addIssue('error', 'expense_invalid_date', `支出 ${expense.id || '未知'} 日期格式錯誤`);
+            if (!Number.isFinite(Number(expense.amount)) || Number(expense.amount) < 0) addIssue('error', 'expense_invalid_amount', `支出 ${expense.id || '未知'} 金額錯誤`);
+          });
+          this.inventory.forEach(item => {
+            if (!String(item.name || '').trim()) addIssue('error', 'inventory_missing_name', `庫存 ${item.id || '未知'} 缺少品名`);
+            if (!Number.isInteger(Number(item.stock)) || Number(item.stock) < 0) addIssue('error', 'inventory_invalid_stock', `庫存「${item.name || item.id}」數量錯誤`);
+          });
+          this.prepaidLedger.forEach(entry => {
+            if (!customerIds.has(entry.customerId)) addIssue('error', 'ledger_orphan_customer', `儲值帳本 ${entry.id || '未知'} 找不到對應顧客`);
+            if (!validDate(entry.date)) addIssue('error', 'ledger_invalid_date', `儲值帳本 ${entry.id || '未知'} 日期格式錯誤`);
+            if (!Number.isFinite(Number(entry.signedAmount)) || Number(entry.signedAmount) === 0) addIssue('error', 'ledger_invalid_amount', `儲值帳本 ${entry.id || '未知'} 金額錯誤`);
+          });
+          Object.keys(this.crmNotes || {}).forEach(customerId => {
+            if (!customerIds.has(customerId)) addIssue('warning', 'orphan_crm_note', `CRM 備註找不到顧客：${customerId}`);
+          });
+          Object.entries(this.prepaidTotalsByCustomer || {}).forEach(([customerId, totals]) => {
+            if (Number(totals.balance) < 0) addIssue('warning', 'negative_prepaid_balance', `${this.customerMap[customerId]?.name || customerId} 的儲值餘額為負數`);
+          });
+
+          const errorCount = issues.filter(issue => issue.severity === 'error').length;
+          const warningCount = issues.filter(issue => issue.severity === 'warning').length;
+          const report = {
+            status: errorCount ? 'error' : warningCount ? 'warning' : 'ok',
+            errorCount,
+            warningCount,
+            checkedAt: new Date().toISOString(),
+            counts: {
+              customers: this.customers.length,
+              orders: this.orders.length,
+              prepaidLedger: this.prepaidLedger.length,
+              expenses: this.expenses.length,
+              inventory: this.inventory.length
+            },
+            issues
+          };
+          this.integrityReport = report;
+          localStorage.setItem('momo_integrity_report', JSON.stringify(report));
+          if (showResult) {
+            const preview = issues.slice(0, 2).map(issue => issue.message).join('；');
+            this.showToast(
+              report.status === 'ok' ? '✅ 資料完整性檢查通過' : `⚠️ 完整性檢查：${errorCount} 錯誤、${warningCount} 提醒${preview ? `｜${preview}` : ''}`,
+              report.status === 'ok' ? 'success' : 'error',
+              9000
+            );
+          }
+          return report;
+        },
+        async createAutomaticBackup({ force = false, silent = true } = {}) {
+          if (!this.cloudReady || !this.authUser || !this.authSession?.access_token) return false;
+          const today = new Date().toLocaleDateString('sv-SE');
+          const previousDate = this.lastBackupAt ? new Date(this.lastBackupAt).toLocaleDateString('sv-SE') : '';
+          if (!force && previousDate === today) return true;
+
+          this.backupStatus = 'saving';
+          try {
+            const payload = this.buildBackupData();
+            const integrity = this.runIntegrityCheck(false);
+            const createdAt = new Date().toISOString();
+            await this.cloudRequest('data_backups', {
+              method: 'POST',
+              query: 'on_conflict=owner_id,backup_date',
+              body: [{
+                owner_id: this.authUser.id,
+                backup_date: today,
+                schema_version: this.dataSchemaVersion,
+                payload,
+                record_counts: integrity.counts,
+                integrity,
+                created_at: createdAt
+              }],
+              prefer: `${force ? 'resolution=merge-duplicates' : 'resolution=ignore-duplicates'},return=minimal`
+            });
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - 30);
+            await this.cloudRequest('data_backups', {
+              method: 'DELETE',
+              query: `owner_id=eq.${encodeURIComponent(this.authUser.id)}&backup_date=lt.${cutoff.toLocaleDateString('sv-SE')}`,
+              prefer: 'return=minimal'
+            });
+            this.lastBackupAt = createdAt;
+            localStorage.setItem('momo_last_backup_at', createdAt);
+            this.backupStatus = 'ready';
+            if (!silent) this.showToast('🛡️ 雲端備份已建立，並保留最近 30 天');
+            return true;
+          } catch (error) {
+            console.error('Automatic backup failed:', error);
+            this.backupStatus = 'error';
+            if (!silent) this.showToast(`雲端備份失敗：${error.message}`, 'error', 8000);
+            return false;
+          }
+        },
+
+        // --- Data Tools Actions ---
+        exportBackup() {
+          const data = this.buildBackupData();
           const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');

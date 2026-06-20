@@ -102,6 +102,19 @@ create table if not exists public.service_configs (
   unique (owner_id, name)
 );
 
+-- 每位使用者每天保留一份完整快照，供誤刪或資料異常時復原。
+create table if not exists public.data_backups (
+  id bigint generated always as identity primary key,
+  owner_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  backup_date date not null default current_date,
+  schema_version integer not null default 1,
+  payload jsonb not null check (jsonb_typeof(payload) = 'object'),
+  record_counts jsonb not null default '{}'::jsonb check (jsonb_typeof(record_counts) = 'object'),
+  integrity jsonb not null default '{}'::jsonb check (jsonb_typeof(integrity) = 'object'),
+  created_at timestamptz not null default now(),
+  unique (owner_id, backup_date)
+);
+
 create index if not exists customers_owner_name_idx on public.customers (owner_id, name);
 create index if not exists orders_owner_date_idx on public.orders (owner_id, order_date desc);
 create index if not exists orders_customer_id_idx on public.orders (customer_id);
@@ -114,6 +127,7 @@ create index if not exists expenses_owner_date_idx on public.expenses (owner_id,
 create index if not exists inventory_owner_name_idx on public.inventory (owner_id, name);
 create index if not exists crm_profiles_owner_idx on public.crm_profiles (owner_id);
 create index if not exists service_configs_owner_idx on public.service_configs (owner_id);
+create index if not exists data_backups_owner_date_idx on public.data_backups (owner_id, backup_date desc);
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -153,6 +167,7 @@ alter table public.inventory enable row level security;
 alter table public.crm_profiles enable row level security;
 alter table public.closeouts enable row level security;
 alter table public.service_configs enable row level security;
+alter table public.data_backups enable row level security;
 
 -- 可修改資料：登入者只能操作自己的列。
 drop policy if exists customers_owner_all on public.customers;
@@ -176,6 +191,9 @@ using (owner_id = (select auth.uid())) with check (owner_id = (select auth.uid()
 drop policy if exists service_configs_owner_all on public.service_configs;
 create policy service_configs_owner_all on public.service_configs for all to authenticated
 using (owner_id = (select auth.uid())) with check (owner_id = (select auth.uid()));
+drop policy if exists data_backups_owner_all on public.data_backups;
+create policy data_backups_owner_all on public.data_backups for all to authenticated
+using (owner_id = (select auth.uid())) with check (owner_id = (select auth.uid()));
 
 -- 儲值帳本只允許 SELECT/INSERT，資料庫層禁止 UPDATE/DELETE。
 drop policy if exists prepaid_ledger_owner_select on public.prepaid_ledger;
@@ -186,9 +204,9 @@ create policy prepaid_ledger_owner_insert on public.prepaid_ledger for insert to
 with check (owner_id = (select auth.uid()));
 
 revoke all on public.customers, public.orders, public.prepaid_ledger, public.expenses,
-  public.inventory, public.crm_profiles, public.closeouts, public.service_configs from anon;
+  public.inventory, public.crm_profiles, public.closeouts, public.service_configs, public.data_backups from anon;
 grant select, insert, update, delete on public.customers, public.orders, public.expenses,
-  public.inventory, public.crm_profiles, public.closeouts, public.service_configs to authenticated;
+  public.inventory, public.crm_profiles, public.closeouts, public.service_configs, public.data_backups to authenticated;
 grant select, insert on public.prepaid_ledger to authenticated;
 revoke update, delete on public.prepaid_ledger from authenticated;
 grant usage, select on all sequences in schema public to authenticated;
