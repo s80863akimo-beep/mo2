@@ -4867,7 +4867,12 @@
         },
         async initAuth() {
           this.authLoading = true;
-          const candidates = ['http://127.0.0.1:8000', 'https://mo2-z7d1.onrender.com'];
+          const productionApi = 'https://mo2-z7d1.onrender.com';
+          const candidates = [...new Set([
+            window.location.origin === productionApi ? window.location.origin : null,
+            'http://127.0.0.1:8000',
+            productionApi
+          ].filter(Boolean))];
           let config = null;
           for (const baseUrl of candidates) {
             try {
@@ -5518,24 +5523,32 @@
           const queryString = params.length > 0 ? `?${params.join('&')}` : '';
           
           let response;
+          const productionApi = 'https://mo2-z7d1.onrender.com';
+          const primaryApi = this.apiBaseUrl || (window.location.origin === productionApi ? window.location.origin : productionApi);
           try {
-            // 優先嘗試本地後端，設定 1.5 秒超時
+            // 正式站直接使用同網域 API；本機開發時沿用偵測到的本機 API。
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 1500);
+            const timeoutId = setTimeout(() => controller.abort(), primaryApi.includes('127.0.0.1') ? 1500 : 45000);
             
-            response = await fetch(`http://127.0.0.1:8000/api/sync${queryString}`, {
+            response = await fetch(`${primaryApi}/api/sync${queryString}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
               body: JSON.stringify({}),
               signal: controller.signal
             });
             clearTimeout(timeoutId);
-            console.log('成功連線至本機後端同步！');
+            console.log(`成功連線至 ${primaryApi} 同步！`);
           } catch (e) {
+            if (primaryApi === productionApi) {
+              console.error('API Sync Error:', e);
+              this.showToast(`無法連接伺服器，請稍後重試 (${e.message})`, 'error');
+              this.syncing = false;
+              return;
+            }
             console.log('本機後端未啟動或連線超時，切換為 Render 雲端後端...');
             this.showToast('☁️ 連線雲端伺服器，冷啟動約需 30 秒，請稍候...', 'success');
             try {
-              response = await fetch(`https://mo2-z7d1.onrender.com/api/sync${queryString}`, {
+              response = await fetch(`${productionApi}/api/sync${queryString}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
                 body: JSON.stringify({})
