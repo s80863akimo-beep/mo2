@@ -102,6 +102,10 @@ PAYMENT_ALIASES = {
     "混合付款": "現金＋儲值扣款",
     "現金": "現金",
     "cash": "現金",
+    "轉帳": "轉帳",
+    "銀行轉帳": "轉帳",
+    "匯款": "轉帳",
+    "transfer": "轉帳",
     "儲值扣款": "儲值扣款",
     "儲值付款": "儲值扣款",
     "儲值金扣款": "儲值扣款",
@@ -204,6 +208,22 @@ def parse_payment_method(description: str, service_text: str) -> str:
         return "儲值扣款"
     if "儲值進帳" in combined or "儲值入帳" in combined or "儲值專用" in combined:
         return "儲值進帳"
+    if "轉帳" in combined or "匯款" in combined or "transfer" in combined:
+        return "轉帳"
+    return "現金"
+
+
+def parse_topup_channel(description: str, payment_method: str) -> str | None:
+    """儲值進帳的收款管道；舊資料未標示時沿用現金。"""
+    if payment_method != "儲值進帳":
+        return None
+    raw = parse_labeled_value(
+        description,
+        ["Topup Channel", "Payment Channel", "儲值方式", "收款方式", "入帳方式"],
+    )
+    candidate = (raw or description).lower()
+    if "轉帳" in candidate or "匯款" in candidate or "transfer" in candidate:
+        return "轉帳"
     return "現金"
 
 
@@ -444,7 +464,7 @@ def sync_calendar(
 
     WEEKDAY_ZH = ["一", "二", "三", "四", "五", "六", "日"]
 
-    payment_summary = {"現金": 0, "儲值扣款": 0, "儲值進帳": 0}
+    payment_summary = {"現金": 0, "轉帳": 0, "儲值扣款": 0, "儲值進帳": 0}
     selected_month_prefix = f"{y:04d}-{m:02d}"
 
     for event in events:
@@ -475,6 +495,7 @@ def sync_calendar(
         explicit_amount = parse_explicit_amount(desc)
         amount = explicit_amount if explicit_amount is not None else calc_amount(service_text)
         payment_method = parse_payment_method(desc, service_text)
+        topup_channel = parse_topup_channel(desc, payment_method)
         parsed_cash_amount = parse_cash_amount(desc) if payment_method == "現金＋儲值扣款" else None
         cash_amount = min(amount, max(0, parsed_cash_amount or 0))
         prepaid_amount = amount - cash_amount if payment_method == "現金＋儲值扣款" else 0
@@ -498,7 +519,7 @@ def sync_calendar(
             range_revenue += amount
         if payment_method == "現金＋儲值扣款":
             range_cash_in += cash_amount
-        elif payment_method != "儲值扣款":
+        elif payment_method == "現金" or (payment_method == "儲值進帳" and topup_channel == "現金"):
             range_cash_in += amount
         is_selected_month = event_date.startswith(selected_month_prefix)
         if is_selected_month:
@@ -511,7 +532,7 @@ def sync_calendar(
                 selected_month_revenue += amount
             if payment_method == "現金＋儲值扣款":
                 selected_month_cash_in += cash_amount
-            elif payment_method != "儲值扣款":
+            elif payment_method == "現金" or (payment_method == "儲值進帳" and topup_channel == "現金"):
                 selected_month_cash_in += amount
 
         orders.append({
@@ -527,6 +548,7 @@ def sync_calendar(
             "date":          event_date,
             "paymentMethod": payment_method,
             "cashAmount":    cash_amount if payment_method == "現金＋儲值扣款" else None,
+            "topupChannel":  topup_channel,
         })
         diagnostics["orders_parsed"] += 1
 

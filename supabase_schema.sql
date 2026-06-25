@@ -21,8 +21,9 @@ create table if not exists public.orders (
   service_name text not null,
   category text,
   amount bigint not null check (amount >= 0),
-  payment_method text not null check (payment_method in ('現金', '儲值扣款', '現金＋儲值扣款', '儲值進帳')),
+  payment_method text not null check (payment_method in ('現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳')),
   cash_amount bigint check (cash_amount is null or cash_amount >= 0),
+  topup_channel text check (topup_channel is null or topup_channel in ('現金', '轉帳')),
   source text not null default 'manual',
   source_event_id text,
   external_order_id text,
@@ -30,7 +31,8 @@ create table if not exists public.orders (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   check (payment_method = '現金＋儲值扣款' or cash_amount is null),
-  check (payment_method <> '現金＋儲值扣款' or (cash_amount > 0 and cash_amount < amount))
+  check (payment_method <> '現金＋儲值扣款' or (cash_amount > 0 and cash_amount < amount)),
+  check (payment_method = '儲值進帳' or topup_channel is null)
 );
 
 -- append-only：修正與取消都新增 adjustment/reversal，不覆寫舊交易。

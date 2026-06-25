@@ -786,9 +786,9 @@
                 <p class="text-[10px] text-slate-400 font-semibold mt-1">不含封鎖時段與空白姓名</p>
               </div>
               <div class="p-4 sm:p-5">
-                <div class="text-[10px] font-black text-slate-400 tracking-wider">今日已收</div>
+                <div class="text-[10px] font-black text-slate-400 tracking-wider">今日應有現金</div>
                 <div class="mt-1 text-2xl font-black text-slate-800">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div>
-                <p class="text-[10px] text-slate-400 font-semibold mt-1">現金 + 儲值進帳</p>
+                <p class="text-[10px] text-slate-400 font-semibold mt-1">現金服務 + 現金儲值</p>
               </div>
               <div class="p-4 sm:p-5 col-span-2 lg:col-span-1">
                 <div class="text-[10px] font-black text-slate-400 tracking-wider">下一位 / 最近一位</div>
@@ -854,7 +854,7 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 p-4 sm:p-6">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-2.5 p-4 sm:p-6">
               <div class="rounded-2xl bg-orange-50/50 border border-orange-100/50 p-3">
                 <div class="text-[10px] font-black text-slate-400">現金收入</div>
                 <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.cash) }}</div>
@@ -863,9 +863,14 @@
                 <div class="text-[10px] font-black text-slate-400">儲值扣款</div>
                 <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.prepaidOut) }}</div>
               </div>
+              <div class="rounded-2xl bg-indigo-50/60 border border-indigo-100 p-3">
+                <div class="text-[10px] font-black text-slate-400">轉帳收入</div>
+                <div class="text-lg font-black text-indigo-700 mt-1">NT$ {{ formatNumber(todayCloseout.transfer) }}</div>
+              </div>
               <div class="rounded-2xl bg-emerald-50/60 border border-emerald-100 p-3">
                 <div class="text-[10px] font-black text-slate-400">儲值進帳</div>
                 <div class="text-lg font-black text-emerald-700 mt-1">NT$ {{ formatNumber(todayCloseout.prepaidIn) }}</div>
+                <div class="text-[9px] font-bold text-slate-400 mt-1">現金 {{ formatNumber(todayCloseout.cashPrepaidIn) }}／轉帳 {{ formatNumber(todayCloseout.transferPrepaidIn) }}</div>
               </div>
               <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3">
                 <div class="text-[10px] font-black text-slate-400">今日支出</div>
@@ -897,9 +902,9 @@
             <div class="px-4 sm:px-6 pb-4 sm:pb-6">
               <div class="rounded-3xl bg-slate-900 text-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <div class="text-[10px] font-black text-white/50 tracking-wider">今日實收現金</div>
+                  <div class="text-[10px] font-black text-white/50 tracking-wider">今日應有現金</div>
                   <div class="text-2xl font-black mt-1">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div>
-                  <p class="text-[10px] text-white/50 font-semibold mt-1">現金收入 + 儲值進帳，不含儲值扣款</p>
+                  <p class="text-[10px] text-white/50 font-semibold mt-1">只含現金服務與現金儲值，不含轉帳及儲值扣款</p>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-right">
                   <div>
@@ -1226,7 +1231,7 @@
                     <div class="text-2xl font-black text-slate-800 mt-1">{{ todayOrders.length }} <span class="text-xs text-slate-400">筆</span></div>
                   </div>
                   <div class="pl-4">
-                    <div class="text-[10px] font-black text-slate-400">今日實收</div>
+                    <div class="text-[10px] font-black text-slate-400">今日應有現金</div>
                     <div class="text-2xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div>
                   </div>
                 </div>
@@ -1383,7 +1388,8 @@
                   <div class="grid grid-cols-2 gap-2">
                     <div class="p-3 rounded-xl bg-orange-50"><div class="text-[10px] font-black text-slate-400">現金收入</div><div class="text-base font-black text-slate-800">NT$ {{ formatNumber(todayCloseout.cash) }}</div></div>
                     <div class="p-3 rounded-xl bg-sky-50"><div class="text-[10px] font-black text-slate-400">儲值扣款</div><div class="text-base font-black text-slate-800">NT$ {{ formatNumber(todayCloseout.prepaidOut) }}</div></div>
-                    <div class="p-3 rounded-xl bg-emerald-50"><div class="text-[10px] font-black text-slate-400">儲值進帳</div><div class="text-base font-black text-emerald-700">NT$ {{ formatNumber(todayCloseout.prepaidIn) }}</div></div>
+                    <div class="p-3 rounded-xl bg-indigo-50"><div class="text-[10px] font-black text-slate-400">轉帳收入</div><div class="text-base font-black text-indigo-700">NT$ {{ formatNumber(todayCloseout.transfer) }}</div></div>
+                    <div class="p-3 rounded-xl bg-emerald-50"><div class="text-[10px] font-black text-slate-400">儲值進帳</div><div class="text-base font-black text-emerald-700">NT$ {{ formatNumber(todayCloseout.prepaidIn) }}</div><div class="text-[9px] font-bold text-slate-400">現金 {{ formatNumber(todayCloseout.cashPrepaidIn) }}／轉帳 {{ formatNumber(todayCloseout.transferPrepaidIn) }}</div></div>
                     <div class="p-3 rounded-xl bg-slate-50"><div class="text-[10px] font-black text-slate-400">今日支出</div><div class="text-base font-black text-slate-800">NT$ {{ formatNumber(todayCloseout.expenses) }}</div></div>
                   </div>
                   <div class="p-4 rounded-xl bg-slate-900 text-white flex items-center justify-between"><div><div class="text-[10px] font-black text-white/50">應有現金</div><div class="text-2xl font-black">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div></div><div class="text-right"><div class="text-[10px] text-white/50 font-black">服務業績</div><div class="text-sm font-black">NT$ {{ formatNumber(todayCloseout.serviceRevenue) }}</div></div></div>
@@ -1515,6 +1521,13 @@
                     </div>
                   </div>
                 </div>
+                <div v-if="newOrder.paymentMethod === '儲值進帳'" class="p-3 rounded-2xl bg-emerald-50/60 border border-emerald-100">
+                  <label class="block text-xs font-black text-slate-500 mb-1">儲值收款方式</label>
+                  <select v-model="newOrder.topupChannel" required class="w-full jelly-input bg-white border border-emerald-100 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700">
+                    <option value="現金">現金</option>
+                    <option value="轉帳">轉帳</option>
+                  </select>
+                </div>
                 <button type="submit" 
                         class="jelly-btn w-full bg-gradient-to-r from-macaron-peach-400 to-macaron-rose hover:from-macaron-peach-500 hover:to-macaron-rose text-white font-extrabold py-3 rounded-2xl shadow-md hover:shadow-lg transition-all text-sm mt-2">
                   🍭 寫入業績資料庫
@@ -1563,6 +1576,7 @@
                             class="min-h-[38px] bg-white border border-orange-100 rounded-xl px-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-macaron-peach-300">
                       <option value="All">全部付款</option>
                       <option value="現金">💵 現金</option>
+                      <option value="轉帳">🏦 轉帳</option>
                       <option value="儲值扣款">➖ 儲值扣款</option>
                       <option value="現金＋儲值扣款">💵➖ 混合付款</option>
                       <option value="儲值進帳">➕ 儲值進帳</option>
@@ -1650,7 +1664,7 @@
                           </td>
                           <td class="py-3 px-3 text-right font-black">NT$ {{ formatNumber(order.amount) }}</td>
                           <td class="py-3 px-3">
-                            <span class="inline-flex items-center gap-1 text-xs font-black px-2 py-1 rounded-lg" :class="paymentBadgeClass(order.paymentMethod)">{{ getPaymentEmoji(order.paymentMethod) }} {{ order.paymentMethod }}</span>
+                            <span class="inline-flex items-center gap-1 text-xs font-black px-2 py-1 rounded-lg" :class="paymentBadgeClass(order.paymentMethod)">{{ getPaymentEmoji(order.paymentMethod) }} {{ order.paymentMethod }}<template v-if="order.paymentMethod === '儲值進帳'"> · {{ getTopupChannel(order) }}</template></span>
                           </td>
                           <td class="py-3 px-2 text-center text-slate-300">
                             <svg class="w-4 h-4 mx-auto transition-transform" :class="{ 'rotate-180': expandedOrderId === order.id }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
@@ -1668,6 +1682,7 @@
                                 <label class="text-[10px] font-black text-slate-500">現金付款<input type="number" v-model.number="order.cashAmount" @change="saveOrders" min="0" :max="Number(order.amount) || 0" class="mt-1 w-full bg-white border border-sky-100 rounded-lg px-3 py-2 text-sm font-black text-right"></label>
                                 <div class="text-[10px] font-black text-slate-500">儲值扣款<div class="mt-1 min-h-[38px] flex items-center justify-end bg-white border border-sky-100 rounded-lg px-3 text-sm font-black text-sky-700">NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div></div>
                               </div>
+                              <label v-if="order.paymentMethod === '儲值進帳'" class="col-span-2 text-[10px] font-black text-slate-400">儲值收款方式<select v-model="order.topupChannel" @change="saveOrders" class="mt-1 w-full jelly-input bg-white border border-emerald-100 rounded-xl px-3 py-2 text-sm font-bold"><option value="現金">現金</option><option value="轉帳">轉帳</option></select></label>
                               <button @click.stop="deleteOrder(order.id)" class="col-span-2 min-h-[40px] rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-xs font-black jelly-btn">刪除此筆</button>
                             </div>
                           </td>
@@ -1694,7 +1709,7 @@
                         </div>
                         <div class="shrink-0 text-right">
                           <div class="text-sm font-black text-slate-800">NT$ {{ formatNumber(order.amount) }}</div>
-                          <span class="mt-1 inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg" :class="paymentBadgeClass(order.paymentMethod)">{{ getPaymentEmoji(order.paymentMethod) }} {{ order.paymentMethod }}</span>
+                          <span class="mt-1 inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg" :class="paymentBadgeClass(order.paymentMethod)">{{ getPaymentEmoji(order.paymentMethod) }} {{ order.paymentMethod }}<template v-if="order.paymentMethod === '儲值進帳'"> · {{ getTopupChannel(order) }}</template></span>
                         </div>
                       </div>
                       <div v-if="order.paymentMethod === '儲值進帳'" class="mt-2 text-[9px] font-black text-purple-600">非服務業績，不計入上方摘要</div>
@@ -1714,6 +1729,7 @@
                         <label class="text-[10px] font-black text-slate-500">現金付款<input type="number" inputmode="decimal" v-model.number="order.cashAmount" @change="saveOrders" min="0" :max="Number(order.amount) || 0" class="mt-1 w-full bg-white border border-sky-100 rounded-lg px-3 py-2.5 text-sm font-black text-right"></label>
                         <div class="text-[10px] font-black text-slate-500">儲值扣款<div class="mt-1 min-h-[42px] flex items-center justify-end bg-white border border-sky-100 rounded-lg px-3 text-sm font-black text-sky-700">NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div></div>
                       </div>
+                      <label v-if="order.paymentMethod === '儲值進帳'" class="block text-[10px] font-black text-slate-400">儲值收款方式<select v-model="order.topupChannel" @change="saveOrders" class="mt-1 w-full jelly-input bg-white border border-emerald-100 rounded-xl px-3 py-2.5 text-sm font-bold"><option value="現金">現金</option><option value="轉帳">轉帳</option></select></label>
                       <button @click="deleteOrder(order.id)" class="w-full min-h-[42px] rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-xs font-black jelly-btn">刪除此筆業績</button>
                     </div>
                   </div>
@@ -3171,6 +3187,7 @@
           cloudApplying: false,
           cloudBaseline: {},
           cloudConflict: null,
+          cloudTopupChannelSupported: true,
           cloudVersionPollTimer: null,
           authForm: {
             email: '',
@@ -3238,7 +3255,8 @@
             serviceName: '',
             amount: null,
             paymentMethod: '現金',
-            cashAmount: null
+            cashAmount: null,
+            topupChannel: '現金'
           },
           newExpense: {
             date: todayStr,
@@ -3265,7 +3283,7 @@
           ordersFilterPayment:  'All',  // D: 付款方式篩選
           
           // Constants
-          paymentMethods: ['現金', '儲值扣款', '現金＋儲值扣款', '儲值進帳'],
+          paymentMethods: ['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'],
           expenseCategories: ['材料費', '房租', '水電費', '行銷費', '薪資', '其他'],
           formulaFields: [
             { key: 'color', label: '染髮配方 / 色號', placeholder: '例：8N + 8A，1:1' },
@@ -3470,8 +3488,11 @@
         todayCloseout() {
           const totals = {
             cash: 0,
+            transfer: 0,
             prepaidOut: 0,
             prepaidIn: 0,
+            cashPrepaidIn: 0,
+            transferPrepaidIn: 0,
             other: 0,
             serviceRevenue: 0,
             actualCashIn: 0,
@@ -3483,18 +3504,23 @@
           this.todayOrders.forEach(o => {
             const amount = Number(o.amount) || 0;
             if (o.paymentMethod === '現金') totals.cash += amount;
+            else if (o.paymentMethod === '轉帳') totals.transfer += amount;
             else if (o.paymentMethod === '儲值扣款') totals.prepaidOut += amount;
             else if (o.paymentMethod === '現金＋儲值扣款') {
               totals.cash += this.getMixedCashAmount(o);
               totals.prepaidOut += this.getMixedPrepaidAmount(o);
             }
-            else if (o.paymentMethod === '儲值進帳') totals.prepaidIn += amount;
+            else if (o.paymentMethod === '儲值進帳') {
+              totals.prepaidIn += amount;
+              if (this.getTopupChannel(o) === '轉帳') totals.transferPrepaidIn += amount;
+              else totals.cashPrepaidIn += amount;
+            }
             else totals.other += amount;
 
             if (o.paymentMethod !== '儲值進帳') totals.serviceRevenue += amount;
           });
 
-          totals.actualCashIn = totals.cash + totals.prepaidIn + totals.other;
+          totals.actualCashIn = totals.cash + totals.cashPrepaidIn;
           totals.netProfit = totals.serviceRevenue - totals.expenses;
           return totals;
         },
@@ -3521,7 +3547,7 @@
 
         // Reconciliation
         paymentReconciliation() {
-          const dict = { '現金': 0, '儲值扣款': 0, '儲值進帳': 0 };
+          const dict = { '現金': 0, '轉帳': 0, '儲值扣款': 0, '儲值進帳': 0 };
           dict['其他'] = 0; // 舊版付款方式（LinePay、轉帳）歸類於此
           this.filteredOrders.forEach(o => {
             if (o.paymentMethod === '現金＋儲值扣款') {
@@ -4033,9 +4059,10 @@
           });
           const cashIn = yearOrders
             .reduce((sum, o) => {
-              if (o.paymentMethod === '儲值扣款') return sum;
+              if (o.paymentMethod === '儲值扣款' || o.paymentMethod === '轉帳') return sum;
               if (o.paymentMethod === '現金＋儲值扣款') return sum + this.getMixedCashAmount(o);
-              return sum + (Number(o.amount) || 0);
+              if (o.paymentMethod === '儲值進帳') return sum + (this.getTopupChannel(o) === '現金' ? (Number(o.amount) || 0) : 0);
+              return o.paymentMethod === '現金' ? sum + (Number(o.amount) || 0) : sum;
             }, 0);
           const prepaidIn = yearOrders
             .filter(o => o.paymentMethod === '儲值進帳')
@@ -5188,6 +5215,7 @@
           if (!this.authConfig.configured || !this.authSession?.access_token) {
             throw new Error('尚未登入 Supabase');
           }
+          let requestBody = body;
           const execute = () => {
             const headers = this.supabaseHeaders(this.authSession.access_token);
             if (prefer) headers.Prefer = prefer;
@@ -5197,7 +5225,7 @@
               {
                 method,
                 headers,
-                body: body === null ? undefined : JSON.stringify(body)
+                body: requestBody === null ? undefined : JSON.stringify(requestBody)
               },
               20000
             );
@@ -5207,6 +5235,28 @@
           if (response.status === 401 && await this.refreshSupabaseSession()) response = await execute();
           if (!response.ok) {
             const detail = await response.text().catch(() => '');
+            const missingTopupChannel = table === 'orders'
+              && requestBody
+              && /topup_channel/i.test(detail)
+              && /(column|schema cache|could not find|PGRST204)/i.test(detail);
+            if (missingTopupChannel) {
+              this.cloudTopupChannelSupported = false;
+              const stripTopupChannel = row => {
+                const copy = { ...row };
+                delete copy.topup_channel;
+                return copy;
+              };
+              requestBody = Array.isArray(requestBody)
+                ? requestBody.map(stripTopupChannel)
+                : stripTopupChannel(requestBody);
+              response = await execute();
+              if (response.status === 401 && await this.refreshSupabaseSession()) response = await execute();
+              if (response.ok) {
+                if (response.status === 204) return null;
+                const retryText = await response.text();
+                return retryText ? JSON.parse(retryText) : null;
+              }
+            }
             throw new Error(`Supabase ${table} ${method} 失敗 (${response.status})${detail ? `：${detail.slice(0, 180)}` : ''}`);
           }
           if (response.status === 204) return null;
@@ -5355,6 +5405,31 @@
           this.setCloudBaselineRow(table, rows[0]);
           return true;
         },
+        async forceOverwriteCloudRow(table, payload) {
+          const config = this.versionedTableConfigs()[table];
+          const rows = await this.cloudRequest(table, {
+            method: 'POST',
+            query: `on_conflict=${encodeURIComponent(config.conflict)}`,
+            body: [payload],
+            prefer: 'resolution=merge-duplicates,return=representation'
+          });
+          if (!Array.isArray(rows) || !rows.length) {
+            throw new Error('雲端覆蓋失敗，請稍後再試');
+          }
+          this.setCloudBaselineRow(table, rows[0]);
+          return rows[0];
+        },
+        async forceDeleteCloudRow(table, payload) {
+          const config = this.versionedTableConfigs()[table];
+          const filters = [`owner_id=eq.${encodeURIComponent(this.authUser.id)}`];
+          config.keys.forEach(field => filters.push(`${encodeURIComponent(field)}=eq.${encodeURIComponent(payload[field])}`));
+          await this.cloudRequest(table, {
+            method: 'DELETE',
+            query: filters.join('&'),
+            prefer: 'return=minimal'
+          });
+          if (this.cloudBaseline[table]) delete this.cloudBaseline[table][this.cloudRowKey(table, payload)];
+        },
         async syncVersionedChanges(payloads) {
           let changed = 0;
           for (const table of Object.keys(this.versionedTableConfigs())) {
@@ -5433,6 +5508,7 @@
                 amount: Number(row.amount) || 0,
                 paymentMethod: row.payment_method,
                 cashAmount: row.cash_amount === null ? null : Number(row.cash_amount),
+                topupChannel: row.topup_channel || (row.payment_method === '儲值進帳' ? '現金' : null),
                 sourceEventId: row.source_event_id || null,
                 orderId: row.external_order_id || row.id,
                 syncStatus: row.sync_status || 'active',
@@ -5582,6 +5658,7 @@
                 amount,
                 payment_method: paymentMethod,
                 cash_amount: cashAmount,
+                ...(this.cloudTopupChannelSupported ? { topup_channel: paymentMethod === '儲值進帳' ? this.getTopupChannel(order) : null } : {}),
                 source: order.sourceEventId ? 'google_calendar' : 'manual',
                 source_event_id: order.sourceEventId || null,
                 external_order_id: order.orderId || null,
@@ -5773,17 +5850,26 @@
         async keepLocalConflictVersion() {
           const conflict = this.cloudConflict;
           if (!conflict) return;
-          if (conflict.cloudRow) this.setCloudBaselineRow(conflict.table, conflict.cloudRow);
-          else if (this.cloudBaseline[conflict.table]) delete this.cloudBaseline[conflict.table][conflict.key];
-          this.cloudConflict = null;
-          this.cloudStatus = 'synced';
-          if (conflict.operation === 'delete') {
-            const config = this.versionedTableConfigs()[conflict.table];
-            await this.deleteCloudRecord(conflict.table, config.keys[0], conflict.localPayload[config.keys[0]]);
-            this.showToast('已依你的選擇刪除雲端資料');
-          } else {
-            this.queueCloudSync(0);
-            this.showToast('已保留本機版本，正在重新同步');
+          this.cloudStatus = 'syncing';
+          this.cloudMessage = '正在用本機版本覆蓋雲端資料…';
+          try {
+            if (conflict.operation === 'delete') {
+              await this.forceDeleteCloudRow(conflict.table, conflict.localPayload);
+            } else {
+              await this.forceOverwriteCloudRow(conflict.table, conflict.localPayload);
+            }
+            this.cloudConflict = null;
+            this.cloudStatus = 'synced';
+            this.cloudLastSync = new Date().toISOString();
+            localStorage.setItem('momo_cloud_last_sync', this.cloudLastSync);
+            this.cloudMessage = `已用本機版本覆蓋雲端 · ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
+            this.showToast('已保留本機版本並覆蓋雲端');
+          } catch (error) {
+            console.error('Cloud conflict overwrite failed:', error);
+            this.cloudConflict = conflict;
+            this.cloudStatus = 'conflict';
+            this.cloudMessage = '覆蓋雲端失敗，請確認網路後再試';
+            this.showToast(`覆蓋雲端失敗：${error.message}`, 'error', 7000);
           }
         },
         async migrateLocalDataToSupabase() {
@@ -5996,6 +6082,9 @@
 
             // 4. Payment method: default "現金"
             const paymentMethod = raw.paymentMethod || '現金';
+            const topupChannel = paymentMethod === '儲值進帳'
+              ? (raw.topupChannel === '轉帳' ? '轉帳' : '現金')
+              : null;
 
             // Extract amount & date
             const amount = Number(raw.amount) || 0;
@@ -6009,7 +6098,7 @@
               return;
             }
             if (!sourceEventId) warningCount++;
-            if (amount <= 0 || !['現金', '儲值扣款', '現金＋儲值扣款', '儲值進帳'].includes(paymentMethod)) warningCount++;
+            if (amount <= 0 || !['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'].includes(paymentMethod)) warningCount++;
             if (paymentMethod === '現金＋儲值扣款' && (cashAmount <= 0 || cashAmount >= amount)) warningCount++;
             const syncedCustomer = this.findOrCreateCustomer(customerName, gender);
             if (!syncedCustomer) {
@@ -6042,6 +6131,7 @@
                 amount,
                 paymentMethod,
                 cashAmount: paymentMethod === '現金＋儲值扣款' ? cashAmount : null,
+                topupChannel,
                 source: 'google_calendar',
                 sourceEventId: null,
                 orderId,
@@ -6074,6 +6164,7 @@
               amount,
               paymentMethod,
               cashAmount: paymentMethod === '現金＋儲值扣款' ? cashAmount : null,
+              topupChannel,
               source: 'google_calendar',
               sourceEventId: sourceEventId || null,
               orderId,
@@ -6090,7 +6181,7 @@
               if (sourceEventId) bySourceEventId.set(sourceEventId, newOrder);
               mergedCount++;
             } else {
-              const changed = ['date', 'customerId', 'customerName', 'gender', 'serviceName', 'amount', 'paymentMethod', 'cashAmount', 'syncStatus']
+              const changed = ['date', 'customerId', 'customerName', 'gender', 'serviceName', 'amount', 'paymentMethod', 'cashAmount', 'topupChannel', 'syncStatus']
                 .some(key => existing[key] !== syncedFields[key]);
               Object.assign(existing, syncedFields);
               if (sourceEventId) bySourceEventId.set(sourceEventId, existing);
@@ -6149,6 +6240,7 @@
           this.newOrder.amount = null;
           this.newOrder.paymentMethod = '現金';
           this.newOrder.cashAmount = null;
+          this.newOrder.topupChannel = '現金';
           this.showMobileAddOrderForm = true;
           this.activeTab = 'orders';
           this.ordersSearchQuery = cust.name;
@@ -6167,6 +6259,7 @@
           this.newOrder.amount = null;
           this.newOrder.paymentMethod = '儲值進帳';
           this.newOrder.cashAmount = null;
+          this.newOrder.topupChannel = '現金';
           this.showMobileAddOrderForm = true;
           this.activeTab = 'orders';
           this.ordersSearchQuery = cust.name;
@@ -6339,7 +6432,8 @@
             serviceName: this.newOrder.serviceName.trim(),
             amount: totalAmount,
             paymentMethod: this.newOrder.paymentMethod,
-            cashAmount: this.newOrder.paymentMethod === '現金＋儲值扣款' ? cashAmount : null
+            cashAmount: this.newOrder.paymentMethod === '現金＋儲值扣款' ? cashAmount : null,
+            topupChannel: this.newOrder.paymentMethod === '儲值進帳' ? this.newOrder.topupChannel : null
           });
 
           this.saveOrders();
@@ -6353,6 +6447,7 @@
           this.newOrder.amount = null;
           this.newOrder.paymentMethod = '現金';
           this.newOrder.cashAmount = null;
+          this.newOrder.topupChannel = '現金';
           
           // 新增完成後：手機收起表單，桌機切換到業績明細確認
           this.showMobileAddOrderForm = false;
@@ -6536,7 +6631,8 @@
             if (!customerIds.has(order.customerId)) addIssue('error', 'order_orphan_customer', `業績 ${order.id || '未知'} 找不到對應顧客`);
             if (!validDate(order.date)) addIssue('error', 'order_invalid_date', `業績 ${order.id || '未知'} 日期格式錯誤`);
             if (!Number.isFinite(Number(order.amount)) || Number(order.amount) < 0) addIssue('error', 'order_invalid_amount', `業績 ${order.id || '未知'} 金額錯誤`);
-            if (!['現金', '儲值扣款', '現金＋儲值扣款', '儲值進帳'].includes(order.paymentMethod)) addIssue('error', 'order_invalid_payment', `業績 ${order.id || '未知'} 付款方式錯誤`);
+            if (!['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'].includes(order.paymentMethod)) addIssue('error', 'order_invalid_payment', `業績 ${order.id || '未知'} 付款方式錯誤`);
+            if (order.paymentMethod === '儲值進帳' && !['現金', '轉帳'].includes(this.getTopupChannel(order))) addIssue('error', 'order_invalid_topup_channel', `業績 ${order.id || '未知'} 儲值收款方式錯誤`);
             if (order.paymentMethod === '現金＋儲值扣款' && !(Number(order.cashAmount) > 0 && Number(order.cashAmount) < Number(order.amount))) {
               addIssue('error', 'order_invalid_mixed_payment', `業績 ${order.id || '未知'} 混合付款金額錯誤`);
             }
@@ -6692,7 +6788,7 @@
           event.target.value = '';
         },
         exportCSV() {
-          const headers = ['日期', '顧客姓名', '性別', '服務項目', '服務分類', '金額(NT$)', '付款方式', '現金金額(NT$)', '儲值扣款(NT$)', '預估分鐘', '每小時產值'];
+          const headers = ['日期', '顧客姓名', '性別', '服務項目', '服務分類', '金額(NT$)', '付款方式', '儲值收款方式', '現金金額(NT$)', '儲值扣款(NT$)', '預估分鐘', '每小時產值'];
           const rows = this.filteredOrders.map(o => [
             o.date,
             o.customerName,
@@ -6701,6 +6797,7 @@
             o.category || this.classifyCategory(o.serviceName),
             o.amount,
             o.paymentMethod,
+            o.paymentMethod === '儲值進帳' ? this.getTopupChannel(o) : '',
             o.paymentMethod === '現金＋儲值扣款' ? this.getMixedCashAmount(o) : (o.paymentMethod === '現金' ? Number(o.amount) || 0 : 0),
             o.paymentMethod === '現金＋儲值扣款' ? this.getMixedPrepaidAmount(o) : (o.paymentMethod === '儲值扣款' ? Number(o.amount) || 0 : 0),
             this.getServiceMinutes(o.serviceName) || '',
@@ -6756,6 +6853,9 @@
         getMixedPrepaidAmount(order) {
           return Math.max(0, (Number(order && order.amount) || 0) - this.getMixedCashAmount(order));
         },
+        getTopupChannel(order) {
+          return order && order.paymentMethod === '儲值進帳' && order.topupChannel === '轉帳' ? '轉帳' : '現金';
+        },
         getWeekday(dateStr) {
           const days = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
           const d = new Date(dateStr + 'T00:00:00');
@@ -6778,6 +6878,7 @@
         paymentBadgeClass(method) {
           switch (method) {
             case '現金': return 'bg-emerald-50 text-emerald-700';
+            case '轉帳': return 'bg-indigo-50 text-indigo-700';
             case '儲值扣款': return 'bg-sky-50 text-sky-700';
             case '現金＋儲值扣款': return 'bg-amber-50 text-amber-700';
             case '儲值進帳': return 'bg-purple-50 text-purple-700';

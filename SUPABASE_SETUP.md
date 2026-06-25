@@ -1,6 +1,7 @@
 # Supabase 設定步驟
 
 1. 在 Supabase 專案的 **SQL Editor** 執行 `supabase_schema.sql`。
+   - 已經建立過舊版資料表時，再執行 `supabase_payment_channel_migration.sql`，加入轉帳與儲值收款方式欄位。
 2. 到 **Authentication → Users**，確認管理員 Email 已存在。
 3. 到專案 API 設定取得：
    - Project URL
