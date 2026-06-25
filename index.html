@@ -5369,7 +5369,7 @@
           };
           return error;
         },
-        async syncVersionedRow(table, payload) {
+        async syncVersionedRow(table, payload, baselineRefreshed = false) {
           const config = this.versionedTableConfigs()[table];
           const key = this.cloudRowKey(table, payload);
           const baseline = this.cloudBaseline[table]?.[key];
@@ -5400,6 +5400,16 @@
           });
           if (!Array.isArray(rows) || !rows.length) {
             const cloudRow = await this.fetchCurrentCloudRow(table, payload);
+            const cloudFingerprint = this.cloudFingerprint(cloudRow);
+            const payloadFingerprint = this.cloudFingerprint(payload);
+            if (cloudRow && baseline && !baselineRefreshed && cloudFingerprint === baseline.fingerprint) {
+              this.setCloudBaselineRow(table, cloudRow);
+              return this.syncVersionedRow(table, payload, true);
+            }
+            if (cloudRow && cloudFingerprint === payloadFingerprint) {
+              this.setCloudBaselineRow(table, cloudRow);
+              return false;
+            }
             throw this.makeVersionConflict(table, payload, cloudRow);
           }
           this.setCloudBaselineRow(table, rows[0]);
