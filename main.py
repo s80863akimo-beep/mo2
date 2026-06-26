@@ -28,7 +28,8 @@ SUPABASE_PUBLISHABLE_KEY = os.getenv(
     "SUPABASE_PUBLISHABLE_KEY",
     os.getenv("SUPABASE_ANON_KEY", ""),
 )
-REQUIRE_AUTH = os.getenv("REQUIRE_AUTH", "false").lower() == "true"
+# Make scheduled sync must stay usable without a short-lived Supabase user token.
+REQUIRE_AUTH = False
 
 
 def supabase_auth_configured() -> bool:
