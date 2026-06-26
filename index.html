@@ -1254,6 +1254,16 @@
             </div>
           </section>
 
+          <section v-if="todayCloseoutRecord" class="border border-emerald-100 bg-emerald-50 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-xs font-black text-emerald-700">今日打烊摘要已建立</div>
+              <div class="text-[10px] text-slate-500 font-semibold truncate">
+                應有現金 NT$ {{ formatNumber(todayCloseoutRecord.expectedCash) }} · 實點 NT$ {{ formatNumber(todayCloseoutRecord.countedCash) }} · 差額 {{ todayCloseoutRecord.difference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutRecord.difference) }}
+              </div>
+            </div>
+            <button @click="copyCloseoutSummary" class="min-h-[38px] px-3 rounded-xl bg-white border border-emerald-100 text-[11px] font-black text-emerald-700 whitespace-nowrap">複製摘要</button>
+          </section>
+
           <section v-if="syncError" class="border border-rose-200 bg-rose-50 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
             <div class="min-w-0">
               <div class="text-xs font-black text-rose-700">{{ syncError.title }}</div>
@@ -1271,6 +1281,27 @@
             <span class="text-[10px] font-black whitespace-nowrap" :class="syncReport.warnings || syncReport.skipped ? 'text-amber-700' : 'text-emerald-700'">
               {{ syncReport.period }}
             </span>
+          </section>
+
+          <section class="border rounded-xl px-4 py-3 space-y-3"
+                   :class="operationalAnomalySummary.blockers ? 'bg-rose-50 border-rose-100' : operationalAnomalySummary.total ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'">
+            <div class="flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-xs font-black text-slate-700">營運異常檢查</div>
+                <div class="text-[10px] font-semibold truncate" :class="operationalAnomalySummary.total ? 'text-amber-700' : 'text-emerald-700'">
+                  {{ operationalAnomalySummary.total ? `${operationalAnomalySummary.total} 筆待確認，會影響報表或打烊` : '目前沒有高風險異常' }}
+                </div>
+              </div>
+              <button @click="runIntegrityCheck(true)" class="min-h-[36px] px-3 rounded-xl bg-white border border-orange-100 text-[11px] font-black text-slate-600 whitespace-nowrap">重新檢查</button>
+            </div>
+            <div v-if="operationalAnomalySummary.items.length" class="space-y-2">
+              <button v-for="item in operationalAnomalySummary.items" :key="item.code + item.message"
+                      @click="goToAnomaly(item)"
+                      class="w-full text-left rounded-xl bg-white/80 border border-white px-3 py-2 text-[11px] font-bold text-slate-600">
+                <span class="font-black" :class="item.severity === 'error' ? 'text-rose-600' : 'text-amber-600'">{{ item.severity === 'error' ? '需修正' : '需確認' }}</span>
+                <span class="ml-1">{{ item.message }}</span>
+              </button>
+            </div>
           </section>
 
           <!-- Monthly operations -->
@@ -1397,6 +1428,7 @@
                   <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">打烊備註</span><input type="text" v-model="closeoutNote" placeholder="找零或臨時採買" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-semibold"></label>
                   <div v-if="todayCloseoutDifference !== null" class="rounded-xl px-3 py-2 text-xs font-black flex justify-between" :class="todayCloseoutDifference === 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'"><span>{{ todayCloseoutDifference === 0 ? '帳實相符' : '帳實差額' }}</span><span>{{ todayCloseoutDifference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutDifference) }}</span></div>
                   <button @click="completeCloseoutFromSheet" class="w-full min-h-[50px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ todayCloseoutRecord ? '更新打烊紀錄' : '完成打烊' }}</button>
+                  <button v-if="todayCloseoutRecord" @click="copyCloseoutSummary" class="w-full min-h-[46px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-black">複製打烊摘要</button>
                 </div>
               </div>
             </div>
@@ -3188,6 +3220,7 @@
           cloudBaseline: {},
           cloudConflict: null,
           cloudTopupChannelSupported: true,
+          cloudCloseoutBreakdownSupported: true,
           cloudVersionPollTimer: null,
           authForm: {
             email: '',
@@ -3530,6 +3563,13 @@
         },
         todayCloseoutRecord() {
           return this.closeoutRecords[new Date().toLocaleDateString('sv-SE')] || null;
+        },
+        operationalAnomalySummary() {
+          const all = this.collectOperationalIssues();
+          const items = all.slice(0, 6);
+          const total = all.length;
+          const blockers = all.filter(item => item.severity === 'error').length;
+          return { items, total, blockers };
         },
 
         // KPI Calculations（排除儲值進帳，避免業績虛高）
@@ -4748,6 +4788,79 @@
           localStorage.setItem('momo_crmFormulas', JSON.stringify(this.crmFormulas));
           this.queueCloudSync();
         },
+        collectOperationalIssues() {
+          const issues = [];
+          const push = (severity, code, message, target = {}) => {
+            if (issues.length < 100) issues.push({ severity, code, message, ...target });
+          };
+          const orderKeyCounts = {};
+          const today = new Date().toLocaleDateString('sv-SE');
+
+          this.orders.forEach(order => {
+            if (!order || !this.isOrderActive(order) || this.isBlockedSlot(order.customerName)) return;
+            const amount = Number(order.amount) || 0;
+            const label = `${order.date || '未填日期'} ${order.customerName || '未知顧客'} ${order.serviceName || '未填服務'}`;
+            const target = { tab: 'orders', orderId: order.id, customerId: order.customerId };
+            const key = [order.date, order.customerId || this.normalizeCustomerName(order.customerName), order.serviceName, amount].join('|');
+            orderKeyCounts[key] = (orderKeyCounts[key] || 0) + 1;
+
+            if (!order.paymentMethod) push('error', 'order_missing_payment', `${label} 缺少付款方式`, target);
+            if (amount <= 0) push('error', 'order_zero_amount', `${label} 金額為 0，會影響報表`, target);
+            if (order.paymentMethod === '現金＋儲值扣款' && !(Number(order.cashAmount) > 0 && Number(order.cashAmount) < amount)) {
+              push('error', 'order_invalid_mixed_payment', `${label} 混合付款現金金額不完整`, target);
+            }
+            if (order.paymentMethod === '儲值進帳' && !['現金', '轉帳'].includes(this.getTopupChannel(order))) {
+              push('error', 'order_invalid_topup_channel', `${label} 儲值進帳缺少收款方式`, target);
+            }
+            if (order.paymentMethod !== '儲值進帳' && /儲值進帳|儲值入帳|充值|加值/.test(String(order.serviceName || ''))) {
+              push('warning', 'topup_marked_as_service', `${label} 看起來像儲值，請確認付款方式`, target);
+            }
+            if (order.paymentMethod === '現金' && order.source === 'google_calendar' && !order.orderId && !order.sourceEventId) {
+              push('warning', 'calendar_payment_default_cash', `${label} 可能是行事曆未標付款，系統預設現金`, target);
+            }
+          });
+
+          Object.entries(orderKeyCounts).forEach(([key, count]) => {
+            if (count > 1) {
+              const [date, customerRef, serviceName] = key.split('|');
+              push('warning', 'duplicate_same_day_order', `${date} ${customerRef} ${serviceName} 可能重複 ${count} 筆`, { tab: 'orders' });
+            }
+          });
+
+          Object.entries(this.prepaidTotalsByCustomer || {}).forEach(([customerId, totals]) => {
+            if (Number(totals.balance) < 0) {
+              const customer = this.customerMap[customerId];
+              push('warning', 'negative_prepaid_balance', `${customer?.name || customerId} 儲值餘額為負數`, { tab: 'crm', customerId });
+            }
+          });
+
+          if (this.todayOrders.length && !this.todayCloseoutRecord) {
+            push('warning', 'today_closeout_missing', `${today} 尚未完成打烊對帳`, { tab: 'dashboard' });
+          }
+          if (this.todayCloseoutRecord && Number(this.todayCloseoutRecord.difference || 0) !== 0 && !String(this.todayCloseoutRecord.note || '').trim()) {
+            push('warning', 'closeout_difference_no_note', `${today} 打烊有差額但未填備註`, { tab: 'dashboard' });
+          }
+
+          return issues;
+        },
+        goToAnomaly(issue) {
+          if (!issue) return;
+          if (issue.tab === 'crm' && issue.customerId) {
+            this.goToCustomerCRM(issue.customerId);
+            return;
+          }
+          if (issue.tab === 'orders') {
+            this.activeTab = 'orders';
+            this.ordersCustomerHistoryId = null;
+            this.ordersFilterCategory = 'All';
+            this.ordersFilterPayment = 'All';
+            if (issue.orderId) this.expandedOrderId = issue.orderId;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+          }
+          this.activeTab = 'dashboard';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
         saveTodayCloseout() {
           if (this.closeoutCashCount === null || this.closeoutCashCount === '') {
             this.showToast('請先輸入實際盤點現金', 'error');
@@ -4759,8 +4872,16 @@
             expectedCash: this.todayCloseout.actualCashIn,
             countedCash: Number(this.closeoutCashCount),
             difference: this.todayCloseoutDifference,
+            cash: this.todayCloseout.cash,
+            transfer: this.todayCloseout.transfer,
+            prepaidOut: this.todayCloseout.prepaidOut,
+            prepaidIn: this.todayCloseout.prepaidIn,
+            cashPrepaidIn: this.todayCloseout.cashPrepaidIn,
+            transferPrepaidIn: this.todayCloseout.transferPrepaidIn,
             serviceRevenue: this.todayCloseout.serviceRevenue,
             expenses: this.todayCloseout.expenses,
+            netProfit: this.todayCloseout.netProfit,
+            ordersCount: this.todayCloseout.ordersCount,
             note: this.closeoutNote.trim(),
             completedAt: new Date().toISOString()
           };
@@ -4777,10 +4898,29 @@
           this.saveTodayCloseout();
           this.showCloseoutSheet = false;
         },
-        copyFollowupMessage(cust) {
-          const text = `${cust.name}你好，我是摸摸頭 momohair。距離上次${cust.lastService || '整理頭髮'}已經一段時間，想提醒你可以安排下一次整理，有需要再告訴我適合的時間。`;
+        buildCloseoutSummary(record = this.todayCloseoutRecord) {
+          if (!record) return '';
+          const diff = Number(record.difference) || 0;
+          const line = [
+            `摸摸頭 momohair 打烊摘要 ${record.date}`,
+            `服務業績：NT$ ${this.formatNumber(record.serviceRevenue)}`,
+            `現金收入：NT$ ${this.formatNumber(record.cash || 0)}`,
+            `轉帳收入：NT$ ${this.formatNumber(record.transfer || 0)}`,
+            `儲值扣款：NT$ ${this.formatNumber(record.prepaidOut || 0)}`,
+            `儲值進帳：NT$ ${this.formatNumber(record.prepaidIn || 0)}（現金 ${this.formatNumber(record.cashPrepaidIn || 0)}／轉帳 ${this.formatNumber(record.transferPrepaidIn || 0)}）`,
+            `今日支出：NT$ ${this.formatNumber(record.expenses)}`,
+            `工作室淨利：NT$ ${this.formatNumber(record.netProfit ?? ((record.serviceRevenue || 0) - (record.expenses || 0)))}`,
+            `應有現金：NT$ ${this.formatNumber(record.expectedCash)}`,
+            `實點現金：NT$ ${this.formatNumber(record.countedCash)}`,
+            `帳實差額：${diff > 0 ? '+' : ''}NT$ ${this.formatNumber(diff)}`,
+            `服務筆數：${record.ordersCount || 0} 筆`
+          ];
+          if (record.note) line.push(`備註：${record.note}`);
+          return line.join('\n');
+        },
+        copyTextToClipboard(text, successMessage = '已複製') {
           if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(() => this.showToast('回訪訊息已複製'));
+            navigator.clipboard.writeText(text).then(() => this.showToast(successMessage));
           } else {
             const input = document.createElement('textarea');
             input.value = text;
@@ -4788,8 +4928,20 @@
             input.select();
             document.execCommand('copy');
             input.remove();
-            this.showToast('回訪訊息已複製');
+            this.showToast(successMessage);
           }
+        },
+        copyCloseoutSummary() {
+          const text = this.buildCloseoutSummary();
+          if (!text) {
+            this.showToast('尚未建立今日打烊摘要', 'error');
+            return;
+          }
+          this.copyTextToClipboard(text, '打烊摘要已複製');
+        },
+        copyFollowupMessage(cust) {
+          const text = `${cust.name}你好，我是摸摸頭 momohair。距離上次${cust.lastService || '整理頭髮'}已經一段時間，想提醒你可以安排下一次整理，有需要再告訴我適合的時間。`;
+          this.copyTextToClipboard(text, '回訪訊息已複製');
         },
         dismissIosGuide() {
           this.showIosGuide = false;
@@ -5239,6 +5391,11 @@
               && requestBody
               && /topup_channel/i.test(detail)
               && /(column|schema cache|could not find|PGRST204)/i.test(detail);
+            const closeoutBreakdownColumns = ['cash', 'transfer', 'prepaid_out', 'prepaid_in', 'cash_prepaid_in', 'transfer_prepaid_in', 'net_profit', 'orders_count'];
+            const missingCloseoutBreakdown = table === 'closeouts'
+              && requestBody
+              && closeoutBreakdownColumns.some(column => detail.includes(column))
+              && /(column|schema cache|could not find|PGRST204)/i.test(detail);
             if (missingTopupChannel) {
               this.cloudTopupChannelSupported = false;
               const stripTopupChannel = row => {
@@ -5249,6 +5406,24 @@
               requestBody = Array.isArray(requestBody)
                 ? requestBody.map(stripTopupChannel)
                 : stripTopupChannel(requestBody);
+              response = await execute();
+              if (response.status === 401 && await this.refreshSupabaseSession()) response = await execute();
+              if (response.ok) {
+                if (response.status === 204) return null;
+                const retryText = await response.text();
+                return retryText ? JSON.parse(retryText) : null;
+              }
+            }
+            if (missingCloseoutBreakdown) {
+              this.cloudCloseoutBreakdownSupported = false;
+              const stripCloseoutBreakdown = row => {
+                const copy = { ...row };
+                closeoutBreakdownColumns.forEach(column => delete copy[column]);
+                return copy;
+              };
+              requestBody = Array.isArray(requestBody)
+                ? requestBody.map(stripCloseoutBreakdown)
+                : stripCloseoutBreakdown(requestBody);
               response = await execute();
               if (response.status === 401 && await this.refreshSupabaseSession()) response = await execute();
               if (response.ok) {
@@ -5567,8 +5742,16 @@
               expectedCash: Number(row.expected_cash) || 0,
               countedCash: Number(row.counted_cash) || 0,
               difference: Number(row.difference) || 0,
+              cash: Number(row.cash) || 0,
+              transfer: Number(row.transfer) || 0,
+              prepaidOut: Number(row.prepaid_out) || 0,
+              prepaidIn: Number(row.prepaid_in) || 0,
+              cashPrepaidIn: Number(row.cash_prepaid_in) || 0,
+              transferPrepaidIn: Number(row.transfer_prepaid_in) || 0,
               serviceRevenue: Number(row.service_revenue) || 0,
               expenses: Number(row.expenses) || 0,
+              netProfit: Number(row.net_profit) || 0,
+              ordersCount: Number(row.orders_count) || 0,
               note: row.note || '',
               completedAt: row.completed_at,
               version: Number(row.version) || 1
@@ -5724,6 +5907,16 @@
               expected_cash: Math.round(Number(record.expectedCash) || 0),
               counted_cash: Math.round(Number(record.countedCash) || 0),
               difference: Math.round(Number(record.difference) || 0),
+              ...(this.cloudCloseoutBreakdownSupported ? {
+                cash: Math.round(Number(record.cash) || 0),
+                transfer: Math.round(Number(record.transfer) || 0),
+                prepaid_out: Math.round(Number(record.prepaidOut) || 0),
+                prepaid_in: Math.round(Number(record.prepaidIn) || 0),
+                cash_prepaid_in: Math.round(Number(record.cashPrepaidIn) || 0),
+                transfer_prepaid_in: Math.round(Number(record.transferPrepaidIn) || 0),
+                net_profit: Math.round(Number(record.netProfit) || 0),
+                orders_count: Math.max(0, Math.round(Number(record.ordersCount) || 0))
+              } : {}),
               service_revenue: Math.round(Number(record.serviceRevenue) || 0),
               expenses: Math.round(Number(record.expenses) || 0),
               note: record.note || '',
@@ -6612,8 +6805,8 @@
         },
         runIntegrityCheck(showResult = true) {
           const issues = [];
-          const addIssue = (severity, code, message) => {
-            if (issues.length < 100) issues.push({ severity, code, message });
+          const addIssue = (severity, code, message, extra = {}) => {
+            if (issues.length < 100) issues.push({ severity, code, message, ...extra });
           };
           const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))
             && !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
@@ -6668,7 +6861,11 @@
             if (!customerIds.has(customerId)) addIssue('warning', 'orphan_crm_note', `CRM 備註找不到顧客：${customerId}`);
           });
           Object.entries(this.prepaidTotalsByCustomer || {}).forEach(([customerId, totals]) => {
-            if (Number(totals.balance) < 0) addIssue('warning', 'negative_prepaid_balance', `${this.customerMap[customerId]?.name || customerId} 的儲值餘額為負數`);
+            if (Number(totals.balance) < 0) addIssue('warning', 'negative_prepaid_balance', `${this.customerMap[customerId]?.name || customerId} 儲值餘額為負數`, { tab: 'crm', customerId });
+          });
+          this.collectOperationalIssues().forEach(issue => {
+            const exists = issues.some(existing => existing.code === issue.code && existing.message === issue.message);
+            if (!exists) addIssue(issue.severity, issue.code, issue.message, issue);
           });
 
           const errorCount = issues.filter(issue => issue.severity === 'error').length;
