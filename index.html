@@ -860,13 +860,13 @@
                 <h2 class="text-base sm:text-xl font-black text-slate-800 flex items-center gap-2">
                   <span>🌙</span> 每日打烊對帳
                 </h2>
-                <p class="text-[10px] sm:text-xs text-slate-400 font-bold mt-1">依今日業績自動拆成現金、儲值扣款、儲值進帳與實收現金</p>
+                <p class="text-[10px] sm:text-xs text-slate-400 font-bold mt-1">可選日期補打烊，自動拆成現金、儲值扣款、儲值進帳與應有現金</p>
               </div>
               <div class="text-left sm:text-right">
-                <div class="text-[10px] font-black text-slate-400">今日工作室淨利</div>
+                <div class="text-[10px] font-black text-slate-400">{{ selectedCloseoutDateLabel }} 工作室淨利</div>
                 <div class="text-lg font-black"
-                     :class="todayCloseout.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-500'">
-                  {{ todayCloseout.netProfit >= 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseout.netProfit) }}
+                     :class="selectedCloseout.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-500'">
+                  {{ selectedCloseout.netProfit >= 0 ? '+' : '' }}NT$ {{ formatNumber(selectedCloseout.netProfit) }}
                 </div>
               </div>
             </div>
@@ -874,28 +874,32 @@
             <div class="grid grid-cols-2 md:grid-cols-5 gap-2.5 p-4 sm:p-6">
               <div class="rounded-2xl bg-orange-50/50 border border-orange-100/50 p-3">
                 <div class="text-[10px] font-black text-slate-400">現金收入</div>
-                <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.cash) }}</div>
+                <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(selectedCloseout.cash) }}</div>
               </div>
               <div class="rounded-2xl bg-sky-50/60 border border-sky-100 p-3">
                 <div class="text-[10px] font-black text-slate-400">儲值扣款</div>
-                <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.prepaidOut) }}</div>
+                <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(selectedCloseout.prepaidOut) }}</div>
               </div>
               <div class="rounded-2xl bg-indigo-50/60 border border-indigo-100 p-3">
                 <div class="text-[10px] font-black text-slate-400">轉帳收入</div>
-                <div class="text-lg font-black text-indigo-700 mt-1">NT$ {{ formatNumber(todayCloseout.transfer) }}</div>
+                <div class="text-lg font-black text-indigo-700 mt-1">NT$ {{ formatNumber(selectedCloseout.transfer) }}</div>
               </div>
               <div class="rounded-2xl bg-emerald-50/60 border border-emerald-100 p-3">
                 <div class="text-[10px] font-black text-slate-400">儲值進帳</div>
-                <div class="text-lg font-black text-emerald-700 mt-1">NT$ {{ formatNumber(todayCloseout.prepaidIn) }}</div>
-                <div class="text-[9px] font-bold text-slate-400 mt-1">現金 {{ formatNumber(todayCloseout.cashPrepaidIn) }}／轉帳 {{ formatNumber(todayCloseout.transferPrepaidIn) }}</div>
+                <div class="text-lg font-black text-emerald-700 mt-1">NT$ {{ formatNumber(selectedCloseout.prepaidIn) }}</div>
+                <div class="text-[9px] font-bold text-slate-400 mt-1">現金 {{ formatNumber(selectedCloseout.cashPrepaidIn) }}／轉帳 {{ formatNumber(selectedCloseout.transferPrepaidIn) }}</div>
               </div>
               <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3">
-                <div class="text-[10px] font-black text-slate-400">今日支出</div>
-                <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.expenses) }}</div>
+                <div class="text-[10px] font-black text-slate-400">選定日支出</div>
+                <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(selectedCloseout.expenses) }}</div>
               </div>
             </div>
 
             <div class="px-4 sm:px-6 pb-4 grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2.5 items-end">
+              <label class="block">
+                <span class="block text-[10px] font-black text-slate-400 mb-1">打烊日期</span>
+                <input type="date" v-model="closeoutDate" @change="loadCloseoutFormForDate" class="jelly-input w-full min-h-[44px] rounded-2xl border border-orange-100 bg-white px-4 text-sm font-black text-slate-700">
+              </label>
               <label class="block">
                 <span class="block text-[10px] font-black text-slate-400 mb-1">實際盤點現金</span>
                 <input type="number" inputmode="numeric" v-model.number="closeoutCashCount" placeholder="輸入抽屜與現金總額"
@@ -906,8 +910,8 @@
                 <input type="text" v-model="closeoutNote" placeholder="例如：找零、臨時採買"
                        class="jelly-input w-full min-h-[44px] rounded-2xl border border-orange-100 bg-white px-4 text-sm font-semibold text-slate-700">
               </label>
-              <button @click="saveTodayCloseout" class="jelly-btn min-h-[44px] px-5 rounded-2xl bg-slate-800 text-white text-xs font-black">
-                {{ todayCloseoutRecord ? '更新打烊' : '完成打烊' }}
+              <button @click="saveSelectedCloseout" class="jelly-btn min-h-[44px] px-5 rounded-2xl bg-slate-800 text-white text-xs font-black">
+                {{ selectedCloseoutRecord ? '更新打烊' : '完成打烊' }}
               </button>
               <div v-if="todayCloseoutDifference !== null" class="sm:col-span-3 rounded-2xl px-3 py-2 text-xs font-black flex justify-between"
                    :class="todayCloseoutDifference === 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'">
@@ -919,18 +923,18 @@
             <div class="px-4 sm:px-6 pb-4 sm:pb-6">
               <div class="rounded-3xl bg-slate-900 text-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <div class="text-[10px] font-black text-white/50 tracking-wider">今日應有現金</div>
-                  <div class="text-2xl font-black mt-1">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div>
+                  <div class="text-[10px] font-black text-white/50 tracking-wider">{{ selectedCloseoutDateLabel }} 應有現金</div>
+                  <div class="text-2xl font-black mt-1">NT$ {{ formatNumber(selectedCloseout.actualCashIn) }}</div>
                   <p class="text-[10px] text-white/50 font-semibold mt-1">只含現金服務與現金儲值，不含轉帳及儲值扣款</p>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-right">
                   <div>
                     <div class="text-[10px] text-white/50 font-bold">服務業績</div>
-                    <div class="text-sm font-black">NT$ {{ formatNumber(todayCloseout.serviceRevenue) }}</div>
+                    <div class="text-sm font-black">NT$ {{ formatNumber(selectedCloseout.serviceRevenue) }}</div>
                   </div>
                   <div>
-                    <div class="text-[10px] text-white/50 font-bold">今日筆數</div>
-                    <div class="text-sm font-black">{{ todayCloseout.ordersCount }} 筆</div>
+                    <div class="text-[10px] text-white/50 font-bold">選定日筆數</div>
+                    <div class="text-sm font-black">{{ selectedCloseout.ordersCount }} 筆</div>
                   </div>
                 </div>
               </div>
@@ -1263,7 +1267,7 @@
                         class="min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-emerald-50 text-emerald-700 border-r lg:border-r-0 lg:border-b border-emerald-100 text-xs font-black">
                   <span class="text-lg leading-none">♨</span><span>查配方</span>
                 </button>
-                <button @click="showCloseoutSheet = true"
+                <button @click="openCloseoutSheet()"
                         class="min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-sky-50 text-sky-700 text-xs font-black">
                   <span class="text-lg leading-none">✓</span><span>{{ todayCloseoutRecord ? '查看打烊' : '完成打烊' }}</span>
                 </button>
@@ -1278,7 +1282,7 @@
                 應有現金 NT$ {{ formatNumber(todayCloseoutRecord.expectedCash) }} · 實點 NT$ {{ formatNumber(todayCloseoutRecord.countedCash) }} · 差額 {{ todayCloseoutRecord.difference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutRecord.difference) }}
               </div>
             </div>
-            <button @click="copyCloseoutSummary" class="min-h-[38px] px-3 rounded-xl bg-white border border-emerald-100 text-[11px] font-black text-emerald-700 whitespace-nowrap">複製摘要</button>
+            <button @click="copyCloseoutSummary(todayCloseoutRecord)" class="min-h-[38px] px-3 rounded-xl bg-white border border-emerald-100 text-[11px] font-black text-emerald-700 whitespace-nowrap">複製摘要</button>
           </section>
 
           <section v-if="syncError" class="border border-rose-200 bg-rose-50 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
@@ -1429,25 +1433,26 @@
             <div v-if="showCloseoutSheet" class="fixed inset-0 z-[70] bg-slate-900/40 flex items-end sm:items-center justify-center sm:p-4" @click="showCloseoutSheet = false">
               <div class="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden safe-pb" @click.stop>
                 <div class="px-4 py-4 border-b border-slate-100 flex items-center justify-between">
-                  <div><h3 class="text-base font-black text-slate-800">每日打烊對帳</h3><p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ todayDateLabel }}</p></div>
+                  <div><h3 class="text-base font-black text-slate-800">每日打烊對帳</h3><p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ selectedCloseoutDateLabel }}</p></div>
                   <button @click="showCloseoutSheet = false" class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉">✕</button>
                 </div>
                 <div class="p-4 space-y-4 max-h-[75vh] overflow-y-auto">
                   <div class="grid grid-cols-2 gap-2">
-                    <div class="p-3 rounded-xl bg-orange-50"><div class="text-[10px] font-black text-slate-400">現金收入</div><div class="text-base font-black text-slate-800">NT$ {{ formatNumber(todayCloseout.cash) }}</div></div>
-                    <div class="p-3 rounded-xl bg-sky-50"><div class="text-[10px] font-black text-slate-400">儲值扣款</div><div class="text-base font-black text-slate-800">NT$ {{ formatNumber(todayCloseout.prepaidOut) }}</div></div>
-                    <div class="p-3 rounded-xl bg-indigo-50"><div class="text-[10px] font-black text-slate-400">轉帳收入</div><div class="text-base font-black text-indigo-700">NT$ {{ formatNumber(todayCloseout.transfer) }}</div></div>
-                    <div class="p-3 rounded-xl bg-emerald-50"><div class="text-[10px] font-black text-slate-400">儲值進帳</div><div class="text-base font-black text-emerald-700">NT$ {{ formatNumber(todayCloseout.prepaidIn) }}</div><div class="text-[9px] font-bold text-slate-400">現金 {{ formatNumber(todayCloseout.cashPrepaidIn) }}／轉帳 {{ formatNumber(todayCloseout.transferPrepaidIn) }}</div></div>
-                    <div class="p-3 rounded-xl bg-slate-50"><div class="text-[10px] font-black text-slate-400">今日支出</div><div class="text-base font-black text-slate-800">NT$ {{ formatNumber(todayCloseout.expenses) }}</div></div>
+                    <div class="p-3 rounded-xl bg-orange-50"><div class="text-[10px] font-black text-slate-400">現金收入</div><div class="text-base font-black text-slate-800">NT$ {{ formatNumber(selectedCloseout.cash) }}</div></div>
+                    <div class="p-3 rounded-xl bg-sky-50"><div class="text-[10px] font-black text-slate-400">儲值扣款</div><div class="text-base font-black text-slate-800">NT$ {{ formatNumber(selectedCloseout.prepaidOut) }}</div></div>
+                    <div class="p-3 rounded-xl bg-indigo-50"><div class="text-[10px] font-black text-slate-400">轉帳收入</div><div class="text-base font-black text-indigo-700">NT$ {{ formatNumber(selectedCloseout.transfer) }}</div></div>
+                    <div class="p-3 rounded-xl bg-emerald-50"><div class="text-[10px] font-black text-slate-400">儲值進帳</div><div class="text-base font-black text-emerald-700">NT$ {{ formatNumber(selectedCloseout.prepaidIn) }}</div><div class="text-[9px] font-bold text-slate-400">現金 {{ formatNumber(selectedCloseout.cashPrepaidIn) }}／轉帳 {{ formatNumber(selectedCloseout.transferPrepaidIn) }}</div></div>
+                    <div class="p-3 rounded-xl bg-slate-50"><div class="text-[10px] font-black text-slate-400">選定日支出</div><div class="text-base font-black text-slate-800">NT$ {{ formatNumber(selectedCloseout.expenses) }}</div></div>
                   </div>
-                  <div class="p-4 rounded-xl bg-slate-900 text-white flex items-center justify-between"><div><div class="text-[10px] font-black text-white/50">應有現金</div><div class="text-2xl font-black">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div></div><div class="text-right"><div class="text-[10px] text-white/50 font-black">服務業績</div><div class="text-sm font-black">NT$ {{ formatNumber(todayCloseout.serviceRevenue) }}</div></div></div>
+                  <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">打烊日期</span><input type="date" v-model="closeoutDate" @change="loadCloseoutFormForDate" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-black"></label>
+                  <div class="p-4 rounded-xl bg-slate-900 text-white flex items-center justify-between"><div><div class="text-[10px] font-black text-white/50">應有現金</div><div class="text-2xl font-black">NT$ {{ formatNumber(selectedCloseout.actualCashIn) }}</div></div><div class="text-right"><div class="text-[10px] text-white/50 font-black">服務業績</div><div class="text-sm font-black">NT$ {{ formatNumber(selectedCloseout.serviceRevenue) }}</div></div></div>
                   <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">實際盤點現金</span><input type="number" inputmode="numeric" v-model.number="closeoutCashCount" placeholder="輸入現金總額" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-black"></label>
                   <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">打烊備註</span><input type="text" v-model="closeoutNote" placeholder="找零或臨時採買" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-semibold"></label>
                   <div v-if="todayCloseoutDifference !== null" class="rounded-xl px-3 py-2 text-xs font-black flex justify-between" :class="todayCloseoutDifference === 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'"><span>{{ todayCloseoutDifference === 0 ? '帳實相符' : '帳實差額' }}</span><span>{{ todayCloseoutDifference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutDifference) }}</span></div>
-                  <div v-if="todayCloseoutRecord" class="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] font-black text-amber-700">🔒 今日已鎖帳；新增、修改、刪除今日業績與支出會被擋下。</div>
-                  <button @click="completeCloseoutFromSheet" class="w-full min-h-[50px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ todayCloseoutRecord ? '更新打烊紀錄' : '完成打烊' }}</button>
-                  <button v-if="todayCloseoutRecord" @click="copyCloseoutSummary" class="w-full min-h-[46px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-black">複製打烊摘要</button>
-                  <button v-if="todayCloseoutRecord" @click="unlockCloseoutDate()" class="w-full min-h-[46px] rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-sm font-black">解除今日鎖帳</button>
+                  <div v-if="selectedCloseoutRecord" class="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] font-black text-amber-700">🔒 {{ selectedCloseoutDateLabel }} 已鎖帳；新增、修改、刪除該日業績與支出會被擋下。</div>
+                  <button @click="completeCloseoutFromSheet" class="w-full min-h-[50px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ selectedCloseoutRecord ? '更新打烊紀錄' : '完成打烊' }}</button>
+                  <button v-if="selectedCloseoutRecord" @click="copyCloseoutSummary" class="w-full min-h-[46px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-black">複製打烊摘要</button>
+                  <button v-if="selectedCloseoutRecord" @click="unlockCloseoutDate(closeoutDate)" class="w-full min-h-[46px] rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-sm font-black">解除此日鎖帳</button>
                 </div>
               </div>
             </div>
@@ -3255,6 +3260,7 @@
           lastBackupAt: localStorage.getItem('momo_last_backup_at') || null,
           integrityReport: safeParse(localStorage.getItem('momo_integrity_report'), null),
           closeoutRecords: {},
+          closeoutDate: todayStr,
           closeoutCashCount: null,
           closeoutNote: '',
           editSnapshots: {},
@@ -3546,51 +3552,38 @@
             .filter(e => e.date === todayStr)
             .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
         },
+        selectedCloseoutDateLabel() {
+          const date = this.closeoutDate || new Date().toLocaleDateString('sv-SE');
+          const [, month, day] = String(date).split('-');
+          return month && day ? `${Number(month)}/${Number(day)} ${this.getWeekday(date)}` : date;
+        },
+        selectedCloseoutOrders() {
+          const date = this.closeoutDate || new Date().toLocaleDateString('sv-SE');
+          return this.orders
+            .filter(o => this.isOrderActive(o) && o.date === date && o.customerName && !this.isBlockedSlot(o.customerName))
+            .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+        },
+        selectedCloseoutExpenses() {
+          const date = this.closeoutDate || new Date().toLocaleDateString('sv-SE');
+          return this.expenses
+            .filter(e => e.date === date)
+            .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+        },
+        selectedCloseout() {
+          return this.calculateCloseoutForDate(this.closeoutDate || new Date().toLocaleDateString('sv-SE'));
+        },
         todayCloseout() {
-          const totals = {
-            cash: 0,
-            transfer: 0,
-            prepaidOut: 0,
-            prepaidIn: 0,
-            cashPrepaidIn: 0,
-            transferPrepaidIn: 0,
-            other: 0,
-            serviceRevenue: 0,
-            actualCashIn: 0,
-            expenses: this.todayExpenses,
-            netProfit: 0,
-            ordersCount: this.todayOrders.length
-          };
-
-          this.todayOrders.forEach(o => {
-            const amount = Number(o.amount) || 0;
-            if (o.paymentMethod === '現金') totals.cash += amount;
-            else if (o.paymentMethod === '轉帳') totals.transfer += amount;
-            else if (o.paymentMethod === '儲值扣款') totals.prepaidOut += amount;
-            else if (o.paymentMethod === '現金＋儲值扣款') {
-              totals.cash += this.getMixedCashAmount(o);
-              totals.prepaidOut += this.getMixedPrepaidAmount(o);
-            }
-            else if (o.paymentMethod === '儲值進帳') {
-              totals.prepaidIn += amount;
-              if (this.getTopupChannel(o) === '轉帳') totals.transferPrepaidIn += amount;
-              else totals.cashPrepaidIn += amount;
-            }
-            else totals.other += amount;
-
-            if (o.paymentMethod !== '儲值進帳') totals.serviceRevenue += amount;
-          });
-
-          totals.actualCashIn = totals.cash + totals.cashPrepaidIn;
-          totals.netProfit = totals.serviceRevenue - totals.expenses;
-          return totals;
+          return this.calculateCloseoutForDate(new Date().toLocaleDateString('sv-SE'));
         },
         todayCloseoutDifference() {
           if (this.closeoutCashCount === null || this.closeoutCashCount === '') return null;
-          return Number(this.closeoutCashCount) - this.todayCloseout.actualCashIn;
+          return Number(this.closeoutCashCount) - this.selectedCloseout.actualCashIn;
         },
         todayCloseoutRecord() {
           return this.closeoutRecords[new Date().toLocaleDateString('sv-SE')] || null;
+        },
+        selectedCloseoutRecord() {
+          return this.closeoutRecords[this.closeoutDate || new Date().toLocaleDateString('sv-SE')] || null;
         },
         operationalAnomalySummary() {
           const all = this.collectOperationalIssues();
@@ -4430,6 +4423,50 @@
         if (this.cloudSyncTimer) clearTimeout(this.cloudSyncTimer);
       },
       methods: {
+        calculateCloseoutForDate(date) {
+          const closeoutOrders = this.orders
+            .filter(o => this.isOrderActive(o) && o.date === date && o.customerName && !this.isBlockedSlot(o.customerName));
+          const closeoutExpenses = this.expenses
+            .filter(e => e.date === date)
+            .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+          const totals = {
+            cash: 0,
+            transfer: 0,
+            prepaidOut: 0,
+            prepaidIn: 0,
+            cashPrepaidIn: 0,
+            transferPrepaidIn: 0,
+            other: 0,
+            serviceRevenue: 0,
+            actualCashIn: 0,
+            expenses: closeoutExpenses,
+            netProfit: 0,
+            ordersCount: closeoutOrders.length
+          };
+
+          closeoutOrders.forEach(o => {
+            const amount = Number(o.amount) || 0;
+            if (o.paymentMethod === '現金') totals.cash += amount;
+            else if (o.paymentMethod === '轉帳') totals.transfer += amount;
+            else if (o.paymentMethod === '儲值扣款') totals.prepaidOut += amount;
+            else if (o.paymentMethod === '現金＋儲值扣款') {
+              totals.cash += this.getMixedCashAmount(o);
+              totals.prepaidOut += this.getMixedPrepaidAmount(o);
+            }
+            else if (o.paymentMethod === '儲值進帳') {
+              totals.prepaidIn += amount;
+              if (this.getTopupChannel(o) === '轉帳') totals.transferPrepaidIn += amount;
+              else totals.cashPrepaidIn += amount;
+            }
+            else totals.other += amount;
+
+            if (o.paymentMethod !== '儲值進帳') totals.serviceRevenue += amount;
+          });
+
+          totals.actualCashIn = totals.cash + totals.cashPrepaidIn;
+          totals.netProfit = totals.serviceRevenue - totals.expenses;
+          return totals;
+        },
         isDateLocked(date) {
           return Boolean(date && this.closeoutRecords && this.closeoutRecords[date]);
         },
@@ -5011,41 +5048,58 @@
           this.activeTab = 'dashboard';
           window.scrollTo({ top: 0, behavior: 'smooth' });
         },
-        saveTodayCloseout() {
+        loadCloseoutFormForDate() {
+          const date = this.closeoutDate || new Date().toLocaleDateString('sv-SE');
+          const record = this.closeoutRecords[date];
+          this.closeoutCashCount = record ? record.countedCash : null;
+          this.closeoutNote = record ? (record.note || '') : '';
+        },
+        openCloseoutSheet(date = new Date().toLocaleDateString('sv-SE')) {
+          this.closeoutDate = date;
+          this.loadCloseoutFormForDate();
+          this.showCloseoutSheet = true;
+        },
+        saveSelectedCloseout() {
           if (this.closeoutCashCount === null || this.closeoutCashCount === '') {
             this.showToast('請先輸入實際盤點現金', 'error');
             return;
           }
-          const date = new Date().toLocaleDateString('sv-SE');
+          const date = this.closeoutDate || new Date().toLocaleDateString('sv-SE');
+          const totals = this.selectedCloseout;
+          const difference = Number(this.closeoutCashCount) - totals.actualCashIn;
           this.closeoutRecords[date] = {
             date,
-            expectedCash: this.todayCloseout.actualCashIn,
+            expectedCash: totals.actualCashIn,
             countedCash: Number(this.closeoutCashCount),
-            difference: this.todayCloseoutDifference,
-            cash: this.todayCloseout.cash,
-            transfer: this.todayCloseout.transfer,
-            prepaidOut: this.todayCloseout.prepaidOut,
-            prepaidIn: this.todayCloseout.prepaidIn,
-            cashPrepaidIn: this.todayCloseout.cashPrepaidIn,
-            transferPrepaidIn: this.todayCloseout.transferPrepaidIn,
-            serviceRevenue: this.todayCloseout.serviceRevenue,
-            expenses: this.todayCloseout.expenses,
-            netProfit: this.todayCloseout.netProfit,
-            ordersCount: this.todayCloseout.ordersCount,
+            difference,
+            cash: totals.cash,
+            transfer: totals.transfer,
+            prepaidOut: totals.prepaidOut,
+            prepaidIn: totals.prepaidIn,
+            cashPrepaidIn: totals.cashPrepaidIn,
+            transferPrepaidIn: totals.transferPrepaidIn,
+            serviceRevenue: totals.serviceRevenue,
+            expenses: totals.expenses,
+            netProfit: totals.netProfit,
+            ordersCount: totals.ordersCount,
             note: this.closeoutNote.trim(),
             completedAt: new Date().toISOString()
           };
           localStorage.setItem('momo_closeoutRecords', JSON.stringify(this.closeoutRecords));
           this.queueCloudSync();
-          this.showToast(this.todayCloseoutDifference === 0 ? '打烊完成，現金帳實相符' : `打烊已記錄，差額 NT$ ${this.formatNumber(this.todayCloseoutDifference)}`,
-            this.todayCloseoutDifference === 0 ? 'success' : 'error', 5000);
+          this.showToast(difference === 0 ? `${date} 打烊完成，現金帳實相符` : `${date} 打烊已記錄，差額 NT$ ${this.formatNumber(difference)}`,
+            difference === 0 ? 'success' : 'error', 5000);
+        },
+        saveTodayCloseout() {
+          this.closeoutDate = new Date().toLocaleDateString('sv-SE');
+          this.saveSelectedCloseout();
         },
         completeCloseoutFromSheet() {
           if (this.closeoutCashCount === null || this.closeoutCashCount === '') {
-            this.saveTodayCloseout();
+            this.saveSelectedCloseout();
             return;
           }
-          this.saveTodayCloseout();
+          this.saveSelectedCloseout();
           this.showCloseoutSheet = false;
         },
         buildCloseoutSummary(record = this.todayCloseoutRecord) {
@@ -5081,10 +5135,10 @@
             this.showToast(successMessage);
           }
         },
-        copyCloseoutSummary() {
-          const text = this.buildCloseoutSummary();
+        copyCloseoutSummary(record = null) {
+          const text = this.buildCloseoutSummary(record || this.selectedCloseoutRecord || this.todayCloseoutRecord);
           if (!text) {
-            this.showToast('尚未建立今日打烊摘要', 'error');
+            this.showToast('尚未建立此日期打烊摘要', 'error');
             return;
           }
           this.copyTextToClipboard(text, '打烊摘要已複製');
