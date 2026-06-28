@@ -2299,6 +2299,9 @@
                           <span class="text-[9px] px-1.5 py-0.5 rounded-md font-black" :class="cust.gender === '男' ? 'bg-sky-50 text-sky-600' : 'bg-rose-50 text-rose-600'">{{ cust.gender }}</span>
                         </div>
                         <p class="mt-1 text-[11px] text-slate-400 font-bold">ID {{ shortCustomerId(cust.id) }} · {{ cust.count }} 次消費 · 最近 {{ cust.daysSinceLastVisit }} 天前</p>
+                        <div v-if="cust.tags.length" class="mt-1 flex flex-wrap gap-1">
+                          <span v-for="tag in cust.tags.slice(0, 3)" :key="tag" class="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600">{{ tag }}</span>
+                        </div>
                       </div>
                     </div>
                     <span class="text-[9px] font-black px-2 py-1 rounded-lg border shrink-0" :class="cust.statusClass">{{ cust.statusLabel }}</span>
@@ -2311,6 +2314,32 @@
                 </button>
 
                 <div v-if="expandedCrmCustomerName === cust.id" class="border-t border-orange-100 bg-orange-50/20 p-4 space-y-3">
+                  <details open class="rounded-2xl border border-orange-100 bg-white overflow-hidden">
+                    <summary class="min-h-[44px] cursor-pointer px-3 flex items-center justify-between text-xs font-black text-slate-600">
+                      <span>🪪 顧客基本資料</span><span class="text-[10px] text-macaron-peach-500">可直接修改</span>
+                    </summary>
+                    <div class="p-3 pt-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">顧客姓名</span><input v-model="customerMap[cust.id].name" @change="saveCustomerProfile(customerMap[cust.id])" class="w-full min-h-[42px] rounded-xl border border-orange-100 bg-white px-3 text-sm font-black"></label>
+                      <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">性別</span><select v-model="customerMap[cust.id].gender" @change="saveCustomerProfile(customerMap[cust.id])" class="w-full min-h-[42px] rounded-xl border border-orange-100 bg-white px-3 text-sm font-black"><option value="女">女</option><option value="男">男</option></select></label>
+                      <label class="block sm:col-span-2"><span class="block text-[10px] font-black text-slate-400 mb-1">電話 / LINE / IG 備註</span><input :value="(crmFormulas[cust.id] || {}).contact || ''" @input="setFormulaField(cust.id, 'contact', $event.target.value)" @blur="saveCrmFormulas(cust.id)" placeholder="例：LINE 小名、電話、IG 帳號或聯絡備註" class="w-full min-h-[42px] rounded-xl border border-orange-100 bg-white px-3 text-xs font-semibold"></label>
+                    </div>
+                  </details>
+
+                  <details class="rounded-2xl border border-violet-100 bg-white overflow-hidden">
+                    <summary class="min-h-[44px] cursor-pointer px-3 flex items-center justify-between text-xs font-black text-slate-600">
+                      <span>🏷️ 顧客標籤與回訪提醒</span><span class="text-[10px] text-violet-500">{{ cust.tags.length ? cust.tags.join('、') : '未標籤' }}</span>
+                    </summary>
+                    <div class="p-3 pt-1 space-y-3">
+                      <div class="flex flex-wrap gap-1.5">
+                        <button v-for="tag in crmTagPresets" :key="tag" type="button" @click="toggleCustomerTag(cust.id, tag)" class="min-h-[32px] px-2.5 rounded-xl border text-[10px] font-black" :class="cust.tags.includes(tag) ? 'bg-violet-600 text-white border-violet-600' : 'bg-violet-50 text-violet-600 border-violet-100'">{{ tag }}</button>
+                      </div>
+                      <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">自訂回訪天數</span><input type="number" min="1" :value="(crmFormulas[cust.id] || {}).followupDays || ''" @input="setFormulaField(cust.id, 'followupDays', Number($event.target.value) || '')" @blur="saveCrmFormulas(cust.id)" :placeholder="`自動建議 ${cust.autoRevisitDays} 天`" class="w-full min-h-[42px] rounded-xl border border-violet-100 bg-white px-3 text-xs font-semibold"></label>
+                      <div class="rounded-xl px-3 py-2 text-[11px] font-black" :class="cust.followupDue ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-700'">
+                        {{ cust.followupDue ? `已 ${cust.daysSinceLastVisit} 天未回訪，建議聯絡` : `距離建議回訪還有 ${Math.max(0, cust.revisitDays - cust.daysSinceLastVisit)} 天` }}
+                      </div>
+                    </div>
+                  </details>
+
                   <div v-if="cust.prepaidIn > 0" class="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3">
                     <div class="flex justify-between text-[10px] font-black text-slate-500"><span>儲值使用 {{ cust.prepaidUsedPercent }}%</span><span>餘額 NT$ {{ formatNumber(cust.prepaidBalance) }}</span></div>
                     <div class="h-1.5 rounded-full bg-white overflow-hidden mt-2"><div class="h-full rounded-full bg-emerald-400" :style="{ width: cust.prepaidUsedPercent + '%' }"></div></div>
@@ -2346,6 +2375,19 @@
                     <button @click="startPrepaidForCustomer(cust)" class="min-h-[42px] rounded-xl bg-emerald-600 text-white text-[11px] font-black">新增儲值</button>
                     <button @click="openCustomerOrders(cust.id)" class="min-h-[42px] rounded-xl bg-white border border-orange-100 text-slate-600 text-[11px] font-black">完整客史</button>
                   </div>
+                  <details class="rounded-2xl border border-amber-100 bg-white overflow-hidden">
+                    <summary class="min-h-[42px] cursor-pointer px-3 flex items-center justify-between text-xs font-black text-amber-700">
+                      <span>🔀 合併重複顧客</span><span class="text-[10px]">進階</span>
+                    </summary>
+                    <div class="p-3 pt-1 space-y-2">
+                      <p class="text-[10px] font-bold text-slate-400">把目前這位顧客併到另一位顧客；業績、儲值、備註與配方會一起轉移。</p>
+                      <select v-model="mergeTargetByCustomer[cust.id]" class="w-full min-h-[42px] rounded-xl border border-amber-100 bg-white px-3 text-xs font-bold">
+                        <option value="">選擇保留的顧客</option>
+                        <option v-for="target in customerOptions.filter(c => c.id !== cust.id)" :key="target.id" :value="target.id">{{ target.name }} · {{ shortCustomerId(target.id) }}</option>
+                      </select>
+                      <button @click="mergeCustomerInto(cust.id, mergeTargetByCustomer[cust.id])" class="w-full min-h-[40px] rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">確認合併</button>
+                    </div>
+                  </details>
                   <button v-if="cust.followupDue" @click="copyFollowupMessage(cust)" class="w-full min-h-[42px] rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-black">複製回訪提醒 · 已 {{ cust.daysSinceLastVisit }} 天</button>
                 </div>
               </article>
@@ -3342,6 +3384,7 @@
           crmSortMode: 'lastDate',
           crmViewMode: 'customers',
           expandedCrmCustomerName: null,
+          mergeTargetByCustomer: {},
           prepaidLedgerSearchQuery: '',
           prepaidLedgerFilter: 'all',
           ordersSearchQuery: '',
@@ -3352,6 +3395,7 @@
           // Constants
           paymentMethods: ['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'],
           expenseCategories: ['材料費', '房租', '水電費', '行銷費', '薪資', '其他'],
+          crmTagPresets: ['VIP', '固定染髮', '固定燙髮', '儲值客', '頭皮敏感', '怕推銷', '喜歡安靜', '久未回訪'],
           formulaFields: [
             { key: 'color', label: '染髮配方 / 色號', placeholder: '例：8N + 8A，1:1' },
             { key: 'perm', label: '燙髮藥水 / 軟化', placeholder: '例：品牌、藥水、軟化時間' },
@@ -3923,8 +3967,11 @@
             const formula = this.crmFormulas[cust.id] || {};
             const hasStructuredFormula = ['color', 'perm', 'hair', 'preference', 'caution']
               .some(key => typeof formula[key] === 'string' && formula[key].trim());
-            const revisitDays = /染|燙|特殊色/.test(primaryService) ? 70 : /剪/.test(primaryService) ? 45 : 60;
+            const autoRevisitDays = /染|燙|特殊色/.test(primaryService) ? 70 : /剪/.test(primaryService) ? 45 : 60;
+            const revisitDays = Math.max(1, Number(formula.followupDays) || autoRevisitDays);
             const followupDue = daysSinceLastVisit >= revisitDays;
+            const tags = Array.isArray(formula.tags) ? formula.tags.filter(Boolean) : [];
+            const contact = formula.contact || '';
             const prepaidUsedPercent = prepaidTotals.prepaidIn > 0
               ? Math.min(100, Math.round((prepaidTotals.prepaidOut / prepaidTotals.prepaidIn) * 100))
               : 0;
@@ -3961,7 +4008,10 @@
               hasFormula,
               hasStructuredFormula,
               revisitDays,
+              autoRevisitDays,
               followupDue,
+              tags,
+              contact,
               prepaidUsedPercent,
               recentOrders: recentOrders.slice(0, 3),
               statusLabel,
@@ -3976,7 +4026,8 @@
           let list = this.crmList.filter(c => {
             const notes = this.crmNotes[c.id] || '';
             const formulaText = Object.values(this.crmFormulas[c.id] || {}).join(' ');
-            const haystack = `${c.name} ${this.shortCustomerId(c.id)} ${c.gender || ''} ${c.primaryService} ${c.lastService} ${notes} ${formulaText}`.toLowerCase();
+            const tagText = (c.tags || []).join(' ');
+            const haystack = `${c.name} ${this.shortCustomerId(c.id)} ${c.gender || ''} ${c.primaryService} ${c.lastService} ${tagText} ${notes} ${formulaText}`.toLowerCase();
             const queryMatch = !query || haystack.includes(query);
 
             let filterMatch = true;
@@ -4969,6 +5020,99 @@
           formula[key] = value;
           formula.updatedAt = new Date().toLocaleDateString('sv-SE');
           localStorage.setItem('momo_crmFormulas', JSON.stringify(this.crmFormulas));
+        },
+        saveCustomerProfile(customer) {
+          if (!customer?.id) return;
+          customer.name = String(customer.name || '').trim() || '未命名顧客';
+          customer.gender = customer.gender || '女';
+          customer.updatedAt = new Date().toISOString();
+          this.orders.forEach(order => {
+            if (order.customerId === customer.id) {
+              order.customerName = customer.name;
+              order.gender = customer.gender;
+            }
+          });
+          this.prepaidLedger.forEach(entry => {
+            if (entry.customerId === customer.id) entry.customerNameSnapshot = customer.name;
+          });
+          this.saveOrders();
+          this.showToast('顧客資料已更新');
+        },
+        toggleCustomerTag(customerId, tag) {
+          if (!customerId || !tag) return;
+          const formula = this.ensureFormula(customerId);
+          const tags = Array.isArray(formula.tags) ? [...formula.tags] : [];
+          const index = tags.indexOf(tag);
+          if (index >= 0) tags.splice(index, 1);
+          else tags.push(tag);
+          formula.tags = tags;
+          formula.updatedAt = new Date().toLocaleDateString('sv-SE');
+          this.saveCrmFormulas(customerId);
+        },
+        mergeCustomerInto(sourceId, targetId) {
+          if (!sourceId || !targetId || sourceId === targetId) {
+            this.showToast('請先選擇要保留的顧客', 'error');
+            return;
+          }
+          const source = this.customerMap[sourceId];
+          const target = this.customerMap[targetId];
+          if (!source || !target) {
+            this.showToast('找不到要合併的顧客', 'error');
+            return;
+          }
+          this.showConfirm(`確定把「${source.name}」合併到「${target.name}」嗎？此動作會轉移業績、儲值、備註與配方。`, async () => {
+            this.orders.forEach(order => {
+              if (order.customerId === sourceId) {
+                order.customerId = targetId;
+                order.customerName = target.name;
+                order.gender = target.gender || order.gender;
+              }
+            });
+            this.prepaidLedger.forEach(entry => {
+              if (entry.customerId === sourceId) {
+                entry.customerId = targetId;
+                entry.customerNameSnapshot = target.name;
+              }
+            });
+
+            const sourceNote = String(this.crmNotes[sourceId] || '').trim();
+            if (sourceNote) {
+              this.crmNotes[targetId] = [this.crmNotes[targetId], `【合併自 ${source.name}】${sourceNote}`].filter(Boolean).join('\n');
+            }
+
+            const sourceFormula = this.crmFormulas[sourceId] || {};
+            const targetFormula = this.ensureFormula(targetId);
+            Object.entries(sourceFormula).forEach(([key, value]) => {
+              if (key === 'tags') {
+                const mergedTags = new Set([...(targetFormula.tags || []), ...(Array.isArray(value) ? value : [])]);
+                targetFormula.tags = [...mergedTags];
+              } else if (value && !targetFormula[key]) {
+                targetFormula[key] = value;
+              }
+            });
+            targetFormula.updatedAt = new Date().toLocaleDateString('sv-SE');
+
+            delete this.crmNotes[sourceId];
+            delete this.crmFormulas[sourceId];
+            this.customers = this.customers.filter(customer => customer.id !== sourceId);
+            delete this.mergeTargetByCustomer[sourceId];
+            this.expandedCrmCustomerName = targetId;
+
+            this.saveToLocalStorage();
+            if (this.cloudReady && this.authUser) {
+              try {
+                const payloads = this.buildCloudPayloads();
+                await this.syncVersionedChanges(payloads);
+                await this.upsertCloudRows('prepaid_ledger', payloads.prepaid_ledger.filter(entry => entry.customer_id === targetId), 'id');
+                await this.deleteCloudRecord('customers', 'id', sourceId);
+              } catch (error) {
+                console.error('Cloud customer merge cleanup failed:', error);
+                this.showToast(`本機已合併，雲端清理稍後重試：${error.message}`, 'error', 8000);
+                return;
+              }
+            }
+            this.showToast(`已合併到 ${target.name}`);
+          });
         },
         saveCrmFormulas(name) {
           if (name && this.crmFormulas[name]) this.crmFormulas[name].updatedAt = new Date().toLocaleDateString('sv-SE');
