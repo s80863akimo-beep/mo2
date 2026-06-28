@@ -675,6 +675,23 @@
       </div>
     </transition>
 
+    <!-- PWA Update Prompt -->
+    <transition name="fade">
+      <div v-if="updateAvailable" class="fixed left-4 right-4 bottom-24 sm:bottom-8 sm:left-auto sm:right-8 sm:w-[360px] z-[95] rounded-3xl bg-slate-900 text-white macaron-shadow-lg border border-white/10 p-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-lg shrink-0">↻</div>
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-black">系統已有新版本</div>
+            <div class="text-xs text-slate-300 mt-1 leading-relaxed">點擊更新後會重新載入最新版。尚未同步的本機資料會先保留在手機裡。</div>
+            <div class="flex items-center gap-2 mt-3">
+              <button @click="applyPwaUpdate" class="min-h-[40px] px-4 rounded-2xl bg-white text-slate-900 text-xs font-black">立即更新</button>
+              <button @click="dismissPwaUpdate" class="min-h-[40px] px-3 rounded-2xl text-slate-300 hover:bg-white/10 text-xs font-bold">稍後</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- Main Content Grid -->
     <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-grow">
       
@@ -3099,6 +3116,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
+    const APP_VERSION = '2026.06.29-pwa-update';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -3243,6 +3261,11 @@
           hoveredReportBar: null,
           hideEmptyMonths: false,
           reportBreakdownTab: 'income',
+          appVersion: APP_VERSION,
+          updateAvailable: false,
+          pendingServiceWorker: null,
+          pwaRegistration: null,
+          pwaRefreshing: false,
           showMobileAddOrderForm: false,
           expandedOrderId: null,
           collapsedOrderDates: {},
@@ -4363,6 +4386,7 @@
       mounted() {
         this.loadFromLocalStorage();
         this.initAuth();
+        this.setupPwaUpdateListener();
         window.addEventListener('online', () => { this.online = true; });
         window.addEventListener('offline', () => { this.online = false; });
         const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -4401,6 +4425,59 @@
         if (this.cloudSyncTimer) clearTimeout(this.cloudSyncTimer);
       },
       methods: {
+        setupPwaUpdateListener() {
+          if (!('serviceWorker' in navigator)) return;
+          window.addEventListener('load', async () => {
+            try {
+              const registration = await navigator.serviceWorker.register('/service-worker.js');
+              this.pwaRegistration = registration;
+
+              const showUpdatePrompt = (worker) => {
+                if (!worker) return;
+                this.pendingServiceWorker = worker;
+                this.updateAvailable = true;
+              };
+
+              if (registration.waiting && navigator.serviceWorker.controller) {
+                showUpdatePrompt(registration.waiting);
+              }
+
+              registration.addEventListener('updatefound', () => {
+                const worker = registration.installing;
+                if (!worker) return;
+                worker.addEventListener('statechange', () => {
+                  if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                    showUpdatePrompt(worker);
+                  }
+                });
+              });
+
+              navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (this.pwaRefreshing) return;
+                this.pwaRefreshing = true;
+                window.location.reload();
+              });
+
+              document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) registration.update().catch(() => {});
+              });
+              setInterval(() => registration.update().catch(() => {}), 60 * 60 * 1000);
+            } catch (error) {
+              console.warn('PWA service worker registration failed:', error);
+            }
+          });
+        },
+        applyPwaUpdate() {
+          if (!this.pendingServiceWorker) {
+            window.location.reload();
+            return;
+          }
+          this.showToast('正在更新到最新版…');
+          this.pendingServiceWorker.postMessage({ type: 'SKIP_WAITING' });
+        },
+        dismissPwaUpdate() {
+          this.updateAvailable = false;
+        },
         generateStableId(prefix) {
           const randomPart = window.crypto && crypto.randomUUID
             ? crypto.randomUUID().replace(/-/g, '').slice(0, 16)
@@ -7102,15 +7179,6 @@
         }
       }
     }).mount('#app');
-  </script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js').catch((error) => {
-          console.warn('PWA service worker registration failed:', error);
-        });
-      });
-    }
   </script>
 </body>
 </html>
