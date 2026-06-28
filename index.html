@@ -568,6 +568,9 @@
                   <button @click="runIntegrityCheck(true)" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-sky-50 text-sky-700 flex items-center gap-2">
                     🔎 檢查資料完整性
                   </button>
+                  <button @click="showOperationLogModal = true; showDataTools = false" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-amber-50 text-amber-700 flex items-center gap-2">
+                    🧾 查看操作紀錄
+                  </button>
                   <div class="px-4 pb-1 text-[10px] font-bold" :class="integrityReport?.status === 'ok' ? 'text-emerald-600' : integrityReport ? 'text-amber-600' : 'text-slate-400'">
                     {{ backupSummaryText }} · {{ integritySummaryText }}
                   </div>
@@ -649,6 +652,7 @@
                 <button v-if="cloudReady" @click="showMobileTools = false; createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="min-h-[50px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black disabled:opacity-50">🛡️ 雲端備份</button>
                 <button @click="showMobileTools = false; runIntegrityCheck(true)" class="min-h-[50px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black">🔎 完整性檢查</button>
               </div>
+              <button @click="showMobileTools = false; showOperationLogModal = true" class="w-full min-h-[50px] rounded-2xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">🧾 查看操作紀錄</button>
               <p v-if="authUser" class="px-1 text-[10px] font-bold text-slate-400">{{ cloudMessage }}</p>
               <p class="px-1 text-[10px] font-bold" :class="integrityReport?.status === 'ok' ? 'text-emerald-600' : integrityReport ? 'text-amber-600' : 'text-slate-400'">{{ backupSummaryText }} · {{ integritySummaryText }}</p>
             </section>
@@ -672,6 +676,34 @@
            :class="toast.type === 'success' ? 'bg-macaron-mint text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'">
         <span>{{ toast.type === 'success' ? '🍭' : '🍧' }}</span>
         <span>{{ toast.message }}</span>
+      </div>
+    </transition>
+
+    <!-- Operation Log Modal -->
+    <transition name="fade">
+      <div v-if="showOperationLogModal" class="fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click="showOperationLogModal = false">
+        <div class="w-full sm:max-w-2xl max-h-[82vh] bg-white rounded-t-3xl sm:rounded-3xl macaron-shadow-lg border border-orange-100 overflow-hidden flex flex-col" @click.stop>
+          <div class="px-5 py-4 border-b border-orange-100 flex items-center justify-between gap-3">
+            <div>
+              <h3 class="text-base font-black text-slate-800">操作紀錄</h3>
+              <p class="text-[10px] font-bold text-slate-400 mt-0.5">最近 {{ operationLogs.length }} 筆 · 保留最近 300 筆</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button @click="exportOperationLogCSV" class="min-h-[38px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">匯出</button>
+              <button @click="showOperationLogModal = false" class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉">✕</button>
+            </div>
+          </div>
+          <div v-if="!operationLogs.length" class="p-8 text-center text-sm font-bold text-slate-400">尚無操作紀錄</div>
+          <div v-else class="overflow-y-auto divide-y divide-orange-50">
+            <div v-for="log in operationLogs.slice(0, 80)" :key="log.id" class="px-5 py-3 flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-xs font-black text-slate-700">{{ log.label }}</div>
+                <div class="text-[10px] font-semibold text-slate-400 mt-0.5 truncate">{{ log.detail }}</div>
+              </div>
+              <div class="text-[10px] font-bold text-slate-400 whitespace-nowrap">{{ formatDateTime(log.at) }}</div>
+            </div>
+          </div>
+        </div>
       </div>
     </transition>
 
@@ -3305,6 +3337,8 @@
           backupStatus: 'idle',
           lastBackupAt: localStorage.getItem('momo_last_backup_at') || null,
           integrityReport: safeParse(localStorage.getItem('momo_integrity_report'), null),
+          operationLogs: safeParse(localStorage.getItem('momo_operation_logs'), []),
+          showOperationLogModal: false,
           closeoutRecords: {},
           closeoutDate: todayStr,
           closeoutCashCount: null,
@@ -4522,6 +4556,30 @@
           totals.netProfit = totals.serviceRevenue - totals.expenses;
           return totals;
         },
+        recordOperation(action, label, detail = '', meta = {}) {
+          const log = {
+            id: this.generateStableId('log'),
+            at: new Date().toISOString(),
+            action,
+            label,
+            detail: String(detail || ''),
+            meta
+          };
+          this.operationLogs = [log, ...(Array.isArray(this.operationLogs) ? this.operationLogs : [])].slice(0, 300);
+          localStorage.setItem('momo_operation_logs', JSON.stringify(this.operationLogs));
+          return log;
+        },
+        exportOperationLogCSV() {
+          const headers = ['時間', '動作', '摘要', '細節'];
+          const rows = (this.operationLogs || []).map(log => [
+            this.formatDateTime(log.at),
+            log.action,
+            log.label,
+            log.detail
+          ]);
+          this.downloadCSV(`MOMO操作紀錄_${new Date().toLocaleDateString('sv-SE')}.csv`, headers, rows);
+          this.showToast('🧾 操作紀錄 CSV 已匯出');
+        },
         isDateLocked(date) {
           return Boolean(date && this.closeoutRecords && this.closeoutRecords[date]);
         },
@@ -4554,8 +4612,10 @@
             this.restoreEditSnapshot('orders', order);
             return false;
           }
+          const changed = snapshot ? Object.keys(snapshot).filter(key => JSON.stringify(snapshot[key]) !== JSON.stringify(order[key])) : [];
           this.clearEditSnapshot('orders', order);
           this.saveOrders();
+          if (changed.length) this.recordOperation('order_update', '修改業績', `${order.date} ${order.customerName || ''} ${order.serviceName || ''} · ${changed.join('、')}`, { orderId: order.id });
           return true;
         },
         guardedOrderCustomerChanged(order) {
@@ -4567,6 +4627,7 @@
           }
           this.onOrderCustomerIdChanged(order);
           this.clearEditSnapshot('orders', order);
+          this.recordOperation('order_update', '修改業績顧客', `${order.date} ${order.customerName || ''}`, { orderId: order.id });
           return true;
         },
         guardedSaveExpense(expense) {
@@ -4576,8 +4637,10 @@
             this.restoreEditSnapshot('expenses', expense);
             return false;
           }
+          const changed = snapshot ? Object.keys(snapshot).filter(key => JSON.stringify(snapshot[key]) !== JSON.stringify(expense[key])) : [];
           this.clearEditSnapshot('expenses', expense);
           this.saveExpenses();
+          if (changed.length) this.recordOperation('expense_update', '修改支出', `${expense.date} ${expense.category || ''} NT$ ${this.formatNumber(expense.amount || 0)} · ${changed.join('、')}`, { expenseId: expense.id });
           return true;
         },
         unlockCloseoutDate(date = new Date().toLocaleDateString('sv-SE')) {
@@ -4587,6 +4650,7 @@
             localStorage.setItem('momo_closeoutRecords', JSON.stringify(this.closeoutRecords));
             this.deleteCloudRecord('closeouts', 'closeout_date', date);
             this.queueCloudSync();
+            this.recordOperation('closeout_unlock', '解除鎖帳', date);
             this.showToast(`🔓 已解除 ${date} 鎖帳`);
           });
         },
@@ -5012,6 +5076,7 @@
           }
           localStorage.setItem('momo_crmNotes', JSON.stringify(this.crmNotes));
           this.queueCloudSync();
+          this.recordOperation('crm_note_update', '修改 CRM 備註', '已更新顧客補充紀錄');
         },
         ensureFormula(name) {
           if (!this.crmFormulas[name]) {
@@ -5040,6 +5105,7 @@
             if (entry.customerId === customer.id) entry.customerNameSnapshot = customer.name;
           });
           this.saveOrders();
+          this.recordOperation('customer_update', '修改顧客資料', `${customer.name} · ${customer.gender}`, { customerId: customer.id });
           this.showToast('顧客資料已更新');
         },
         toggleCustomerTag(customerId, tag) {
@@ -5052,6 +5118,7 @@
           formula.tags = tags;
           formula.updatedAt = new Date().toLocaleDateString('sv-SE');
           this.saveCrmFormulas(customerId);
+          this.recordOperation('crm_tag_update', '修改顧客標籤', `${this.customerMap[customerId]?.name || customerId} · ${tag}`, { customerId });
         },
         mergeCustomerInto(sourceId, targetId) {
           if (!sourceId || !targetId || sourceId === targetId) {
@@ -5115,6 +5182,7 @@
                 return;
               }
             }
+            this.recordOperation('customer_merge', '合併顧客', `${source.name} → ${target.name}`, { sourceId, targetId });
             this.showToast(`已合併到 ${target.name}`);
           });
         },
@@ -5122,6 +5190,7 @@
           if (name && this.crmFormulas[name]) this.crmFormulas[name].updatedAt = new Date().toLocaleDateString('sv-SE');
           localStorage.setItem('momo_crmFormulas', JSON.stringify(this.crmFormulas));
           this.queueCloudSync();
+          if (name) this.recordOperation('crm_update', '修改 CRM 配方/回訪', this.customerMap[name]?.name || name, { customerId: name });
         },
         collectOperationalIssues() {
           const issues = [];
@@ -5220,6 +5289,7 @@
           const date = this.closeoutDate || new Date().toLocaleDateString('sv-SE');
           const totals = this.selectedCloseout;
           const difference = Number(this.closeoutCashCount) - totals.actualCashIn;
+          const wasUpdate = Boolean(this.closeoutRecords[date]);
           this.closeoutRecords[date] = {
             date,
             expectedCash: totals.actualCashIn,
@@ -5240,6 +5310,7 @@
           };
           localStorage.setItem('momo_closeoutRecords', JSON.stringify(this.closeoutRecords));
           this.queueCloudSync();
+          this.recordOperation('closeout_save', wasUpdate ? '更新打烊' : '完成打烊', `${date} 應有 NT$ ${this.formatNumber(totals.actualCashIn)} · 實點 NT$ ${this.formatNumber(this.closeoutCashCount)} · 差額 ${difference > 0 ? '+' : ''}NT$ ${this.formatNumber(difference)}`);
           this.showToast(difference === 0 ? `${date} 打烊完成，現金帳實相符` : `${date} 打烊已記錄，差額 NT$ ${this.formatNumber(difference)}`,
             difference === 0 ? 'success' : 'error', 5000);
         },
@@ -6994,7 +7065,7 @@
             return;
           }
           const id = 'ord_' + Math.random().toString(36).substr(2, 9);
-          this.orders.push({
+          const order = {
             id,
             date: this.newOrder.date,
             customerId: customer.id,
@@ -7005,9 +7076,11 @@
             paymentMethod: this.newOrder.paymentMethod,
             cashAmount: this.newOrder.paymentMethod === '現金＋儲值扣款' ? cashAmount : null,
             topupChannel: this.newOrder.paymentMethod === '儲值進帳' ? this.newOrder.topupChannel : null
-          });
+          };
+          this.orders.push(order);
 
           this.saveOrders();
+          this.recordOperation('order_create', '新增業績', `${order.date} ${order.customerName} ${order.serviceName} · NT$ ${this.formatNumber(order.amount)}`, { orderId: id });
           this.showToast('🍰 業績新增成功！');
 
           // Reset inputs except date
@@ -7032,6 +7105,7 @@
             if (this.expandedOrderId === id) this.expandedOrderId = null;
             this.deleteCloudRecord('orders', 'id', id);
             this.saveOrders();
+            this.recordOperation('order_delete', '刪除業績', `${order?.date || ''} ${order?.customerName || ''} ${order?.serviceName || ''} · NT$ ${this.formatNumber(order?.amount || 0)}`, { orderId: id });
             this.showToast('🍧 業績已成功刪除');
           });
         },
@@ -7049,15 +7123,17 @@
         addExpense() {
           if (!this.assertDateUnlocked(this.newExpense.date)) return;
           const id = 'exp_' + Math.random().toString(36).substr(2, 9);
-          this.expenses.push({
+          const expense = {
             id,
             date: this.newExpense.date,
             category: this.newExpense.category,
             amount: Number(this.newExpense.amount) || 0,
             notes: this.newExpense.notes.trim()
-          });
+          };
+          this.expenses.push(expense);
 
           this.saveExpenses();
+          this.recordOperation('expense_create', '新增支出', `${expense.date} ${expense.category} · NT$ ${this.formatNumber(expense.amount)}`, { expenseId: id });
           this.showToast('💸 支出新增成功！');
 
           // Reset inputs except date
@@ -7073,6 +7149,7 @@
             if (this.expandedExpenseId === id) this.expandedExpenseId = null;
             this.deleteCloudRecord('expenses', 'id', id);
             this.saveExpenses();
+            this.recordOperation('expense_delete', '刪除支出', `${expense?.date || ''} ${expense?.category || ''} · NT$ ${this.formatNumber(expense?.amount || 0)}`, { expenseId: id });
             this.showToast('🍧 支出已刪除');
           });
         },
@@ -7173,7 +7250,8 @@
             momo_crmNotes: this.crmNotes,
             momo_crmFormulas: this.crmFormulas,
             momo_closeoutRecords: this.closeoutRecords,
-            momo_servicesConfig: this.servicesConfig
+            momo_servicesConfig: this.servicesConfig,
+            momo_operationLogs: this.operationLogs
           };
         },
         runIntegrityCheck(showResult = true) {
@@ -7345,8 +7423,10 @@
                 this.crmNotes = data.momo_crmNotes;
                 this.crmFormulas = data.momo_crmFormulas || {};
                 this.closeoutRecords = data.momo_closeoutRecords || {};
+                this.operationLogs = Array.isArray(data.momo_operationLogs) ? data.momo_operationLogs : [];
                 this.migrateCustomerIdentity();
                 this.reconcilePrepaidLedger();
+                this.recordOperation('backup_import', '匯入備份還原', `訂單 ${this.orders.length} 筆、顧客 ${this.customers.length} 位`);
                 if (data.momo_servicesConfig) {
                   this.servicesConfig = data.momo_servicesConfig;
                   this.saveToLocalStorage();
