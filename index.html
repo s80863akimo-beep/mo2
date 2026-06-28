@@ -782,48 +782,53 @@
             </div>
           </div>
 
-          <!-- Today's Quick Mode -->
+          <!-- Today's Accounting Overview -->
           <section class="bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden hover-lift">
             <div class="p-4 sm:p-6 bg-gradient-to-r from-white to-orange-50/40 border-b border-orange-100/40 flex items-center justify-between gap-3">
               <div>
                 <h2 class="text-base sm:text-xl font-black text-slate-800 flex items-center gap-2">
-                  <span>📱</span> 今日快速模式
+                  <span>🧾</span> 今日記帳總覽
                 </h2>
-                <p class="text-[10px] sm:text-xs text-slate-400 font-bold mt-1">iPhone 營業中優先看這裡：今天預約、收款、下一位客人</p>
+                <p class="text-[10px] sm:text-xs text-slate-400 font-bold mt-1">今天業績、金流、支出與打烊狀態集中看這裡</p>
               </div>
               <span class="text-[10px] font-black text-macaron-peach-500 bg-macaron-peach-50 border border-macaron-peach-100 px-2.5 py-1 rounded-full whitespace-nowrap">
                 {{ todayDateLabel }}
               </span>
             </div>
 
-            <div class="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-orange-100/50">
+            <div class="grid grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-orange-100/50">
               <div class="p-4 sm:p-5">
-                <div class="text-[10px] font-black text-slate-400 tracking-wider">今日預約</div>
+                <div class="text-[10px] font-black text-slate-400 tracking-wider">今日業績筆數</div>
                 <div class="mt-1 text-2xl font-black text-slate-800">{{ todayOrders.length }} <span class="text-xs text-slate-400">筆</span></div>
-                <p class="text-[10px] text-slate-400 font-semibold mt-1">不含封鎖時段與空白姓名</p>
+                <p class="text-[10px] text-slate-400 font-semibold mt-1">不含封鎖時段</p>
               </div>
               <div class="p-4 sm:p-5">
                 <div class="text-[10px] font-black text-slate-400 tracking-wider">今日應有現金</div>
                 <div class="mt-1 text-2xl font-black text-slate-800">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div>
                 <p class="text-[10px] text-slate-400 font-semibold mt-1">現金服務 + 現金儲值</p>
               </div>
-              <div class="p-4 sm:p-5 col-span-2 lg:col-span-1">
-                <div class="text-[10px] font-black text-slate-400 tracking-wider">下一位 / 最近一位</div>
-                <div class="mt-1 text-lg font-black text-slate-800 truncate">
-                  {{ nextTodayOrder ? nextTodayOrder.customerName : '今天還沒有預約' }}
+              <div class="p-4 sm:p-5">
+                <div class="text-[10px] font-black text-slate-400 tracking-wider">付款拆分</div>
+                <div class="mt-1 text-xs font-black text-slate-700 space-y-0.5">
+                  <div>現金 NT$ {{ formatNumber(todayCloseout.cash) }}</div>
+                  <div>轉帳 NT$ {{ formatNumber(todayCloseout.transfer) }}</div>
+                  <div>儲扣 NT$ {{ formatNumber(todayCloseout.prepaidOut) }}</div>
                 </div>
-                <p class="text-[10px] text-slate-400 font-semibold mt-1 truncate">
-                  {{ nextTodayOrder ? nextTodayOrder.serviceName : '同步行事曆或手動新增後會顯示' }}
-                </p>
+              </div>
+              <div class="p-4 sm:p-5">
+                <div class="text-[10px] font-black text-slate-400 tracking-wider">今日支出</div>
+                <div class="mt-1 text-2xl font-black text-rose-500">NT$ {{ formatNumber(todayCloseout.expenses) }}</div>
+                <p class="text-[10px] text-slate-400 font-semibold mt-1">影響淨利</p>
               </div>
               <div class="p-4 sm:p-5 col-span-2 lg:col-span-1 flex items-center gap-2">
                 <button @click="activeTab = 'orders'; showMobileAddOrderForm = true"
                         class="jelly-btn flex-1 min-h-[44px] rounded-2xl bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-xs font-black shadow-md">
                   ➕ 新增業績
                 </button>
-                <button @click="nextTodayOrder ? goToCustomerCRM(nextTodayOrder.customerId || nextTodayOrder.customerName) : (activeTab = 'crm')"
-                        class="jelly-btn flex-1 min-h-[44px] rounded-2xl bg-white border border-orange-200 text-slate-700 text-xs font-black shadow-sm">
-                  🧴 查配方
+                <button @click="openCloseoutSheet()"
+                        class="jelly-btn flex-1 min-h-[44px] rounded-2xl border text-xs font-black shadow-sm"
+                        :class="todayCloseoutRecord ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-white border-orange-200 text-slate-700'">
+                  {{ todayCloseoutRecord ? '🔒 已打烊' : '🌙 去打烊' }}
                 </button>
               </div>
             </div>
@@ -1215,12 +1220,12 @@
           </div>
           </template>
 
-          <!-- Today workspace -->
+          <!-- Today accounting workspace -->
           <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
             <div class="px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-100 flex items-center justify-between gap-3">
               <div>
-                <h2 class="text-lg sm:text-xl font-black text-slate-800">今日工作台</h2>
-                <p class="text-[11px] font-bold text-slate-400 mt-0.5">{{ todayDateLabel }} · 營業中的重要資訊</p>
+                <h2 class="text-lg sm:text-xl font-black text-slate-800">今日記帳總覽</h2>
+                <p class="text-[11px] font-bold text-slate-400 mt-0.5">{{ todayDateLabel }} · 業績、金流、支出與打烊</p>
               </div>
               <span class="text-[10px] font-black px-2.5 py-1 rounded-full"
                     :class="online ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'">
@@ -1230,31 +1235,30 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-[1.35fr_0.65fr]">
               <div class="p-4 sm:p-6 lg:border-r border-slate-100">
-                <div class="flex items-start justify-between gap-4">
-                  <div class="min-w-0">
-                    <div class="text-[10px] font-black text-macaron-peach-500 mb-1">下一位 / 最近一位</div>
-                    <div class="text-xl sm:text-2xl font-black text-slate-800 truncate">
-                      {{ nextTodayOrder ? nextTodayOrder.customerName : '今天還沒有預約' }}
-                    </div>
-                    <div class="text-xs sm:text-sm font-bold text-slate-400 mt-1 truncate">
-                      {{ nextTodayOrder ? nextTodayOrder.serviceName : '同步行事曆後會顯示今日顧客' }}
-                    </div>
-                  </div>
-                  <button @click="nextTodayOrder ? goToCustomerCRM(nextTodayOrder.customerId || nextTodayOrder.customerName) : (activeTab = 'crm')"
-                          class="shrink-0 min-h-[44px] px-4 rounded-xl border border-sky-200 bg-sky-50 text-sky-700 text-xs font-black">
-                    查看顧客
-                  </button>
-                </div>
-
-                <div class="grid grid-cols-2 divide-x divide-slate-100 mt-5 pt-4 border-t border-slate-100">
-                  <div class="pr-4">
-                    <div class="text-[10px] font-black text-slate-400">今日預約</div>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div class="rounded-2xl bg-orange-50/60 border border-orange-100/60 p-3">
+                    <div class="text-[10px] font-black text-slate-400">今日業績</div>
                     <div class="text-2xl font-black text-slate-800 mt-1">{{ todayOrders.length }} <span class="text-xs text-slate-400">筆</span></div>
                   </div>
-                  <div class="pl-4">
+                  <div class="rounded-2xl bg-macaron-peach-50 border border-macaron-peach-100 p-3">
                     <div class="text-[10px] font-black text-slate-400">今日應有現金</div>
                     <div class="text-2xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div>
                   </div>
+                  <div class="rounded-2xl bg-rose-50 border border-rose-100 p-3">
+                    <div class="text-[10px] font-black text-slate-400">今日支出</div>
+                    <div class="text-xl font-black text-rose-500 mt-1">NT$ {{ formatNumber(todayCloseout.expenses) }}</div>
+                  </div>
+                  <div class="rounded-2xl border p-3" :class="todayCloseoutRecord ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'">
+                    <div class="text-[10px] font-black text-slate-400">打烊狀態</div>
+                    <div class="text-sm font-black mt-1" :class="todayCloseoutRecord ? 'text-emerald-700' : 'text-amber-700'">{{ todayCloseoutRecord ? '已打烊 / 已鎖帳' : '尚未打烊' }}</div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-4 border-t border-slate-100">
+                  <div class="rounded-xl bg-white border border-orange-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">現金</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(todayCloseout.cash) }}</div></div>
+                  <div class="rounded-xl bg-white border border-indigo-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">轉帳</div><div class="text-xs font-black text-indigo-700">NT$ {{ formatNumber(todayCloseout.transfer) }}</div></div>
+                  <div class="rounded-xl bg-white border border-sky-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值扣款</div><div class="text-xs font-black text-sky-700">NT$ {{ formatNumber(todayCloseout.prepaidOut) }}</div></div>
+                  <div class="rounded-xl bg-white border border-emerald-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值進帳</div><div class="text-xs font-black text-emerald-700">NT$ {{ formatNumber(todayCloseout.prepaidIn) }}</div></div>
                 </div>
               </div>
 
@@ -1263,9 +1267,9 @@
                         class="min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-macaron-peach-500 text-white border-r lg:border-r-0 lg:border-b border-white/25 text-xs font-black">
                   <span class="text-xl leading-none">＋</span><span>新增業績</span>
                 </button>
-                <button @click="nextTodayOrder ? goToCustomerCRM(nextTodayOrder.customerId || nextTodayOrder.customerName) : (activeTab = 'crm')"
+                <button @click="openExpenseFormForToday"
                         class="min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-emerald-50 text-emerald-700 border-r lg:border-r-0 lg:border-b border-emerald-100 text-xs font-black">
-                  <span class="text-lg leading-none">♨</span><span>查配方</span>
+                  <span class="text-lg leading-none">－</span><span>新增支出</span>
                 </button>
                 <button @click="openCloseoutSheet()"
                         class="min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-sky-50 text-sky-700 text-xs font-black">
@@ -5202,6 +5206,11 @@
           this.closeoutDate = date;
           this.loadCloseoutFormForDate();
           this.showCloseoutSheet = true;
+        },
+        openExpenseFormForToday() {
+          this.activeTab = 'expenses';
+          this.newExpense.date = new Date().toLocaleDateString('sv-SE');
+          this.showExpenseForm = true;
         },
         saveSelectedCloseout() {
           if (this.closeoutCashCount === null || this.closeoutCashCount === '') {
