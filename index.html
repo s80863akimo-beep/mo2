@@ -1444,8 +1444,10 @@
                   <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">實際盤點現金</span><input type="number" inputmode="numeric" v-model.number="closeoutCashCount" placeholder="輸入現金總額" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-black"></label>
                   <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">打烊備註</span><input type="text" v-model="closeoutNote" placeholder="找零或臨時採買" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-semibold"></label>
                   <div v-if="todayCloseoutDifference !== null" class="rounded-xl px-3 py-2 text-xs font-black flex justify-between" :class="todayCloseoutDifference === 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'"><span>{{ todayCloseoutDifference === 0 ? '帳實相符' : '帳實差額' }}</span><span>{{ todayCloseoutDifference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutDifference) }}</span></div>
+                  <div v-if="todayCloseoutRecord" class="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] font-black text-amber-700">🔒 今日已鎖帳；新增、修改、刪除今日業績與支出會被擋下。</div>
                   <button @click="completeCloseoutFromSheet" class="w-full min-h-[50px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ todayCloseoutRecord ? '更新打烊紀錄' : '完成打烊' }}</button>
                   <button v-if="todayCloseoutRecord" @click="copyCloseoutSummary" class="w-full min-h-[46px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-black">複製打烊摘要</button>
+                  <button v-if="todayCloseoutRecord" @click="unlockCloseoutDate()" class="w-full min-h-[46px] rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-sm font-black">解除今日鎖帳</button>
                 </div>
               </div>
             </div>
@@ -1674,6 +1676,7 @@
                           :class="group.weekday === '週六' || group.weekday === '週日' ? 'bg-macaron-rose/20 text-rose-600' : 'bg-macaron-sky/30 text-sky-700'">
                       {{ group.weekday }}
                     </span>
+                    <span v-if="isDateLocked(group.date)" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">🔒 已鎖帳</span>
                     <!-- 最高單日王冠 -->
                   </div>
                   <div class="flex items-center gap-2 shrink-0">
@@ -1721,17 +1724,17 @@
                         </tr>
                         <tr v-if="expandedOrderId === order.id" class="bg-orange-50/30">
                           <td colspan="6" class="p-4">
-                            <div class="grid grid-cols-6 gap-3 items-end">
-                              <label class="col-span-2 text-[10px] font-black text-slate-400">顧客（穩定 ID）<select v-model="order.customerId" @change="onOrderCustomerIdChanged(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold text-slate-700"><option v-for="c in customerOptions" :key="c.id" :value="c.id">{{ c.name }} · {{ shortCustomerId(c.id) }}</option></select></label>
-                              <label class="text-[10px] font-black text-slate-400">性別<select v-model="order.gender" @change="saveOrders" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"><option value="女">女</option><option value="男">男</option></select></label>
-                              <label class="col-span-3 text-[10px] font-black text-slate-400">服務內容<input type="text" v-model="order.serviceName" @change="saveOrders" list="common-services" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold text-slate-700"></label>
-                              <label class="col-span-2 text-[10px] font-black text-slate-400">金額<input type="number" v-model.number="order.amount" @change="saveOrders" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-black text-right"></label>
-                              <label class="col-span-2 text-[10px] font-black text-slate-400">付款方式<select v-model="order.paymentMethod" @change="saveOrders" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"><option v-for="m in paymentMethods" :key="m" :value="m">{{ m }}</option></select></label>
+                            <div class="grid grid-cols-6 gap-3 items-end" @focusin="rememberEditSnapshot('orders', order)">
+                              <label class="col-span-2 text-[10px] font-black text-slate-400">顧客（穩定 ID）<select v-model="order.customerId" @change="guardedOrderCustomerChanged(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold text-slate-700"><option v-for="c in customerOptions" :key="c.id" :value="c.id">{{ c.name }} · {{ shortCustomerId(c.id) }}</option></select></label>
+                              <label class="text-[10px] font-black text-slate-400">性別<select v-model="order.gender" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"><option value="女">女</option><option value="男">男</option></select></label>
+                              <label class="col-span-3 text-[10px] font-black text-slate-400">服務內容<input type="text" v-model="order.serviceName" @change="guardedSaveOrder(order)" list="common-services" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold text-slate-700"></label>
+                              <label class="col-span-2 text-[10px] font-black text-slate-400">金額<input type="number" v-model.number="order.amount" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-black text-right"></label>
+                              <label class="col-span-2 text-[10px] font-black text-slate-400">付款方式<select v-model="order.paymentMethod" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"><option v-for="m in paymentMethods" :key="m" :value="m">{{ m }}</option></select></label>
                               <div v-if="order.paymentMethod === '現金＋儲值扣款'" class="col-span-4 grid grid-cols-2 gap-2 p-2 rounded-xl bg-sky-50 border border-sky-100">
-                                <label class="text-[10px] font-black text-slate-500">現金付款<input type="number" v-model.number="order.cashAmount" @change="saveOrders" min="0" :max="Number(order.amount) || 0" class="mt-1 w-full bg-white border border-sky-100 rounded-lg px-3 py-2 text-sm font-black text-right"></label>
+                                <label class="text-[10px] font-black text-slate-500">現金付款<input type="number" v-model.number="order.cashAmount" @change="guardedSaveOrder(order)" min="0" :max="Number(order.amount) || 0" class="mt-1 w-full bg-white border border-sky-100 rounded-lg px-3 py-2 text-sm font-black text-right"></label>
                                 <div class="text-[10px] font-black text-slate-500">儲值扣款<div class="mt-1 min-h-[38px] flex items-center justify-end bg-white border border-sky-100 rounded-lg px-3 text-sm font-black text-sky-700">NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div></div>
                               </div>
-                              <label v-if="order.paymentMethod === '儲值進帳'" class="col-span-2 text-[10px] font-black text-slate-400">儲值收款方式<select v-model="order.topupChannel" @change="saveOrders" class="mt-1 w-full jelly-input bg-white border border-emerald-100 rounded-xl px-3 py-2 text-sm font-bold"><option value="現金">現金</option><option value="轉帳">轉帳</option></select></label>
+                              <label v-if="order.paymentMethod === '儲值進帳'" class="col-span-2 text-[10px] font-black text-slate-400">儲值收款方式<select v-model="order.topupChannel" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-emerald-100 rounded-xl px-3 py-2 text-sm font-bold"><option value="現金">現金</option><option value="轉帳">轉帳</option></select></label>
                               <button @click.stop="deleteOrder(order.id)" class="col-span-2 min-h-[40px] rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-xs font-black jelly-btn">刪除此筆</button>
                             </div>
                           </td>
@@ -1764,21 +1767,21 @@
                       <div v-if="order.paymentMethod === '儲值進帳'" class="mt-2 text-[9px] font-black text-purple-600">非服務業績，不計入上方摘要</div>
                       <div v-if="order.paymentMethod === '現金＋儲值扣款'" class="mt-2 text-[10px] font-black text-amber-700">現金 NT$ {{ formatNumber(getMixedCashAmount(order)) }} · 儲值扣款 NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div>
                     </button>
-                    <div v-if="expandedOrderId === order.id" class="p-3.5 pt-0 border-t border-orange-50 bg-orange-50/25 space-y-3">
+                    <div v-if="expandedOrderId === order.id" class="p-3.5 pt-0 border-t border-orange-50 bg-orange-50/25 space-y-3" @focusin="rememberEditSnapshot('orders', order)">
                       <div class="grid grid-cols-3 gap-2 pt-3">
-                        <label class="col-span-2 text-[10px] font-black text-slate-400">顧客（穩定 ID）<select v-model="order.customerId" @change="onOrderCustomerIdChanged(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-bold"><option v-for="c in customerOptions" :key="c.id" :value="c.id">{{ c.name }} · {{ shortCustomerId(c.id) }}</option></select></label>
-                        <label class="text-[10px] font-black text-slate-400">性別<select v-model="order.gender" @change="saveOrders" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-2 py-2.5 text-sm font-bold"><option value="女">女</option><option value="男">男</option></select></label>
+                        <label class="col-span-2 text-[10px] font-black text-slate-400">顧客（穩定 ID）<select v-model="order.customerId" @change="guardedOrderCustomerChanged(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-bold"><option v-for="c in customerOptions" :key="c.id" :value="c.id">{{ c.name }} · {{ shortCustomerId(c.id) }}</option></select></label>
+                        <label class="text-[10px] font-black text-slate-400">性別<select v-model="order.gender" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-2 py-2.5 text-sm font-bold"><option value="女">女</option><option value="男">男</option></select></label>
                       </div>
-                      <label class="block text-[10px] font-black text-slate-400">服務內容<input type="text" v-model="order.serviceName" @change="saveOrders" list="common-services" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-bold"></label>
+                      <label class="block text-[10px] font-black text-slate-400">服務內容<input type="text" v-model="order.serviceName" @change="guardedSaveOrder(order)" list="common-services" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-bold"></label>
                       <div class="grid grid-cols-2 gap-2">
-                        <label class="text-[10px] font-black text-slate-400">金額<input type="number" inputmode="decimal" v-model.number="order.amount" @change="saveOrders" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-black text-right"></label>
-                        <label class="text-[10px] font-black text-slate-400">付款方式<select v-model="order.paymentMethod" @change="saveOrders" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-2 py-2.5 text-xs font-bold"><option v-for="m in paymentMethods" :key="m" :value="m">{{ m }}</option></select></label>
+                        <label class="text-[10px] font-black text-slate-400">金額<input type="number" inputmode="decimal" v-model.number="order.amount" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-black text-right"></label>
+                        <label class="text-[10px] font-black text-slate-400">付款方式<select v-model="order.paymentMethod" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-2 py-2.5 text-xs font-bold"><option v-for="m in paymentMethods" :key="m" :value="m">{{ m }}</option></select></label>
                       </div>
                       <div v-if="order.paymentMethod === '現金＋儲值扣款'" class="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-sky-50 border border-sky-100">
-                        <label class="text-[10px] font-black text-slate-500">現金付款<input type="number" inputmode="decimal" v-model.number="order.cashAmount" @change="saveOrders" min="0" :max="Number(order.amount) || 0" class="mt-1 w-full bg-white border border-sky-100 rounded-lg px-3 py-2.5 text-sm font-black text-right"></label>
+                        <label class="text-[10px] font-black text-slate-500">現金付款<input type="number" inputmode="decimal" v-model.number="order.cashAmount" @change="guardedSaveOrder(order)" min="0" :max="Number(order.amount) || 0" class="mt-1 w-full bg-white border border-sky-100 rounded-lg px-3 py-2.5 text-sm font-black text-right"></label>
                         <div class="text-[10px] font-black text-slate-500">儲值扣款<div class="mt-1 min-h-[42px] flex items-center justify-end bg-white border border-sky-100 rounded-lg px-3 text-sm font-black text-sky-700">NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div></div>
                       </div>
-                      <label v-if="order.paymentMethod === '儲值進帳'" class="block text-[10px] font-black text-slate-400">儲值收款方式<select v-model="order.topupChannel" @change="saveOrders" class="mt-1 w-full jelly-input bg-white border border-emerald-100 rounded-xl px-3 py-2.5 text-sm font-bold"><option value="現金">現金</option><option value="轉帳">轉帳</option></select></label>
+                      <label v-if="order.paymentMethod === '儲值進帳'" class="block text-[10px] font-black text-slate-400">儲值收款方式<select v-model="order.topupChannel" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-emerald-100 rounded-xl px-3 py-2.5 text-sm font-bold"><option value="現金">現金</option><option value="轉帳">轉帳</option></select></label>
                       <button @click="deleteOrder(order.id)" class="w-full min-h-[42px] rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-xs font-black jelly-btn">刪除此筆業績</button>
                     </div>
                   </div>
@@ -1938,6 +1941,7 @@
                     <svg class="w-4 h-4 text-slate-400 transition-transform" :class="{ '-rotate-90': collapsedExpenseDates[group.date] }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     <span class="text-sm font-black text-slate-700">{{ group.date }}</span>
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="group.weekday === '週六' || group.weekday === '週日' ? 'bg-rose-100 text-rose-600' : 'bg-sky-50 text-sky-700'">{{ group.weekday }}</span>
+                    <span v-if="isDateLocked(group.date)" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">🔒 已鎖帳</span>
                   </div>
                   <div class="flex items-center gap-2">
                     <span class="text-[10px] font-bold text-slate-400">{{ group.expenses.length }} 筆</span>
@@ -1959,11 +1963,11 @@
                         </tr>
                         <tr v-if="expandedExpenseId === expense.id" class="bg-orange-50/30">
                           <td colspan="4" class="p-4">
-                            <div class="grid grid-cols-6 gap-3 items-end">
-                              <label class="col-span-2 text-[10px] font-black text-slate-400">日期<input type="date" v-model="expense.date" @change="saveExpenses" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"></label>
-                              <label class="col-span-2 text-[10px] font-black text-slate-400">分類<select v-model="expense.category" @change="saveExpenses" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"><option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option></select></label>
-                              <label class="col-span-2 text-[10px] font-black text-slate-400">金額<input type="number" v-model.number="expense.amount" @change="saveExpenses" min="0" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-black text-right"></label>
-                              <label class="col-span-5 text-[10px] font-black text-slate-400">備註<input type="text" v-model="expense.notes" @change="saveExpenses" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-semibold"></label>
+                            <div class="grid grid-cols-6 gap-3 items-end" @focusin="rememberEditSnapshot('expenses', expense)">
+                              <label class="col-span-2 text-[10px] font-black text-slate-400">日期<input type="date" v-model="expense.date" @change="guardedSaveExpense(expense)" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"></label>
+                              <label class="col-span-2 text-[10px] font-black text-slate-400">分類<select v-model="expense.category" @change="guardedSaveExpense(expense)" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"><option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option></select></label>
+                              <label class="col-span-2 text-[10px] font-black text-slate-400">金額<input type="number" v-model.number="expense.amount" @change="guardedSaveExpense(expense)" min="0" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-black text-right"></label>
+                              <label class="col-span-5 text-[10px] font-black text-slate-400">備註<input type="text" v-model="expense.notes" @change="guardedSaveExpense(expense)" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-semibold"></label>
                               <button @click.stop="deleteExpense(expense.id)" class="min-h-[40px] rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-xs font-black">刪除</button>
                             </div>
                           </td>
@@ -1983,13 +1987,13 @@
                       </div>
                       <div class="shrink-0 text-sm font-black text-slate-800">NT$ {{ formatNumber(expense.amount) }}</div>
                     </button>
-                    <div v-if="expandedExpenseId === expense.id" class="p-3.5 pt-0 border-t border-orange-50 bg-orange-50/25 space-y-3">
+                    <div v-if="expandedExpenseId === expense.id" class="p-3.5 pt-0 border-t border-orange-50 bg-orange-50/25 space-y-3" @focusin="rememberEditSnapshot('expenses', expense)">
                       <div class="grid grid-cols-2 gap-2 pt-3">
-                        <label class="text-[10px] font-black text-slate-400">日期<input type="date" v-model="expense.date" @change="saveExpenses" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-xs font-bold"></label>
-                        <label class="text-[10px] font-black text-slate-400">分類<select v-model="expense.category" @change="saveExpenses" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-2 py-2.5 text-xs font-bold"><option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option></select></label>
+                        <label class="text-[10px] font-black text-slate-400">日期<input type="date" v-model="expense.date" @change="guardedSaveExpense(expense)" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-xs font-bold"></label>
+                        <label class="text-[10px] font-black text-slate-400">分類<select v-model="expense.category" @change="guardedSaveExpense(expense)" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-2 py-2.5 text-xs font-bold"><option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option></select></label>
                       </div>
-                      <label class="block text-[10px] font-black text-slate-400">備註<input type="text" v-model="expense.notes" @change="saveExpenses" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-semibold"></label>
-                      <label class="block text-[10px] font-black text-slate-400">金額<input type="number" inputmode="decimal" v-model.number="expense.amount" @change="saveExpenses" min="0" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-black text-right"></label>
+                      <label class="block text-[10px] font-black text-slate-400">備註<input type="text" v-model="expense.notes" @change="guardedSaveExpense(expense)" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-semibold"></label>
+                      <label class="block text-[10px] font-black text-slate-400">金額<input type="number" inputmode="decimal" v-model.number="expense.amount" @change="guardedSaveExpense(expense)" min="0" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-black text-right"></label>
                       <button @click="deleteExpense(expense.id)" class="w-full min-h-[42px] rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-xs font-black">刪除此筆支出</button>
                     </div>
                   </div>
@@ -3253,6 +3257,7 @@
           closeoutRecords: {},
           closeoutCashCount: null,
           closeoutNote: '',
+          editSnapshots: {},
           crmFormulas: {},
           online: navigator.onLine,
           isStandalone: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true,
@@ -4425,6 +4430,74 @@
         if (this.cloudSyncTimer) clearTimeout(this.cloudSyncTimer);
       },
       methods: {
+        isDateLocked(date) {
+          return Boolean(date && this.closeoutRecords && this.closeoutRecords[date]);
+        },
+        lockMessage(date) {
+          return `${date || '這一天'} 已完成打烊鎖帳；如需修正，請先到每日打烊對帳解除鎖帳。`;
+        },
+        assertDateUnlocked(date) {
+          if (!this.isDateLocked(date)) return true;
+          this.showToast(`🔒 ${this.lockMessage(date)}`, 'error', 7000);
+          return false;
+        },
+        rememberEditSnapshot(type, row) {
+          if (!row?.id) return;
+          const key = `${type}:${row.id}`;
+          if (!this.editSnapshots[key]) this.editSnapshots[key] = JSON.parse(JSON.stringify(row));
+        },
+        clearEditSnapshot(type, row) {
+          if (row?.id) delete this.editSnapshots[`${type}:${row.id}`];
+        },
+        restoreEditSnapshot(type, row) {
+          const key = `${type}:${row?.id}`;
+          const snapshot = this.editSnapshots[key];
+          if (snapshot && row) Object.assign(row, JSON.parse(JSON.stringify(snapshot)));
+          delete this.editSnapshots[key];
+        },
+        guardedSaveOrder(order) {
+          const snapshot = this.editSnapshots[`orders:${order?.id}`];
+          const oldDate = snapshot?.date || order?.date;
+          if (!this.assertDateUnlocked(oldDate) || !this.assertDateUnlocked(order?.date)) {
+            this.restoreEditSnapshot('orders', order);
+            return false;
+          }
+          this.clearEditSnapshot('orders', order);
+          this.saveOrders();
+          return true;
+        },
+        guardedOrderCustomerChanged(order) {
+          const snapshot = this.editSnapshots[`orders:${order?.id}`];
+          const oldDate = snapshot?.date || order?.date;
+          if (!this.assertDateUnlocked(oldDate) || !this.assertDateUnlocked(order?.date)) {
+            this.restoreEditSnapshot('orders', order);
+            return false;
+          }
+          this.onOrderCustomerIdChanged(order);
+          this.clearEditSnapshot('orders', order);
+          return true;
+        },
+        guardedSaveExpense(expense) {
+          const snapshot = this.editSnapshots[`expenses:${expense?.id}`];
+          const oldDate = snapshot?.date || expense?.date;
+          if (!this.assertDateUnlocked(oldDate) || !this.assertDateUnlocked(expense?.date)) {
+            this.restoreEditSnapshot('expenses', expense);
+            return false;
+          }
+          this.clearEditSnapshot('expenses', expense);
+          this.saveExpenses();
+          return true;
+        },
+        unlockCloseoutDate(date = new Date().toLocaleDateString('sv-SE')) {
+          if (!this.closeoutRecords?.[date]) return;
+          this.showConfirm(`確定解除 ${date} 的鎖帳嗎？解除後可修改當日業績與支出，完成修正後請重新打烊。`, () => {
+            delete this.closeoutRecords[date];
+            localStorage.setItem('momo_closeoutRecords', JSON.stringify(this.closeoutRecords));
+            this.deleteCloudRecord('closeouts', 'closeout_date', date);
+            this.queueCloudSync();
+            this.showToast(`🔓 已解除 ${date} 鎖帳`);
+          });
+        },
         setupPwaUpdateListener() {
           if (!('serviceWorker' in navigator)) return;
           window.addEventListener('load', async () => {
@@ -6377,6 +6450,11 @@
               skippedCount++;
               return;
             }
+            if (this.isDateLocked(date)) {
+              skippedCount++;
+              warningCount++;
+              return;
+            }
             if (!sourceEventId) warningCount++;
             if (amount <= 0 || !['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'].includes(paymentMethod)) warningCount++;
             if (paymentMethod === '現金＋儲值扣款' && (cashAmount <= 0 || cashAmount >= amount)) warningCount++;
@@ -6472,6 +6550,11 @@
           const cancelledSet = new Set(cancelledEventIds.map(String));
           this.orders.forEach(order => {
             if (order.source === 'google_calendar' && order.sourceEventId && cancelledSet.has(String(order.sourceEventId))) {
+              if (this.isDateLocked(order.date)) {
+                skippedCount++;
+                warningCount++;
+                return;
+              }
               if (order.syncStatus !== 'cancelled') cancelledCount++;
               order.syncStatus = 'cancelled';
               order.lastSyncedAt = new Date().toISOString();
@@ -6685,6 +6768,7 @@
 
         // --- Tab 2: Orders CRUD ---
         addOrder() {
+          if (!this.assertDateUnlocked(this.newOrder.date)) return;
           const totalAmount = Number(this.newOrder.amount) || 0;
           const cashAmount = Number(this.newOrder.cashAmount) || 0;
           if (this.newOrder.paymentMethod === '現金＋儲值扣款' && (cashAmount <= 0 || cashAmount >= totalAmount)) {
@@ -6734,6 +6818,8 @@
           this.activeTab = 'orders';
         },
         deleteOrder(id) {
+          const order = this.orders.find(o => o.id === id);
+          if (!this.assertDateUnlocked(order?.date)) return;
           this.showConfirm('確定要刪除這筆業績紀錄嗎？', () => {
             this.orders = this.orders.filter(o => o.id !== id);
             if (this.expandedOrderId === id) this.expandedOrderId = null;
@@ -6754,6 +6840,7 @@
 
         // --- Tab 3: Expenses CRUD ---
         addExpense() {
+          if (!this.assertDateUnlocked(this.newExpense.date)) return;
           const id = 'exp_' + Math.random().toString(36).substr(2, 9);
           this.expenses.push({
             id,
@@ -6772,6 +6859,8 @@
           this.showExpenseForm = false;
         },
         deleteExpense(id) {
+          const expense = this.expenses.find(e => e.id === id);
+          if (!this.assertDateUnlocked(expense?.date)) return;
           this.showConfirm('確定要刪除這筆支出嗎？', () => {
             this.expenses = this.expenses.filter(e => e.id !== id);
             if (this.expandedExpenseId === id) this.expandedExpenseId = null;
