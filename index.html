@@ -1341,18 +1341,18 @@
           </section>
 
           <section class="border rounded-xl px-4 py-3 space-y-3"
-                   :class="operationalAnomalySummary.blockers ? 'bg-rose-50 border-rose-100' : operationalAnomalySummary.total ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'">
+                   :class="pendingActionSummary.blockers ? 'bg-rose-50 border-rose-100' : pendingActionSummary.total ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'">
             <div class="flex items-center justify-between gap-3">
               <div class="min-w-0">
-                <div class="text-xs font-black text-slate-700">營運異常檢查</div>
-                <div class="text-[10px] font-semibold truncate" :class="operationalAnomalySummary.total ? 'text-amber-700' : 'text-emerald-700'">
-                  {{ operationalAnomalySummary.total ? `${operationalAnomalySummary.total} 筆待確認，會影響報表或打烊` : '目前沒有高風險異常' }}
+                <div class="text-xs font-black text-slate-700">待處理提醒</div>
+                <div class="text-[10px] font-semibold truncate" :class="pendingActionSummary.total ? 'text-amber-700' : 'text-emerald-700'">
+                  {{ pendingActionSummary.total ? `${pendingActionSummary.total} 筆待處理，含 ${pendingActionSummary.unclosedCount} 天未打烊` : '目前沒有待處理事項' }}
                 </div>
               </div>
               <button @click="runIntegrityCheck(true)" class="min-h-[36px] px-3 rounded-xl bg-white border border-orange-100 text-[11px] font-black text-slate-600 whitespace-nowrap">重新檢查</button>
             </div>
-            <div v-if="operationalAnomalySummary.items.length" class="space-y-2">
-              <button v-for="item in operationalAnomalySummary.items" :key="item.code + item.message"
+            <div v-if="pendingActionSummary.items.length" class="space-y-2">
+              <button v-for="item in pendingActionSummary.items.slice(0, 4)" :key="item.code + item.message"
                       @click="goToAnomaly(item)"
                       class="w-full text-left rounded-xl bg-white/80 border border-white px-3 py-2 text-[11px] font-bold text-slate-600 hover:bg-white hover:border-orange-100 transition-colors">
                 <div class="flex items-center justify-between gap-2">
@@ -1421,50 +1421,78 @@
             </div>
           </section>
 
-          <!-- Business insights -->
+          <!-- Pending actions -->
           <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 pt-4 sm:px-6 sm:pt-5">
-              <h2 class="text-base sm:text-lg font-black text-slate-800">經營洞察</h2>
-              <div class="grid grid-cols-3 mt-3 border border-slate-200 rounded-xl overflow-hidden">
-                <button @click="mobileDashboardSubTab = 'payment'" class="min-h-[44px] text-xs font-black border-r border-slate-200"
-                        :class="mobileDashboardSubTab === 'payment' ? 'bg-macaron-peach-500 text-white' : 'bg-white text-slate-500'">金流</button>
-                <button @click="mobileDashboardSubTab = 'customers'" class="min-h-[44px] text-xs font-black border-r border-slate-200"
-                        :class="mobileDashboardSubTab === 'customers' ? 'bg-macaron-peach-500 text-white' : 'bg-white text-slate-500'">常客</button>
-                <button @click="mobileDashboardSubTab = 'yield'" class="min-h-[44px] text-xs font-black"
-                        :class="mobileDashboardSubTab === 'yield' ? 'bg-macaron-peach-500 text-white' : 'bg-white text-slate-500'">時間產值</button>
+            <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h2 class="text-base sm:text-lg font-black text-slate-800">待處理事項</h2>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">優先處理未打烊、帳務異常與儲值風險</p>
+              </div>
+              <button @click="runIntegrityCheck(true)" class="min-h-[40px] px-3 rounded-xl text-xs font-black text-slate-500 border border-slate-200 bg-white whitespace-nowrap">重新檢查</button>
+            </div>
+
+            <div class="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100">
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">未打烊</div>
+                <div class="text-xl font-black mt-1" :class="pendingActionSummary.unclosedCount ? 'text-amber-600' : 'text-emerald-600'">{{ pendingActionSummary.unclosedCount }}</div>
+              </div>
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">異常待確認</div>
+                <div class="text-xl font-black mt-1" :class="pendingActionSummary.anomalyCount ? 'text-amber-600' : 'text-emerald-600'">{{ pendingActionSummary.anomalyCount }}</div>
+              </div>
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">需修正</div>
+                <div class="text-xl font-black mt-1" :class="pendingActionSummary.blockers ? 'text-rose-600' : 'text-emerald-600'">{{ pendingActionSummary.blockers }}</div>
               </div>
             </div>
 
-            <div class="p-4 sm:p-6">
-              <div v-if="mobileDashboardSubTab === 'payment'" class="divide-y divide-slate-100">
-                <div v-for="(val, method) in paymentReconciliation" :key="method" class="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-                  <span class="text-sm font-bold text-slate-600">{{ method }}</span>
-                  <span class="text-sm font-black text-slate-800">NT$ {{ formatNumber(val) }}</span>
+            <div class="p-4 sm:p-6 space-y-5">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="text-xs sm:text-sm font-black text-slate-700">未打烊日期清單</h3>
+                  <span class="text-[10px] font-bold text-slate-400">{{ unclosedCloseoutDates.length ? '點日期可補打烊' : '目前都已完成' }}</span>
                 </div>
+                <div v-if="unclosedCloseoutDates.length" class="space-y-2">
+                  <button v-for="item in unclosedCloseoutDates.slice(0, 8)" :key="item.date"
+                          @click="openCloseoutSheet(item.date)"
+                          class="w-full rounded-xl border border-amber-100 bg-amber-50/60 px-3 py-3 text-left hover:bg-amber-50 transition-colors">
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="min-w-0">
+                        <div class="text-sm font-black text-slate-800">{{ item.date }} · {{ item.label }}</div>
+                        <div class="text-[10px] font-bold text-slate-500 mt-0.5">
+                          {{ item.ordersCount }} 筆業績 · 支出 NT$ {{ formatNumber(item.expenses) }}
+                        </div>
+                      </div>
+                      <div class="text-right shrink-0">
+                        <div class="text-[10px] font-black text-slate-400">應有現金</div>
+                        <div class="text-sm font-black text-amber-700">NT$ {{ formatNumber(item.actualCashIn) }}</div>
+                      </div>
+                    </div>
+                  </button>
+                  <div v-if="unclosedCloseoutDates.length > 8" class="text-[10px] font-bold text-slate-400 text-center">另有 {{ unclosedCloseoutDates.length - 8 }} 天未顯示，請先處理最近日期</div>
+                </div>
+                <div v-else class="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-4 text-center text-xs font-black text-emerald-700">沒有未打烊日期</div>
               </div>
 
-              <div v-else-if="mobileDashboardSubTab === 'customers'" class="divide-y divide-slate-100">
-                <button v-for="(cust, idx) in topCustomers" :key="cust.id || cust.name" @click="goToCustomerCRM(cust.id || cust.name)"
-                        class="w-full flex items-center justify-between py-3 first:pt-0 last:pb-0 text-left">
-                  <div class="flex items-center gap-3 min-w-0">
-                    <span class="w-8 h-8 shrink-0 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-black">{{ idx + 1 }}</span>
-                    <div class="min-w-0"><div class="text-sm font-black text-slate-700 truncate">{{ cust.name }}</div><div class="text-[10px] font-bold text-slate-400">{{ cust.count }} 次來訪</div></div>
-                  </div>
-                  <span class="text-sm font-black text-slate-800">NT$ {{ formatNumber(cust.totalSpent) }}</span>
-                </button>
-                <div v-if="!topCustomers.length" class="py-8 text-center text-xs font-bold text-slate-400">本期尚無顧客資料</div>
-              </div>
-
-              <div v-else class="space-y-3">
-                <div class="grid grid-cols-2 gap-3 pb-3 border-b border-slate-100">
-                  <div><div class="text-[10px] font-black text-slate-400">平均每小時</div><div class="text-lg font-black text-slate-800">NT$ {{ formatNumber(yieldSummary.average) }}</div></div>
-                  <div><div class="text-[10px] font-black text-slate-400">高效服務</div><div class="text-lg font-black text-emerald-600">{{ yieldSummary.highEfficiency }} 項</div></div>
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="text-xs sm:text-sm font-black text-slate-700">帳務異常</h3>
+                  <span class="text-[10px] font-bold text-slate-400">{{ pendingActionSummary.anomalyCount ? `${pendingActionSummary.anomalyCount} 筆待確認` : '目前正常' }}</span>
                 </div>
-                <div v-for="item in serviceYieldAnalysis" :key="item.serviceName" class="flex items-center justify-between gap-3">
-                  <div class="min-w-0"><div class="text-sm font-black text-slate-700 truncate">{{ item.serviceName }}</div><div class="text-[10px] font-bold text-slate-400">{{ item.minutesPerService }} 分鐘</div></div>
-                  <span class="text-xs font-black whitespace-nowrap" :class="item.level === '高效' ? 'text-emerald-600' : item.level === '穩定' ? 'text-sky-600' : 'text-amber-600'">NT$ {{ formatNumber(item.yieldPerHour) }}/hr</span>
+                <div v-if="pendingActionSummary.anomalyItems.length" class="space-y-2">
+                  <button v-for="item in pendingActionSummary.anomalyItems" :key="item.code + item.message"
+                          @click="goToAnomaly(item)"
+                          class="w-full text-left rounded-xl bg-white border border-slate-100 px-3 py-2 text-[11px] font-bold text-slate-600 hover:bg-orange-50/40 hover:border-orange-100 transition-colors">
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="min-w-0">
+                        <span class="font-black" :class="item.severity === 'error' ? 'text-rose-600' : 'text-amber-600'">{{ item.severity === 'error' ? '需修正' : '需確認' }}</span>
+                        <span class="ml-1">{{ item.message }}</span>
+                      </div>
+                      <span class="text-[10px] font-black text-macaron-peach-500 shrink-0">前往 ›</span>
+                    </div>
+                  </button>
                 </div>
-                <button v-if="yieldSummary.unmatched.length" @click="openServiceConfigModal" class="w-full min-h-[42px] rounded-xl bg-amber-50 text-amber-700 text-xs font-black border border-amber-100">{{ yieldSummary.unmatched.length }} 項缺少時長設定</button>
+                <div v-else class="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-4 text-center text-xs font-black text-emerald-700">目前沒有待處理異常</div>
               </div>
             </div>
           </section>
@@ -3672,12 +3700,62 @@
         selectedCloseoutRecord() {
           return this.closeoutRecords[this.closeoutDate || new Date().toLocaleDateString('sv-SE')] || null;
         },
+        unclosedCloseoutDates() {
+          const today = new Date().toLocaleDateString('sv-SE');
+          const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+          const dates = new Set();
+
+          (this.orders || []).forEach(order => {
+            if (!order || !validDate(order.date) || order.date > today) return;
+            if (!this.isOrderActive(order) || this.isBlockedSlot(order.customerName)) return;
+            dates.add(order.date);
+          });
+
+          (this.expenses || []).forEach(expense => {
+            if (!expense || !validDate(expense.date) || expense.date > today) return;
+            dates.add(expense.date);
+          });
+
+          return [...dates]
+            .filter(date => !this.closeoutRecords?.[date])
+            .sort((a, b) => b.localeCompare(a))
+            .map(date => {
+              const totals = this.calculateCloseoutForDate(date);
+              const [, month, day] = date.split('-');
+              return {
+                date,
+                label: `${Number(month)}/${Number(day)} ${this.getWeekday(date)}`,
+                ...totals
+              };
+            });
+        },
         operationalAnomalySummary() {
           const all = this.collectOperationalIssues();
           const items = all.slice(0, 6);
           const total = all.length;
           const blockers = all.filter(item => item.severity === 'error').length;
           return { items, total, blockers };
+        },
+        pendingActionSummary() {
+          const unclosedItems = this.unclosedCloseoutDates.map(item => ({
+            severity: 'warning',
+            code: `closeout_missing_${item.date}`,
+            message: `${item.date} 尚未打烊，應有現金 NT$ ${this.formatNumber(item.actualCashIn)}`,
+            tab: 'closeout',
+            date: item.date
+          }));
+          const anomalyItems = this.collectOperationalIssues();
+          const items = [...unclosedItems, ...anomalyItems].slice(0, 8);
+          const total = unclosedItems.length + anomalyItems.length;
+          const blockers = [...unclosedItems, ...anomalyItems].filter(item => item.severity === 'error').length;
+          return {
+            items,
+            total,
+            blockers,
+            unclosedCount: unclosedItems.length,
+            anomalyCount: anomalyItems.length,
+            anomalyItems: anomalyItems.slice(0, 8)
+          };
         },
 
         // KPI Calculations（排除儲值進帳，避免業績虛高）
@@ -5204,7 +5282,6 @@
           };
           const orderKeyCounts = {};
           const orderKeyFirst = {};
-          const today = new Date().toLocaleDateString('sv-SE');
 
           this.orders.forEach(order => {
             if (!order || !this.isOrderActive(order) || this.isBlockedSlot(order.customerName)) return;
@@ -5245,12 +5322,12 @@
             }
           });
 
-          if (this.todayOrders.length && !this.todayCloseoutRecord) {
-            push('warning', 'today_closeout_missing', `${today} 尚未完成打烊對帳`, { tab: 'closeout', date: today });
-          }
-          if (this.todayCloseoutRecord && Number(this.todayCloseoutRecord.difference || 0) !== 0 && !String(this.todayCloseoutRecord.note || '').trim()) {
-            push('warning', 'closeout_difference_no_note', `${today} 打烊有差額但未填備註`, { tab: 'closeout', date: today });
-          }
+          Object.values(this.closeoutRecords || {}).forEach(record => {
+            if (!record?.date) return;
+            if (Number(record.difference || 0) !== 0 && !String(record.note || '').trim()) {
+              push('warning', `closeout_difference_no_note_${record.date}`, `${record.date} 打烊有差額但未填備註`, { tab: 'closeout', date: record.date });
+            }
+          });
 
           return issues;
         },
