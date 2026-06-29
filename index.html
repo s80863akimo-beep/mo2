@@ -274,16 +274,22 @@
       .floating-nav {
         width: calc(100% - 1.5rem) !important;
         max-width: none !important;
-        min-height: calc(3.35rem + env(safe-area-inset-bottom)) !important;
-        padding: 0.3rem 0.3rem calc(0.28rem + env(safe-area-inset-bottom)) !important;
+        min-height: calc(2.85rem + env(safe-area-inset-bottom)) !important;
+        padding: 0.22rem 0.28rem calc(0.2rem + env(safe-area-inset-bottom)) !important;
+        background: rgba(255, 255, 255, 0.72) !important;
+        border-color: rgba(226, 232, 240, 0.8) !important;
+        box-shadow: 0 8px 18px -12px rgba(15, 23, 42, 0.25) !important;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
       }
 
       .floating-nav button {
         flex: 1 1 0;
         min-width: 0;
-        min-height: 2.05rem;
+        min-height: 1.8rem;
         border-radius: 9999px;
-        font-size: 0.68rem !important;
+        font-size: 0.66rem !important;
+        background: transparent !important;
       }
 
       .floating-nav button:active,
@@ -298,6 +304,10 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         line-height: 1.05;
+      }
+
+      .floating-nav .tab-active-indicator {
+        display: block;
       }
 
       .ios-sheet {
@@ -401,8 +411,9 @@
       max-width: 480px !important;
       bottom: calc(12px + env(safe-area-inset-bottom)) !important;
       border-radius: 9999px !important;
-      border: 1px solid rgba(255, 170, 166, 0.2) !important;
-      box-shadow: 0 8px 20px -4px rgba(255, 170, 166, 0.18) !important;
+      background: rgba(255, 255, 255, 0.76) !important;
+      border: 1px solid rgba(226, 232, 240, 0.85) !important;
+      box-shadow: 0 8px 18px -12px rgba(15, 23, 42, 0.25) !important;
       padding-left: 0.55rem !important;
       padding-right: 0.55rem !important;
       transition: opacity 0.25s ease, transform 0.25s ease !important;
@@ -3112,8 +3123,10 @@
     <nav class="glass-panel fixed floating-nav z-40 grid grid-cols-6 gap-1 py-2 px-2">
       <button v-for="tab in navTabs" :key="tab.id" @click="activeTab = tab.id"
               class="relative min-h-[38px] rounded-full px-1 text-[10px] font-black transition-all"
-              :class="activeTab === tab.id ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:bg-white/70'">
+              :class="activeTab === tab.id ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'">
         <span class="block truncate">{{ tab.label }}</span>
+        <span class="tab-active-indicator hidden absolute left-1/2 -translate-x-1/2 bottom-0.5 w-3.5 h-0.5 rounded-full bg-slate-900"
+              :class="activeTab === tab.id ? 'opacity-100' : 'opacity-0'"></span>
         <span v-if="tab.id === 'inventory' && lowStockItems.length > 0"
               class="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
           {{ lowStockItems.length }}
