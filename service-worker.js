@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v3-ios-tabbar';
+const CACHE_NAME = 'momohair-shell-v4-ios-tabbar-slim';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
