@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>摸摸頭營運總部 | MOMO 沙龍管理</title>
-  
+
   <!-- PWA & Native iOS Web App Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -138,12 +138,12 @@
       background: #FFAAA6;
       border-radius: 99px;
     }
-    
+
     /* Native Momentum Scrolling for iOS */
     .overflow-x-auto, .overflow-y-auto {
       -webkit-overflow-scrolling: touch;
     }
-    
+
     /* Animation classes - iOS Hardware Accelerated */
     .fade-enter-active, .fade-leave-active {
       transition: opacity 0.2s ease, transform 0.2s ease;
@@ -185,7 +185,7 @@
     /* iOS phone layout polish: keep the app chrome compact and thumb-friendly */
     @media (max-width: 640px) {
       #app {
-        padding-bottom: calc(6.75rem + env(safe-area-inset-bottom)) !important;
+        padding-bottom: calc(6rem + env(safe-area-inset-bottom)) !important;
       }
 
       header {
@@ -274,27 +274,22 @@
       .floating-nav {
         width: calc(100% - 1.25rem) !important;
         max-width: none !important;
-        padding-left: 0.35rem !important;
-        padding-right: 0.35rem !important;
-        padding-top: 0.45rem !important;
-        padding-bottom: 0.45rem !important;
+        min-height: calc(4.15rem + env(safe-area-inset-bottom)) !important;
+        padding: 0.45rem 0.4rem calc(0.45rem + env(safe-area-inset-bottom)) !important;
       }
 
       .floating-nav button {
         flex: 1 1 0;
         min-width: 0;
-        height: 2.75rem;
+        min-height: 2.6rem;
         border-radius: 9999px;
+        font-size: 0.72rem !important;
       }
 
-      .floating-nav button.text-macaron-peach-500 {
-        background: #FFF0E8;
-        box-shadow: inset 0 0 0 1px rgba(255, 170, 166, 0.35);
-      }
-
-      .floating-nav svg {
-        width: 1.15rem !important;
-        height: 1.15rem !important;
+      .floating-nav button:active,
+      .ios-primary-action:active,
+      .ios-secondary-action:active {
+        transform: scale(0.97);
       }
 
       .floating-nav span {
@@ -303,6 +298,50 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         line-height: 1.05;
+      }
+
+      .ios-sheet {
+        width: 100% !important;
+        max-height: min(88dvh, 720px) !important;
+        border-radius: 1.65rem 1.65rem 0 0 !important;
+        border-left: 0 !important;
+        border-right: 0 !important;
+      }
+
+      .ios-sheet-body {
+        padding: 1rem !important;
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom)) !important;
+      }
+
+      .ios-sheet-handle {
+        width: 2.5rem;
+        height: 0.28rem;
+        border-radius: 9999px;
+        background: #CBD5E1;
+        margin: 0.65rem auto 0.15rem;
+      }
+
+      .ios-action-bar {
+        position: sticky;
+        bottom: 0;
+        margin-left: -1rem;
+        margin-right: -1rem;
+        margin-bottom: calc(-1rem - env(safe-area-inset-bottom));
+        padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+        background: rgba(255, 255, 255, 0.96);
+        border-top: 1px solid rgba(226, 232, 240, 0.9);
+        backdrop-filter: blur(14px);
+      }
+
+      .ios-primary-action,
+      .ios-secondary-action {
+        min-height: 3.25rem !important;
+        border-radius: 1rem !important;
+        font-size: 0.95rem !important;
+      }
+
+      input, select, textarea {
+        min-height: 2.9rem;
       }
     }
 
@@ -346,6 +385,11 @@
       .hover-lift:hover {
         transform: translateY(-4px) scale(1.005);
         box-shadow: 0 15px 35px -5px rgba(255, 170, 166, 0.25);
+      }
+    }
+    @media (hover: none) {
+      .hover-lift {
+        transition: none !important;
       }
     }
 
@@ -418,7 +462,8 @@
     <transition name="fade">
       <div v-if="showAuthSheet" class="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-slate-900/45 sm:p-6"
            @click="!authConfig.required && (showAuthSheet = false)">
-        <section class="w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-white border border-orange-100 p-6 macaron-shadow-lg safe-pb" @click.stop>
+        <section class="ios-sheet w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-white border border-orange-100 p-6 macaron-shadow-lg safe-pb" @click.stop>
+          <div class="ios-sheet-handle sm:hidden"></div>
           <div class="flex items-start justify-between gap-4">
             <div>
               <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-macaron-peach-300 to-macaron-rose flex items-center justify-center text-2xl">🐾</div>
@@ -437,7 +482,7 @@
         </section>
       </div>
     </transition>
-    
+
     <!-- Top Nav / Header -->
     <header class="glass-panel sticky top-0 z-40 macaron-shadow border-b border-orange-100/50 safe-pt py-2 sm:py-3 px-4 sm:px-6">
       <!-- Compact mobile header -->
@@ -490,7 +535,7 @@
 
         <!-- Filters & Control Actions -->
         <div class="flex flex-wrap items-center gap-2 sm:gap-3 justify-center">
-          
+
           <!-- Month/Year Selector -->
           <div class="flex items-center bg-white/70 rounded-full p-1 border border-macaron-peach-200 macaron-shadow-sm">
             <button type="button" @click="shiftMonth(-1)" class="w-9 h-9 rounded-full hover:bg-orange-50 text-slate-500 text-lg font-black" aria-label="上一個月">‹</button>
@@ -504,8 +549,8 @@
           <div class="flex items-center gap-2">
             <!-- Sync Calendar Button & Last Sync Time -->
             <div class="relative flex flex-col items-center">
-              <button 
-                @click="syncFromApi" 
+              <button
+                @click="syncFromApi"
                 :disabled="syncing"
                 class="jelly-btn bg-gradient-to-r from-macaron-peach-400 to-macaron-rose hover:from-macaron-peach-500 hover:to-macaron-rose text-white text-sm font-extrabold px-4 py-2.5 rounded-full flex items-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50"
               >
@@ -521,7 +566,7 @@
             </div>
 
             <!-- Service Pricing Settings Button -->
-            <button 
+            <button
               @click="openServiceConfigModal"
               class="jelly-btn bg-white hover:bg-orange-50/50 border border-macaron-peach-200 text-slate-700 text-xs font-black px-3.5 py-2 rounded-full flex items-center gap-1.5 shadow-sm hover:shadow-md"
               title="服務項目定價與時長設定"
@@ -533,10 +578,10 @@
               </svg>
               <span>服務定價</span>
             </button>
- 
+
             <!-- Data Management Dropdown Toggle -->
             <div class="relative">
-              <button 
+              <button
                 @click="showDataTools = !showDataTools"
                 class="jelly-btn bg-white hover:bg-orange-50/50 border border-macaron-peach-200 text-slate-700 text-xs font-black px-3.5 py-2 rounded-full flex items-center gap-1.5 shadow-sm hover:shadow-md"
                 title="資料備份與還原"
@@ -619,7 +664,8 @@
     <!-- Mobile tools sheet -->
     <transition name="fade">
       <div v-if="showMobileTools" class="fixed inset-0 z-[80] flex items-end bg-slate-900/40 sm:hidden" @click="showMobileTools = false">
-        <div class="w-full max-h-[86dvh] overflow-y-auto rounded-t-3xl bg-white border border-orange-100 macaron-shadow-lg safe-pb" @click.stop>
+        <div class="ios-sheet w-full max-h-[86dvh] overflow-y-auto rounded-t-3xl bg-white border border-orange-100 macaron-shadow-lg safe-pb" @click.stop>
+          <div class="ios-sheet-handle"></div>
           <div class="sticky top-0 z-10 bg-white px-5 py-4 border-b border-orange-100 flex items-center justify-between">
             <div>
               <h2 class="text-base font-black text-slate-800">工具與設定</h2>
@@ -692,7 +738,8 @@
     <!-- Operation Log Modal -->
     <transition name="fade">
       <div v-if="showOperationLogModal" class="fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click="showOperationLogModal = false">
-        <div class="w-full sm:max-w-2xl max-h-[82vh] bg-white rounded-t-3xl sm:rounded-3xl macaron-shadow-lg border border-orange-100 overflow-hidden flex flex-col" @click.stop>
+        <div class="ios-sheet w-full sm:max-w-2xl max-h-[82vh] bg-white rounded-t-3xl sm:rounded-3xl macaron-shadow-lg border border-orange-100 overflow-hidden flex flex-col" @click.stop>
+          <div class="ios-sheet-handle sm:hidden"></div>
           <div class="px-5 py-4 border-b border-orange-100 flex items-center justify-between gap-3">
             <div>
               <h3 class="text-base font-black text-slate-800">操作紀錄</h3>
@@ -733,14 +780,14 @@
 
     <!-- Main Content Grid -->
     <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-grow">
-      
+
       <!-- Tab Contents -->
       <transition name="fade" mode="out-in">
-        
+
         <!-- Tab 1: Dashboard -->
         <div v-if="activeTab === 'dashboard'" key="dashboard" class="space-y-6">
           <template v-if="false">
-          
+
           <!-- Welcome Banner (Desktop only) -->
           <div class="hidden md:flex bg-gradient-to-r from-macaron-peach-100 to-macaron-soft p-5 sm:p-6 rounded-3xl sm:rounded-4xl border border-white macaron-shadow items-center justify-between hover-lift">
             <div class="space-y-2">
@@ -754,7 +801,7 @@
           <div class="bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden hover-lift">
             <!-- Hero Stats Section: Studio Net Profit & Today's Revenue -->
             <div class="p-5 sm:p-6 bg-gradient-to-r from-macaron-cream to-orange-50/20 border-b border-orange-100/40 flex flex-col sm:flex-row justify-between gap-4">
-              
+
               <!-- Left: Net Profit (Hero Metric) -->
               <div class="space-y-1">
                 <span class="text-[10px] sm:text-xs font-black text-slate-400 tracking-wider uppercase flex items-center gap-1.5 select-none">
@@ -784,7 +831,7 @@
                   今日服務 <strong class="text-slate-600">{{ todayOrdersCount }}</strong> 人次
                 </div>
               </div>
-              
+
             </div>
 
             <!-- Key Metrics Breakdown Grid (2x2 on Mobile, 1x4 on Desktop) -->
@@ -998,7 +1045,7 @@
                 <span v-else class="hidden sm:inline">每日/月營業額走勢</span>
               </div>
             </div>
-            
+
             <div class="relative w-full overflow-hidden py-2">
               <svg viewBox="0 0 600 120" class="w-full h-auto overflow-visible">
                 <defs>
@@ -1012,17 +1059,17 @@
                     <stop offset="100%" stop-color="#FF5A1F"></stop>
                   </linearGradient>
                 </defs>
-                
+
                 <line x1="15" y1="15" x2="585" y2="15" stroke="#FFF0E8" stroke-dasharray="3,3" stroke-width="0.8"></line>
                 <line x1="15" y1="60" x2="585" y2="60" stroke="#FFF0E8" stroke-dasharray="3,3" stroke-width="0.8"></line>
                 <line x1="15" y1="105" x2="585" y2="105" stroke="#FFE2D1" stroke-width="1.2"></line>
-                
+
                 <!-- Gradient Area -->
                 <path v-if="trendChartPath.points.length > 0" :d="trendChartPath.fillPath" fill="url(#chartGrad)"></path>
-                
+
                 <!-- Trend Line -->
                 <path v-if="trendChartPath.points.length > 0" :d="trendChartPath.path" fill="none" stroke="url(#lineGrad)" stroke-width="3.5" stroke-linecap="round"></path>
-                
+
                 <!-- Hoverable interactive zones (Optimized with vertical slice rects for iOS Touch) -->
                 <g v-for="pt in trendChartPath.points" :key="pt.key">
                   <!-- Transparent vertical slice rect hover target -->
@@ -1037,7 +1084,7 @@
                           class="transition-all duration-150 pointer-events-none"></circle>
                 </g>
               </svg>
-              
+
               <!-- Interactive Tooltip -->
               <div v-if="hoveredPoint" class="absolute bg-slate-800/95 text-white text-[10px] sm:text-[11px] font-bold px-2.5 py-1.5 rounded-xl shadow-lg pointer-events-none transition-all duration-100 flex flex-col z-30"
                    :style="{ left: (hoveredPoint.x / 600 * 100) + '%', top: '15px', transform: 'translateX(-50%)' }">
@@ -1069,7 +1116,7 @@
             </div>
 
             <div v-else class="flex flex-col sm:flex-row items-center gap-6">
-              
+
               <!-- Donut SVG -->
               <div class="relative flex-shrink-0">
                 <svg viewBox="0 0 160 160" width="155" height="155" class="overflow-visible">
@@ -1123,20 +1170,20 @@
               </div>
             </div>
           </div>
-          
+
           <!-- Segmented Control for Mobile (lg:hidden) -->
           <div class="lg:hidden flex bg-orange-100/30 p-1 rounded-full border border-orange-200/30 mb-2 max-w-md mx-auto">
-            <button @click="mobileDashboardSubTab = 'payment'" 
+            <button @click="mobileDashboardSubTab = 'payment'"
                     :class="mobileDashboardSubTab === 'payment' ? 'bg-white text-slate-800 shadow-sm border border-orange-100/50' : 'text-slate-500 hover:text-slate-700'"
                     class="flex-1 py-2 text-xs font-black rounded-full transition-all jelly-btn text-center select-none">
               💰 金流對帳
             </button>
-            <button @click="mobileDashboardSubTab = 'customers'" 
+            <button @click="mobileDashboardSubTab = 'customers'"
                     :class="mobileDashboardSubTab === 'customers' ? 'bg-white text-slate-800 shadow-sm border border-orange-100/50' : 'text-slate-500 hover:text-slate-700'"
                     class="flex-1 py-2 text-xs font-black rounded-full transition-all jelly-btn text-center select-none">
               常客排行
             </button>
-            <button @click="mobileDashboardSubTab = 'yield'" 
+            <button @click="mobileDashboardSubTab = 'yield'"
                     :class="mobileDashboardSubTab === 'yield' ? 'bg-white text-slate-800 shadow-sm border border-orange-100/50' : 'text-slate-500 hover:text-slate-700'"
                     class="flex-1 py-2 text-xs font-black rounded-full transition-all jelly-btn text-center select-none">
               ⚡ 產值效率
@@ -1144,9 +1191,9 @@
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
+
             <!-- Cash reconciliation (金流對帳區) -->
-            <div :class="{'hidden lg:block': mobileDashboardSubTab !== 'payment'}" 
+            <div :class="{'hidden lg:block': mobileDashboardSubTab !== 'payment'}"
                  class="bg-white p-4.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow space-y-3 sm:space-y-4 hover-lift">
               <div class="flex items-center justify-between pb-2 border-b border-orange-50">
                 <h3 class="font-black text-slate-800 text-base sm:text-lg flex items-center gap-2">
@@ -1154,9 +1201,9 @@
                 </h3>
                 <span class="text-[10px] sm:text-xs text-slate-400 font-bold">按付款類型彙整</span>
               </div>
-              
+
               <div class="space-y-2.5 sm:space-y-3">
-                <div v-for="(val, method) in paymentReconciliation" :key="method" 
+                <div v-for="(val, method) in paymentReconciliation" :key="method"
                      class="flex items-center justify-between p-2.5 sm:p-3 rounded-2xl bg-orange-50/40 border border-orange-100/20 hover:bg-orange-50/70 transition-colors">
                   <div class="flex items-center gap-2">
                     <span class="text-base sm:text-lg">{{ getPaymentEmoji(method) }}</span>
@@ -1168,7 +1215,7 @@
             </div>
 
             <!-- Customers Ranking (本期常客排行榜) -->
-            <div :class="{'hidden lg:block': mobileDashboardSubTab !== 'customers'}" 
+            <div :class="{'hidden lg:block': mobileDashboardSubTab !== 'customers'}"
                  class="bg-white p-4.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow space-y-3 sm:space-y-4 hover-lift">
               <div class="flex items-center justify-between pb-2 border-b border-orange-50">
                 <h3 class="font-black text-slate-800 text-base sm:text-lg flex items-center gap-2">
@@ -1181,7 +1228,7 @@
                 本期尚無顧客消費紀錄
               </div>
               <div v-else class="space-y-2.5 sm:space-y-3">
-                <div v-for="(cust, idx) in topCustomers" :key="cust.name" 
+                <div v-for="(cust, idx) in topCustomers" :key="cust.name"
                      @click="goToCustomerCRM(cust.id || cust.name)"
                      class="flex items-center justify-between p-2.5 rounded-2xl hover:bg-orange-50/40 border border-transparent hover:border-orange-100/50 cursor-pointer transition-all hover-lift"
                      title="點擊查看顧客美髮配方與儲值金">
@@ -1207,7 +1254,7 @@
             </div>
 
             <!-- Service yield per hour (每小時產值分析) -->
-            <div :class="{'hidden lg:block': mobileDashboardSubTab !== 'yield'}" 
+            <div :class="{'hidden lg:block': mobileDashboardSubTab !== 'yield'}"
                  class="bg-white p-4.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow space-y-3 sm:space-y-4 hover-lift">
               <div class="flex items-center justify-between pb-2 border-b border-orange-50">
                 <h3 class="font-black text-slate-800 text-base sm:text-lg flex items-center gap-2">
@@ -1230,7 +1277,7 @@
                     <div class="text-sm font-black text-emerald-700">{{ yieldSummary.highEfficiency }} 項</div>
                   </div>
                 </div>
-                <div v-for="(item, idx) in serviceYieldAnalysis" :key="item.serviceName" 
+                <div v-for="(item, idx) in serviceYieldAnalysis" :key="item.serviceName"
                      class="p-3 rounded-2xl border border-orange-100/50 bg-gradient-to-r from-white to-orange-50/10 flex flex-col gap-1 hover:border-macaron-peach-200 transition-all">
                   <div class="flex justify-between items-center">
                     <span class="text-sm font-bold text-slate-700 truncate max-w-[170px]">{{ item.serviceName }}</span>
@@ -1245,7 +1292,7 @@
                   </div>
                   <!-- Visual performance indicator bar -->
                   <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
-                    <div class="bg-gradient-to-r from-macaron-peach-300 to-macaron-rose h-full rounded-full transition-all duration-500" 
+                    <div class="bg-gradient-to-r from-macaron-peach-300 to-macaron-rose h-full rounded-full transition-all duration-500"
                          :style="{ width: Math.min(100, (item.yieldPerHour / 2000) * 100) + '%' }"></div>
                   </div>
                 </div>
@@ -1520,12 +1567,13 @@
           <!-- Closeout bottom sheet -->
           <transition name="fade">
             <div v-if="showCloseoutSheet" class="fixed inset-0 z-[70] bg-slate-900/40 flex items-end sm:items-center justify-center sm:p-4" @click="showCloseoutSheet = false">
-              <div class="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden safe-pb" @click.stop>
+              <div class="ios-sheet w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden safe-pb" @click.stop>
+                <div class="ios-sheet-handle sm:hidden"></div>
                 <div class="px-4 py-4 border-b border-slate-100 flex items-center justify-between">
                   <div><h3 class="text-base font-black text-slate-800">每日打烊對帳</h3><p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ selectedCloseoutDateLabel }}</p></div>
                   <button @click="showCloseoutSheet = false" class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉">✕</button>
                 </div>
-                <div class="p-4 space-y-4 max-h-[75vh] overflow-y-auto">
+                <div class="ios-sheet-body p-4 space-y-4 max-h-[75vh] overflow-y-auto">
                   <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">打烊日期</span><input type="date" v-model="closeoutDate" @change="loadCloseoutFormForDate" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-black"></label>
                   <div class="p-4 rounded-xl bg-slate-900 text-white">
                     <div class="flex items-center justify-between gap-3">
@@ -1537,7 +1585,9 @@
                   <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">實際盤點現金</span><input type="number" inputmode="numeric" v-model.number="closeoutCashCount" placeholder="輸入現金總額" class="jelly-input w-full min-h-[50px] rounded-xl border border-slate-200 px-4 text-lg font-black"></label>
                   <div v-if="todayCloseoutDifference !== null" class="rounded-xl px-3 py-3 text-sm font-black flex justify-between" :class="todayCloseoutDifference === 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'"><span>{{ todayCloseoutDifference === 0 ? '帳實相符' : '帳實差額' }}</span><span>{{ todayCloseoutDifference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutDifference) }}</span></div>
                   <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">打烊備註</span><input type="text" v-model="closeoutNote" placeholder="差額原因、找零或臨時採買" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-semibold"></label>
-                  <button @click="completeCloseoutFromSheet" class="w-full min-h-[52px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ selectedCloseoutRecord ? '更新打烊紀錄' : '完成打烊並鎖帳' }}</button>
+                  <div class="ios-action-bar">
+                    <button @click="completeCloseoutFromSheet" class="ios-primary-action w-full min-h-[52px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ selectedCloseoutRecord ? '更新打烊紀錄' : '完成打烊並鎖帳' }}</button>
+                  </div>
                   <details class="rounded-xl border border-slate-100 bg-white overflow-hidden">
                     <summary class="min-h-[42px] px-3 cursor-pointer flex items-center justify-between text-xs font-black text-slate-600"><span>查看金流明細</span><span>展開</span></summary>
                     <div class="p-3 grid grid-cols-2 gap-2 border-t border-slate-100">
@@ -1591,14 +1641,15 @@
           </div>
 
           <div>
-            
+
             <!-- Quick Add Order Form -->
             <transition name="fade">
             <div v-if="showMobileAddOrderForm"
                  class="fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6"
                  @click="showMobileAddOrderForm = false">
-            <div class="bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb"
+            <div class="ios-sheet bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb"
                  @click.stop>
+              <div class="ios-sheet-handle lg:hidden"></div>
               <h3 class="font-black text-slate-800 text-lg flex items-center justify-between">
                 <span>快速新增業績</span>
                 <!-- Close Button on Mobile -->
@@ -1682,10 +1733,12 @@
                     <option value="轉帳">轉帳</option>
                   </select>
                 </div>
-                <button type="submit" 
-                        class="jelly-btn w-full bg-gradient-to-r from-macaron-peach-400 to-macaron-rose hover:from-macaron-peach-500 hover:to-macaron-rose text-white font-extrabold py-3 rounded-2xl shadow-md hover:shadow-lg transition-all text-sm mt-2">
-                  寫入業績資料庫
-                </button>
+                <div class="ios-action-bar">
+                  <button type="submit"
+                          class="ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
+                    寫入業績資料庫
+                  </button>
+                </div>
               </form>
             </div>
             </div>
@@ -1918,16 +1971,17 @@
           </section>
 
           <div>
-            
+
             <!-- Add Expense Form -->
             <transition name="fade">
             <div v-if="showExpenseForm"
                  class="fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6"
                  @click="showExpenseForm = false">
-            <div class="bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb"
+            <div class="ios-sheet bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb"
                  @click.stop>
+              <div class="ios-sheet-handle lg:hidden"></div>
               <h3 class="font-black text-slate-800 text-lg flex items-center justify-between">
-                <span class="flex items-center gap-2"><span>💸</span> 新增支出紀錄</span>
+                <span>新增支出紀錄</span>
                 <button type="button" @click="showExpenseForm = false" class="w-9 h-9 rounded-full bg-slate-50 text-slate-400 font-black" aria-label="關閉新增支出">✕</button>
               </h3>
 
@@ -1936,7 +1990,7 @@
                 <div class="flex items-center justify-between">
                   <div>
                     <div class="text-xs font-black text-slate-700 flex items-center gap-1.5">
-                      👑 MOMO 本月薪水
+                      MOMO 本月薪水
                       <span class="text-[10px] font-bold text-macaron-peach-500 bg-white px-1.5 py-0.5 rounded-full border border-macaron-peach-200">
                         營業額 × 45%
                       </span>
@@ -1980,10 +2034,12 @@
                          autocorrect="on" autocapitalize="sentences"
                          class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
                 </div>
-                <button type="submit" 
-                        class="jelly-btn w-full bg-gradient-to-r from-macaron-peach-400 to-macaron-rose hover:from-macaron-peach-500 hover:to-macaron-rose text-white font-extrabold py-3 rounded-2xl shadow-md hover:shadow-lg transition-all text-sm mt-2">
-                  寫入支出資料庫
-                </button>
+                <div class="ios-action-bar">
+                  <button type="submit"
+                          class="ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
+                    寫入支出資料庫
+                  </button>
+                </div>
               </form>
             </div>
             </div>
@@ -2110,7 +2166,7 @@
         <div v-else-if="activeTab === 'inventory'" key="inventory" class="space-y-6">
           <section class="bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
             <div class="px-5 py-3 border-b border-orange-50">
-              <h3 class="font-black text-slate-700 text-sm">📦 庫存狀態摘要</h3>
+              <h3 class="font-black text-slate-700 text-sm">庫存狀態摘要</h3>
             </div>
             <div class="grid grid-cols-3 divide-x divide-orange-50">
               <div class="px-3 sm:px-5 py-4">
@@ -2130,13 +2186,14 @@
           </section>
 
           <div>
-            
+
             <!-- Add Item Form -->
             <transition name="fade">
             <div v-if="showInventoryForm" class="fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6" @click="showInventoryForm = false">
-            <div class="bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb" @click.stop>
+            <div class="ios-sheet bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb" @click.stop>
+              <div class="ios-sheet-handle lg:hidden"></div>
               <h3 class="font-black text-slate-800 text-lg flex items-center justify-between">
-                <span class="flex items-center gap-2"><span>📦</span> 新增庫存商品</span>
+                <span>新增庫存商品</span>
                 <button type="button" @click="showInventoryForm = false" class="w-9 h-9 rounded-full bg-slate-50 text-slate-400 font-black" aria-label="關閉新增庫存">✕</button>
               </h3>
               <form @submit.prevent="addInventoryItem" class="space-y-4">
@@ -2157,10 +2214,12 @@
                   <input type="text" v-model="newInventory.notes" placeholder="如: 進貨管道或特點"
                          class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
                 </div>
-                <button type="submit" 
-                        class="jelly-btn w-full bg-gradient-to-r from-macaron-peach-400 to-macaron-rose hover:from-macaron-peach-500 hover:to-macaron-rose text-white font-extrabold py-3 rounded-2xl shadow-md hover:shadow-lg transition-all text-sm mt-2">
-                  🍬 建立商品庫存
-                </button>
+                <div class="ios-action-bar">
+                  <button type="submit"
+                          class="ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
+                    建立商品庫存
+                  </button>
+                </div>
               </form>
             </div>
             </div>
@@ -2170,9 +2229,7 @@
             <div class="bg-white p-4 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow space-y-4">
               <div class="space-y-3 pb-4 border-b border-orange-50">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                  <span>🏪</span> 庫存商品
-                </h3>
+                <h3 class="font-black text-slate-800 text-lg">庫存商品</h3>
                   <div class="flex items-center gap-2">
                     <div class="relative flex-1 sm:w-56">
                       <input type="text" v-model="inventorySearchQuery" placeholder="搜尋商品或備註..."
@@ -2211,27 +2268,27 @@
                         </div>
                       </td>
                     </tr>
-                    <tr v-for="item in filteredInventory" :key="item.id" 
+                    <tr v-for="item in filteredInventory" :key="item.id"
                         class="hover:bg-orange-50/20 transition-colors"
                         :class="{'bg-red-50/40 hover:bg-red-50/60': item.stock === 0, 'bg-amber-50/30 hover:bg-amber-50/50': item.stock > 0 && item.stock < 3}">
-                      
+
                       <!-- Name -->
                       <td class="py-3 px-4">
                         <input type="text" v-model="item.name" @change="saveInventory"
                                class="w-full bg-transparent border-0 focus:bg-white focus:ring-1 focus:ring-macaron-peach-300 rounded px-1.5 py-1 text-sm font-extrabold text-slate-700">
                       </td>
-                      
+
                       <!-- Stock with quick adjustments -->
                       <td class="py-3 px-4 text-center">
                         <div class="flex items-center justify-center gap-1.5">
-                          <button @click="adjustStock(item, -1)" 
+                          <button @click="adjustStock(item, -1)"
                                   class="w-7 h-7 rounded-full bg-white border border-macaron-peach-200 text-slate-700 font-black flex items-center justify-center hover:bg-macaron-peach-50 active:scale-90 shadow-sm jelly-btn">
                             -
                           </button>
                           <input type="number" min="0" v-model.number="item.stock" @change="item.stock = Math.max(0, Number(item.stock) || 0); saveInventory()"
                                  class="w-16 text-center bg-transparent border-0 focus:bg-white focus:ring-1 focus:ring-macaron-peach-300 rounded px-1 py-1 text-sm font-black text-slate-800"
                                  :class="item.stock < 3 ? 'text-rose-600 font-extrabold' : 'text-slate-800'">
-                          <button @click="adjustStock(item, 1)" 
+                          <button @click="adjustStock(item, 1)"
                                   class="w-7 h-7 rounded-full bg-white border border-macaron-peach-200 text-slate-700 font-black flex items-center justify-center hover:bg-macaron-peach-50 active:scale-90 shadow-sm jelly-btn">
                             +
                           </button>
@@ -2250,7 +2307,7 @@
 
                       <!-- Actions -->
                       <td class="py-3 px-4 text-center">
-                        <button @click="deleteInventoryItem(item.id)" 
+                        <button @click="deleteInventoryItem(item.id)"
                                 class="text-rose-400 hover:text-rose-600 p-1.5 rounded-full hover:bg-rose-50 transition-colors"
                                 title="刪除">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -3067,7 +3124,8 @@
     <!-- 多裝置版本衝突處理 -->
     <transition name="fade">
       <div v-if="cloudConflict" class="fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl w-full max-w-md macaron-shadow-lg border border-amber-100 overflow-hidden">
+        <div class="ios-sheet bg-white rounded-3xl w-full max-w-md macaron-shadow-lg border border-amber-100 overflow-hidden">
+          <div class="ios-sheet-handle sm:hidden"></div>
           <div class="p-6 space-y-3">
             <div class="mx-auto w-10 h-1.5 rounded-full bg-amber-100"></div>
             <h3 class="text-base font-black text-slate-800 text-center">另一台裝置已修改這筆資料</h3>
@@ -3083,11 +3141,12 @@
 
     <!-- 自訂確認對話框 Modal（取代瀏覽器原生 confirm，風格一致） -->
     <transition name="fade">
-      <div v-if="confirmModal.show" 
+      <div v-if="confirmModal.show"
            class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
            @click="closeConfirm">
-        <div class="bg-white rounded-3xl w-full max-w-sm macaron-shadow-lg border border-orange-100 overflow-hidden"
+        <div class="ios-sheet bg-white rounded-3xl w-full max-w-sm macaron-shadow-lg border border-orange-100 overflow-hidden"
              @click.stop>
+          <div class="ios-sheet-handle sm:hidden"></div>
           <div class="p-6 space-y-2">
             <div class="mx-auto w-10 h-1.5 rounded-full bg-rose-100"></div>
             <p class="text-sm font-bold text-slate-700 text-center leading-relaxed">{{ confirmModal.message }}</p>
@@ -3109,7 +3168,8 @@
     <!-- iOS home-screen guidance -->
     <transition name="fade">
       <div v-if="showIosGuide" class="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click="dismissIosGuide">
-        <div class="bg-white rounded-3xl w-full max-w-sm macaron-shadow-lg border border-sky-100 overflow-hidden" @click.stop>
+        <div class="ios-sheet bg-white rounded-3xl w-full max-w-sm macaron-shadow-lg border border-sky-100 overflow-hidden" @click.stop>
+          <div class="ios-sheet-handle sm:hidden"></div>
           <div class="p-5 space-y-4">
             <div class="flex items-center justify-between">
               <h3 class="text-base font-black text-slate-800">加入 iPhone 主畫面</h3>
@@ -3129,8 +3189,9 @@
     <!-- Service Config Modal - Extracted out of nav to fix iOS Safari bounding-box position:fixed context issue -->
     <transition name="fade">
       <div v-if="showServiceConfigModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click="closeServiceConfigModal">
-        <div class="bg-white rounded-4xl max-w-xl w-full max-h-[85vh] flex flex-col macaron-shadow-lg border border-orange-100 overflow-hidden" @click.stop>
-          
+        <div class="ios-sheet bg-white rounded-4xl max-w-xl w-full max-h-[85vh] flex flex-col macaron-shadow-lg border border-orange-100 overflow-hidden" @click.stop>
+          <div class="ios-sheet-handle sm:hidden"></div>
+
           <!-- Modal Header -->
           <div class="p-6 border-b border-orange-100 flex items-center justify-between bg-gradient-to-r from-orange-50/50 to-white">
             <div>
@@ -3146,7 +3207,7 @@
 
           <!-- Modal Body (Scrollable) -->
           <div class="p-6 overflow-y-auto space-y-4 flex-grow max-h-[50vh]">
-            
+
             <div class="overflow-x-auto rounded-3xl border border-orange-100/50">
               <table class="w-full text-left border-collapse">
                 <thead>
@@ -3189,16 +3250,16 @@
           </div>
 
           <!-- Modal Footer -->
-          <div class="p-6 border-t border-orange-100 bg-orange-50/20 flex items-center justify-between">
+          <div class="ios-action-bar p-6 border-t border-orange-100 bg-orange-50/20 flex items-center justify-between">
             <button @click="resetServicesConfigToDefault" class="text-[10px] font-bold text-slate-400 hover:text-rose-500 transition-colors">
               重設預設值
             </button>
             <div class="flex items-center gap-2">
-              <button @click="closeServiceConfigModal" class="px-4 py-2 rounded-xl border border-orange-200 bg-white hover:bg-orange-50/50 text-slate-600 text-xs font-bold transition-all">
+              <button @click="closeServiceConfigModal" class="ios-secondary-action px-4 py-2 rounded-xl border border-orange-200 bg-white hover:bg-orange-50/50 text-slate-600 text-xs font-bold transition-all">
                 取消
               </button>
-              <button @click="saveServicesConfig" class="px-5 py-2 rounded-xl bg-gradient-to-r from-macaron-peach-400 to-macaron-rose hover:from-macaron-peach-500 hover:to-macaron-rose text-white text-xs font-black shadow-md hover:shadow-lg transition-all">
-                儲存定價設定 🍬
+              <button @click="saveServicesConfig" class="ios-primary-action px-5 py-2 rounded-xl bg-slate-900 text-white text-xs font-black shadow-md transition-all">
+                儲存定價設定
               </button>
             </div>
           </div>
@@ -3222,37 +3283,37 @@
 
     // 每日一則台式幽默 / 冷知識 / 髮型師語錄 (共 31 則，按日期輪播)
     const dailyGreetings = [
-      { title: '今天也是美麗的一天，MOMO！💖', sub: '💡 冷知識：人的頭髮平均每個月長 1.25 公分，一年大約 15 公分喔！' },
+      { title: '今天也是美麗的一天，MOMO', sub: '冷知識：人的頭髮平均每個月長 1.25 公分，一年大約 15 公分喔！' },
       { title: 'MOMO 早安，今天也穩穩營業', sub: '冷笑話：為什麼髮型師都很冷靜？因為他們很會「剪」持。' },
       { title: '歡迎回來營運總部，辛苦的 MOMO', sub: '冷知識：亞洲人的頭髮直徑是歐洲人的兩倍粗。' },
-      { title: '嗨 MOMO～今天也要把客人變美美的！🌸', sub: '🧊 台式幽默：客人說「隨便剪」，是設計師最大的恐怖片。' },
-      { title: '又是忙碌的一天呢，加油 MOMO！🔥', sub: '💡 冷知識：一根頭髮可以承受 100 克的重量，整頭頭髮可以撐住兩頭大象！' },
-      { title: 'MOMO 你今天的氣場超強的 👑', sub: '🧊 台式幽默：設計師的名言——「你上次是誰剪的？」（無聲的控訴）' },
+      { title: '嗨 MOMO，今天也把客人整理好', sub: '台式幽默：客人說「隨便剪」，是設計師最大的恐怖片。' },
+      { title: '又是忙碌的一天，加油 MOMO', sub: '冷知識：一根頭髮可以承受 100 克的重量，整頭頭髮可以撐住兩頭大象！' },
+      { title: 'MOMO 你今天的氣場很穩', sub: '台式幽默：設計師的名言——「你上次是誰剪的？」（無聲的控訴）' },
       { title: '今天的 MOMO 也狀態很好', sub: '冷知識：頭髮是人體上生長第二快的組織，僅次於骨髓。' },
-      { title: '來吧 MOMO！今天繼續創造美麗奇蹟 💫', sub: '🧊 冷笑話：頭髮為什麼不會迷路？因為它有「髮」線導航。' },
-      { title: '哈囉 MOMO，今天要征服世界嗎？🌍', sub: '💡 冷知識：金髮的人平均有 14 萬根頭髮，黑髮約 10 萬根。' },
-      { title: '今天天氣適合好好賺錢，MOMO！💰', sub: '🧊 台式幽默：「我只是想修一下瀏海」——最後變全新造型的開場白。' },
-      { title: 'MOMO 駕到，誰與爭鋒！⚡', sub: '💡 冷知識：每天掉 50~100 根頭髮是正常的，不用太擔心啦！' },
-      { title: '今天也要用剪刀征服全場，MOMO 💪', sub: '🧊 冷笑話：為什麼染髮要很久？因為顏色需要「深入髮」展。' },
-      { title: '美好的一天從打開營運總部開始 🌅', sub: '💡 冷知識：頭髮在水中可以伸展到原長度的 130%！' },
-      { title: 'MOMO～今天也是被需要的一天呢 🥰', sub: '🧊 台式幽默：客人坐下第一句「我不知道要剪什麼」，設計師內心：我也不知道啊。' },
-      { title: '準備好了嗎？今天要爆單囉 MOMO！📈', sub: '💡 冷知識：世界上最長的頭髮紀錄超過 5 公尺，來自中國！' },
-      { title: '每一剪都是藝術，MOMO 你是藝術家 🎨', sub: '🧊 冷笑話：頭髮說什麼讓吹風機感動？「你讓我飄飄然。」' },
-      { title: 'MOMO 今天心情怎麼樣？希望是開心的！🌈', sub: '💡 冷知識：頭髮的主要成分是角蛋白，跟你的指甲成分一樣喔！' },
+      { title: '來吧 MOMO，今天繼續創造好作品', sub: '冷笑話：頭髮為什麼不會迷路？因為它有「髮」線導航。' },
+      { title: '哈囉 MOMO，今天也照節奏走', sub: '冷知識：金髮的人平均有 14 萬根頭髮，黑髮約 10 萬根。' },
+      { title: '今天天氣適合好好營業，MOMO', sub: '台式幽默：「我只是想修一下瀏海」——最後變全新造型的開場白。' },
+      { title: 'MOMO 駕到，誰與爭鋒！⚡', sub: '冷知識：每天掉 50~100 根頭髮是正常的，不用太擔心啦！' },
+      { title: '今天也要用剪刀征服全場，MOMO 💪', sub: '冷笑話：為什麼染髮要很久？因為顏色需要「深入髮」展。' },
+      { title: '美好的一天從打開營運總部開始 🌅', sub: '冷知識：頭髮在水中可以伸展到原長度的 130%！' },
+      { title: 'MOMO～今天也是被需要的一天呢 🥰', sub: '台式幽默：客人坐下第一句「我不知道要剪什麼」，設計師內心：我也不知道啊。' },
+      { title: '準備好了嗎？今天要爆單囉 MOMO！📈', sub: '冷知識：世界上最長的頭髮紀錄超過 5 公尺，來自中國！' },
+      { title: '每一剪都是藝術，MOMO 你是藝術家 🎨', sub: '冷笑話：頭髮說什麼讓吹風機感動？「你讓我飄飄然。」' },
+      { title: 'MOMO 今天心情怎麼樣？希望是開心的！🌈', sub: '冷知識：頭髮的主要成分是角蛋白，跟你的指甲成分一樣喔！' },
       { title: '今天的業績就交給穩定的 MOMO', sub: '台式幽默：「我要跟上次一樣就好」——但上次是另一位設計師剪的。' },
       { title: '陽光、微笑、好手藝——MOMO 三大法寶', sub: '冷知識：紅髮是最稀有的天然髮色，全球只有 1 到 2% 的人擁有。' },
-      { title: '嘿 MOMO！今天也要讓鏡子裡的客人驚豔 🪞', sub: '🧊 冷笑話：為什麼設計師從不遲到？因為他們總是很「剪」時。' },
-      { title: 'MOMO 的技術就是最好的行銷！💯', sub: '💡 冷知識：健康的頭髮在乾燥狀態下，彈性可以伸展 20% 不斷裂。' },
-      { title: '今天也是讓人變漂亮的好日子 🌷', sub: '🧊 台式幽默：「幫我剪短一點就好」——短多少算短呢？一公分？十公分？' },
-      { title: 'MOMO～你的雙手就是魔法棒 🪄', sub: '💡 冷知識：頭髮可以測出你過去幾個月攝取的物質，就像身體的日記本！' },
+      { title: '嘿 MOMO！今天也要讓鏡子裡的客人驚豔 🪞', sub: '冷笑話：為什麼設計師從不遲到？因為他們總是很「剪」時。' },
+      { title: 'MOMO 的技術就是最好的行銷！💯', sub: '冷知識：健康的頭髮在乾燥狀態下，彈性可以伸展 20% 不斷裂。' },
+      { title: '今天也是讓人變漂亮的好日子 🌷', sub: '台式幽默：「幫我剪短一點就好」——短多少算短呢？一公分？十公分？' },
+      { title: 'MOMO～你的雙手就是魔法棒 🪄', sub: '冷知識：頭髮可以測出你過去幾個月攝取的物質，就像身體的日記本！' },
       { title: '開工啦 MOMO，今天也把節奏顧好', sub: '冷笑話：為什麼護髮素很黏人？因為它離不開你的「髮」絲。' },
       { title: '每位客人離開時的笑容，都是 MOMO 的成績', sub: '冷知識：黑色是全球最常見的髮色，約 75 到 85% 的人是黑髮。' },
-      { title: 'MOMO 加油！月底薪水靠今天的你了 💸', sub: '🧊 台式幽默：設計師最怕聽到的話——「我朋友說這個顏色很好看」。' },
-      { title: '今天的 MOMO 也太好看了吧 😍', sub: '💡 冷知識：一個人的頭髮全部接起來的長度，一輩子可以繞地球好幾圈！' },
-      { title: '技術好 + 態度讚 = MOMO 本人！💎', sub: '🧊 冷笑話：「你的頭髮會說話嗎？」「會啊，它每天都在跟我『髮』牢騷。」' },
-      { title: '客人開心、MOMO 開心、口袋也開心！🎉', sub: '💡 冷知識：古埃及人用蜂蜜和蓖麻油做護髮，已經有 5000 年歷史了！' },
-      { title: 'MOMO 你知道嗎？你笑起來超好看的 😊', sub: '🧊 台式幽默：每個設計師心中都有一句話：「你確定要染這個顏色？」' },
-      { title: '今天也要元氣滿滿喔，MOMO！🍀', sub: '💡 冷知識：頭髮的生長週期分三階段，一根頭髮可以生長 2~7 年才掉落！' }
+      { title: 'MOMO 加油！月底薪水靠今天的你了 💸', sub: '台式幽默：設計師最怕聽到的話——「我朋友說這個顏色很好看」。' },
+      { title: '今天的 MOMO 也太好看了吧 😍', sub: '冷知識：一個人的頭髮全部接起來的長度，一輩子可以繞地球好幾圈！' },
+      { title: '技術好 + 態度讚 = MOMO 本人！💎', sub: '冷笑話：「你的頭髮會說話嗎？」「會啊，它每天都在跟我『髮』牢騷。」' },
+      { title: '客人開心、MOMO 開心、口袋也開心！🎉', sub: '冷知識：古埃及人用蜂蜜和蓖麻油做護髮，已經有 5000 年歷史了！' },
+      { title: 'MOMO 你知道嗎？你笑起來超好看的 😊', sub: '台式幽默：每個設計師心中都有一句話：「你確定要染這個顏色？」' },
+      { title: '今天也要元氣滿滿喔，MOMO！🍀', sub: '冷知識：頭髮的生長週期分三階段，一根頭髮可以生長 2~7 年才掉落！' }
     ];
 
     // 系統預設美髮服務對照字典
@@ -3310,11 +3371,11 @@
           prepaidLedger: [],
           dataSchemaVersion: 2,
           crmNotes: {},
-          
+
           selectedYear: curYear,
           selectedMonth: curMonth,
           lastMonthlySelection: curMonth,
-          
+
           showDataTools: false,
           showMobileTools: false,
           syncing: false,
@@ -3389,13 +3450,13 @@
           expandedInventoryId: null,
           showCloseoutSheet: false,
           mobileDashboardSubTab: 'payment',
-          
+
           // Service Pricing Dict Configuration Modal
           showServiceConfigModal: false,
           servicesConfig: [],
           tempServicesConfig: [],
           crmNotesTimer: null,
-          
+
           // Toast state
           toast: {
             show: false,
@@ -3409,7 +3470,7 @@
             message: '',
             onConfirm: null
           },
-          
+
           // Form fields
           newOrder: {
             date: todayStr,
@@ -3434,7 +3495,7 @@
             stock: null,
             notes: ''
           },
-          
+
           crmSearchQuery: '',
           crmFilterMode: 'all',
           crmSortMode: 'lastDate',
@@ -3447,7 +3508,7 @@
           ordersCustomerHistoryId: null,
           ordersFilterCategory: 'All',  // D: 類別篩選
           ordersFilterPayment:  'All',  // D: 付款方式篩選
-          
+
           // Constants
           paymentMethods: ['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'],
           expenseCategories: ['材料費', '房租', '水電費', '行銷費', '薪資', '其他'],
@@ -3519,7 +3580,7 @@
           });
           return totals;
         },
-        
+
         // 當期全部有效業績（不受搜尋與明細篩選影響）
         periodOrders() {
           return this.orders.filter(o => {
@@ -3795,7 +3856,7 @@
             const year = parseInt(this.selectedYear);
             const month = parseInt(this.selectedMonth);
             const daysInMonth = new Date(year, month, 0).getDate();
-            
+
             return Array.from({ length: daysInMonth }, (_, i) => {
               const dayStr = `${this.selectedYear}-${this.selectedMonth}-${String(i + 1).padStart(2, '0')}`;
               const total = this.orders
@@ -3808,7 +3869,7 @@
         trendChartPath() {
           const data = this.salesTrendData;
           if (data.length === 0) return { path: '', fillPath: '', points: [] };
-          
+
           const maxVal = Math.max(...data.map(d => d.total), 1000);
           const width = 600;
           const height = 120;
@@ -3822,7 +3883,7 @@
             const y = height - padding - (d.total / maxVal) * (height - padding * 2);
             return { x, y, label: d.label, total: d.total, key: d.key };
           });
-          
+
           // Generate smooth curve path
           let path = `M ${points[0].x} ${points[0].y}`;
           for (let i = 0; i < points.length - 1; i++) {
@@ -3834,11 +3895,11 @@
             const cpY2 = p1.y;
             path += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${p1.x} ${p1.y}`;
           }
-          
+
           const firstPoint = points[0];
           const lastPoint = points[points.length - 1];
           const fillPath = `${path} L ${lastPoint.x} ${height - padding} L ${firstPoint.x} ${height - padding} Z`;
-          
+
           return { path, fillPath, points, maxVal };
         },
 
@@ -4060,7 +4121,7 @@
           });
 
           const ranked = Object.values(map).sort((a, b) => b.totalSpent - a.totalSpent);
-          
+
           return ranked.map((cust, index) => {
             const prepaidTotals = this.prepaidTotalsByCustomer[cust.id] || { balance: 0, prepaidIn: 0, prepaidOut: 0 };
             const prepaidBalance = prepaidTotals.balance;
@@ -4549,7 +4610,7 @@
         if (isIos && !this.isStandalone && localStorage.getItem('momo_ios_guide_dismissed') !== '1') {
           setTimeout(() => { this.showIosGuide = true; }, 1200);
         }
-        
+
         // 關閉 Dropdown（點擊其他地方）
         window.addEventListener('click', (e) => {
           if (!e.target.closest('.relative')) {
@@ -5474,7 +5535,7 @@
           if (!name) return null;
           // Normalize: remove spaces around '+'
           const cleaned = name.replace(/\s*\+\s*/g, '+').trim();
-          
+
           // 1. Direct dictionary lookup
           if (this.serviceDictionary[cleaned]) {
             return this.serviceDictionary[cleaned];
@@ -5514,7 +5575,7 @@
         getServicePrice(name) {
           if (!name) return null;
           const cleaned = name.replace(/\s*\+\s*/g, '+').trim();
-          
+
           // 1. Direct dictionary lookup
           if (this.priceDictionary[cleaned]) {
             return this.priceDictionary[cleaned];
@@ -6679,7 +6740,7 @@
 
           this.syncing = true;
           this.showToast('正在向伺服器同步資料...', 'success');
-          
+
           // 根據當前選擇的年月份建立 Query 參數，讓同步能配合當前檢視區間
           const params = [];
           if (this.selectedYear) {
@@ -6689,7 +6750,7 @@
             params.push(`month=${parseInt(this.selectedMonth, 10)}`);
           }
           const queryString = params.length > 0 ? `?${params.join('&')}` : '';
-          
+
           let response;
           const productionApi = 'https://mo2-z7d1.onrender.com';
           const primaryApi = this.apiBaseUrl || (window.location.origin === productionApi ? window.location.origin : productionApi);
@@ -6697,7 +6758,7 @@
             // 正式站直接使用同網域 API；本機開發時沿用偵測到的本機 API。
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), primaryApi.includes('127.0.0.1') ? 1500 : 45000);
-            
+
             response = await fetch(`${primaryApi}/api/sync${queryString}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
@@ -7185,7 +7246,7 @@
           this.newOrder.paymentMethod = '現金';
           this.newOrder.cashAmount = null;
           this.newOrder.topupChannel = '現金';
-          
+
           // 新增完成後：手機收起表單，桌機切換到業績明細確認
           this.showMobileAddOrderForm = false;
           this.activeTab = 'orders';
