@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>🐾 摸摸頭營運總部 | MOMO的專屬沙龍小秘書 ✨</title>
+  <title>摸摸頭營運總部 | MOMO 沙龍管理</title>
   
   <!-- PWA & Native iOS Web App Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -531,7 +531,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.99l1.005.831a1.125 1.125 0 01.26 1.43l-1.297 2.247a1.125 1.125 0 01-1.37.491l-1.216-.456c-.356-.133-.751-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.831a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.645-.869L9.59 3.94z"></path>
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
               </svg>
-              <span>⚙️ 服務定價</span>
+              <span>服務定價</span>
             </button>
  
             <!-- Data Management Dropdown Toggle -->
@@ -545,48 +545,48 @@
                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125m0-3.75v3.75m16.5 0v3.75m-16.5-3.75v3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125m0-3.75v3.75"></path>
                 </svg>
-                <span>💾 資料管理</span>
+                <span>資料管理</span>
               </button>
 
               <!-- Dropdown Menu -->
               <transition name="fade">
                 <div v-if="showDataTools" class="absolute right-0 mt-2 w-56 bg-white rounded-3xl macaron-shadow-lg border border-orange-100 p-2 z-50 flex flex-col gap-1">
                   <button @click="exportBackup" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-slate-700 flex items-center gap-2 transition-colors">
-                    📤 匯出備份 (JSON)
+                    匯出備份 (JSON)
                   </button>
                   <label class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-slate-700 flex items-center gap-2 cursor-pointer transition-colors">
-                    📥 匯入還原 (JSON)
+                    匯入還原 (JSON)
                     <input type="file" @change="importBackup" accept=".json" class="hidden">
                   </label>
                   <div class="h-px bg-orange-100 my-1"></div>
                   <button v-if="cloudMigrationNeeded" @click="migrateLocalDataToSupabase" :disabled="cloudStatus === 'syncing'" class="text-left w-full px-4 py-2.5 text-sm font-black rounded-2xl bg-violet-50 text-violet-700 flex items-center gap-2 disabled:opacity-50">
-                    ☁️ 首次搬移到 Supabase
+                    首次搬移到 Supabase
                   </button>
                   <button v-else-if="cloudReady" @click="reloadCloudData" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-violet-50 text-violet-600 flex items-center gap-2 disabled:opacity-50">
-                    🔄 重新載入雲端資料
+                    重新載入雲端資料
                   </button>
                   <div class="px-4 py-1 text-[10px] font-bold text-slate-400">{{ cloudMessage }}</div>
                   <button v-if="cloudReady" @click="createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-emerald-50 text-emerald-700 flex items-center gap-2 disabled:opacity-50">
-                    {{ backupStatus === 'saving' ? '⏳ 備份建立中…' : '🛡️ 立即建立雲端備份' }}
+                    {{ backupStatus === 'saving' ? '備份建立中…' : '立即建立雲端備份' }}
                   </button>
                   <button @click="runIntegrityCheck(true)" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-sky-50 text-sky-700 flex items-center gap-2">
-                    🔎 檢查資料完整性
+                    檢查資料完整性
                   </button>
                   <button @click="showOperationLogModal = true; showDataTools = false" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-amber-50 text-amber-700 flex items-center gap-2">
-                    🧾 查看操作紀錄
+                    查看操作紀錄
                   </button>
                   <div class="px-4 pb-1 text-[10px] font-bold" :class="integrityReport?.status === 'ok' ? 'text-emerald-600' : integrityReport ? 'text-amber-600' : 'text-slate-400'">
                     {{ backupSummaryText }} · {{ integritySummaryText }}
                   </div>
                   <div class="h-px bg-orange-100 my-1"></div>
                   <button @click="exportCSV" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-macaron-peach-500 flex items-center gap-2 transition-colors">
-                    📊 匯出當期業績 (CSV)
+                    匯出當期業績 (CSV)
                   </button>
                   <button @click="exportCrmCSV" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-slate-700 flex items-center gap-2 transition-colors">
-                    👥 匯出 CRM 顧客 (CSV)
+                    匯出 CRM 顧客 (CSV)
                   </button>
                   <button @click="exportExpensesCSV" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-slate-700 flex items-center gap-2 transition-colors">
-                    🧾 匯出支出明細 (CSV)
+                    匯出支出明細 (CSV)
                   </button>
                 </div>
               </transition>
@@ -603,13 +603,13 @@
           {{ online ? '● 已連線' : '● 離線模式' }}
         </span>
         <button v-if="pendingActionSummary.total" @click="activeTab = 'dashboard'" class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
-          ⚠️ 待處理 {{ pendingActionSummary.total }}
+          待處理 {{ pendingActionSummary.total }}
         </button>
         <span v-if="syncReport" class="px-2 py-0.5 rounded-full" :class="syncReport.warnings || syncReport.skipped ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-600'">
           {{ syncReport.warnings || syncReport.skipped ? `同步異常 ${(syncReport.warnings || 0) + (syncReport.skipped || 0)}` : '同步正常' }}
         </span>
         <span v-if="authUser" class="px-2 py-0.5 rounded-full" :class="cloudStatus === 'error' ? 'bg-rose-50 text-rose-600' : cloudStatus === 'conflict' ? 'bg-amber-50 text-amber-700' : cloudMigrationNeeded ? 'bg-amber-50 text-amber-700' : 'bg-violet-50 text-violet-600'">
-          {{ cloudStatus === 'syncing' ? '☁️ 雲端同步中' : cloudStatus === 'conflict' ? '⚠️ 等待處理衝突' : cloudMigrationNeeded ? '☁️ 待首次搬移' : cloudReady ? '☁️ 雲端已連接' : '☁️ 雲端準備中' }}
+          {{ cloudStatus === 'syncing' ? '雲端同步中' : cloudStatus === 'conflict' ? '等待處理衝突' : cloudMigrationNeeded ? '待首次搬移' : cloudReady ? '雲端已連接' : '雲端準備中' }}
         </span>
         <button v-if="!isStandalone" @click="showIosGuide = true" class="px-2 py-0.5 rounded-full bg-sky-50 text-sky-600">加入 iPhone 主畫面</button>
         <span v-else class="px-2 py-0.5 rounded-full bg-sky-50 text-sky-600">主畫面 App 模式</span>
@@ -638,7 +638,7 @@
                 <span class="text-sm font-black text-violet-700">{{ authUser ? '🔐 ' + authUser.email : '🔓 登入雲端' }}</span><span class="text-violet-300">{{ authUser ? '登出' : '›' }}</span>
               </button>
               <button @click="showMobileTools = false; openServiceConfigModal()" class="w-full min-h-[50px] px-4 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-between text-left">
-                <span><span class="mr-2">⚙️</span><span class="text-sm font-black text-slate-700">服務定價與時長</span></span>
+                <span class="text-sm font-black text-slate-700">服務定價與時長</span>
                 <span class="text-slate-300">›</span>
               </button>
               <button v-if="!isStandalone" @click="showMobileTools = false; showIosGuide = true" class="w-full min-h-[50px] px-4 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-between text-left">
@@ -650,19 +650,19 @@
             <section class="space-y-2">
               <div class="px-1 text-[10px] font-black text-slate-400">資料安全</div>
               <div class="grid grid-cols-2 gap-2">
-                <button @click="showMobileTools = false; exportBackup()" class="min-h-[50px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">📤 匯出備份</button>
+                <button @click="showMobileTools = false; exportBackup()" class="min-h-[50px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">匯出備份</button>
                 <label class="min-h-[50px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black flex items-center justify-center cursor-pointer">
-                  📥 匯入還原
+                  匯入還原
                   <input type="file" @change="showMobileTools = false; importBackup($event)" accept=".json" class="hidden">
                 </label>
               </div>
-              <button v-if="cloudMigrationNeeded" @click="showMobileTools = false; migrateLocalDataToSupabase()" :disabled="cloudStatus === 'syncing'" class="w-full min-h-[50px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">☁️ 首次搬移到 Supabase</button>
-              <button v-else-if="cloudReady" @click="showMobileTools = false; reloadCloudData()" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="w-full min-h-[50px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">🔄 重新載入雲端資料</button>
+              <button v-if="cloudMigrationNeeded" @click="showMobileTools = false; migrateLocalDataToSupabase()" :disabled="cloudStatus === 'syncing'" class="w-full min-h-[50px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">首次搬移到 Supabase</button>
+              <button v-else-if="cloudReady" @click="showMobileTools = false; reloadCloudData()" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="w-full min-h-[50px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">重新載入雲端資料</button>
               <div class="grid grid-cols-2 gap-2">
-                <button v-if="cloudReady" @click="showMobileTools = false; createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="min-h-[50px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black disabled:opacity-50">🛡️ 雲端備份</button>
-                <button @click="showMobileTools = false; runIntegrityCheck(true)" class="min-h-[50px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black">🔎 完整性檢查</button>
+                <button v-if="cloudReady" @click="showMobileTools = false; createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="min-h-[50px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black disabled:opacity-50">雲端備份</button>
+                <button @click="showMobileTools = false; runIntegrityCheck(true)" class="min-h-[50px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black">完整性檢查</button>
               </div>
-              <button @click="showMobileTools = false; showOperationLogModal = true" class="w-full min-h-[50px] rounded-2xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">🧾 查看操作紀錄</button>
+              <button @click="showMobileTools = false; showOperationLogModal = true" class="w-full min-h-[50px] rounded-2xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">查看操作紀錄</button>
               <p v-if="authUser" class="px-1 text-[10px] font-bold text-slate-400">{{ cloudMessage }}</p>
               <p class="px-1 text-[10px] font-bold" :class="integrityReport?.status === 'ok' ? 'text-emerald-600' : integrityReport ? 'text-amber-600' : 'text-slate-400'">{{ backupSummaryText }} · {{ integritySummaryText }}</p>
             </section>
@@ -670,9 +670,9 @@
             <section class="space-y-2">
               <div class="px-1 text-[10px] font-black text-slate-400">匯出報表</div>
               <div class="rounded-2xl border border-slate-100 overflow-hidden divide-y divide-slate-100">
-                <button @click="showMobileTools = false; exportCSV()" class="w-full min-h-[48px] px-4 flex items-center justify-between text-left text-sm font-bold text-slate-600"><span>📊 當期業績 CSV</span><span class="text-slate-300">›</span></button>
-                <button @click="showMobileTools = false; exportCrmCSV()" class="w-full min-h-[48px] px-4 flex items-center justify-between text-left text-sm font-bold text-slate-600"><span>👥 CRM 顧客 CSV</span><span class="text-slate-300">›</span></button>
-                <button @click="showMobileTools = false; exportExpensesCSV()" class="w-full min-h-[48px] px-4 flex items-center justify-between text-left text-sm font-bold text-slate-600"><span>🧾 支出明細 CSV</span><span class="text-slate-300">›</span></button>
+                <button @click="showMobileTools = false; exportCSV()" class="w-full min-h-[48px] px-4 flex items-center justify-between text-left text-sm font-bold text-slate-600"><span>當期業績 CSV</span><span class="text-slate-300">›</span></button>
+                <button @click="showMobileTools = false; exportCrmCSV()" class="w-full min-h-[48px] px-4 flex items-center justify-between text-left text-sm font-bold text-slate-600"><span>CRM 顧客 CSV</span><span class="text-slate-300">›</span></button>
+                <button @click="showMobileTools = false; exportExpensesCSV()" class="w-full min-h-[48px] px-4 flex items-center justify-between text-left text-sm font-bold text-slate-600"><span>支出明細 CSV</span><span class="text-slate-300">›</span></button>
               </div>
             </section>
           </div>
@@ -684,7 +684,7 @@
     <transition name="fade">
       <div v-if="toast.show" class="fixed top-6 sm:top-24 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full text-sm font-black macaron-shadow-lg flex items-center gap-2"
            :class="toast.type === 'success' ? 'bg-macaron-mint text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'">
-        <span>{{ toast.type === 'success' ? '🍭' : '🍧' }}</span>
+        <span class="w-2 h-2 rounded-full" :class="toast.type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'"></span>
         <span>{{ toast.message }}</span>
       </div>
     </transition>
@@ -719,17 +719,14 @@
 
     <!-- PWA Update Prompt -->
     <transition name="fade">
-      <div v-if="updateAvailable" class="fixed left-4 right-4 bottom-24 sm:bottom-8 sm:left-auto sm:right-8 sm:w-[360px] z-[95] rounded-3xl bg-slate-900 text-white macaron-shadow-lg border border-white/10 p-4">
-        <div class="flex items-start gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-lg shrink-0">↻</div>
+      <div v-if="updateAvailable" class="fixed left-3 right-3 bottom-24 sm:bottom-6 sm:left-auto sm:right-6 sm:w-[320px] z-[95] rounded-2xl bg-slate-900 text-white macaron-shadow-lg border border-white/10 px-3 py-2.5">
+        <div class="flex items-center gap-2">
           <div class="min-w-0 flex-1">
-            <div class="text-sm font-black">系統已有新版本</div>
-            <div class="text-xs text-slate-300 mt-1 leading-relaxed">點擊更新後會重新載入最新版。尚未同步的本機資料會先保留在手機裡。</div>
-            <div class="flex items-center gap-2 mt-3">
-              <button @click="applyPwaUpdate" class="min-h-[40px] px-4 rounded-2xl bg-white text-slate-900 text-xs font-black">立即更新</button>
-              <button @click="dismissPwaUpdate" class="min-h-[40px] px-3 rounded-2xl text-slate-300 hover:bg-white/10 text-xs font-bold">稍後</button>
-            </div>
+            <div class="text-xs font-black">有新版本可更新</div>
+            <div class="text-[10px] text-slate-300 font-semibold truncate">更新後會重新載入，未同步資料仍保留。</div>
           </div>
+          <button @click="applyPwaUpdate" class="min-h-[34px] px-3 rounded-xl bg-white text-slate-900 text-[11px] font-black shrink-0">更新</button>
+          <button @click="dismissPwaUpdate" class="min-h-[34px] px-2 rounded-xl text-slate-300 hover:bg-white/10 text-[11px] font-bold shrink-0">稍後</button>
         </div>
       </div>
     </transition>
@@ -780,7 +777,7 @@
               <!-- Right: Today's Status (Quick Look) -->
               <div class="flex items-center sm:items-end flex-row sm:flex-col justify-between sm:justify-center p-3.5 sm:px-5 sm:py-3 rounded-2xl bg-white border border-orange-100/30 macaron-shadow-sm sm:text-right min-w-[200px]">
                 <div class="space-y-0.5">
-                  <span class="text-[10px] font-black text-macaron-peach-500 uppercase tracking-widest block select-none">今日營業額 🏪</span>
+                  <span class="text-[10px] font-black text-macaron-peach-500 uppercase tracking-widest block select-none">今日營業額</span>
                   <div class="text-lg sm:text-xl font-black text-slate-700 tracking-tight">NT$ {{ formatNumber(todayRevenue) }}</div>
                 </div>
                 <div class="text-[10px] font-bold text-slate-400 mt-1">
@@ -794,7 +791,7 @@
             <div class="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-orange-100/50 bg-white">
               <!-- Grid 1: Revenue -->
               <div class="p-4 sm:p-5 flex flex-col justify-between space-y-1">
-                <div class="text-[10px] font-black text-slate-400 tracking-wider uppercase select-none">實際營業額 💵</div>
+                <div class="text-[10px] font-black text-slate-400 tracking-wider uppercase select-none">營業額</div>
                 <div class="text-lg sm:text-xl font-black text-slate-800 tracking-tight truncate">NT$ {{ formatNumber(kpis.revenue) }}</div>
                 <p class="text-[9px] text-slate-400 font-semibold">實收之訂單總和</p>
               </div>
@@ -803,12 +800,12 @@
               <div class="p-4 sm:p-5 flex flex-col justify-between space-y-1 border-t-0">
                 <div class="text-[10px] font-black text-macaron-peach-500 tracking-wider uppercase select-none">MOMO 薪水 👑</div>
                 <div class="text-lg sm:text-xl font-black text-slate-800 tracking-tight truncate">NT$ {{ formatNumber(kpis.momoSalary) }}</div>
-                <p class="text-[9px] text-macaron-peach-400 font-semibold">總營業額 * 45%</p>
+                <p class="text-[9px] text-macaron-peach-400 font-semibold">營業額 * 45%</p>
               </div>
 
               <!-- Grid 3: Services Count -->
               <div class="p-4 sm:p-5 flex flex-col justify-between space-y-1">
-                <div class="text-[10px] font-black text-slate-400 tracking-wider uppercase select-none">服務人次 👥</div>
+                <div class="text-[10px] font-black text-slate-400 tracking-wider uppercase select-none">服務人次</div>
                 <div class="text-lg sm:text-xl font-black text-slate-800 tracking-tight truncate">
                   {{ kpis.ordersCount }} <span class="text-xs font-normal text-slate-500">人次</span>
                 </div>
@@ -817,7 +814,7 @@
 
               <!-- Grid 4: Average Ticket -->
               <div class="p-4 sm:p-5 flex flex-col justify-between space-y-1">
-                <div class="text-[10px] font-black text-slate-400 tracking-wider uppercase select-none">平均客單價 💇‍♀️</div>
+                <div class="text-[10px] font-black text-slate-400 tracking-wider uppercase select-none">平均客單價</div>
                 <div class="text-lg sm:text-xl font-black text-slate-800 tracking-tight truncate">NT$ {{ formatNumber(kpis.aov) }}</div>
                 <p class="text-[9px] text-slate-400 font-semibold">每位客人均消金額</p>
               </div>
@@ -829,7 +826,7 @@
             <div class="p-4 sm:p-6 bg-gradient-to-r from-white to-orange-50/40 border-b border-orange-100/40 flex items-center justify-between gap-3">
               <div>
                 <h2 class="text-base sm:text-xl font-black text-slate-800 flex items-center gap-2">
-                  <span>🧾</span> 今日總覽
+                  今日總覽
                 </h2>
                 <p class="text-[10px] sm:text-xs text-slate-400 font-bold mt-1">今天業績、金流、支出與打烊狀態集中看這裡</p>
               </div>
@@ -865,12 +862,12 @@
               <div class="p-4 sm:p-5 col-span-2 lg:col-span-1 flex items-center gap-2">
                 <button @click="activeTab = 'orders'; showMobileAddOrderForm = true"
                         class="jelly-btn flex-1 min-h-[44px] rounded-2xl bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-xs font-black shadow-md">
-                  ➕ 新增業績
+                  新增業績
                 </button>
                 <button @click="openCloseoutSheet()"
                         class="jelly-btn flex-1 min-h-[44px] rounded-2xl border text-xs font-black shadow-sm"
                         :class="todayCloseoutRecord ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-white border-orange-200 text-slate-700'">
-                  {{ todayCloseoutRecord ? '🔒 已打烊' : '🌙 去打烊' }}
+                  {{ todayCloseoutRecord ? '已打烊' : '去打烊' }}
                 </button>
               </div>
             </div>
@@ -905,7 +902,7 @@
             <div class="p-4 sm:p-6 border-b border-orange-100/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h2 class="text-base sm:text-xl font-black text-slate-800 flex items-center gap-2">
-                  <span>🌙</span> 每日打烊對帳
+                  每日打烊對帳
                 </h2>
                 <p class="text-[10px] sm:text-xs text-slate-400 font-bold mt-1">可選日期補打烊，自動拆成現金、儲值扣款、儲值進帳與應有現金</p>
               </div>
@@ -976,7 +973,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-right">
                   <div>
-                    <div class="text-[10px] text-white/50 font-bold">服務業績</div>
+                    <div class="text-[10px] text-white/50 font-bold">服務營收</div>
                     <div class="text-sm font-black">NT$ {{ formatNumber(selectedCloseout.serviceRevenue) }}</div>
                   </div>
                   <div>
@@ -992,7 +989,7 @@
           <div class="bg-white p-4 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow hover-lift">
             <div class="flex items-center justify-between flex-wrap gap-1 pb-3 border-b border-orange-50 mb-4">
               <h3 class="font-black text-slate-800 text-sm sm:text-lg flex items-center gap-2">
-                <span>📈</span> {{ selectedMonth === 'All' ? selectedYear + ' 年 年度營業額趨勢' : selectedYear + ' 年 ' + selectedMonth + ' 月 營業額趨勢' }}
+                {{ selectedMonth === 'All' ? selectedYear + ' 年 年度營業額趨勢' : selectedYear + ' 年 ' + selectedMonth + ' 月 營業額趨勢' }}
               </h3>
               <div class="text-xs text-slate-400 font-bold select-none">
                 <span v-if="hoveredPoint" class="bg-macaron-peach-100 text-macaron-peach-500 px-2.5 py-0.5 rounded-full font-black animate-pulse-subtle">
@@ -1137,7 +1134,7 @@
             <button @click="mobileDashboardSubTab = 'customers'" 
                     :class="mobileDashboardSubTab === 'customers' ? 'bg-white text-slate-800 shadow-sm border border-orange-100/50' : 'text-slate-500 hover:text-slate-700'"
                     class="flex-1 py-2 text-xs font-black rounded-full transition-all jelly-btn text-center select-none">
-              🏆 常客排行
+              常客排行
             </button>
             <button @click="mobileDashboardSubTab = 'yield'" 
                     :class="mobileDashboardSubTab === 'yield' ? 'bg-white text-slate-800 shadow-sm border border-orange-100/50' : 'text-slate-500 hover:text-slate-700'"
@@ -1175,13 +1172,13 @@
                  class="bg-white p-4.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow space-y-3 sm:space-y-4 hover-lift">
               <div class="flex items-center justify-between pb-2 border-b border-orange-50">
                 <h3 class="font-black text-slate-800 text-base sm:text-lg flex items-center gap-2">
-                  <span>🏆</span> 本期常客排行榜
+                  本期常客排行榜
                 </h3>
                 <span class="text-[10px] sm:text-xs text-slate-400 font-bold">消費金額最高</span>
               </div>
 
               <div v-if="topCustomers.length === 0" class="text-center py-10 text-slate-400 text-sm font-medium">
-                本期尚無顧客消費紀錄 🐾
+                本期尚無顧客消費紀錄
               </div>
               <div v-else class="space-y-2.5 sm:space-y-3">
                 <div v-for="(cust, idx) in topCustomers" :key="cust.name" 
@@ -1220,7 +1217,7 @@
               </div>
 
               <div v-if="serviceYieldAnalysis.length === 0" class="text-center py-10 text-slate-400 text-sm font-medium">
-                此期間內無符合對照字典的服務項目 🐾
+                此期間內無符合對照字典的服務項目
               </div>
               <div v-else class="space-y-3">
                 <div class="grid grid-cols-2 gap-2">
@@ -1533,7 +1530,7 @@
                   <div class="p-4 rounded-xl bg-slate-900 text-white">
                     <div class="flex items-center justify-between gap-3">
                       <div><div class="text-[10px] font-black text-white/50">應有現金</div><div class="text-3xl font-black">NT$ {{ formatNumber(selectedCloseout.actualCashIn) }}</div></div>
-                      <div class="text-right"><div class="text-[10px] text-white/50 font-black">服務業績</div><div class="text-sm font-black">NT$ {{ formatNumber(selectedCloseout.serviceRevenue) }}</div></div>
+                      <div class="text-right"><div class="text-[10px] text-white/50 font-black">服務營收</div><div class="text-sm font-black">NT$ {{ formatNumber(selectedCloseout.serviceRevenue) }}</div></div>
                     </div>
                     <div class="mt-3 text-[10px] font-bold text-white/50">只要輸入實際盤點現金，系統會自動算差額並鎖帳。</div>
                   </div>
@@ -1700,7 +1697,7 @@
                 <!-- 第一列：標題、搜尋與新增 -->
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                    業績明細清單
+                    業績清單
                     <button v-if="ordersCustomerHistoryId" type="button" @click="closeCustomerHistory" class="rounded-lg bg-emerald-50 border border-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">完整客史 · 全部年份 ×</button>
                   </h3>
                   <div class="flex items-center gap-2 w-full sm:w-auto">
@@ -1763,7 +1760,7 @@
               <div v-if="filteredOrders.length === 0" class="text-center py-16 text-slate-400 font-medium bg-orange-50/10 rounded-3xl">
                 <div class="flex flex-col items-center justify-center gap-2 select-none">
                   <span class="w-10 h-1.5 rounded-full bg-orange-100"></span>
-                  <span class="text-sm font-bold text-slate-400">目前本期沒有業績明細</span>
+                  <span class="text-sm font-bold text-slate-400">目前本期沒有業績紀錄</span>
                   <span class="text-xs text-slate-300">可以使用上方「新增業績」建立，或點擊頂端「同步行事曆」同步</span>
                 </div>
               </div>
@@ -1815,7 +1812,7 @@
                             <div class="flex items-center gap-2">
                               <span class="text-[10px] font-black px-1.5 py-0.5 rounded-lg shrink-0" :style="{ backgroundColor: getCategoryInfo(order).bg, color: getCategoryInfo(order).color }">{{ getCategoryInfo(order).label }}</span>
                               <span>{{ order.serviceName }}</span>
-                              <span v-if="order.paymentMethod === '儲值進帳'" class="text-[9px] font-black text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-md">非服務業績</span>
+                              <span v-if="order.paymentMethod === '儲值進帳'" class="text-[9px] font-black text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-md">不列入營業額</span>
                               <span v-if="order.paymentMethod === '現金＋儲值扣款'" class="text-[9px] font-black text-amber-700">現 {{ formatNumber(getMixedCashAmount(order)) }}／儲 {{ formatNumber(getMixedPrepaidAmount(order)) }}</span>
                             </div>
                           </td>
@@ -1869,7 +1866,7 @@
                           <span class="mt-1 inline-flex items-center text-[10px] font-black px-2 py-0.5 rounded-lg" :class="paymentBadgeClass(order.paymentMethod)">{{ order.paymentMethod }}<template v-if="order.paymentMethod === '儲值進帳'"> · {{ getTopupChannel(order) }}</template></span>
                         </div>
                       </div>
-                      <div v-if="order.paymentMethod === '儲值進帳'" class="mt-2 text-[9px] font-black text-purple-600">非服務業績，不計入上方摘要</div>
+                      <div v-if="order.paymentMethod === '儲值進帳'" class="mt-2 text-[9px] font-black text-purple-600">儲值進帳不列入營業額</div>
                       <div v-if="order.paymentMethod === '現金＋儲值扣款'" class="mt-2 text-[10px] font-black text-amber-700">現金 NT$ {{ formatNumber(getMixedCashAmount(order)) }} · 儲值扣款 NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div>
                     </button>
                     <div v-if="expandedOrderId === order.id" class="p-3.5 pt-0 border-t border-orange-50 bg-orange-50/25 space-y-3" @focusin="rememberEditSnapshot('orders', order)">
@@ -1901,7 +1898,7 @@
           <!-- 當期支出摘要 -->
           <section class="bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
             <div class="px-5 py-3 border-b border-orange-50">
-              <h3 class="font-black text-slate-700 text-sm">🧾 {{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }} 支出摘要</h3>
+              <h3 class="font-black text-slate-700 text-sm">{{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }} 支出摘要</h3>
             </div>
             <div class="grid grid-cols-3 divide-x divide-orange-50">
               <div class="px-3 sm:px-5 py-4 min-w-0">
@@ -1985,7 +1982,7 @@
                 </div>
                 <button type="submit" 
                         class="jelly-btn w-full bg-gradient-to-r from-macaron-peach-400 to-macaron-rose hover:from-macaron-peach-500 hover:to-macaron-rose text-white font-extrabold py-3 rounded-2xl shadow-md hover:shadow-lg transition-all text-sm mt-2">
-                  🍧 寫入支出資料庫
+                  寫入支出資料庫
                 </button>
               </form>
             </div>
@@ -1997,7 +1994,7 @@
               <div class="space-y-3 pb-4 border-b border-orange-50">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                  <span>📋</span> 支出明細清單
+                  支出明細清單
                 </h3>
                   <div class="flex items-center gap-2">
                     <div class="relative flex-1 sm:w-56">
@@ -2046,7 +2043,7 @@
                     <svg class="w-4 h-4 text-slate-400 transition-transform" :class="{ '-rotate-90': collapsedExpenseDates[group.date] }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     <span class="text-sm font-black text-slate-700">{{ group.date }}</span>
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="group.weekday === '週六' || group.weekday === '週日' ? 'bg-rose-100 text-rose-600' : 'bg-sky-50 text-sky-700'">{{ group.weekday }}</span>
-                    <span v-if="isDateLocked(group.date)" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">🔒 已鎖帳</span>
+                    <span v-if="isDateLocked(group.date)" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">已鎖帳</span>
                   </div>
                   <div class="flex items-center gap-2">
                     <span class="text-[10px] font-bold text-slate-400">{{ group.expenses.length }} 筆</span>
@@ -2240,7 +2237,7 @@
                           </button>
                           <!-- Warning Icon if low stock -->
                           <span v-if="item.stock < 3" class="text-rose-500 font-extrabold text-xs" title="庫存低於3件！">
-                            ⚠️
+                            低
                           </span>
                         </div>
                       </td>
@@ -2521,7 +2518,7 @@
             </section>
 
             <div v-if="!prepaidLedgerGroups.length" class="bg-white py-14 rounded-3xl text-center border border-orange-50 macaron-shadow">
-              <div class="text-3xl">💳</div><div class="mt-2 text-sm font-black text-slate-500">目前沒有符合條件的儲值紀錄</div>
+              <div class="mx-auto w-10 h-1.5 rounded-full bg-emerald-100"></div><div class="mt-2 text-sm font-black text-slate-500">目前沒有符合條件的儲值紀錄</div>
             </div>
             <div v-else class="space-y-3">
               <section v-for="group in prepaidLedgerGroups" :key="group.date" class="bg-white rounded-3xl border border-orange-50 macaron-shadow overflow-hidden">
@@ -2561,13 +2558,13 @@
           <div class="bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden hover-lift">
             <div class="px-5 py-3 border-b border-orange-50 flex items-center justify-between bg-gradient-to-r from-macaron-cream to-orange-50/20">
               <h3 class="font-black text-slate-800 text-sm flex items-center gap-2">
-                <span>📊</span> {{ selectedYear }} 年 年度損益總覽
+                {{ selectedYear }} 年 年度損益總覽
               </h3>
               <span class="text-[10px] text-slate-400 font-bold select-none">全年累計</span>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-y lg:divide-y-0 lg:divide-x divide-orange-50">
               <div class="px-4 py-4 space-y-1">
-                <div class="text-[10px] font-black text-slate-400 uppercase tracking-wider">年度總收入 💵</div>
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-wider">年度總收入</div>
                 <div class="text-lg font-black text-slate-800">NT$ {{ formatNumber(annualSummary.totalRevenue) }}</div>
                 <div class="text-[9px] font-bold flex items-center gap-1">
                   <template v-if="lastYearSummary.totalRevenue > 0">
@@ -2758,7 +2755,7 @@
                 <!-- 匯出 CSV -->
                 <button @click="exportAnnualReport"
                         class="jelly-btn bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1">
-                  📊 匯出 CSV
+                  匯出 CSV
                 </button>
               </div>
             </div>
@@ -2857,12 +2854,12 @@
             <div class="bg-white p-4 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow hover-lift">
               <div class="flex items-center justify-between pb-3 border-b border-orange-50 mb-4">
                 <h3 class="font-black text-slate-800 text-sm sm:text-base flex items-center gap-2">
-                  <span>🏆</span> 月份業績排行
+                  月份業績排行
                 </h3>
                 <span class="text-[10px] text-slate-400 font-bold select-none">依收入高低排序</span>
               </div>
               <div v-if="monthRanking.length === 0" class="text-center py-8 text-slate-400 text-sm font-medium select-none">
-                本年度尚無業績資料 🐾
+                本年度尚無業績資料
               </div>
               <div v-else class="space-y-2">
                 <div v-for="(m, idx) in monthRanking" :key="m.month"
@@ -2900,7 +2897,7 @@
                 <span class="text-[10px] text-slate-400 font-bold select-none">錢花去哪裡了</span>
               </div>
               <div v-if="expenseDonutData.total === 0" class="text-center py-8 text-slate-400 text-sm select-none">
-                本年度尚無支出資料 🐾
+                本年度尚無支出資料
               </div>
               <div v-else class="flex flex-col items-center gap-4">
                 <svg viewBox="0 0 160 160" width="140" height="140">
@@ -3030,7 +3027,7 @@
 
           <!-- Monthly P&L table -->
           <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-4 sm:px-6 flex items-center justify-between border-b border-slate-100"><div><h2 class="text-base sm:text-lg font-black text-slate-800">每月損益表</h2><p class="text-[10px] font-bold text-slate-400 mt-0.5">點擊月份查看業績明細</p></div><span class="text-[10px] font-black text-slate-400">{{ reportMonthlyRows.length }} 個月</span></div>
+            <div class="px-4 py-4 sm:px-6 flex items-center justify-between border-b border-slate-100"><div><h2 class="text-base sm:text-lg font-black text-slate-800">每月損益表</h2><p class="text-[10px] font-bold text-slate-400 mt-0.5">點擊月份查看業績紀錄</p></div><span class="text-[10px] font-black text-slate-400">{{ reportMonthlyRows.length }} 個月</span></div>
             <div class="overflow-x-auto">
               <table class="w-full min-w-[620px] text-left">
                 <thead class="bg-slate-50 text-[10px] font-black text-slate-400"><tr><th class="px-4 py-3">月份</th><th class="px-4 py-3 text-right">營業額</th><th class="px-4 py-3 text-right">支出</th><th class="px-4 py-3 text-right">淨利</th><th class="px-4 py-3 text-right">淨利率</th><th class="w-10"></th></tr></thead>
@@ -3072,7 +3069,7 @@
       <div v-if="cloudConflict" class="fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
         <div class="bg-white rounded-3xl w-full max-w-md macaron-shadow-lg border border-amber-100 overflow-hidden">
           <div class="p-6 space-y-3">
-            <div class="text-3xl text-center">⚠️</div>
+            <div class="mx-auto w-10 h-1.5 rounded-full bg-amber-100"></div>
             <h3 class="text-base font-black text-slate-800 text-center">另一台裝置已修改這筆資料</h3>
             <p class="text-xs font-semibold text-slate-500 text-center leading-relaxed">{{ cloudConflict.label }} 的雲端版本較新。系統已暫停同步並保留本機內容。</p>
           </div>
@@ -3092,7 +3089,7 @@
         <div class="bg-white rounded-3xl w-full max-w-sm macaron-shadow-lg border border-orange-100 overflow-hidden"
              @click.stop>
           <div class="p-6 space-y-2">
-            <div class="text-2xl text-center">🍧</div>
+            <div class="mx-auto w-10 h-1.5 rounded-full bg-rose-100"></div>
             <p class="text-sm font-bold text-slate-700 text-center leading-relaxed">{{ confirmModal.message }}</p>
           </div>
           <div class="flex border-t border-orange-100">
@@ -3138,7 +3135,7 @@
           <div class="p-6 border-b border-orange-100 flex items-center justify-between bg-gradient-to-r from-orange-50/50 to-white">
             <div>
               <h3 class="text-base font-black text-slate-800 flex items-center gap-2">
-                <span>⚙️</span> 服務項目與價格對照設定
+                服務項目與價格對照設定
               </h3>
               <p class="text-[10px] text-slate-400 font-semibold mt-1">此設定將影響自動定價、預估時長與時間產值分析</p>
             </div>
@@ -3176,7 +3173,7 @@
                     </td>
                     <td class="py-1.5 px-3 text-center">
                       <button @click="removeTempService(index)" class="text-rose-400 hover:text-rose-600 p-1 rounded-full hover:bg-rose-50 transition-colors">
-                        🗑️
+                        刪除
                       </button>
                     </td>
                   </tr>
@@ -3186,7 +3183,7 @@
 
             <!-- Add New Item Row Button -->
             <button @click="addTempService" class="w-full py-2 rounded-2xl border-2 border-dashed border-macaron-peach-200 text-macaron-peach-500 hover:bg-orange-50/50 font-black text-[11px] transition-all flex items-center justify-center gap-1.5">
-              <span>➕</span> 新增自訂服務項目
+              新增自訂服務項目
             </button>
 
           </div>
@@ -3194,7 +3191,7 @@
           <!-- Modal Footer -->
           <div class="p-6 border-t border-orange-100 bg-orange-50/20 flex items-center justify-between">
             <button @click="resetServicesConfigToDefault" class="text-[10px] font-bold text-slate-400 hover:text-rose-500 transition-colors">
-              🔄 重設預設值
+              重設預設值
             </button>
             <div class="flex items-center gap-2">
               <button @click="closeServiceConfigModal" class="px-4 py-2 rounded-xl border border-orange-200 bg-white hover:bg-orange-50/50 text-slate-600 text-xs font-bold transition-all">
@@ -3226,12 +3223,12 @@
     // 每日一則台式幽默 / 冷知識 / 髮型師語錄 (共 31 則，按日期輪播)
     const dailyGreetings = [
       { title: '今天也是美麗的一天，MOMO！💖', sub: '💡 冷知識：人的頭髮平均每個月長 1.25 公分，一年大約 15 公分喔！' },
-      { title: 'MOMO 早安！今天頭髮也要乖乖聽話 💇‍♀️', sub: '🧊 冷笑話：為什麼髮型師都很冷靜？因為他們很會「剪」持。' },
-      { title: '歡迎回來營運總部，辛苦的 MOMO ✨', sub: '💡 冷知識：亞洲人的頭髮直徑是歐洲人的兩倍粗！' },
+      { title: 'MOMO 早安，今天也穩穩營業', sub: '冷笑話：為什麼髮型師都很冷靜？因為他們很會「剪」持。' },
+      { title: '歡迎回來營運總部，辛苦的 MOMO', sub: '冷知識：亞洲人的頭髮直徑是歐洲人的兩倍粗。' },
       { title: '嗨 MOMO～今天也要把客人變美美的！🌸', sub: '🧊 台式幽默：客人說「隨便剪」，是設計師最大的恐怖片。' },
       { title: '又是忙碌的一天呢，加油 MOMO！🔥', sub: '💡 冷知識：一根頭髮可以承受 100 克的重量，整頭頭髮可以撐住兩頭大象！' },
       { title: 'MOMO 你今天的氣場超強的 👑', sub: '🧊 台式幽默：設計師的名言——「你上次是誰剪的？」（無聲的控訴）' },
-      { title: '今天的 MOMO 也是閃閃發光 ✨', sub: '💡 冷知識：頭髮是人體上生長第二快的組織，僅次於骨髓！' },
+      { title: '今天的 MOMO 也狀態很好', sub: '冷知識：頭髮是人體上生長第二快的組織，僅次於骨髓。' },
       { title: '來吧 MOMO！今天繼續創造美麗奇蹟 💫', sub: '🧊 冷笑話：頭髮為什麼不會迷路？因為它有「髮」線導航。' },
       { title: '哈囉 MOMO，今天要征服世界嗎？🌍', sub: '💡 冷知識：金髮的人平均有 14 萬根頭髮，黑髮約 10 萬根。' },
       { title: '今天天氣適合好好賺錢，MOMO！💰', sub: '🧊 台式幽默：「我只是想修一下瀏海」——最後變全新造型的開場白。' },
@@ -3242,14 +3239,14 @@
       { title: '準備好了嗎？今天要爆單囉 MOMO！📈', sub: '💡 冷知識：世界上最長的頭髮紀錄超過 5 公尺，來自中國！' },
       { title: '每一剪都是藝術，MOMO 你是藝術家 🎨', sub: '🧊 冷笑話：頭髮說什麼讓吹風機感動？「你讓我飄飄然。」' },
       { title: 'MOMO 今天心情怎麼樣？希望是開心的！🌈', sub: '💡 冷知識：頭髮的主要成分是角蛋白，跟你的指甲成分一樣喔！' },
-      { title: '今天的業績就交給最厲害的 MOMO 了 🏆', sub: '🧊 台式幽默：「我要跟上次一樣就好」——但上次是另一位設計師剪的。' },
-      { title: '陽光、微笑、好手藝——MOMO 三大法寶 ☀️', sub: '💡 冷知識：紅髮是最稀有的天然髮色，全球只有 1~2% 的人擁有！' },
+      { title: '今天的業績就交給穩定的 MOMO', sub: '台式幽默：「我要跟上次一樣就好」——但上次是另一位設計師剪的。' },
+      { title: '陽光、微笑、好手藝——MOMO 三大法寶', sub: '冷知識：紅髮是最稀有的天然髮色，全球只有 1 到 2% 的人擁有。' },
       { title: '嘿 MOMO！今天也要讓鏡子裡的客人驚豔 🪞', sub: '🧊 冷笑話：為什麼設計師從不遲到？因為他們總是很「剪」時。' },
       { title: 'MOMO 的技術就是最好的行銷！💯', sub: '💡 冷知識：健康的頭髮在乾燥狀態下，彈性可以伸展 20% 不斷裂。' },
       { title: '今天也是讓人變漂亮的好日子 🌷', sub: '🧊 台式幽默：「幫我剪短一點就好」——短多少算短呢？一公分？十公分？' },
       { title: 'MOMO～你的雙手就是魔法棒 🪄', sub: '💡 冷知識：頭髮可以測出你過去幾個月攝取的物質，就像身體的日記本！' },
-      { title: '開工啦 MOMO！今天要幫幾個人變美？✂️', sub: '🧊 冷笑話：為什麼護髮素很黏人？因為它離不開你的「髮」絲。' },
-      { title: '每位客人離開時的笑容，都是 MOMO 的勳章 🎖️', sub: '💡 冷知識：黑色是全球最常見的髮色，約 75~85% 的人是黑髮！' },
+      { title: '開工啦 MOMO，今天也把節奏顧好', sub: '冷笑話：為什麼護髮素很黏人？因為它離不開你的「髮」絲。' },
+      { title: '每位客人離開時的笑容，都是 MOMO 的成績', sub: '冷知識：黑色是全球最常見的髮色，約 75 到 85% 的人是黑髮。' },
       { title: 'MOMO 加油！月底薪水靠今天的你了 💸', sub: '🧊 台式幽默：設計師最怕聽到的話——「我朋友說這個顏色很好看」。' },
       { title: '今天的 MOMO 也太好看了吧 😍', sub: '💡 冷知識：一個人的頭髮全部接起來的長度，一輩子可以繞地球好幾圈！' },
       { title: '技術好 + 態度讚 = MOMO 本人！💎', sub: '🧊 冷笑話：「你的頭髮會說話嗎？」「會啊，它每天都在跟我『髮』牢騷。」' },
@@ -4650,7 +4647,7 @@
             log.detail
           ]);
           this.downloadCSV(`MOMO操作紀錄_${new Date().toLocaleDateString('sv-SE')}.csv`, headers, rows);
-          this.showToast('🧾 操作紀錄 CSV 已匯出');
+          this.showToast('操作紀錄 CSV 已匯出');
         },
         isDateLocked(date) {
           return Boolean(date && this.closeoutRecords && this.closeoutRecords[date]);
@@ -4660,7 +4657,7 @@
         },
         assertDateUnlocked(date) {
           if (!this.isDateLocked(date)) return true;
-          this.showToast(`🔒 ${this.lockMessage(date)}`, 'error', 7000);
+          this.showToast(this.lockMessage(date), 'error', 7000);
           return false;
         },
         rememberEditSnapshot(type, row) {
@@ -5113,7 +5110,7 @@
             this.saveCustomerData();
             const used = new Blob(Object.values(localStorage)).size;
             if (used > 4 * 1024 * 1024) { // 超過 4MB 警告
-              this.showToast('⚠️ 儲存空間已使用超過 4MB，建議匯出備份後清理舊資料', 'error', 8000);
+              this.showToast('儲存空間已使用超過 4MB，建議匯出備份後清理舊資料', 'error', 8000);
             }
             this.queueCloudSync();
           } catch (e) {
@@ -5427,7 +5424,7 @@
           const diff = Number(record.difference) || 0;
           const line = [
             `摸摸頭 momohair 打烊摘要 ${record.date}`,
-            `服務業績：NT$ ${this.formatNumber(record.serviceRevenue)}`,
+            `服務營收：NT$ ${this.formatNumber(record.serviceRevenue)}`,
             `現金收入：NT$ ${this.formatNumber(record.cash || 0)}`,
             `轉帳收入：NT$ ${this.formatNumber(record.transfer || 0)}`,
             `儲值扣款：NT$ ${this.formatNumber(record.prepaidOut || 0)}`,
@@ -6187,7 +6184,7 @@
             const snapshot = await this.fetchCloudSnapshot();
             this.applyCloudSnapshot(snapshot);
             this.cloudMessage = `已接收其他裝置更新 · ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
-            this.showToast('☁️ 已載入另一台裝置的最新資料');
+            this.showToast('已載入另一台裝置的最新資料');
           } catch (error) {
             console.warn('Remote version check skipped:', error);
           }
@@ -6507,7 +6504,7 @@
               this.cloudConflict = error.conflict;
               this.cloudStatus = 'conflict';
               this.cloudMessage = '偵測到其他裝置修改，請選擇要保留的版本';
-              this.showToast('⚠️ 另一台裝置已修改同一筆資料，同步已暫停', 'error', 8000);
+              this.showToast('另一台裝置已修改同一筆資料，同步已暫停', 'error', 8000);
             } else {
               this.cloudStatus = 'error';
               this.cloudMessage = '雲端同步失敗，本機資料已保留';
@@ -6610,7 +6607,7 @@
             } catch (error) {
               console.warn('Post-migration reload skipped:', error);
             }
-            this.showToast('☁️ 本機與雲端資料已安全合併', 'success', 6000);
+            this.showToast('本機與雲端資料已安全合併', 'success', 6000);
           }
           else this.cloudMigrationNeeded = true;
         },
@@ -6629,7 +6626,7 @@
             this.cloudMessage = `雲端資料已重新載入 · ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
             this.runIntegrityCheck(false);
             await this.createAutomaticBackup({ silent: true });
-            this.showToast('☁️ 已重新載入 Supabase 資料');
+            this.showToast('已重新載入 Supabase 資料');
           } catch (error) {
             this.cloudStatus = 'error';
             this.cloudMessage = '雲端重新載入失敗，本機資料未變更';
@@ -6717,7 +6714,7 @@
               return;
             }
             console.log('本機後端未啟動或連線超時，切換為 Render 雲端後端...');
-            this.showToast('☁️ 連線雲端伺服器，冷啟動約需 30 秒，請稍候...', 'success');
+            this.showToast('連線雲端伺服器，冷啟動約需 30 秒，請稍候...', 'success');
             try {
               response = await fetch(`${productionApi}/api/sync${queryString}`, {
                 method: 'POST',
@@ -6937,9 +6934,9 @@
 
           this.saveOrders();
           if (mergedCount || updatedCount || cancelledCount) {
-            this.showToast(`✨ 同步完成：新增 ${mergedCount}、更新 ${updatedCount}、取消 ${cancelledCount} 筆`);
+            this.showToast(`同步完成：新增 ${mergedCount}、更新 ${updatedCount}、取消 ${cancelledCount} 筆`);
           } else {
-            this.showToast('✨ 同步完成！行事曆資料沒有變更');
+            this.showToast('同步完成，行事曆資料沒有變更');
           }
           return {
             received: rawOrders.length,
@@ -7092,7 +7089,7 @@
           link.download = `MOMO損益報表_${this.selectedYear}年.csv`;
           link.click();
           URL.revokeObjectURL(url);
-          this.showToast(`📊 ${this.selectedYear} 年度損益報表已匯出`);
+          this.showToast(`${this.selectedYear} 年度損益報表已匯出`);
         },
 
         // --- 薪水匯入 ---
@@ -7177,7 +7174,7 @@
 
           this.saveOrders();
           this.recordOperation('order_create', '新增業績', `${order.date} ${order.customerName} ${order.serviceName} · NT$ ${this.formatNumber(order.amount)}`, { orderId: id });
-          this.showToast('🍰 業績新增成功！');
+          this.showToast('業績新增成功');
 
           // Reset inputs except date
           this.newOrder.customerId = '';
@@ -7202,7 +7199,7 @@
             this.deleteCloudRecord('orders', 'id', id);
             this.saveOrders();
             this.recordOperation('order_delete', '刪除業績', `${order?.date || ''} ${order?.customerName || ''} ${order?.serviceName || ''} · NT$ ${this.formatNumber(order?.amount || 0)}`, { orderId: id });
-            this.showToast('🍧 業績已成功刪除');
+            this.showToast('業績已刪除');
           });
         },
         toggleOrderDate(date) {
@@ -7246,7 +7243,7 @@
             this.deleteCloudRecord('expenses', 'id', id);
             this.saveExpenses();
             this.recordOperation('expense_delete', '刪除支出', `${expense?.date || ''} ${expense?.category || ''} · NT$ ${this.formatNumber(expense?.amount || 0)}`, { expenseId: id });
-            this.showToast('🍧 支出已刪除');
+            this.showToast('支出已刪除');
           });
         },
         toggleExpenseDate(date) {
@@ -7317,7 +7314,7 @@
             if (this.expandedInventoryId === id) this.expandedInventoryId = null;
             this.deleteCloudRecord('inventory', 'id', id);
             this.saveInventory();
-            this.showToast('🍧 商品已從庫存移除');
+            this.showToast('商品已從庫存移除');
           });
         },
 
@@ -7439,7 +7436,7 @@
           if (showResult) {
             const preview = issues.slice(0, 2).map(issue => issue.message).join('；');
             this.showToast(
-              report.status === 'ok' ? '✅ 資料完整性檢查通過' : `⚠️ 完整性檢查：${errorCount} 錯誤、${warningCount} 提醒${preview ? `｜${preview}` : ''}`,
+              report.status === 'ok' ? '資料完整性檢查通過' : `完整性檢查：${errorCount} 錯誤、${warningCount} 提醒${preview ? `｜${preview}` : ''}`,
               report.status === 'ok' ? 'success' : 'error',
               9000
             );
@@ -7481,7 +7478,7 @@
             this.lastBackupAt = createdAt;
             localStorage.setItem('momo_last_backup_at', createdAt);
             this.backupStatus = 'ready';
-            if (!silent) this.showToast('🛡️ 雲端備份已建立，並保留最近 30 天');
+            if (!silent) this.showToast('雲端備份已建立，並保留最近 30 天');
             return true;
           } catch (error) {
             console.error('Automatic backup failed:', error);
@@ -7502,7 +7499,7 @@
           link.download = `MOMO營運總部_備份_${dateStr}.json`;
           link.click();
           URL.revokeObjectURL(url);
-          this.showToast('📤 備份 JSON 檔案已下載');
+          this.showToast('備份 JSON 檔案已下載');
           this.showDataTools = false;
         },
         importBackup(event) {
@@ -7529,16 +7526,16 @@
                 if (data.momo_servicesConfig) {
                   this.servicesConfig = data.momo_servicesConfig;
                   this.saveToLocalStorage();
-                  this.showToast('📥 備份還原成功！系統已更新資料');
+                  this.showToast('備份還原成功，系統已更新資料');
                 } else {
                   this.saveToLocalStorage();
-                  this.showToast('📥 備份還原完成，但此備份不含服務定價設定，已保留現有定價', 'error', 6000);
+                  this.showToast('備份還原完成，但此備份不含服務定價設定，已保留現有定價', 'error', 6000);
                 }
               } else {
                 throw new Error('JSON 欄位不完整');
               }
             } catch (err) {
-              this.showToast('🍧 備份還原失敗，請上傳正確的 MOMO 備份 JSON 檔案', 'error');
+              this.showToast('備份還原失敗，請上傳正確的 MOMO 備份 JSON 檔案', 'error');
             }
           };
           reader.readAsText(file);
@@ -7566,7 +7563,7 @@
             ? `${this.selectedYear}-全年度`
             : `${this.selectedYear}-${this.selectedMonth}`;
           this.downloadCSV(`MOMO業績明細_${dateStr}.csv`, headers, rows);
-          this.showToast('📊 業績明細 CSV 檔案已匯出');
+          this.showToast('業績 CSV 檔案已匯出');
           this.showDataTools = false;
         },
         exportCrmCSV() {
@@ -7576,14 +7573,14 @@
             return [c.id, c.name, c.gender, c.count, c.totalSpent, c.avgTicket, c.lastDate, c.daysSinceLastVisit, c.primaryService, c.prepaidBalance, c.followupDue ? '需要回訪' : '正常', f.color || '', f.perm || '', f.hair || '', f.preference || '', f.caution || ''];
           });
           this.downloadCSV(`MOMO顧客CRM_${new Date().toLocaleDateString('sv-SE')}.csv`, headers, rows);
-          this.showToast('👥 CRM 顧客 CSV 已匯出');
+          this.showToast('CRM 顧客 CSV 已匯出');
           this.showDataTools = false;
         },
         exportExpensesCSV() {
           const headers = ['日期', '支出分類', '金額(NT$)', '備註'];
           const rows = this.filteredExpenses.map(e => [e.date, e.category, e.amount, e.notes || '']);
           this.downloadCSV(`MOMO支出明細_${this.selectedYear}-${this.selectedMonth}.csv`, headers, rows);
-          this.showToast('🧾 支出明細 CSV 已匯出');
+          this.showToast('支出明細 CSV 已匯出');
           this.showDataTools = false;
         },
         downloadCSV(filename, headers, rows) {
