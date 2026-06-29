@@ -1426,7 +1426,7 @@
             <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex items-center justify-between gap-3">
               <div class="min-w-0">
                 <h2 class="text-base sm:text-lg font-black text-slate-800">待處理事項</h2>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">優先處理未打烊、帳務異常與儲值風險</p>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">自 2026/7/1 起，優先處理未打烊、帳務異常與儲值風險</p>
               </div>
               <button @click="runIntegrityCheck(true)" class="min-h-[40px] px-3 rounded-xl text-xs font-black text-slate-500 border border-slate-200 bg-white whitespace-nowrap">重新檢查</button>
             </div>
@@ -1450,7 +1450,7 @@
               <div>
                 <div class="flex items-center justify-between mb-3">
                   <h3 class="text-xs sm:text-sm font-black text-slate-700">未打烊日期清單</h3>
-                  <span class="text-[10px] font-bold text-slate-400">{{ unclosedCloseoutDates.length ? '點日期可補打烊' : '目前都已完成' }}</span>
+                  <span class="text-[10px] font-bold text-slate-400">{{ unclosedCloseoutDates.length ? '自 7/1 起 · 點日期可補打烊' : '自 7/1 起都已完成' }}</span>
                 </div>
                 <div v-if="unclosedCloseoutDates.length" class="space-y-2">
                   <button v-for="item in unclosedCloseoutDates.slice(0, 8)" :key="item.date"
@@ -3370,6 +3370,7 @@
           backupStatus: 'idle',
           lastBackupAt: localStorage.getItem('momo_last_backup_at') || null,
           integrityReport: safeParse(localStorage.getItem('momo_integrity_report'), null),
+          pendingActionStartDate: '2026-07-01',
           operationLogs: safeParse(localStorage.getItem('momo_operation_logs'), []),
           showOperationLogModal: false,
           closeoutRecords: {},
@@ -3702,17 +3703,18 @@
         },
         unclosedCloseoutDates() {
           const today = new Date().toLocaleDateString('sv-SE');
+          const startDate = this.pendingActionStartDate || '2026-07-01';
           const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
           const dates = new Set();
 
           (this.orders || []).forEach(order => {
-            if (!order || !validDate(order.date) || order.date > today) return;
+            if (!order || !validDate(order.date) || order.date < startDate || order.date > today) return;
             if (!this.isOrderActive(order) || this.isBlockedSlot(order.customerName)) return;
             dates.add(order.date);
           });
 
           (this.expenses || []).forEach(expense => {
-            if (!expense || !validDate(expense.date) || expense.date > today) return;
+            if (!expense || !validDate(expense.date) || expense.date < startDate || expense.date > today) return;
             dates.add(expense.date);
           });
 
@@ -5282,9 +5284,12 @@
           };
           const orderKeyCounts = {};
           const orderKeyFirst = {};
+          const startDate = this.pendingActionStartDate || '2026-07-01';
+          const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
 
           this.orders.forEach(order => {
             if (!order || !this.isOrderActive(order) || this.isBlockedSlot(order.customerName)) return;
+            if (validDate(order.date) && order.date < startDate) return;
             const amount = Number(order.amount) || 0;
             const label = `${order.date || '未填日期'} ${order.customerName || '未知顧客'} ${order.serviceName || '未填服務'}`;
             const target = { tab: 'orders', orderId: order.id, customerId: order.customerId };
@@ -5317,6 +5322,8 @@
 
           Object.entries(this.prepaidTotalsByCustomer || {}).forEach(([customerId, totals]) => {
             if (Number(totals.balance) < 0) {
+              const hasRecentLedger = (this.prepaidLedger || []).some(entry => entry.customerId === customerId && validDate(entry.date) && entry.date >= startDate);
+              if (!hasRecentLedger) return;
               const customer = this.customerMap[customerId];
               push('warning', 'negative_prepaid_balance', `${customer?.name || customerId} 儲值餘額為負數`, { tab: 'crm', customerId });
             }
@@ -5324,6 +5331,7 @@
 
           Object.values(this.closeoutRecords || {}).forEach(record => {
             if (!record?.date) return;
+            if (validDate(record.date) && record.date < startDate) return;
             if (Number(record.difference || 0) !== 0 && !String(record.note || '').trim()) {
               push('warning', `closeout_difference_no_note_${record.date}`, `${record.date} 打烊有差額但未填備註`, { tab: 'closeout', date: record.date });
             }
