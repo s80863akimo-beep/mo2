@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v19-expense-page-plus';
+const CACHE_NAME = 'momohair-shell-v20-inventory-replenish';
 const APP_SHELL = [
   '/',
   '/assets/tailwind.css',
