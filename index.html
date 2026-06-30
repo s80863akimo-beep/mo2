@@ -871,7 +871,7 @@
             <div v-for="log in operationLogs.slice(0, 80)" :key="log.id" class="px-5 py-3 flex items-start justify-between gap-3">
               <div class="min-w-0">
                 <div class="text-xs font-black text-slate-700">{{ log.label }}</div>
-                <div class="text-[10px] font-semibold text-slate-400 mt-0.5 truncate">{{ log.detail }}</div>
+                <div class="text-[10px] font-semibold text-slate-400 mt-0.5 whitespace-pre-line leading-relaxed">{{ log.detail }}</div>
               </div>
               <div class="text-[10px] font-bold text-slate-400 whitespace-nowrap">{{ formatDateTime(log.at) }}</div>
             </div>
@@ -2052,6 +2052,12 @@
                                 <div class="text-[10px] font-black text-slate-500">儲值扣款<div class="mt-1 min-h-[38px] flex items-center justify-end bg-white border border-sky-100 rounded-lg px-3 text-sm font-black text-sky-700">NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div></div>
                               </div>
                               <label v-if="order.paymentMethod === '儲值進帳'" class="col-span-2 text-[10px] font-black text-slate-400">儲值收款方式<select v-model="order.topupChannel" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-emerald-100 rounded-xl px-3 py-2 text-sm font-bold"><option value="現金">現金</option><option value="轉帳">轉帳</option></select></label>
+                              <div v-if="orderCorrectionLogs(order.id).length" class="col-span-6 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                                <div class="text-[10px] font-black text-slate-500 mb-1">最近修正</div>
+                                <div v-for="log in orderCorrectionLogs(order.id).slice(0, 2)" :key="log.id" class="text-[10px] font-semibold text-slate-400 whitespace-pre-line leading-relaxed">
+                                  {{ formatDateTime(log.at) }}｜{{ log.detail }}
+                                </div>
+                              </div>
                               <button @click.stop="deleteOrder(order.id)" class="col-span-2 min-h-[40px] rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-xs font-black jelly-btn">刪除此筆</button>
                             </div>
                           </td>
@@ -2093,6 +2099,12 @@
                         <div class="text-[10px] font-black text-slate-500">儲值扣款<div class="mt-1 min-h-[42px] flex items-center justify-end bg-white border border-sky-100 rounded-lg px-3 text-sm font-black text-sky-700">NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div></div>
                       </div>
                       <label v-if="order.paymentMethod === '儲值進帳'" class="block text-[10px] font-black text-slate-400">儲值收款方式<select v-model="order.topupChannel" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-emerald-100 rounded-xl px-3 py-2.5 text-sm font-bold"><option value="現金">現金</option><option value="轉帳">轉帳</option></select></label>
+                      <div v-if="orderCorrectionLogs(order.id).length" class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                        <div class="text-[10px] font-black text-slate-500 mb-1">最近修正</div>
+                        <div v-for="log in orderCorrectionLogs(order.id).slice(0, 2)" :key="log.id" class="text-[10px] font-semibold text-slate-400 whitespace-pre-line leading-relaxed">
+                          {{ formatDateTime(log.at) }}｜{{ log.detail }}
+                        </div>
+                      </div>
                       <button @click="deleteOrder(order.id)" class="w-full min-h-[42px] rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-xs font-black jelly-btn">刪除此筆業績</button>
                     </div>
                   </div>
@@ -3367,10 +3379,13 @@
             <div class="mx-auto w-10 h-1.5 rounded-full bg-amber-100"></div>
             <h3 class="text-base font-black text-slate-800 text-center">另一台裝置已修改這筆資料</h3>
             <p class="text-xs font-semibold text-slate-500 text-center leading-relaxed">{{ cloudConflict.label }} 的雲端版本較新。系統已暫停同步並保留本機內容。</p>
+            <p class="text-[10px] font-bold text-amber-700 text-center leading-relaxed bg-amber-50 rounded-2xl px-3 py-2">
+              如果你選「保留本機」，系統會一次覆蓋所有待同步的本機修改，避免同一個視窗一直跳出。
+            </p>
           </div>
           <div class="grid grid-cols-2 border-t border-amber-100">
             <button @click="useCloudConflictVersion" class="min-h-[54px] px-3 text-sky-700 text-xs font-black border-r border-amber-100 hover:bg-sky-50">使用雲端版本</button>
-            <button @click="keepLocalConflictVersion" class="min-h-[54px] px-3 text-amber-700 text-xs font-black hover:bg-amber-50">保留本機並覆蓋</button>
+            <button @click="keepLocalConflictVersion" class="min-h-[54px] px-3 text-amber-700 text-xs font-black hover:bg-amber-50">保留本機並覆蓋全部</button>
           </div>
         </div>
       </div>
@@ -3510,7 +3525,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.06.30-crm-action-panel';
+    const APP_VERSION = '2026.06.30-conflict-audit-log';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -5038,6 +5053,43 @@
           if (snapshot && row) Object.assign(row, JSON.parse(JSON.stringify(snapshot)));
           delete this.editSnapshots[key];
         },
+        orderAuditFields() {
+          return ['date', 'customerId', 'customerName', 'gender', 'serviceName', 'amount', 'paymentMethod', 'cashAmount', 'topupChannel', 'syncStatus'];
+        },
+        orderAuditFieldLabel(field) {
+          return ({
+            date: '日期',
+            customerId: '顧客ID',
+            customerName: '顧客',
+            gender: '性別',
+            serviceName: '服務',
+            amount: '金額',
+            paymentMethod: '付款',
+            cashAmount: '現金付款',
+            topupChannel: '儲值收款',
+            syncStatus: '狀態'
+          })[field] || field;
+        },
+        formatOrderAuditValue(field, value) {
+          if (value === null || value === undefined || value === '') return '空白';
+          if (field === 'amount' || field === 'cashAmount') return `NT$ ${this.formatNumber(value)}`;
+          if (field === 'customerId') return this.shortCustomerId(value);
+          return String(value);
+        },
+        buildOrderCorrectionDetail(before = {}, after = {}, fields = []) {
+          const title = `${after.date || before.date || ''} ${after.customerName || before.customerName || ''} ${after.serviceName || before.serviceName || ''}`.trim();
+          const changes = fields.map(field => {
+            const from = this.formatOrderAuditValue(field, before[field]);
+            const to = this.formatOrderAuditValue(field, after[field]);
+            return `${this.orderAuditFieldLabel(field)}：${from} → ${to}`;
+          });
+          return [title, ...changes].filter(Boolean).join('\n');
+        },
+        orderCorrectionLogs(orderId) {
+          return (this.operationLogs || [])
+            .filter(log => log?.meta?.orderId === orderId && ['order_correction', 'order_update'].includes(log.action))
+            .slice(0, 3);
+        },
         guardedSaveOrder(order) {
           const snapshot = this.editSnapshots[`orders:${order?.id}`];
           const oldDate = snapshot?.date || order?.date;
@@ -5045,10 +5097,20 @@
             this.restoreEditSnapshot('orders', order);
             return false;
           }
-          const changed = snapshot ? Object.keys(snapshot).filter(key => JSON.stringify(snapshot[key]) !== JSON.stringify(order[key])) : [];
+          const changed = snapshot
+            ? this.orderAuditFields().filter(key => JSON.stringify(snapshot[key] ?? null) !== JSON.stringify(order[key] ?? null))
+            : [];
+          if (changed.length) order.updatedAt = new Date().toISOString();
           this.clearEditSnapshot('orders', order);
           this.saveOrders();
-          if (changed.length) this.recordOperation('order_update', '修改業績', `${order.date} ${order.customerName || ''} ${order.serviceName || ''} · ${changed.join('、')}`, { orderId: order.id });
+          if (changed.length) {
+            this.recordOperation('order_correction', '修正業績', this.buildOrderCorrectionDetail(snapshot, order, changed), {
+              orderId: order.id,
+              fields: changed,
+              before: this.orderAuditFields().reduce((acc, field) => ({ ...acc, [field]: snapshot?.[field] ?? null }), {}),
+              after: this.orderAuditFields().reduce((acc, field) => ({ ...acc, [field]: order?.[field] ?? null }), {})
+            });
+          }
           return true;
         },
         guardedOrderCustomerChanged(order) {
@@ -5059,8 +5121,18 @@
             return false;
           }
           this.onOrderCustomerIdChanged(order);
+          const changed = snapshot
+            ? this.orderAuditFields().filter(key => JSON.stringify(snapshot[key] ?? null) !== JSON.stringify(order[key] ?? null))
+            : [];
+          if (changed.length) order.updatedAt = new Date().toISOString();
+          if (changed.length) this.saveOrders();
           this.clearEditSnapshot('orders', order);
-          this.recordOperation('order_update', '修改業績顧客', `${order.date} ${order.customerName || ''}`, { orderId: order.id });
+          if (changed.length) {
+            this.recordOperation('order_correction', '修正業績顧客', this.buildOrderCorrectionDetail(snapshot, order, changed), {
+              orderId: order.id,
+              fields: changed
+            });
+          }
           return true;
         },
         guardedSaveExpense(expense) {
@@ -6652,6 +6724,35 @@
           });
           if (this.cloudBaseline[table]) delete this.cloudBaseline[table][this.cloudRowKey(table, payload)];
         },
+        clearQueuedCloudSync() {
+          if (this.cloudSyncTimer) {
+            clearTimeout(this.cloudSyncTimer);
+            this.cloudSyncTimer = null;
+          }
+          this.cloudSyncPending = false;
+        },
+        localVersionedChangePayloads(payloads = null) {
+          const source = payloads || this.buildCloudPayloads();
+          const changes = {};
+          Object.keys(this.versionedTableConfigs()).forEach(table => {
+            changes[table] = (source[table] || []).filter(row => {
+              const baseline = this.cloudBaseline[table]?.[this.cloudRowKey(table, row)];
+              return !baseline || baseline.fingerprint !== this.cloudFingerprint(row);
+            });
+          });
+          return changes;
+        },
+        async forceOverwriteLocalVersionedChanges() {
+          const changes = this.localVersionedChangePayloads();
+          let changed = 0;
+          for (const table of Object.keys(this.versionedTableConfigs())) {
+            for (const payload of changes[table] || []) {
+              await this.forceOverwriteCloudRow(table, payload);
+              changed += 1;
+            }
+          }
+          return changed;
+        },
         async syncVersionedChanges(payloads) {
           let changed = 0;
           for (const table of Object.keys(this.versionedTableConfigs())) {
@@ -6983,6 +7084,7 @@
         async pushCloudSnapshot(initialMigration = false) {
           if (!this.authUser || !this.authSession?.access_token) return false;
           if (!initialMigration && (!this.cloudReady || this.cloudApplying)) return false;
+          if (!initialMigration && this.cloudConflict) return false;
           if (this.cloudSyncInFlight) {
             this.cloudSyncPending = true;
             return false;
@@ -7030,13 +7132,15 @@
           } finally {
             this.cloudSyncInFlight = false;
             if (this.cloudSyncPending) {
+              const shouldRetry = !this.cloudConflict;
               this.cloudSyncPending = false;
-              this.queueCloudSync(300);
+              if (shouldRetry) this.queueCloudSync(300);
             }
           }
         },
         queueCloudSync(delay = 1200) {
           if (this.cloudApplying || !this.authUser) return;
+          if (this.cloudConflict) return;
           if (!this.cloudReady) {
             if (this.hasMeaningfulLocalData()) {
               this.cloudMigrationNeeded = true;
@@ -7084,26 +7188,29 @@
           }
         },
         async useCloudConflictVersion() {
+          this.clearQueuedCloudSync();
           this.cloudConflict = null;
           await this.reloadCloudData();
         },
         async keepLocalConflictVersion() {
           const conflict = this.cloudConflict;
           if (!conflict) return;
+          this.clearQueuedCloudSync();
           this.cloudStatus = 'syncing';
-          this.cloudMessage = '正在用本機版本覆蓋雲端資料…';
+          this.cloudMessage = '正在用本機版本覆蓋所有待同步資料…';
           try {
             if (conflict.operation === 'delete') {
               await this.forceDeleteCloudRow(conflict.table, conflict.localPayload);
-            } else {
-              await this.forceOverwriteCloudRow(conflict.table, conflict.localPayload);
             }
+            const changed = await this.forceOverwriteLocalVersionedChanges();
             this.cloudConflict = null;
+            this.cloudReady = true;
             this.cloudStatus = 'synced';
             this.cloudLastSync = new Date().toISOString();
             localStorage.setItem('momo_cloud_last_sync', this.cloudLastSync);
-            this.cloudMessage = `已用本機版本覆蓋雲端 · ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
-            this.showToast('已保留本機版本並覆蓋雲端');
+            this.cloudMessage = `已用本機覆蓋雲端 ${changed} 筆 · ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
+            this.recordOperation('cloud_conflict_overwrite', '保留本機並覆蓋雲端', `${conflict.label} 衝突已處理；覆蓋待同步資料 ${changed} 筆`, { table: conflict.table, key: conflict.key, changed });
+            this.showToast(`已保留本機版本並覆蓋雲端 ${changed} 筆`);
           } catch (error) {
             console.error('Cloud conflict overwrite failed:', error);
             this.cloudConflict = conflict;
