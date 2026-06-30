@@ -127,6 +127,13 @@
       box-shadow: 0 0 0 3px rgba(255, 164, 117, 0.2);
     }
 
+    input.orders-search-input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+      min-height: 2.35rem !important;
+      height: 2.35rem !important;
+      border-radius: 999px !important;
+      line-height: 1.25 !important;
+    }
+
     /* Prevent iOS auto-zoom on form inputs by ensuring font-size is at least 16px on mobile, and increase tap height */
     @media (max-width: 768px) {
       input, select, textarea, .jelly-input {
@@ -229,6 +236,13 @@
         min-width: 2.35rem !important;
         min-height: 2.35rem !important;
         padding: 0 !important;
+      }
+
+      .orders-search-input {
+        min-height: 2.35rem !important;
+        padding-top: 0.25rem !important;
+        padding-bottom: 0.25rem !important;
+        border-radius: 999px !important;
       }
 
       header .absolute.top-full {
@@ -424,6 +438,13 @@
 
       input, select, textarea {
         min-height: 2.9rem !important;
+      }
+
+      input.orders-search-input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+        min-height: 2.35rem !important;
+        height: 2.35rem !important;
+        border-radius: 999px !important;
+        line-height: 1.25 !important;
       }
     }
 
@@ -1937,34 +1958,37 @@
             </transition>
 
             <!-- Orders Interactive Table - Daily Grouped Reconciliation -->
-            <div class="bg-white p-4 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow space-y-4">
-              <div class="space-y-3 pb-4 border-b border-orange-50">
+            <div class="bg-white/95 p-3.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50/70 macaron-shadow space-y-3.5">
+              <div class="space-y-2.5 pb-3 border-b border-slate-100">
                 <!-- 第一列：標題、搜尋與新增 -->
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                    業績明細
-                    <button v-if="ordersCustomerHistoryId" type="button" @click="closeCustomerHistory" class="rounded-lg bg-emerald-50 border border-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">完整客史 · 全部年份 ×</button>
-                  </h3>
-                  <div class="flex items-center gap-2 w-full sm:w-auto">
+                <div class="flex items-start sm:items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <h3 class="font-black text-slate-800 text-base sm:text-lg flex items-center gap-2">
+                      業績明細
+                      <button v-if="ordersCustomerHistoryId" type="button" @click="closeCustomerHistory" class="rounded-lg bg-emerald-50 border border-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">完整客史 · 全部年份 ×</button>
+                    </h3>
+                    <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredOrders.length }} 筆 · NT$ {{ formatNumber(filteredOrdersTotal) }}</p>
+                  </div>
+                  <button @click="showMobileAddOrderForm = true; $nextTick(() => { if ($refs.customerNameInput) $refs.customerNameInput.focus(); })"
+                          class="jelly-btn min-h-[34px] shrink-0 bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-[11px] font-black px-3.5 rounded-full shadow-sm">
+                    ＋ 新增
+                  </button>
+                </div>
+                <div class="flex items-center gap-2 w-full">
                     <div class="relative flex-1 sm:w-56">
                       <input type="text" v-model="ordersSearchQuery" placeholder="搜尋顧客 / 服務"
                              autocorrect="off" autocapitalize="words" autocomplete="off"
-                             class="w-full min-h-[42px] bg-orange-50/50 border border-orange-100 rounded-2xl pl-9 pr-9 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-macaron-peach-200">
-                      <span class="absolute left-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-slate-300"></span>
+                             class="orders-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-9 pr-9 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
+                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
                       <button v-if="ordersSearchQuery" @click="ordersSearchQuery = ''"
-                              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-black">✕</button>
+                              class="absolute right-2.5 top-1/2 -translate-y-1/2 min-h-7 w-7 rounded-full text-slate-400 text-xs font-black">✕</button>
                     </div>
-                    <button @click="showMobileAddOrderForm = true; $nextTick(() => { if ($refs.customerNameInput) $refs.customerNameInput.focus(); })"
-                            class="jelly-btn min-h-[42px] shrink-0 bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-xs font-black px-4 rounded-2xl shadow-sm">
-                      新增業績
-                    </button>
-                  </div>
                 </div>
                 <!-- 第二列：進階篩選預設收合，手機記帳少一排干擾 -->
-                <details class="rounded-2xl bg-slate-50/70 border border-slate-100 px-3 py-2" :open="ordersFilterActive">
-                  <summary class="cursor-pointer list-none text-[11px] font-black text-slate-500 flex items-center justify-between">
-                    <span>{{ ordersFilterActive ? '篩選中' : '進階篩選' }}</span>
-                    <span class="text-slate-300">展開</span>
+                <details class="rounded-2xl bg-slate-50/45 border border-slate-100 px-3 py-2" :open="ordersFilterCategory !== 'All' || ordersFilterPayment !== 'All'">
+                  <summary class="cursor-pointer list-none text-[10px] font-black text-slate-400 flex items-center justify-between">
+                    <span>{{ (ordersFilterCategory !== 'All' || ordersFilterPayment !== 'All') ? '篩選中' : '進階篩選' }}</span>
+                    <span class="text-slate-300">{{ (ordersFilterCategory !== 'All' || ordersFilterPayment !== 'All') ? '收合' : '展開' }}</span>
                   </summary>
                   <div class="mt-2 flex items-center gap-2">
                     <div class="grid grid-cols-2 gap-2 flex-1 sm:flex-none">
@@ -2021,7 +2045,7 @@
 
                 <!-- Day Header -->
                 <button type="button" @click="toggleOrderDate(group.date)"
-                     class="w-full flex items-center justify-between rounded-2xl px-3 sm:px-4 py-3 border border-orange-100/40 transition-all text-left"
+                     class="w-full flex items-center justify-between rounded-2xl px-3 sm:px-4 py-2.5 border border-orange-100/35 transition-all text-left"
                      :style="getDayHeatStyle(group.dayTotal)">
                   <div class="flex items-center gap-2 min-w-0">
                     <span class="text-slate-400 font-black transition-transform" :class="{ '-rotate-90': collapsedOrderDates[group.date] }">⌄</span>
@@ -2109,23 +2133,26 @@
                 </div>
 
                 <!-- Mobile Card List (Visible on mobile/tablet) -->
-                <div v-show="!collapsedOrderDates[group.date]" class="lg:hidden space-y-2">
-                  <div v-for="order in group.orders" :key="order.id" class="bg-white rounded-2xl border border-orange-100/60 overflow-hidden">
-                    <button type="button" @click="toggleOrderEditor(order.id)" class="w-full p-3.5 text-left">
-                      <div class="flex items-start justify-between gap-3">
+                <div v-show="!collapsedOrderDates[group.date]" class="lg:hidden space-y-1.5">
+                  <div v-for="order in group.orders" :key="order.id" class="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-[0_1px_0_rgba(15,23,42,0.03)]">
+                    <button type="button" @click="toggleOrderEditor(order.id)" class="w-full px-3 py-2.5 text-left">
+                      <div class="flex items-center justify-between gap-3">
                         <div class="min-w-0">
-                          <div class="text-sm font-black text-slate-800 truncate">{{ order.customerName }}</div>
-                          <div class="mt-1 text-xs font-semibold text-slate-500 truncate">{{ order.serviceName }}</div>
+                          <div class="flex items-center gap-1.5 min-w-0">
+                            <div class="text-sm font-black text-slate-800 truncate">{{ order.customerName }}</div>
+                            <span class="text-[9px] font-black px-1.5 py-0.5 rounded-md shrink-0" :style="{ backgroundColor: getCategoryInfo(order).bg, color: getCategoryInfo(order).color }">{{ getCategoryInfo(order).label }}</span>
+                          </div>
+                          <div class="mt-0.5 text-[11px] font-semibold text-slate-400 truncate">{{ order.serviceName }}</div>
                         </div>
                         <div class="shrink-0 text-right">
-                          <div class="text-sm font-black text-slate-800">NT$ {{ formatNumber(order.amount) }}</div>
-                          <span class="mt-1 inline-flex items-center text-[10px] font-black px-2 py-0.5 rounded-lg" :class="paymentBadgeClass(order.paymentMethod)">{{ order.paymentMethod }}<template v-if="order.paymentMethod === '儲值進帳'"> · {{ getTopupChannel(order) }}</template></span>
+                          <div class="text-sm font-black text-slate-800 tabular-nums">NT$ {{ formatNumber(order.amount) }}</div>
+                          <span class="mt-0.5 inline-flex items-center text-[9px] font-black px-1.5 py-0.5 rounded-md" :class="paymentBadgeClass(order.paymentMethod)">{{ order.paymentMethod }}<template v-if="order.paymentMethod === '儲值進帳'"> · {{ getTopupChannel(order) }}</template></span>
                         </div>
                       </div>
-                      <div v-if="order.paymentMethod === '儲值進帳'" class="mt-2 text-[9px] font-black text-purple-600">不列入營業額</div>
-                      <div v-if="order.paymentMethod === '現金＋儲值扣款'" class="mt-2 text-[10px] font-black text-amber-700">現金 NT$ {{ formatNumber(getMixedCashAmount(order)) }} · 儲值扣款 NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div>
+                      <div v-if="order.paymentMethod === '儲值進帳'" class="mt-1.5 text-[9px] font-black text-purple-600">不列入營業額</div>
+                      <div v-if="order.paymentMethod === '現金＋儲值扣款'" class="mt-1.5 text-[10px] font-black text-amber-700">現金 NT$ {{ formatNumber(getMixedCashAmount(order)) }} · 儲值扣款 NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div>
                     </button>
-                    <div v-if="expandedOrderId === order.id" class="p-3.5 pt-0 border-t border-orange-50 bg-orange-50/25 space-y-3">
+                    <div v-if="expandedOrderId === order.id" class="p-3.5 pt-0 border-t border-slate-100 bg-slate-50/60 space-y-3">
                       <div class="grid grid-cols-3 gap-2 pt-3">
                         <div class="col-span-3 rounded-xl px-3 py-2 text-[11px] font-black" :class="orderDraftHasChanges(order) ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'">
                           {{ orderDraftHasChanges(order) ? '尚未儲存：確認後請按「儲存修正」' : '編輯草稿：修改後不會立即寫入資料' }}
@@ -3784,7 +3811,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.01-modal-no-horizontal-scroll';
+    const APP_VERSION = '2026.07.01-orders-visual-polish';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
