@@ -153,10 +153,10 @@
       header {
         position: sticky !important;
         top: 0 !important;
-        padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)) !important;
-        padding-left: 0.875rem !important;
-        padding-right: 0.875rem !important;
-        padding-bottom: 0.625rem !important;
+        padding-top: calc(0.45rem + env(safe-area-inset-top, 0px)) !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+        padding-bottom: 0.45rem !important;
       }
 
       .desktop-header-content,
@@ -165,48 +165,68 @@
       }
 
       .mobile-header-content {
-        display: flex !important;
-        flex-direction: column;
-        gap: 0.55rem;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.45rem;
         width: 100%;
       }
 
       .mobile-header-brand {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        min-height: 2.25rem;
+        justify-content: flex-start;
+        min-width: 0;
+        min-height: 2.1rem;
       }
 
       .mobile-header-controls {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 0.55rem;
+        display: flex;
+        gap: 0.35rem;
         align-items: center;
+        justify-content: flex-end;
+        min-width: 0;
       }
 
       .mobile-month-selector {
-        min-width: 0;
-        min-height: 2.65rem;
+        min-width: 7.2rem;
+        min-height: 2.35rem;
+        border-radius: 999px !important;
       }
 
-      .mobile-month-selector select {
-        min-width: 0;
-        font-size: 0.78rem !important;
-        padding-left: 0.75rem !important;
+      .mobile-month-selector > button {
+        min-height: 2.35rem !important;
+      }
+
+      .mobile-month-selector > button:first-child,
+      .mobile-month-selector > button:last-child {
+        width: 1.75rem !important;
+        border-radius: 999px !important;
+      }
+
+      .mobile-month-selector > button:nth-child(2) {
+        min-width: 4.6rem !important;
+        padding-left: 0.15rem !important;
+        padding-right: 0.15rem !important;
+        font-size: 0.76rem !important;
       }
 
       .mobile-sync-button {
-        width: auto !important;
-        min-width: 6.5rem;
-        min-height: 2.65rem !important;
-        padding-left: 0.9rem !important;
-        padding-right: 0.9rem !important;
+        width: 2.35rem !important;
+        min-width: 2.35rem !important;
+        min-height: 2.35rem !important;
+        padding: 0 !important;
+        border-radius: 999px !important;
+      }
+
+      .mobile-sync-button span {
+        display: none !important;
       }
 
       .mobile-tools-button {
         width: 2.35rem !important;
         height: 2.35rem !important;
+        min-width: 2.35rem !important;
         min-height: 2.35rem !important;
         padding: 0 !important;
       }
@@ -531,32 +551,33 @@
       <div class="mobile-header-content hidden max-w-7xl mx-auto">
         <div class="mobile-header-brand">
           <div class="flex items-center gap-2 min-w-0">
-            <div class="w-8 h-8 shrink-0 rounded-xl bg-gradient-to-tr from-macaron-peach-300 to-macaron-rose flex items-center justify-center text-lg shadow-sm rotate-3">🐾</div>
+            <div class="w-7 h-7 shrink-0 rounded-xl bg-gradient-to-tr from-macaron-peach-300 to-macaron-rose flex items-center justify-center text-base shadow-sm rotate-3">🐾</div>
             <div class="min-w-0">
-              <h1 class="text-base font-black text-slate-800 tracking-tight truncate">摸摸頭</h1>
-              <p class="text-[9px] font-black text-slate-400 truncate">{{ selectedMonth === 'All' ? selectedYear + ' 全年' : selectedYear + '/' + selectedMonth }} · {{ pendingActionSummary.total ? pendingActionSummary.total + ' 待處理' : '狀態正常' }}</p>
+              <div class="flex items-center gap-1.5 min-w-0">
+                <h1 class="text-sm font-black text-slate-800 tracking-tight truncate">摸摸頭</h1>
+                <span class="w-2 h-2 rounded-full ring-2 shrink-0" :class="online ? 'bg-emerald-500 ring-emerald-50' : 'bg-rose-500 ring-rose-50'" :aria-label="online ? '已連線' : '離線模式'" :title="online ? '已連線' : '離線模式'"></span>
+                <span v-if="pendingActionSummary.total" class="h-4 min-w-4 px-1 rounded-full bg-amber-50 border border-amber-100 text-amber-700 text-[9px] font-black flex items-center justify-center">{{ pendingActionSummary.total }}</span>
+              </div>
+              <p class="text-[8px] leading-tight font-black text-slate-400 truncate">{{ pendingActionSummary.total ? pendingActionSummary.total + ' 待處理' : '狀態正常' }}</p>
             </div>
-          </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <span v-if="pendingActionSummary.total" class="min-w-6 h-6 px-1.5 rounded-full bg-amber-50 border border-amber-100 text-amber-700 text-[10px] font-black flex items-center justify-center">{{ pendingActionSummary.total }}</span>
-            <span class="w-2.5 h-2.5 rounded-full ring-4" :class="online ? 'bg-emerald-500 ring-emerald-50' : 'bg-rose-500 ring-rose-50'" :aria-label="online ? '已連線' : '離線模式'" :title="online ? '已連線' : '離線模式'"></span>
-            <button @click="showMobileTools = true" class="mobile-tools-button jelly-btn rounded-full bg-white border border-orange-100 text-slate-500 flex items-center justify-center shadow-sm" aria-label="開啟更多工具">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
-            </button>
           </div>
         </div>
         <div class="mobile-header-controls">
-          <div class="mobile-month-selector flex items-center bg-white/90 rounded-2xl px-1 border border-macaron-peach-200 shadow-sm">
-            <button type="button" @click="shiftMonth(-1)" class="w-10 min-h-[42px] rounded-xl text-slate-500 font-black" aria-label="上一個月">‹</button>
-            <button type="button" @click="toggleAnnualView" class="flex-1 min-h-[42px] text-sm font-black text-slate-700 whitespace-nowrap" title="點擊切換全年／月份">
-              {{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年' : selectedMonth + ' 月' }}
+          <div class="mobile-month-selector flex items-center bg-white/90 px-0.5 border border-macaron-peach-200 shadow-sm">
+            <button type="button" @click="shiftMonth(-1)" class="w-8 min-h-[38px] rounded-full text-slate-500 font-black" aria-label="上一個月">‹</button>
+            <button type="button" @click="toggleAnnualView" class="flex-1 min-h-[38px] text-xs font-black text-slate-700 whitespace-nowrap" title="點擊切換全年／月份">
+              {{ selectedMonth === 'All' ? selectedYear + ' 全年' : selectedYear + '/' + selectedMonth }}
             </button>
-            <button type="button" @click="shiftMonth(1)" class="w-10 min-h-[42px] rounded-xl text-slate-500 font-black" aria-label="下一個月">›</button>
+            <button type="button" @click="shiftMonth(1)" class="w-8 min-h-[38px] rounded-full text-slate-500 font-black" aria-label="下一個月">›</button>
           </div>
           <button @click="syncFromApi" :disabled="syncing"
+                  aria-label="同步行事曆"
                   class="mobile-sync-button jelly-btn rounded-2xl bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50">
             <svg :class="{ 'animate-spin': syncing }" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992M2.985 19.644v-4.992h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182V4.356"/></svg>
             <span>{{ syncing ? '同步中' : '同步' }}</span>
+          </button>
+          <button @click="showMobileTools = true" class="mobile-tools-button jelly-btn rounded-full bg-white border border-orange-100 text-slate-500 flex items-center justify-center shadow-sm" aria-label="開啟更多工具">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
           </button>
         </div>
       </div>
@@ -3760,7 +3781,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.06.30-inventory-replenish';
+    const APP_VERSION = '2026.06.30-compact-mobile-header';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
