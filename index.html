@@ -3335,17 +3335,52 @@
     <!-- 多裝置版本衝突處理 -->
     <transition name="fade">
       <div v-if="cloudConflict" class="fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-        <div class="ios-sheet bg-white rounded-3xl w-full max-w-md macaron-shadow-lg border border-amber-100 overflow-hidden">
+        <div class="ios-sheet bg-white rounded-3xl w-full max-w-2xl max-h-[88dvh] macaron-shadow-lg border border-amber-100 overflow-hidden flex flex-col">
           <div class="ios-sheet-handle sm:hidden"></div>
-          <div class="p-6 space-y-3">
+          <div class="p-5 sm:p-6 space-y-3 overflow-y-auto">
             <div class="mx-auto w-10 h-1.5 rounded-full bg-amber-100"></div>
             <h3 class="text-base font-black text-slate-800 text-center">另一台裝置已修改這筆資料</h3>
             <p class="text-xs font-semibold text-slate-500 text-center leading-relaxed">{{ cloudConflict.label }} 的雲端版本較新。系統已暫停同步並保留本機內容。</p>
             <p class="text-[10px] font-bold text-amber-700 text-center leading-relaxed bg-amber-50 rounded-2xl px-3 py-2">
               如果你選「保留本機」，系統會一次覆蓋所有待同步的本機修改，避免同一個視窗一直跳出。
             </p>
+
+            <div class="rounded-2xl border border-slate-100 bg-slate-50/70 px-3 py-2">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <div class="text-[10px] font-black text-slate-400">衝突項目</div>
+                  <div class="text-xs font-black text-slate-700">{{ cloudConflictSummaryText() }}</div>
+                </div>
+                <span class="shrink-0 rounded-full bg-amber-100 text-amber-700 px-2 py-1 text-[10px] font-black">
+                  {{ cloudConflictChangedCount() }} 欄不同
+                </span>
+              </div>
+            </div>
+
+            <div v-if="cloudConflictRows().length" class="space-y-2">
+              <div class="grid grid-cols-2 gap-2 px-1 text-[10px] font-black text-slate-400">
+                <div>本機版本</div>
+                <div>雲端版本</div>
+              </div>
+              <div v-for="row in cloudConflictRows()" :key="row.field"
+                   class="rounded-2xl border p-3"
+                   :class="row.changed ? 'bg-amber-50/70 border-amber-100' : 'bg-white border-slate-100'">
+                <div class="mb-2 flex items-center justify-between gap-2">
+                  <div class="text-[11px] font-black text-slate-700">{{ row.label }}</div>
+                  <span v-if="row.changed" class="rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-[9px] font-black">不同</span>
+                  <span v-else class="rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5 text-[9px] font-black">相同</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="min-h-[40px] rounded-xl bg-white border border-slate-100 px-3 py-2 text-xs font-bold text-slate-700 break-words whitespace-pre-line">{{ row.local }}</div>
+                  <div class="min-h-[40px] rounded-xl bg-white border border-slate-100 px-3 py-2 text-xs font-bold text-slate-700 break-words whitespace-pre-line">{{ row.cloud }}</div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-4 text-center text-xs font-bold text-slate-400">
+              找不到可比較的欄位；建議先使用雲端版本或重新整理後再試。
+            </div>
           </div>
-          <div class="grid grid-cols-2 border-t border-amber-100">
+          <div class="grid grid-cols-2 border-t border-amber-100 shrink-0 bg-white">
             <button @click="useCloudConflictVersion" class="min-h-[54px] px-3 text-sky-700 text-xs font-black border-r border-amber-100 hover:bg-sky-50">使用雲端版本</button>
             <button @click="keepLocalConflictVersion" class="min-h-[54px] px-3 text-amber-700 text-xs font-black hover:bg-amber-50">保留本機並覆蓋全部</button>
           </div>
@@ -3487,7 +3522,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.06.30-local-tailwind-assets';
+    const APP_VERSION = '2026.06.30-conflict-diff-modal';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -6614,6 +6649,130 @@
             operation
           };
           return error;
+        },
+        cloudConflictFieldConfigs() {
+          return {
+            customers: [
+              ['name', '顧客姓名'],
+              ['gender', '性別']
+            ],
+            orders: [
+              ['order_date', '日期'],
+              ['customer_id', '顧客'],
+              ['service_name', '服務'],
+              ['amount', '金額'],
+              ['payment_method', '付款方式'],
+              ['cash_amount', '現金付款'],
+              ['topup_channel', '儲值收款'],
+              ['sync_status', '資料狀態']
+            ],
+            expenses: [
+              ['expense_date', '日期'],
+              ['category', '分類'],
+              ['amount', '金額'],
+              ['notes', '備註']
+            ],
+            inventory: [
+              ['name', '品項'],
+              ['stock', '庫存'],
+              ['notes', '備註']
+            ],
+            crm_profiles: [
+              ['customer_id', '顧客'],
+              ['notes', 'CRM 備註'],
+              ['formula', '配方與偏好']
+            ],
+            closeouts: [
+              ['closeout_date', '日期'],
+              ['expected_cash', '應有現金'],
+              ['counted_cash', '實點現金'],
+              ['difference', '帳實差額'],
+              ['service_revenue', '服務營收'],
+              ['cash', '現金'],
+              ['transfer', '轉帳'],
+              ['prepaid_out', '儲值扣款'],
+              ['prepaid_in', '儲值進帳'],
+              ['expenses', '支出'],
+              ['net_profit', '淨利'],
+              ['orders_count', '服務筆數'],
+              ['note', '備註']
+            ],
+            service_configs: [
+              ['name', '服務名稱'],
+              ['duration_minutes', '預估時間'],
+              ['price', '定價']
+            ]
+          };
+        },
+        cloudConflictFields(conflict = this.cloudConflict) {
+          if (!conflict) return [];
+          const configured = this.cloudConflictFieldConfigs()[conflict.table];
+          if (configured) return configured;
+          const excluded = new Set(['owner_id', 'version', 'created_at', 'updated_at', 'id']);
+          const keys = new Set([
+            ...Object.keys(conflict.localPayload || {}),
+            ...Object.keys(conflict.cloudRow || {})
+          ]);
+          return [...keys].filter(key => !excluded.has(key)).map(key => [key, key]);
+        },
+        normalizeCloudCompareValue(value) {
+          if (value === undefined || value === null || value === '') return null;
+          if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+          if (typeof value === 'object') {
+            return JSON.stringify(Object.keys(value).sort().reduce((acc, key) => {
+              acc[key] = this.normalizeCloudCompareValue(value[key]);
+              return acc;
+            }, {}));
+          }
+          return String(value);
+        },
+        formatCloudConflictValue(table, field, value, conflict = this.cloudConflict, side = 'local') {
+          if (conflict?.operation === 'delete' && side === 'local') return '本機要刪除此筆';
+          if (value === undefined || value === null || value === '') return '空白';
+          if (field === 'customer_id') {
+            const customer = this.customerMap[value];
+            return customer ? `${customer.name}（${this.shortCustomerId(value)}）` : this.shortCustomerId(value);
+          }
+          if (field === 'formula') {
+            return this.compactFormulaSummary(value) || '尚未建立配方';
+          }
+          const moneyFields = new Set([
+            'amount', 'cash_amount', 'expected_cash', 'counted_cash', 'difference',
+            'service_revenue', 'cash', 'transfer', 'prepaid_out', 'prepaid_in',
+            'cash_prepaid_in', 'transfer_prepaid_in', 'expenses', 'net_profit', 'price'
+          ]);
+          if (moneyFields.has(field)) return `NT$ ${this.formatNumber(value)}`;
+          if (field === 'duration_minutes') return `${this.formatNumber(value)} 分鐘`;
+          if (field === 'stock') return `${this.formatNumber(value)} 件`;
+          if (field === 'orders_count') return `${this.formatNumber(value)} 筆`;
+          if (typeof value === 'object') return JSON.stringify(value, null, 2);
+          return String(value);
+        },
+        cloudConflictRows(conflict = this.cloudConflict) {
+          if (!conflict) return [];
+          return this.cloudConflictFields(conflict).map(([field, label]) => {
+            const localRaw = conflict.localPayload?.[field];
+            const cloudRaw = conflict.cloudRow?.[field];
+            const changed = conflict.operation === 'delete'
+              || this.normalizeCloudCompareValue(localRaw) !== this.normalizeCloudCompareValue(cloudRaw);
+            return {
+              field,
+              label,
+              changed,
+              local: this.formatCloudConflictValue(conflict.table, field, localRaw, conflict, 'local'),
+              cloud: this.formatCloudConflictValue(conflict.table, field, cloudRaw, conflict, 'cloud')
+            };
+          }).filter(row => row.local !== '空白' || row.cloud !== '空白');
+        },
+        cloudConflictChangedCount(conflict = this.cloudConflict) {
+          return this.cloudConflictRows(conflict).filter(row => row.changed).length;
+        },
+        cloudConflictSummaryText(conflict = this.cloudConflict) {
+          if (!conflict) return '';
+          const rows = this.cloudConflictRows(conflict);
+          const preferred = rows.find(row => ['顧客姓名', '顧客', '日期', '服務', '品項', '服務名稱'].includes(row.label) && row.local !== '空白');
+          const operationLabel = conflict.operation === 'delete' ? '刪除衝突' : '修改衝突';
+          return `${conflict.label} · ${operationLabel}${preferred ? ` · ${preferred.local}` : ''}`;
         },
         async syncVersionedRow(table, payload, baselineRefreshed = false) {
           const config = this.versionedTableConfigs()[table];
