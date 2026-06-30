@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v21-compact-mobile-header';
+const CACHE_NAME = 'momohair-shell-v22-expense-simple-summary';
 const APP_SHELL = [
   '/',
   '/assets/tailwind.css',
