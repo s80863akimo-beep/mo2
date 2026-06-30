@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v9-ios-touch-comfort';
+const CACHE_NAME = 'momohair-shell-v10-orders-fast-entry';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
