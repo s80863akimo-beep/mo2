@@ -709,6 +709,42 @@
             </section>
 
             <section class="space-y-2">
+              <div class="px-1 text-[10px] font-black text-slate-400">App 更新</div>
+              <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3 space-y-2">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="text-xs font-black text-slate-700">目前版本</div>
+                    <div class="mt-0.5 text-[10px] font-bold text-slate-400 truncate">{{ appVersion }}</div>
+                  </div>
+                  <span class="shrink-0 px-2 py-1 rounded-full text-[10px] font-black"
+                        :class="updateAvailable ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">
+                    {{ updateAvailable ? '可更新' : '最新版' }}
+                  </span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-[10px] font-bold">
+                  <div class="rounded-xl bg-white border border-slate-100 px-3 py-2">
+                    <div class="text-slate-400">Service Worker</div>
+                    <div class="mt-0.5 text-slate-700">{{ pwaStatusText }}</div>
+                  </div>
+                  <div class="rounded-xl bg-white border border-slate-100 px-3 py-2">
+                    <div class="text-slate-400">快取</div>
+                    <div class="mt-0.5 text-slate-700">{{ pwaCacheCountText }}</div>
+                  </div>
+                </div>
+                <p class="px-1 text-[10px] font-bold text-slate-400">{{ pwaLastCheckedText }}</p>
+                <div class="grid grid-cols-2 gap-2">
+                  <button @click="checkPwaUpdate(true)" :disabled="pwaCheckingUpdate" class="min-h-[44px] rounded-2xl bg-white border border-slate-100 text-slate-700 text-xs font-black disabled:opacity-50">
+                    {{ pwaCheckingUpdate ? '檢查中…' : '檢查更新' }}
+                  </button>
+                  <button @click="applyPwaUpdate" :disabled="!updateAvailable && !pendingServiceWorker" class="min-h-[44px] rounded-2xl bg-slate-900 text-white text-xs font-black disabled:opacity-30">立即套用</button>
+                </div>
+                <button @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" class="w-full min-h-[44px] rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-black disabled:opacity-50">
+                  {{ pwaClearingCache ? '清理中…' : '清除舊快取並重載' }}
+                </button>
+              </div>
+            </section>
+
+            <section class="space-y-2">
               <div class="px-1 text-[10px] font-black text-slate-400">資料安全</div>
               <div class="grid grid-cols-2 gap-2">
                 <button @click="showMobileTools = false; exportBackup()" class="min-h-[50px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">匯出備份</button>
@@ -3290,7 +3326,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.06.30-ios-tabbar-comfort';
+    const APP_VERSION = '2026.06.30-pwa-update-tools';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -3453,6 +3489,11 @@
           pendingServiceWorker: null,
           pwaRegistration: null,
           pwaRefreshing: false,
+          pwaCheckingUpdate: false,
+          pwaClearingCache: false,
+          pwaCacheNames: [],
+          pwaLastCheckedAt: null,
+          pwaStatus: '初始化中',
           showMobileAddOrderForm: false,
           expandedOrderId: null,
           collapsedOrderDates: {},
@@ -3555,6 +3596,21 @@
           if (!this.integrityReport) return '尚未檢查完整性';
           if (this.integrityReport.status === 'ok') return '資料完整';
           return `${this.integrityReport.errorCount || 0} 錯誤、${this.integrityReport.warningCount || 0} 提醒`;
+        },
+        pwaStatusText() {
+          if (!('serviceWorker' in navigator)) return '不支援';
+          if (this.updateAvailable) return '有新版待套用';
+          if (this.pwaCheckingUpdate) return '檢查中';
+          return this.pwaStatus || (this.pwaRegistration ? '已啟用' : '準備中');
+        },
+        pwaCacheCountText() {
+          if (!('caches' in window)) return '不支援';
+          const count = Array.isArray(this.pwaCacheNames) ? this.pwaCacheNames.length : 0;
+          return count ? `${count} 組` : '尚無快取';
+        },
+        pwaLastCheckedText() {
+          if (!this.pwaLastCheckedAt) return '尚未手動檢查更新';
+          return `最後檢查 ${this.formatDateTime(this.pwaLastCheckedAt)}`;
         },
         yearOptions() {
           // 動態產生：當年前後各一年 + 資料中出現的年份
@@ -4801,17 +4857,104 @@
             this.showToast(`🔓 已解除 ${date} 鎖帳`);
           });
         },
+        async refreshPwaCacheStatus() {
+          if (!('caches' in window)) {
+            this.pwaCacheNames = [];
+            return [];
+          }
+          try {
+            const names = await caches.keys();
+            this.pwaCacheNames = names;
+            return names;
+          } catch (error) {
+            console.warn('PWA cache status failed:', error);
+            this.pwaCacheNames = [];
+            return [];
+          }
+        },
+        async checkPwaUpdate(manual = false) {
+          this.pwaCheckingUpdate = true;
+          this.pwaLastCheckedAt = new Date().toISOString();
+          try {
+            if (!('serviceWorker' in navigator)) {
+              this.pwaStatus = '瀏覽器不支援';
+              if (manual) this.showToast('此瀏覽器不支援 App 更新管理', 'error', 5000);
+              return false;
+            }
+
+            const registration = this.pwaRegistration || await navigator.serviceWorker.getRegistration('/');
+            if (!registration) {
+              this.pwaStatus = '尚未啟用';
+              if (manual) this.showToast('App 更新服務尚未啟用，請重新開啟一次', 'error', 5000);
+              return false;
+            }
+
+            this.pwaRegistration = registration;
+            const updatedRegistration = await registration.update();
+            const waitingWorker = updatedRegistration.waiting || registration.waiting;
+            if (waitingWorker) {
+              this.pendingServiceWorker = waitingWorker;
+              this.updateAvailable = true;
+              this.pwaStatus = '有新版待套用';
+              if (manual) this.showToast('偵測到新版本，可立即套用');
+              return true;
+            }
+
+            if (updatedRegistration.installing || registration.installing) {
+              this.pwaStatus = '新版安裝中';
+              if (manual) this.showToast('新版正在安裝，稍後會提示更新');
+              return true;
+            }
+
+            this.pwaStatus = navigator.serviceWorker.controller ? '已啟用' : '等待啟用';
+            if (manual) this.showToast('目前已是最新版');
+            return false;
+          } catch (error) {
+            console.warn('PWA update check failed:', error);
+            this.pwaStatus = '檢查失敗';
+            if (manual) this.showToast(`檢查更新失敗：${error.message}`, 'error', 6000);
+            return false;
+          } finally {
+            this.pwaCheckingUpdate = false;
+            this.refreshPwaCacheStatus();
+          }
+        },
+        clearPwaCachesAndReload() {
+          this.showConfirm('確定清除 App 舊快取並重新載入嗎？這不會刪除業績、CRM 或備份資料。', async () => {
+            this.pwaClearingCache = true;
+            try {
+              if ('caches' in window) {
+                const names = await caches.keys();
+                await Promise.all(names.map(name => caches.delete(name)));
+                this.pwaCacheNames = [];
+              }
+              this.recordOperation('pwa_cache_clear', '清除 App 快取', `版本 ${this.appVersion}`);
+              this.showToast('已清除 App 快取，正在重新載入…');
+              setTimeout(() => window.location.reload(), 350);
+            } catch (error) {
+              console.warn('PWA cache clear failed:', error);
+              this.showToast(`清除快取失敗：${error.message}`, 'error', 6000);
+              this.pwaClearingCache = false;
+            }
+          });
+        },
         setupPwaUpdateListener() {
-          if (!('serviceWorker' in navigator)) return;
+          if (!('serviceWorker' in navigator)) {
+            this.pwaStatus = '瀏覽器不支援';
+            return;
+          }
           window.addEventListener('load', async () => {
             try {
               const registration = await navigator.serviceWorker.register('/service-worker.js');
               this.pwaRegistration = registration;
+              this.pwaStatus = navigator.serviceWorker.controller ? '已啟用' : '等待啟用';
+              this.refreshPwaCacheStatus();
 
               const showUpdatePrompt = (worker) => {
                 if (!worker) return;
                 this.pendingServiceWorker = worker;
                 this.updateAvailable = true;
+                this.pwaStatus = '有新版待套用';
               };
 
               if (registration.waiting && navigator.serviceWorker.controller) {
@@ -4821,9 +4964,13 @@
               registration.addEventListener('updatefound', () => {
                 const worker = registration.installing;
                 if (!worker) return;
+                this.pwaStatus = '新版安裝中';
                 worker.addEventListener('statechange', () => {
                   if (worker.state === 'installed' && navigator.serviceWorker.controller) {
                     showUpdatePrompt(worker);
+                  } else if (worker.state === 'activated') {
+                    this.pwaStatus = '已啟用';
+                    this.refreshPwaCacheStatus();
                   }
                 });
               });
@@ -4840,6 +4987,7 @@
               setInterval(() => registration.update().catch(() => {}), 60 * 60 * 1000);
             } catch (error) {
               console.warn('PWA service worker registration failed:', error);
+              this.pwaStatus = '註冊失敗';
             }
           });
         },
