@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v17-draft-monthly-backup';
+const CACHE_NAME = 'momohair-shell-v18-draft-sync-noise';
 const APP_SHELL = [
   '/',
   '/assets/tailwind.css',
