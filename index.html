@@ -2216,24 +2216,7 @@
             </div>
           </section>
 
-          <section class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4">
-            <div class="bg-white rounded-3xl border border-orange-50 macaron-shadow overflow-hidden">
-              <div class="px-4 py-3 border-b border-orange-50 flex items-center justify-between gap-3">
-                <div>
-                  <h3 class="text-sm font-black text-slate-800">快速記支出</h3>
-                  <p class="text-[10px] font-bold text-slate-400 mt-0.5">先帶入分類與備註，再填金額確認</p>
-                </div>
-                <button @click="showExpenseForm = true" class="min-h-[36px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black">手動新增</button>
-              </div>
-              <div class="p-4 grid grid-cols-3 sm:grid-cols-6 gap-2">
-                <button v-for="preset in expenseQuickPresets" :key="preset.label" type="button"
-                        @click="applyExpensePreset(preset)"
-                        class="min-h-[54px] rounded-2xl border border-orange-100 bg-orange-50/40 text-slate-700 text-[11px] font-black jelly-btn">
-                  {{ preset.label }}
-                </button>
-              </div>
-            </div>
-
+          <section>
             <div class="bg-white rounded-3xl border border-orange-50 macaron-shadow overflow-hidden">
               <div class="px-4 py-3 border-b border-orange-50 flex items-center justify-between gap-3">
                 <div>
@@ -2350,7 +2333,7 @@
                     </h3>
                     <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredExpenses.length }} 筆 · NT$ {{ formatNumber(filteredExpensesTotal) }}</p>
                   </div>
-                  <button @click="showExpenseForm = true" class="jelly-btn min-h-[34px] shrink-0 px-3.5 rounded-full bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-[11px] font-black shadow-sm">＋ 新增</button>
+                  <button @click="showExpenseForm = true" class="jelly-btn min-h-[34px] shrink-0 px-3.5 rounded-full bg-slate-900 text-white text-[11px] font-black shadow-sm">＋ 新增支出</button>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="relative flex-1 sm:w-56">
@@ -3824,7 +3807,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.01-expense-inventory-visual-polish';
+    const APP_VERSION = '2026.07.01-expense-clean-add-button';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
