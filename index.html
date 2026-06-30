@@ -2144,6 +2144,50 @@
             </div>
           </section>
 
+          <section class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4">
+            <div class="bg-white rounded-3xl border border-orange-50 macaron-shadow overflow-hidden">
+              <div class="px-4 py-3 border-b border-orange-50 flex items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-sm font-black text-slate-800">快速記支出</h3>
+                  <p class="text-[10px] font-bold text-slate-400 mt-0.5">先帶入分類與備註，再填金額確認</p>
+                </div>
+                <button @click="showExpenseForm = true" class="min-h-[36px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black">手動新增</button>
+              </div>
+              <div class="p-4 grid grid-cols-3 sm:grid-cols-6 gap-2">
+                <button v-for="preset in expenseQuickPresets" :key="preset.label" type="button"
+                        @click="applyExpensePreset(preset)"
+                        class="min-h-[54px] rounded-2xl border border-orange-100 bg-orange-50/40 text-slate-700 text-[11px] font-black jelly-btn">
+                  {{ preset.label }}
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-3xl border border-orange-50 macaron-shadow overflow-hidden">
+              <div class="px-4 py-3 border-b border-orange-50 flex items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-sm font-black text-slate-800">支出狀態</h3>
+                  <p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ expenseHealthSummary.message }}</p>
+                </div>
+                <span class="text-[10px] font-black px-2.5 py-1 rounded-full" :class="expenseHealthSummary.tone === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
+                  {{ expenseHealthSummary.tone === 'ok' ? '正常' : '需確認' }}
+                </span>
+              </div>
+              <div class="grid grid-cols-3 divide-x divide-orange-50">
+                <div class="px-3 py-3"><div class="text-[9px] font-black text-slate-400">支出率</div><div class="text-sm font-black text-slate-800 mt-1">{{ expenseHealthSummary.revenue ? expenseHealthSummary.ratio + '%' : '-' }}</div></div>
+                <div class="px-3 py-3"><div class="text-[9px] font-black text-slate-400">固定支出</div><div class="text-sm font-black text-slate-800 mt-1">NT$ {{ formatNumber(expenseHealthSummary.fixed) }}</div></div>
+                <div class="px-3 py-3"><div class="text-[9px] font-black text-slate-400">平均單筆</div><div class="text-sm font-black text-slate-800 mt-1">NT$ {{ formatNumber(expenseHealthSummary.avg) }}</div></div>
+              </div>
+              <div v-if="expenseHealthSummary.anomalies.length" class="px-4 py-3 border-t border-amber-100 bg-amber-50/60 space-y-2">
+                <button v-for="issue in expenseHealthSummary.anomalies.slice(0, 3)" :key="issue.expenseId + issue.code"
+                        @click="goToExpense(issue.expenseId)"
+                        class="w-full text-left rounded-xl bg-white border border-amber-100 px-3 py-2">
+                  <div class="text-[10px] font-black text-amber-700">{{ issue.label }} · {{ issue.date }} {{ issue.category }}</div>
+                  <div class="text-[10px] font-semibold text-slate-500 truncate">NT$ {{ formatNumber(issue.amount) }} · {{ issue.notes || '未填備註' }}</div>
+                </button>
+              </div>
+            </div>
+          </section>
+
           <div>
 
             <!-- Add Expense Form -->
@@ -2184,6 +2228,19 @@
                 </div>
               </div>
               <form @submit.prevent="addExpense" class="space-y-4">
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <label class="block text-xs font-black text-slate-400 uppercase">常用支出</label>
+                    <span class="text-[10px] font-bold text-slate-300">點一下自動帶入</span>
+                  </div>
+                  <div class="grid grid-cols-3 gap-2">
+                    <button v-for="preset in expenseQuickPresets" :key="'form-' + preset.label" type="button"
+                            @click="applyExpensePreset(preset, { openForm: false })"
+                            class="min-h-[40px] rounded-xl bg-orange-50/60 border border-orange-100 text-[11px] font-black text-slate-600">
+                      {{ preset.label }}
+                    </button>
+                  </div>
+                </div>
                 <div>
                   <label class="block text-xs font-black text-slate-400 uppercase mb-1">日期</label>
                   <input type="date" v-model="newExpense.date" required
@@ -2289,7 +2346,16 @@
                       <template v-for="expense in group.expenses" :key="expense.id">
                         <tr @click="toggleExpenseEditor(expense.id)" class="cursor-pointer hover:bg-orange-50/30">
                           <td class="px-4 py-3"><span class="text-xs font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">{{ expense.category }}</span></td>
-                          <td class="px-4 py-3 text-sm font-semibold text-slate-600">{{ expense.notes || '未填備註' }}</td>
+                          <td class="px-4 py-3 text-sm font-semibold text-slate-600">
+                            <div class="flex items-center gap-2">
+                              <span class="truncate">{{ expense.notes || '未填備註' }}</span>
+                              <span v-for="warn in expenseWarnings(expense).slice(0, 2)" :key="expense.id + warn.code"
+                                    class="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                                    :class="warn.tone === 'error' ? 'bg-rose-50 text-rose-600' : warn.tone === 'info' ? 'bg-sky-50 text-sky-700' : 'bg-amber-50 text-amber-700'">
+                                {{ warn.label }}
+                              </span>
+                            </div>
+                          </td>
                           <td class="px-4 py-3 text-right text-sm font-black text-slate-800">NT$ {{ formatNumber(expense.amount) }}</td>
                           <td class="px-3 text-slate-300"><svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': expandedExpenseId === expense.id }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></td>
                         </tr>
@@ -2320,6 +2386,11 @@
                     <button type="button" @click="toggleExpenseEditor(expense.id)" class="w-full p-3.5 flex items-center justify-between gap-3 text-left">
                       <div class="min-w-0">
                         <span class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">{{ expense.category }}</span>
+                        <span v-for="warn in expenseWarnings(expense).slice(0, 2)" :key="expense.id + warn.code"
+                              class="ml-1 text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                              :class="warn.tone === 'error' ? 'bg-rose-50 text-rose-600' : warn.tone === 'info' ? 'bg-sky-50 text-sky-700' : 'bg-amber-50 text-amber-700'">
+                          {{ warn.label }}
+                        </span>
                         <div class="mt-2 text-xs font-semibold text-slate-500 truncate">{{ expense.notes || '未填備註' }}</div>
                       </div>
                       <div class="shrink-0 text-sm font-black text-slate-800">NT$ {{ formatNumber(expense.amount) }}</div>
@@ -3635,7 +3706,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.06.30-draft-sync-noise';
+    const APP_VERSION = '2026.06.30-expense-page-plus';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -3884,6 +3955,14 @@
           // Constants
           paymentMethods: ['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'],
           expenseCategories: ['材料費', '房租', '水電費', '行銷費', '薪資', '其他'],
+          expenseQuickPresets: [
+            { label: '材料進貨', category: '材料費', amount: null, notes: '材料進貨' },
+            { label: '房租', category: '房租', amount: null, notes: '房租' },
+            { label: '水電', category: '水電費', amount: null, notes: '水電費' },
+            { label: '廣告', category: '行銷費', amount: null, notes: '廣告投放' },
+            { label: '薪資', category: '薪資', amount: null, notes: '薪資' },
+            { label: '其他', category: '其他', amount: null, notes: '' }
+          ],
           crmTagPresets: ['VIP', '固定染髮', '固定燙髮', '儲值客', '頭皮敏感', '怕推銷', '喜歡安靜', '久未回訪'],
           formulaFields: [
             { key: 'color', label: '染髮配方 / 色號', placeholder: '例：8N + 8A，1:1' },
@@ -4102,6 +4181,51 @@
           });
           const topCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0] || ['-', 0];
           return { total, count: this.periodExpenses.length, topCategory: topCategory[0], topCategoryAmount: topCategory[1] };
+        },
+        expenseHealthSummary() {
+          const revenue = Number(this.kpis?.revenue) || 0;
+          const total = this.expensesSummary.total;
+          const count = this.expensesSummary.count;
+          const ratio = revenue > 0 ? Math.round(total / revenue * 100) : 0;
+          const fixedCategories = ['房租', '水電費', '薪資'];
+          const fixed = this.periodExpenses
+            .filter(expense => fixedCategories.includes(expense.category))
+            .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+          const material = this.periodExpenses
+            .filter(expense => expense.category === '材料費')
+            .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+          const avg = count ? Math.round(total / count) : 0;
+          const anomalies = this.expenseAnomalies;
+          const tone = anomalies.length ? 'warn' : ratio > 55 && revenue > 0 ? 'warn' : 'ok';
+          return {
+            revenue,
+            total,
+            count,
+            ratio,
+            fixed,
+            material,
+            avg,
+            anomalies,
+            tone,
+            message: anomalies.length
+              ? `${anomalies.length} 筆需要確認`
+              : revenue > 0 ? `支出占營業額 ${ratio}%` : '尚無營業額可比較'
+          };
+        },
+        expenseAnomalies() {
+          const today = new Date().toLocaleDateString('sv-SE');
+          const total = this.expensesSummary.total;
+          return this.periodExpenses.flatMap(expense => {
+            const issues = this.expenseWarnings(expense, total);
+            return issues.map(issue => ({
+              ...issue,
+              expenseId: expense.id,
+              date: expense.date,
+              category: expense.category,
+              amount: Number(expense.amount) || 0,
+              notes: expense.notes || ''
+            }));
+          }).filter(issue => issue.date <= today).slice(0, 12);
         },
 
         // Today's Stats
@@ -6447,6 +6571,39 @@
           this.activeTab = 'dashboard';
           window.scrollTo({ top: 0, behavior: 'smooth' });
           this.showToast('已回到今日總覽');
+        },
+        expenseWarnings(expense, periodTotal = this.expensesSummary?.total || 0) {
+          const amount = Number(expense?.amount) || 0;
+          const notes = String(expense?.notes || '').trim();
+          const warnings = [];
+          if (!expense?.category) warnings.push({ code: 'missing_category', label: '未分類', tone: 'error' });
+          if (!notes) warnings.push({ code: 'missing_note', label: '缺備註', tone: 'warn' });
+          if (expense?.category === '其他' && notes.length < 3) warnings.push({ code: 'other_note_short', label: '其他需說明', tone: 'warn' });
+          if (amount >= 10000) warnings.push({ code: 'large_amount', label: '大額', tone: 'warn' });
+          if (periodTotal > 0 && amount / periodTotal >= 0.5 && amount >= 3000) warnings.push({ code: 'dominant_amount', label: '占比高', tone: 'info' });
+          if (expense?.date && expense.date > new Date().toLocaleDateString('sv-SE')) warnings.push({ code: 'future_date', label: '未來日期', tone: 'error' });
+          return warnings;
+        },
+        goToExpense(expenseId) {
+          if (!expenseId) return;
+          const expense = this.expenses.find(item => item.id === expenseId);
+          if (!expense) return;
+          this.activeTab = 'expenses';
+          this.expenseSearchQuery = '';
+          this.expenseFilterCategory = 'All';
+          this.collapsedExpenseDates = { ...this.collapsedExpenseDates, [expense.date]: false };
+          this.beginExpenseDraft(expense);
+          this.expandedExpenseId = expenseId;
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        applyExpensePreset(preset, { openForm = true } = {}) {
+          if (!preset) return;
+          this.newExpense.date = this.newExpense.date || new Date().toLocaleDateString('sv-SE');
+          this.newExpense.category = preset.category || this.newExpense.category || '其他';
+          this.newExpense.amount = preset.amount || null;
+          this.newExpense.notes = preset.notes || '';
+          if (openForm) this.showExpenseForm = true;
+          this.showToast(`已帶入：${preset.label || preset.category}`);
         },
         loadCloseoutFormForDate() {
           const date = this.closeoutDate || new Date().toLocaleDateString('sv-SE');
