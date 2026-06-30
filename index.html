@@ -272,24 +272,28 @@
       }
 
       .floating-nav {
-        width: calc(100% - 1.5rem) !important;
+        width: calc(100% - 2rem) !important;
         max-width: none !important;
-        min-height: calc(2.85rem + env(safe-area-inset-bottom)) !important;
-        padding: 0.22rem 0.28rem calc(0.2rem + env(safe-area-inset-bottom)) !important;
-        background: rgba(255, 255, 255, 0.72) !important;
-        border-color: rgba(226, 232, 240, 0.8) !important;
-        box-shadow: 0 8px 18px -12px rgba(15, 23, 42, 0.25) !important;
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
+        min-height: 2.15rem !important;
+        bottom: calc(7px + env(safe-area-inset-bottom)) !important;
+        padding: 0.16rem 0.24rem !important;
+        background: rgba(255, 255, 255, 0.52) !important;
+        border-color: rgba(226, 232, 240, 0.55) !important;
+        box-shadow: 0 6px 14px -12px rgba(15, 23, 42, 0.2) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
       }
 
       .floating-nav button {
         flex: 1 1 0;
         min-width: 0;
-        min-height: 1.8rem;
+        min-height: 1.55rem !important;
+        height: 1.55rem !important;
         border-radius: 9999px;
-        font-size: 0.66rem !important;
+        font-size: 0.61rem !important;
         background: transparent !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
       }
 
       .floating-nav button:active,
@@ -3122,10 +3126,10 @@
     <!-- Bottom Tab Floating Navigation Bar -->
     <nav class="glass-panel fixed floating-nav z-40 grid grid-cols-6 gap-1 py-2 px-2">
       <button v-for="tab in navTabs" :key="tab.id" @click="activeTab = tab.id"
-              class="relative min-h-[38px] rounded-full px-1 text-[10px] font-black transition-all"
+              class="relative h-7 min-h-7 rounded-full px-0 text-[9px] font-black transition-all"
               :class="activeTab === tab.id ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'">
         <span class="block truncate">{{ tab.label }}</span>
-        <span class="tab-active-indicator hidden absolute left-1/2 -translate-x-1/2 bottom-0.5 w-3.5 h-0.5 rounded-full bg-slate-900"
+        <span class="tab-active-indicator hidden absolute left-1/2 -translate-x-1/2 bottom-0 w-3 h-0.5 rounded-full bg-slate-900"
               :class="activeTab === tab.id ? 'opacity-100' : 'opacity-0'"></span>
         <span v-if="tab.id === 'inventory' && lowStockItems.length > 0"
               class="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
@@ -3286,7 +3290,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.06.30-ios-tabbar-slim';
+    const APP_VERSION = '2026.06.30-ios-tabbar-ultra-slim';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
