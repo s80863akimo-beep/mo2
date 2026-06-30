@@ -291,6 +291,27 @@
       .ios-sheet {
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
+        overscroll-behavior-x: none;
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+        box-sizing: border-box;
+        touch-action: pan-y;
+      }
+
+      .ios-sheet *,
+      .ios-sheet *::before,
+      .ios-sheet *::after {
+        box-sizing: border-box;
+        min-width: 0;
+      }
+
+      .ios-sheet form,
+      .ios-sheet .grid,
+      .ios-sheet .flex,
+      .ios-sheet input,
+      .ios-sheet select,
+      .ios-sheet textarea {
+        max-width: 100%;
       }
 
       .ios-sheet .sticky.top-0 {
@@ -3763,7 +3784,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.01-expense-simple-summary';
+    const APP_VERSION = '2026.07.01-modal-no-horizontal-scroll';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
