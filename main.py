@@ -658,6 +658,26 @@ def service_worker():
     )
 
 
+@app.get("/assets/{filename:path}", include_in_schema=False)
+def frontend_asset(filename: str):
+    assets_dir = (BASE_DIR / "assets").resolve()
+    asset_path = (assets_dir / filename).resolve()
+    if assets_dir not in asset_path.parents or not asset_path.is_file():
+        raise HTTPException(status_code=404, detail="Asset not found")
+    media_types = {
+        ".css": "text/css",
+        ".js": "application/javascript",
+        ".json": "application/json",
+        ".png": "image/png",
+        ".svg": "image/svg+xml",
+        ".webp": "image/webp",
+    }
+    return FileResponse(
+        asset_path,
+        media_type=media_types.get(asset_path.suffix.lower(), "application/octet-stream"),
+    )
+
+
 @app.get("/icons/{filename}", include_in_schema=False)
 def pwa_icon(filename: str):
     allowed = {"icon-192.png", "icon-512.png", "apple-touch-icon.png"}

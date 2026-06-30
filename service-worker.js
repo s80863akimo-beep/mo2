@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v14-local-tailwind-build';
+const CACHE_NAME = 'momohair-shell-v15-local-tailwind-assets';
 const APP_SHELL = [
   '/',
   '/assets/tailwind.css',
