@@ -271,6 +271,71 @@
         padding: 1rem !important;
       }
 
+      /* iOS touch comfort: normalize common controls without changing data logic */
+      button,
+      .jelly-btn,
+      [role="button"] {
+        min-height: 2.75rem;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      button[class*="min-h-[32px]"],
+      button[class*="min-h-[34px]"],
+      button[class*="min-h-[38px]"],
+      button[class*="min-h-[40px]"],
+      button[class*="min-h-[42px]"] {
+        min-height: 2.75rem !important;
+      }
+
+      input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+      select,
+      textarea,
+      .jelly-input {
+        min-height: 2.9rem !important;
+        font-size: 16px !important;
+        border-radius: 1rem !important;
+      }
+
+      textarea {
+        min-height: 6.25rem !important;
+        line-height: 1.45 !important;
+      }
+
+      table td input,
+      table td select {
+        min-height: 2.75rem !important;
+      }
+
+      .ios-sheet {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+      }
+
+      .ios-sheet .sticky.top-0 {
+        padding-top: 0.95rem !important;
+        padding-bottom: 0.95rem !important;
+      }
+
+      .ios-sheet input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+      .ios-sheet select {
+        min-height: 3rem !important;
+      }
+
+      .ios-sheet textarea {
+        min-height: 6.75rem !important;
+      }
+
+      .ios-sheet button[aria-label*="關閉"] {
+        width: 2.75rem !important;
+        height: 2.75rem !important;
+        min-height: 2.75rem !important;
+      }
+
+      .ios-sheet .grid > button,
+      .ios-sheet label[class*="min-h"] {
+        min-height: 3rem !important;
+      }
+
       .floating-nav {
         width: calc(100% - 1.6rem) !important;
         max-width: none !important;
@@ -355,7 +420,7 @@
       }
 
       input, select, textarea {
-        min-height: 2.9rem;
+        min-height: 2.9rem !important;
       }
     }
 
@@ -3326,7 +3391,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.06.30-pwa-update-tools';
+    const APP_VERSION = '2026.06.30-ios-touch-comfort';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
