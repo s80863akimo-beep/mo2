@@ -2535,7 +2535,7 @@
                 </div>
                 <button @click="exportCrmCSV" class="min-h-[40px] px-3 rounded-xl bg-white border border-orange-100 text-[11px] font-black text-slate-500 shrink-0">匯出 CRM</button>
               </div>
-              <div class="grid grid-cols-3 gap-2 mt-4">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
                 <div class="rounded-2xl bg-orange-50/70 px-3 py-3">
                   <div class="text-[9px] font-black text-slate-400">顧客</div>
                   <div class="text-lg font-black text-slate-800">{{ crmStats.totalCustomers }}</div>
@@ -2543,6 +2543,10 @@
                 <div class="rounded-2xl bg-rose-50/70 px-3 py-3">
                   <div class="text-[9px] font-black text-slate-400">待回訪</div>
                   <div class="text-lg font-black text-rose-600">{{ crmStats.followupCustomers }}</div>
+                </div>
+                <div class="rounded-2xl bg-amber-50/70 px-3 py-3">
+                  <div class="text-[9px] font-black text-slate-400">需儲值</div>
+                  <div class="text-lg font-black text-amber-700">{{ crmStats.lowPrepaidCustomers }}</div>
                 </div>
                 <div class="rounded-2xl bg-emerald-50/70 px-3 py-3">
                   <div class="text-[9px] font-black text-slate-400">儲值餘額</div>
@@ -2561,6 +2565,68 @@
           </section>
 
           <template v-if="crmViewMode === 'customers'">
+            <section class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <div class="rounded-3xl border border-rose-100 bg-white macaron-shadow overflow-hidden">
+                <div class="px-4 py-3 bg-rose-50/70 flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-black text-rose-600">待回訪名單</div>
+                    <div class="text-[10px] font-bold text-slate-400">超過建議週期就提醒</div>
+                  </div>
+                  <button @click="crmFilterMode = 'followup'" class="min-h-[34px] px-3 rounded-xl bg-white border border-rose-100 text-[10px] font-black text-rose-600">全部</button>
+                </div>
+                <div v-if="!crmActionFollowups.length" class="px-4 py-5 text-xs font-bold text-slate-400">目前沒有急著回訪的顧客</div>
+                <div v-else class="divide-y divide-rose-50">
+                  <div v-for="cust in crmActionFollowups" :key="'followup-' + cust.id" class="p-3 flex items-center justify-between gap-2">
+                    <button @click="goToCustomerCRM(cust.id)" class="min-w-0 text-left">
+                      <div class="text-sm font-black text-slate-800 truncate">{{ cust.name }}</div>
+                      <div class="text-[10px] font-bold text-slate-400 truncate">{{ cust.lastService || '最近服務未填' }} · {{ cust.daysSinceLastVisit }} 天未回訪</div>
+                    </button>
+                    <button @click="copyFollowupMessage(cust)" class="min-h-[34px] px-3 rounded-xl bg-rose-50 text-rose-600 text-[10px] font-black shrink-0">複製</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-3xl border border-amber-100 bg-white macaron-shadow overflow-hidden">
+                <div class="px-4 py-3 bg-amber-50/70 flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-black text-amber-700">儲值快用完</div>
+                    <div class="text-[10px] font-bold text-slate-400">低於平均消費一半會提醒</div>
+                  </div>
+                  <button @click="crmFilterMode = 'needsTopup'" class="min-h-[34px] px-3 rounded-xl bg-white border border-amber-100 text-[10px] font-black text-amber-700">全部</button>
+                </div>
+                <div v-if="!crmActionTopups.length" class="px-4 py-5 text-xs font-bold text-slate-400">目前沒有需要補儲值的顧客</div>
+                <div v-else class="divide-y divide-amber-50">
+                  <div v-for="cust in crmActionTopups" :key="'topup-' + cust.id" class="p-3 flex items-center justify-between gap-2">
+                    <button @click="goToCustomerCRM(cust.id)" class="min-w-0 text-left">
+                      <div class="text-sm font-black text-slate-800 truncate">{{ cust.name }}</div>
+                      <div class="text-[10px] font-bold text-slate-400 truncate">餘額 NT$ {{ formatNumber(cust.prepaidBalance) }} · 平均 NT$ {{ formatNumber(cust.avgTicket) }}</div>
+                    </button>
+                    <button @click="copyTopupMessage(cust)" class="min-h-[34px] px-3 rounded-xl bg-amber-50 text-amber-700 text-[10px] font-black shrink-0">複製</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-3xl border border-orange-100 bg-white macaron-shadow overflow-hidden">
+                <div class="px-4 py-3 bg-orange-50/70 flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-black text-slate-700">最近服務 / 配方</div>
+                    <div class="text-[10px] font-bold text-slate-400">快速回想上次做什麼</div>
+                  </div>
+                  <button @click="crmSortMode = 'lastDate'" class="min-h-[34px] px-3 rounded-xl bg-white border border-orange-100 text-[10px] font-black text-slate-500">最近</button>
+                </div>
+                <div v-if="!crmActionRecent.length" class="px-4 py-5 text-xs font-bold text-slate-400">尚無最近服務資料</div>
+                <div v-else class="divide-y divide-orange-50">
+                  <div v-for="cust in crmActionRecent" :key="'recent-' + cust.id" class="p-3 flex items-center justify-between gap-2">
+                    <button @click="goToCustomerCRM(cust.id)" class="min-w-0 text-left">
+                      <div class="text-sm font-black text-slate-800 truncate">{{ cust.name }} · {{ cust.lastDate || '未填日期' }}</div>
+                      <div class="text-[10px] font-bold text-slate-400 truncate">{{ cust.lastService || '服務未填' }}｜{{ cust.formulaSummary }}</div>
+                    </button>
+                    <button @click="copyCustomerBrief(cust)" class="min-h-[34px] px-3 rounded-xl bg-orange-50 text-macaron-peach-500 text-[10px] font-black shrink-0">摘要</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             <section class="bg-white rounded-3xl border border-orange-50 macaron-shadow p-3 sm:p-4 space-y-3">
               <div class="flex flex-col sm:flex-row gap-2">
                 <div class="relative flex-1">
@@ -2624,6 +2690,19 @@
                 </button>
 
                 <div v-if="expandedCrmCustomerName === cust.id" class="border-t border-orange-100 bg-orange-50/20 p-4 space-y-3">
+                  <div class="rounded-2xl border border-orange-100 bg-white p-3">
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                      <div class="text-xs font-black text-slate-700">顧客快照</div>
+                      <button @click="copyCustomerBrief(cust)" class="min-h-[32px] px-3 rounded-xl bg-orange-50 text-macaron-peach-500 text-[10px] font-black">複製摘要</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <div class="rounded-xl bg-slate-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">最近服務</div><div class="text-xs font-black text-slate-700 truncate">{{ cust.lastService || '尚無' }}</div></div>
+                      <div class="rounded-xl bg-slate-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">最近日期</div><div class="text-xs font-black text-slate-700">{{ cust.lastDate || '尚無' }}</div></div>
+                      <div class="rounded-xl bg-emerald-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值狀態</div><div class="text-xs font-black" :class="cust.prepaidLow ? 'text-amber-700' : 'text-emerald-700'">{{ cust.prepaidLow ? '建議提醒' : '正常' }} · NT$ {{ formatNumber(cust.prepaidBalance) }}</div></div>
+                      <div class="rounded-xl bg-violet-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">配方狀態</div><div class="text-xs font-black text-violet-700 truncate">{{ cust.formulaSummary }}</div></div>
+                    </div>
+                  </div>
+
                   <details open class="rounded-2xl border border-orange-100 bg-white overflow-hidden">
                     <summary class="min-h-[44px] cursor-pointer px-3 flex items-center justify-between text-xs font-black text-slate-600">
                       <span>基本資料</span><span class="text-[10px] text-macaron-peach-500">可直接修改</span>
@@ -3431,7 +3510,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.06.30-order-guard-closeout';
+    const APP_VERSION = '2026.06.30-crm-action-panel';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -4252,9 +4331,31 @@
             prepaidLiability: list.reduce((sum, c) => sum + Math.max(0, c.prepaidBalance), 0),
             inactiveCustomers: list.filter(c => c.daysSinceLastVisit >= 90).length,
             followupCustomers: list.filter(c => c.followupDue).length,
+            lowPrepaidCustomers: list.filter(c => c.prepaidLow).length,
             formulaCount: list.filter(c => c.hasFormula || c.hasStructuredFormula).length,
             negativeBalanceCount: list.filter(c => c.prepaidBalance < 0).length
           };
+        },
+
+        crmActionFollowups() {
+          return this.crmList
+            .filter(c => c.followupDue)
+            .sort((a, b) => b.daysSinceLastVisit - a.daysSinceLastVisit)
+            .slice(0, 3);
+        },
+
+        crmActionTopups() {
+          return this.crmList
+            .filter(c => c.prepaidLow)
+            .sort((a, b) => a.prepaidBalance - b.prepaidBalance)
+            .slice(0, 3);
+        },
+
+        crmActionRecent() {
+          return this.crmList
+            .filter(c => c.lastDate)
+            .sort((a, b) => b.lastDate.localeCompare(a.lastDate))
+            .slice(0, 3);
         },
 
         // CRM Aggregation & Grid
@@ -4339,13 +4440,16 @@
             const prepaidUsedPercent = prepaidTotals.prepaidIn > 0
               ? Math.min(100, Math.round((prepaidTotals.prepaidOut / prepaidTotals.prepaidIn) * 100))
               : 0;
+            const lowPrepaidThreshold = Math.max(500, Math.round((avgTicket || 0) * 0.5));
+            const prepaidLow = prepaidTotals.prepaidIn > 0 && prepaidBalance <= lowPrepaidThreshold;
+            const formulaSummary = this.compactFormulaSummary(formula, this.crmNotes[cust.id]);
 
             let statusLabel = '新客';
             let statusClass = 'bg-slate-50 text-slate-600 border-slate-200';
             if (prepaidBalance < 0) {
               statusLabel = '儲值超扣';
               statusClass = 'bg-rose-50 text-rose-600 border-rose-200';
-            } else if (prepaidTotals.prepaidIn > 0 && prepaidBalance <= 0) {
+            } else if (prepaidLow) {
               statusLabel = '需儲值';
               statusClass = 'bg-amber-50 text-amber-700 border-amber-200';
             } else if (daysSinceLastVisit >= 90) {
@@ -4377,6 +4481,9 @@
               tags,
               contact,
               prepaidUsedPercent,
+              lowPrepaidThreshold,
+              prepaidLow,
+              formulaSummary,
               recentOrders: recentOrders.slice(0, 3),
               statusLabel,
               statusClass
@@ -4398,9 +4505,9 @@
             if (this.crmFilterMode === 'vip') filterMatch = c.totalSpent >= 8000 || c.count >= 5;
             if (this.crmFilterMode === 'followup') filterMatch = c.followupDue;
             if (this.crmFilterMode === 'prepaid') filterMatch = c.prepaidBalance > 0;
-            if (this.crmFilterMode === 'needsTopup') filterMatch = c.prepaidIn > 0 && c.prepaidBalance <= 0;
+            if (this.crmFilterMode === 'needsTopup') filterMatch = c.prepaidLow;
             if (this.crmFilterMode === 'inactive') filterMatch = c.daysSinceLastVisit >= 90;
-            if (this.crmFilterMode === 'noFormula') filterMatch = !c.hasFormula;
+            if (this.crmFilterMode === 'noFormula') filterMatch = !c.hasFormula && !c.hasStructuredFormula;
 
             return queryMatch && filterMatch;
           });
@@ -5843,9 +5950,35 @@
         copyCloseoutDraftSummary() {
           this.copyTextToClipboard(this.buildCloseoutSummary(this.buildCloseoutDraftRecord()), '目前打烊摘要已複製');
         },
+        compactFormulaSummary(formula = {}, note = '') {
+          const chunks = [
+            formula.color ? `染：${formula.color}` : '',
+            formula.perm ? `燙：${formula.perm}` : '',
+            formula.hair ? `髮況：${formula.hair}` : '',
+            formula.preference ? `喜好：${formula.preference}` : '',
+            formula.caution ? `注意：${formula.caution}` : ''
+          ].filter(Boolean);
+          if (chunks.length) return chunks.slice(0, 3).join('｜');
+          const cleanNote = String(note || '').replace(/\s+/g, ' ').trim();
+          return cleanNote ? cleanNote.slice(0, 28) : '尚未建立配方';
+        },
         copyFollowupMessage(cust) {
           const text = `${cust.name}你好，我是摸摸頭 momohair。距離上次${cust.lastService || '整理頭髮'}已經一段時間，想提醒你可以安排下一次整理，有需要再告訴我適合的時間。`;
           this.copyTextToClipboard(text, '回訪訊息已複製');
+        },
+        copyTopupMessage(cust) {
+          const text = `${cust.name}你好，我是摸摸頭 momohair。你目前儲值餘額約 NT$ ${this.formatNumber(cust.prepaidBalance)}，下次整理如果要繼續用儲值扣款，可以順便補儲值；需要我幫你先記著也可以。`;
+          this.copyTextToClipboard(text, '儲值提醒已複製');
+        },
+        copyCustomerBrief(cust) {
+          const lines = [
+            `${cust.name}｜${cust.gender || '未填性別'}｜${cust.count} 次消費`,
+            `最近：${cust.lastDate || '未填'} ${cust.lastService || '未填服務'}`,
+            `儲值：NT$ ${this.formatNumber(cust.prepaidBalance)}${cust.prepaidLow ? '（建議提醒）' : ''}`,
+            `配方：${cust.formulaSummary || '尚未建立配方'}`
+          ];
+          if (cust.contact) lines.push(`聯絡：${cust.contact}`);
+          this.copyTextToClipboard(lines.join('\n'), '顧客摘要已複製');
         },
         dismissIosGuide() {
           this.showIosGuide = false;

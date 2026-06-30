@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v11-order-guard-closeout';
+const CACHE_NAME = 'momohair-shell-v12-crm-action-panel';
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
