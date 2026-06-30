@@ -127,7 +127,8 @@
       box-shadow: 0 0 0 3px rgba(255, 164, 117, 0.2);
     }
 
-    input.orders-search-input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+    input.orders-search-input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    input.compact-search-input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
       min-height: 2.35rem !important;
       height: 2.35rem !important;
       border-radius: 999px !important;
@@ -238,7 +239,8 @@
         padding: 0 !important;
       }
 
-      .orders-search-input {
+      .orders-search-input,
+      .compact-search-input {
         min-height: 2.35rem !important;
         padding-top: 0.25rem !important;
         padding-bottom: 0.25rem !important;
@@ -440,7 +442,8 @@
         min-height: 2.9rem !important;
       }
 
-      input.orders-search-input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+      input.orders-search-input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+      input.compact-search-input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
         min-height: 2.35rem !important;
         height: 2.35rem !important;
         border-radius: 999px !important;
@@ -2338,24 +2341,27 @@
             </transition>
 
             <!-- Expenses Table -->
-            <div class="bg-white p-4 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow space-y-4">
-              <div class="space-y-3 pb-4 border-b border-orange-50">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
-                  支出明細清單
-                </h3>
-                  <div class="flex items-center gap-2">
-                    <div class="relative flex-1 sm:w-56">
-                      <input type="text" v-model="expenseSearchQuery" placeholder="搜尋備註或分類..."
-                             class="w-full min-h-[42px] bg-orange-50/50 border border-orange-100 rounded-2xl pl-9 pr-9 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-macaron-peach-200">
-                      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs">🔍</span>
-                      <button v-if="expenseSearchQuery" @click="expenseSearchQuery = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-black">✕</button>
-                    </div>
-                    <button @click="showExpenseForm = true" class="jelly-btn min-h-[42px] shrink-0 px-4 rounded-2xl bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-xs font-black shadow-sm">＋ 新增支出</button>
+            <div class="bg-white/95 p-3.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50/70 macaron-shadow space-y-3.5">
+              <div class="space-y-2.5 pb-3 border-b border-slate-100">
+                <div class="flex items-start sm:items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <h3 class="font-black text-slate-800 text-base sm:text-lg flex items-center gap-2">
+                      支出明細
+                    </h3>
+                    <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredExpenses.length }} 筆 · NT$ {{ formatNumber(filteredExpensesTotal) }}</p>
                   </div>
+                  <button @click="showExpenseForm = true" class="jelly-btn min-h-[34px] shrink-0 px-3.5 rounded-full bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-[11px] font-black shadow-sm">＋ 新增</button>
                 </div>
                 <div class="flex items-center gap-2">
-                  <select v-model="expenseFilterCategory" class="min-h-[38px] flex-1 sm:flex-none bg-white border border-orange-100 rounded-xl px-3 text-xs font-bold text-slate-700">
+                    <div class="relative flex-1 sm:w-56">
+                      <input type="text" v-model="expenseSearchQuery" placeholder="搜尋備註或分類..."
+                             class="compact-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-9 pr-9 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
+                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
+                      <button v-if="expenseSearchQuery" @click="expenseSearchQuery = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 min-h-7 w-7 rounded-full text-xs text-slate-400 font-black">✕</button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <select v-model="expenseFilterCategory" class="min-h-[38px] flex-1 sm:flex-none bg-slate-50/60 border border-slate-100 rounded-xl px-3 text-xs font-bold text-slate-600">
                     <option value="All">全部分類</option>
                     <option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option>
                   </select>
@@ -2368,11 +2374,11 @@
               </div>
 
               <!-- Category Breakdown Cards -->
-              <div v-if="periodExpenses.length > 0" class="flex gap-2 overflow-x-auto pb-1">
+              <div v-if="periodExpenses.length > 0" class="flex gap-1.5 overflow-x-auto pb-1">
                 <button v-for="(amount, cat) in expenseBreakdown" v-show="amount > 0" :key="cat"
                      @click="expenseFilterCategory = expenseFilterCategory === cat ? 'All' : cat"
-                     :class="expenseFilterCategory === cat ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-orange-50/40 border-orange-100/30 text-slate-700'"
-                     class="shrink-0 min-w-[108px] text-left p-3 rounded-2xl border transition-all jelly-btn">
+                     :class="expenseFilterCategory === cat ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-slate-50/60 border-slate-100 text-slate-500'"
+                     class="shrink-0 min-w-[92px] text-left px-2.5 py-2 rounded-xl border transition-all jelly-btn">
                   <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider">{{ cat }}</span>
                   <span class="block text-xs font-black mt-1">NT$ {{ formatNumber(amount) }}</span>
                 </button>
@@ -2386,7 +2392,7 @@
 
               <div v-for="group in groupedExpenses" :key="group.date" class="space-y-2">
                 <button type="button" @click="toggleExpenseDate(group.date)"
-                        class="w-full flex items-center justify-between rounded-2xl px-3 sm:px-4 py-3 bg-rose-50/40 border border-rose-100/60 text-left">
+                        class="w-full flex items-center justify-between rounded-2xl px-3 sm:px-4 py-2.5 bg-rose-50/35 border border-rose-100/50 text-left">
                   <div class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-slate-400 transition-transform" :class="{ '-rotate-90': collapsedExpenseDates[group.date] }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     <span class="text-sm font-black text-slate-700">{{ group.date }}</span>
@@ -2437,16 +2443,19 @@
                 </div>
 
                 <!-- Mobile cards -->
-                <div v-show="!collapsedExpenseDates[group.date]" class="lg:hidden space-y-2">
-                  <div v-for="expense in group.expenses" :key="expense.id" class="rounded-2xl border border-orange-100/60 bg-white overflow-hidden">
-                    <button type="button" @click="toggleExpenseEditor(expense.id)" class="w-full p-3.5 flex items-center justify-between gap-3 text-left">
+                <div v-show="!collapsedExpenseDates[group.date]" class="lg:hidden space-y-1.5">
+                  <div v-for="expense in group.expenses" :key="expense.id" class="rounded-xl border border-slate-100 bg-white overflow-hidden shadow-[0_1px_0_rgba(15,23,42,0.03)]">
+                    <button type="button" @click="toggleExpenseEditor(expense.id)" class="w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left">
                       <div class="min-w-0">
-                        <span class="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">{{ expense.category }}</span>
-                        <div class="mt-2 text-xs font-semibold text-slate-500 truncate">{{ expense.notes || '未填備註' }}</div>
+                        <div class="flex items-center gap-1.5 min-w-0">
+                          <span class="text-[9px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md shrink-0">{{ expense.category }}</span>
+                          <span class="text-sm font-black text-slate-800 truncate">{{ expense.notes || '未填備註' }}</span>
+                        </div>
+                        <div class="mt-0.5 text-[11px] font-semibold text-slate-400 truncate">{{ expense.date }}</div>
                       </div>
-                      <div class="shrink-0 text-sm font-black text-slate-800">NT$ {{ formatNumber(expense.amount) }}</div>
+                      <div class="shrink-0 text-sm font-black text-slate-800 tabular-nums">NT$ {{ formatNumber(expense.amount) }}</div>
                     </button>
-                    <div v-if="expandedExpenseId === expense.id" class="p-3.5 pt-0 border-t border-orange-50 bg-orange-50/25 space-y-3">
+                    <div v-if="expandedExpenseId === expense.id" class="p-3.5 pt-0 border-t border-slate-100 bg-slate-50/60 space-y-3">
                       <div class="grid grid-cols-2 gap-2 pt-3">
                         <div class="col-span-2 rounded-xl px-3 py-2 text-[11px] font-black" :class="expenseDraftHasChanges(expense) ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'">
                           {{ expenseDraftHasChanges(expense) ? '尚未儲存：確認後請按「儲存修正」' : '支出草稿：修改後不會立即同步' }}
@@ -2575,24 +2584,27 @@
             </transition>
 
             <!-- Inventory Table -->
-            <div class="bg-white p-4 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow space-y-4">
-              <div class="space-y-3 pb-4 border-b border-orange-50">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <h3 class="font-black text-slate-800 text-lg">庫存商品</h3>
-                  <div class="flex items-center gap-2">
+            <div class="bg-white/95 p-3.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50/70 macaron-shadow space-y-3.5">
+              <div class="space-y-2.5 pb-3 border-b border-slate-100">
+                <div class="flex items-start sm:items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <h3 class="font-black text-slate-800 text-base sm:text-lg">庫存商品</h3>
+                    <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredInventory.length }} 項 · 共 {{ inventorySummary.units }} 件</p>
+                  </div>
+                  <button @click="showInventoryForm = true" class="jelly-btn min-h-[34px] shrink-0 px-3.5 rounded-full bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-[11px] font-black shadow-sm">＋ 新增</button>
+                </div>
+                <div class="flex items-center gap-2">
                     <div class="relative flex-1 sm:w-56">
                       <input type="text" v-model="inventorySearchQuery" placeholder="搜尋商品或備註..."
-                             class="w-full min-h-[42px] bg-orange-50/50 border border-orange-100 rounded-2xl pl-9 pr-9 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-macaron-peach-200">
-                      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs">🔍</span>
-                      <button v-if="inventorySearchQuery" @click="inventorySearchQuery = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-black">✕</button>
+                             class="compact-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-9 pr-9 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
+                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
+                      <button v-if="inventorySearchQuery" @click="inventorySearchQuery = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 min-h-7 w-7 rounded-full text-xs text-slate-400 font-black">✕</button>
                     </div>
-                    <button @click="showInventoryForm = true" class="jelly-btn min-h-[42px] shrink-0 px-4 rounded-2xl bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-xs font-black shadow-sm">＋ 新增商品</button>
-                  </div>
                 </div>
-                <div class="grid grid-cols-3 gap-2">
-                  <button @click="inventoryFilterMode = 'all'" :class="inventoryFilterMode === 'all' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'" class="min-h-[38px] rounded-xl border text-[11px] font-black">全部 {{ inventory.length }}</button>
-                  <button @click="inventoryFilterMode = 'low'" :class="inventoryFilterMode === 'low' ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-700 border-amber-100'" class="min-h-[38px] rounded-xl border text-[11px] font-black">低庫存 {{ inventorySummary.low }}</button>
-                  <button @click="inventoryFilterMode = 'out'" :class="inventoryFilterMode === 'out' ? 'bg-rose-500 text-white border-rose-500' : 'bg-rose-50 text-rose-600 border-rose-100'" class="min-h-[38px] rounded-xl border text-[11px] font-black">缺貨 {{ inventorySummary.out }}</button>
+                <div class="grid grid-cols-3 gap-1.5">
+                  <button @click="inventoryFilterMode = 'all'" :class="inventoryFilterMode === 'all' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50/70 text-slate-500 border-slate-100'" class="min-h-[34px] rounded-xl border text-[10px] font-black">全部 {{ inventory.length }}</button>
+                  <button @click="inventoryFilterMode = 'low'" :class="inventoryFilterMode === 'low' ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50/70 text-amber-700 border-amber-100'" class="min-h-[34px] rounded-xl border text-[10px] font-black">低庫存 {{ inventorySummary.low }}</button>
+                  <button @click="inventoryFilterMode = 'out'" :class="inventoryFilterMode === 'out' ? 'bg-rose-500 text-white border-rose-500' : 'bg-rose-50/70 text-rose-600 border-rose-100'" class="min-h-[34px] rounded-xl border text-[10px] font-black">缺貨 {{ inventorySummary.out }}</button>
                 </div>
               </div>
 
@@ -2685,37 +2697,38 @@
                   <div class="mt-1 text-xs font-semibold text-slate-300">{{ inventory.length ? '請更換搜尋內容或篩選狀態' : '點擊「新增商品」開始管理庫存' }}</div>
                 </div>
 
-                <div v-else class="space-y-2">
+                <div v-else class="space-y-1.5">
                   <div v-for="item in filteredInventory" :key="item.id"
-                       class="rounded-2xl border overflow-hidden"
-                       :class="item.stock === 0 ? 'border-rose-200 bg-rose-50/20' : isInventoryLow(item) ? 'border-amber-200 bg-amber-50/20' : 'border-orange-100 bg-white'">
-                    <button type="button" @click="toggleInventoryEditor(item.id)" class="w-full p-3.5 pb-2 flex items-start justify-between gap-3 text-left">
+                       class="rounded-xl border overflow-hidden shadow-[0_1px_0_rgba(15,23,42,0.03)]"
+                       :class="item.stock === 0 ? 'border-rose-100 bg-rose-50/15' : isInventoryLow(item) ? 'border-amber-100 bg-amber-50/15' : 'border-slate-100 bg-white'">
+                    <button type="button" @click="toggleInventoryEditor(item.id)" class="w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left">
                       <div class="min-w-0">
                         <div class="flex items-center gap-2">
                           <span class="w-2 h-2 rounded-full shrink-0" :class="getInventoryStatus(item).dot"></span>
                           <span class="text-sm font-black text-slate-800 truncate">{{ item.name }}</span>
                         </div>
-                        <div class="mt-1.5 text-xs font-semibold text-slate-400 truncate">{{ item.notes || '未填備註' }}</div>
-                        <div class="mt-1 text-[9px] font-black text-slate-400">安全庫存 {{ inventorySafetyStock(item) }} 件</div>
+                        <div class="mt-0.5 text-[11px] font-semibold text-slate-400 truncate">{{ item.notes || '未填備註' }} · 安全 {{ inventorySafetyStock(item) }}</div>
                       </div>
-                      <span class="shrink-0 text-[10px] font-black px-2 py-1 rounded-lg" :class="getInventoryStatus(item).badge">{{ getInventoryStatus(item).label }}</span>
+                      <div class="shrink-0 text-right">
+                        <div class="text-lg font-black tabular-nums" :class="item.stock === 0 ? 'text-rose-600' : isInventoryLow(item) ? 'text-amber-600' : 'text-slate-800'">{{ item.stock }}</div>
+                        <span class="mt-0.5 inline-flex text-[9px] font-black px-1.5 py-0.5 rounded-md" :class="getInventoryStatus(item).badge">{{ getInventoryStatus(item).label }}</span>
+                      </div>
                     </button>
 
-                    <div class="px-3.5 pb-3 flex items-center justify-between">
-                      <span class="text-[10px] font-black text-slate-400">目前數量</span>
-                      <div class="flex items-center gap-2">
-                        <button @click="adjustStock(item, -1)" :disabled="item.stock <= 0" class="w-10 h-10 rounded-xl bg-white border border-orange-100 text-slate-600 text-lg font-black shadow-sm disabled:opacity-35 jelly-btn" :aria-label="`${item.name} 庫存減一`">−</button>
-                        <span class="w-12 text-center text-xl font-black" :class="item.stock === 0 ? 'text-rose-600' : isInventoryLow(item) ? 'text-amber-600' : 'text-slate-800'">{{ item.stock }}</span>
-                        <button @click="adjustStock(item, 1)" class="w-10 h-10 rounded-xl bg-slate-800 text-white text-lg font-black shadow-sm jelly-btn" :aria-label="`${item.name} 庫存加一`">＋</button>
+                    <div class="px-3 pb-2.5 flex items-center justify-between">
+                      <span class="text-[10px] font-black text-slate-400">快速調整</span>
+                      <div class="flex items-center gap-1.5">
+                        <button @click="adjustStock(item, -1)" :disabled="item.stock <= 0" class="w-8 h-8 min-h-8 rounded-xl bg-white border border-slate-100 text-slate-600 text-base font-black shadow-sm disabled:opacity-35 jelly-btn" :aria-label="`${item.name} 庫存減一`">−</button>
+                        <button @click="adjustStock(item, 1)" class="w-8 h-8 min-h-8 rounded-xl bg-slate-800 text-white text-base font-black shadow-sm jelly-btn" :aria-label="`${item.name} 庫存加一`">＋</button>
                       </div>
                     </div>
-                    <div class="px-3.5 pb-3 grid grid-cols-3 gap-1.5">
-                      <button @click="adjustStock(item, 3)" class="min-h-[34px] rounded-xl bg-white border border-orange-100 text-[11px] font-black text-slate-700">+3</button>
-                      <button @click="refillInventoryToSafety(item)" class="min-h-[34px] rounded-xl bg-slate-900 text-white text-[11px] font-black">補到安全</button>
-                      <button @click="markInventoryOut(item)" class="min-h-[34px] rounded-xl bg-rose-50 border border-rose-100 text-[11px] font-black text-rose-600">設缺貨</button>
+                    <div class="px-3 pb-3 grid grid-cols-3 gap-1.5">
+                      <button @click="adjustStock(item, 3)" class="min-h-[30px] rounded-xl bg-white border border-slate-100 text-[10px] font-black text-slate-600">+3</button>
+                      <button @click="refillInventoryToSafety(item)" class="min-h-[30px] rounded-xl bg-slate-900 text-white text-[10px] font-black">補到安全</button>
+                      <button @click="markInventoryOut(item)" class="min-h-[30px] rounded-xl bg-rose-50 border border-rose-100 text-[10px] font-black text-rose-600">設缺貨</button>
                     </div>
 
-                    <div v-if="expandedInventoryId === item.id" class="p-3.5 border-t border-orange-100/60 bg-white/80 space-y-3">
+                    <div v-if="expandedInventoryId === item.id" class="p-3.5 border-t border-slate-100 bg-slate-50/60 space-y-3">
                       <div class="rounded-xl px-3 py-2 text-[11px] font-black" :class="inventoryDraftHasChanges(item) ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'">
                         {{ inventoryDraftHasChanges(item) ? '尚未儲存：確認後請按「儲存修正」' : '庫存草稿：修改後不會立即同步' }}
                       </div>
@@ -3811,7 +3824,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.01-orders-visual-polish';
+    const APP_VERSION = '2026.07.01-expense-inventory-visual-polish';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v24-orders-visual-polish';
+const CACHE_NAME = 'momohair-shell-v25-expense-inventory-visual-polish';
 const APP_SHELL = [
   '/',
   '/assets/tailwind.css',
