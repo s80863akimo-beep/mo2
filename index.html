@@ -999,6 +999,22 @@
             </div>
           </section>
 
+          <section class="rounded-2xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                   :class="backupReminder.tone === 'ok' ? 'bg-emerald-50 border-emerald-100' : backupReminder.tone === 'error' ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'">
+            <div class="min-w-0">
+              <div class="text-xs font-black" :class="backupReminder.tone === 'ok' ? 'text-emerald-700' : backupReminder.tone === 'error' ? 'text-rose-700' : 'text-amber-700'">{{ backupReminder.title }}</div>
+              <div class="text-[10px] font-semibold mt-0.5" :class="backupReminder.tone === 'ok' ? 'text-emerald-600' : backupReminder.tone === 'error' ? 'text-rose-600' : 'text-amber-700'">{{ backupReminder.message }}</div>
+              <div class="text-[9px] font-bold text-slate-400 mt-1">{{ backupSummaryText }} · {{ integritySummaryText }}</div>
+            </div>
+            <div class="grid grid-cols-2 sm:flex gap-2">
+              <button @click="handleBackupReminderAction" :disabled="backupStatus === 'saving'" class="min-h-[40px] px-4 rounded-xl bg-white border text-xs font-black disabled:opacity-50"
+                      :class="backupReminder.tone === 'ok' ? 'border-emerald-100 text-emerald-700' : backupReminder.tone === 'error' ? 'border-rose-100 text-rose-700' : 'border-amber-100 text-amber-700'">
+                {{ backupStatus === 'saving' ? '備份中…' : backupReminder.actionLabel }}
+              </button>
+              <button @click="runIntegrityCheck(true)" class="min-h-[40px] px-4 rounded-xl bg-white border border-sky-100 text-sky-700 text-xs font-black">檢查資料</button>
+            </div>
+          </section>
+
           <section v-if="syncError" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div class="min-w-0">
               <div class="text-xs font-black text-rose-700">{{ syncError.title }}</div>
@@ -1458,6 +1474,22 @@
               </div>
             </div>
             <button @click="copyCloseoutSummary(todayCloseoutRecord)" class="min-h-[38px] px-3 rounded-xl bg-white border border-emerald-100 text-[11px] font-black text-emerald-700 whitespace-nowrap">複製摘要</button>
+          </section>
+
+          <section class="rounded-2xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                   :class="backupReminder.tone === 'ok' ? 'bg-emerald-50 border-emerald-100' : backupReminder.tone === 'error' ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'">
+            <div class="min-w-0">
+              <div class="text-xs font-black" :class="backupReminder.tone === 'ok' ? 'text-emerald-700' : backupReminder.tone === 'error' ? 'text-rose-700' : 'text-amber-700'">{{ backupReminder.title }}</div>
+              <div class="text-[10px] font-semibold mt-0.5" :class="backupReminder.tone === 'ok' ? 'text-emerald-600' : backupReminder.tone === 'error' ? 'text-rose-600' : 'text-amber-700'">{{ backupReminder.message }}</div>
+              <div class="text-[9px] font-bold text-slate-400 mt-1">{{ backupSummaryText }} · {{ integritySummaryText }}</div>
+            </div>
+            <div class="grid grid-cols-2 sm:flex gap-2">
+              <button @click="handleBackupReminderAction" :disabled="backupStatus === 'saving'" class="min-h-[40px] px-4 rounded-xl bg-white border text-xs font-black disabled:opacity-50"
+                      :class="backupReminder.tone === 'ok' ? 'border-emerald-100 text-emerald-700' : backupReminder.tone === 'error' ? 'border-rose-100 text-rose-700' : 'border-amber-100 text-amber-700'">
+                {{ backupStatus === 'saving' ? '備份中…' : backupReminder.actionLabel }}
+              </button>
+              <button @click="runIntegrityCheck(true)" class="min-h-[40px] px-4 rounded-xl bg-white border border-sky-100 text-sky-700 text-xs font-black">檢查資料</button>
+            </div>
           </section>
 
           <section v-if="syncError" class="border border-rose-200 bg-rose-50 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
@@ -2003,23 +2035,28 @@
                         </tr>
                         <tr v-if="expandedOrderId === order.id" class="bg-orange-50/30">
                           <td colspan="6" class="p-4">
-                            <div class="grid grid-cols-6 gap-3 items-end" @focusin="rememberEditSnapshot('orders', order)">
-                              <label class="col-span-2 text-[10px] font-black text-slate-400">顧客（穩定 ID）<select v-model="order.customerId" @change="guardedOrderCustomerChanged(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold text-slate-700"><option v-for="c in customerOptions" :key="c.id" :value="c.id">{{ c.name }} · {{ shortCustomerId(c.id) }}</option></select></label>
-                              <label class="text-[10px] font-black text-slate-400">性別<select v-model="order.gender" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"><option value="女">女</option><option value="男">男</option></select></label>
-                              <label class="col-span-3 text-[10px] font-black text-slate-400">服務內容<input type="text" v-model="order.serviceName" @change="guardedSaveOrder(order)" list="common-services" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold text-slate-700"></label>
-                              <label class="col-span-2 text-[10px] font-black text-slate-400">金額<input type="number" v-model.number="order.amount" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-black text-right"></label>
-                              <label class="col-span-2 text-[10px] font-black text-slate-400">付款方式<select v-model="order.paymentMethod" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"><option v-for="m in paymentMethods" :key="m" :value="m">{{ m }}</option></select></label>
-                              <div v-if="order.paymentMethod === '現金＋儲值扣款'" class="col-span-4 grid grid-cols-2 gap-2 p-2 rounded-xl bg-sky-50 border border-sky-100">
-                                <label class="text-[10px] font-black text-slate-500">現金付款<input type="number" v-model.number="order.cashAmount" @change="guardedSaveOrder(order)" min="0" :max="Number(order.amount) || 0" class="mt-1 w-full bg-white border border-sky-100 rounded-lg px-3 py-2 text-sm font-black text-right"></label>
-                                <div class="text-[10px] font-black text-slate-500">儲值扣款<div class="mt-1 min-h-[38px] flex items-center justify-end bg-white border border-sky-100 rounded-lg px-3 text-sm font-black text-sky-700">NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div></div>
+                            <div class="grid grid-cols-6 gap-3 items-end">
+                              <div class="col-span-6 rounded-xl px-3 py-2 text-[11px] font-black" :class="orderDraftHasChanges(order) ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'">
+                                {{ orderDraftHasChanges(order) ? '尚未儲存：確認後請按「儲存修正」' : '編輯草稿：修改後不會立即寫入資料' }}
                               </div>
-                              <label v-if="order.paymentMethod === '儲值進帳'" class="col-span-2 text-[10px] font-black text-slate-400">儲值收款方式<select v-model="order.topupChannel" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-emerald-100 rounded-xl px-3 py-2 text-sm font-bold"><option value="現金">現金</option><option value="轉帳">轉帳</option></select></label>
+                              <label class="col-span-2 text-[10px] font-black text-slate-400">顧客（穩定 ID）<select v-model="orderEditDraft(order).customerId" @change="selectOrderDraftCustomer(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold text-slate-700"><option v-for="c in customerOptions" :key="c.id" :value="c.id">{{ c.name }} · {{ shortCustomerId(c.id) }}</option></select></label>
+                              <label class="text-[10px] font-black text-slate-400">性別<select v-model="orderEditDraft(order).gender" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"><option value="女">女</option><option value="男">男</option></select></label>
+                              <label class="col-span-3 text-[10px] font-black text-slate-400">服務內容<input type="text" v-model="orderEditDraft(order).serviceName" list="common-services" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold text-slate-700"></label>
+                              <label class="col-span-2 text-[10px] font-black text-slate-400">金額<input type="number" v-model.number="orderEditDraft(order).amount" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-black text-right"></label>
+                              <label class="col-span-2 text-[10px] font-black text-slate-400">付款方式<select v-model="orderEditDraft(order).paymentMethod" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"><option v-for="m in paymentMethods" :key="m" :value="m">{{ m }}</option></select></label>
+                              <div v-if="orderEditDraft(order).paymentMethod === '現金＋儲值扣款'" class="col-span-4 grid grid-cols-2 gap-2 p-2 rounded-xl bg-sky-50 border border-sky-100">
+                                <label class="text-[10px] font-black text-slate-500">現金付款<input type="number" v-model.number="orderEditDraft(order).cashAmount" min="0" :max="Number(orderEditDraft(order).amount) || 0" class="mt-1 w-full bg-white border border-sky-100 rounded-lg px-3 py-2 text-sm font-black text-right"></label>
+                                <div class="text-[10px] font-black text-slate-500">儲值扣款<div class="mt-1 min-h-[38px] flex items-center justify-end bg-white border border-sky-100 rounded-lg px-3 text-sm font-black text-sky-700">NT$ {{ formatNumber(getMixedPrepaidAmount(orderEditDraft(order))) }}</div></div>
+                              </div>
+                              <label v-if="orderEditDraft(order).paymentMethod === '儲值進帳'" class="col-span-2 text-[10px] font-black text-slate-400">儲值收款方式<select v-model="orderEditDraft(order).topupChannel" class="mt-1 w-full jelly-input bg-white border border-emerald-100 rounded-xl px-3 py-2 text-sm font-bold"><option value="現金">現金</option><option value="轉帳">轉帳</option></select></label>
                               <div v-if="orderCorrectionLogs(order.id).length" class="col-span-6 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
                                 <div class="text-[10px] font-black text-slate-500 mb-1">最近修正</div>
                                 <div v-for="log in orderCorrectionLogs(order.id).slice(0, 2)" :key="log.id" class="text-[10px] font-semibold text-slate-400 whitespace-pre-line leading-relaxed">
                                   {{ formatDateTime(log.at) }}｜{{ log.detail }}
                                 </div>
                               </div>
+                              <button @click.stop="cancelOrderDraft(order)" class="col-span-2 min-h-[40px] rounded-xl bg-white border border-slate-200 text-slate-500 text-xs font-black jelly-btn">取消修正</button>
+                              <button @click.stop="saveOrderDraft(order)" :disabled="!orderDraftHasChanges(order)" class="col-span-2 min-h-[40px] rounded-xl bg-slate-900 text-white text-xs font-black jelly-btn disabled:opacity-30">儲存修正</button>
                               <button @click.stop="deleteOrder(order.id)" class="col-span-2 min-h-[40px] rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-xs font-black jelly-btn">刪除此筆</button>
                             </div>
                           </td>
@@ -2046,26 +2083,33 @@
                       <div v-if="order.paymentMethod === '儲值進帳'" class="mt-2 text-[9px] font-black text-purple-600">不列入營業額</div>
                       <div v-if="order.paymentMethod === '現金＋儲值扣款'" class="mt-2 text-[10px] font-black text-amber-700">現金 NT$ {{ formatNumber(getMixedCashAmount(order)) }} · 儲值扣款 NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div>
                     </button>
-                    <div v-if="expandedOrderId === order.id" class="p-3.5 pt-0 border-t border-orange-50 bg-orange-50/25 space-y-3" @focusin="rememberEditSnapshot('orders', order)">
+                    <div v-if="expandedOrderId === order.id" class="p-3.5 pt-0 border-t border-orange-50 bg-orange-50/25 space-y-3">
                       <div class="grid grid-cols-3 gap-2 pt-3">
-                        <label class="col-span-2 text-[10px] font-black text-slate-400">顧客（穩定 ID）<select v-model="order.customerId" @change="guardedOrderCustomerChanged(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-bold"><option v-for="c in customerOptions" :key="c.id" :value="c.id">{{ c.name }} · {{ shortCustomerId(c.id) }}</option></select></label>
-                        <label class="text-[10px] font-black text-slate-400">性別<select v-model="order.gender" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-2 py-2.5 text-sm font-bold"><option value="女">女</option><option value="男">男</option></select></label>
+                        <div class="col-span-3 rounded-xl px-3 py-2 text-[11px] font-black" :class="orderDraftHasChanges(order) ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'">
+                          {{ orderDraftHasChanges(order) ? '尚未儲存：確認後請按「儲存修正」' : '編輯草稿：修改後不會立即寫入資料' }}
+                        </div>
+                        <label class="col-span-2 text-[10px] font-black text-slate-400">顧客（穩定 ID）<select v-model="orderEditDraft(order).customerId" @change="selectOrderDraftCustomer(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-bold"><option v-for="c in customerOptions" :key="c.id" :value="c.id">{{ c.name }} · {{ shortCustomerId(c.id) }}</option></select></label>
+                        <label class="text-[10px] font-black text-slate-400">性別<select v-model="orderEditDraft(order).gender" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-2 py-2.5 text-sm font-bold"><option value="女">女</option><option value="男">男</option></select></label>
                       </div>
-                      <label class="block text-[10px] font-black text-slate-400">服務內容<input type="text" v-model="order.serviceName" @change="guardedSaveOrder(order)" list="common-services" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-bold"></label>
+                      <label class="block text-[10px] font-black text-slate-400">服務內容<input type="text" v-model="orderEditDraft(order).serviceName" list="common-services" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-bold"></label>
                       <div class="grid grid-cols-2 gap-2">
-                        <label class="text-[10px] font-black text-slate-400">金額<input type="number" inputmode="decimal" v-model.number="order.amount" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-black text-right"></label>
-                        <label class="text-[10px] font-black text-slate-400">付款方式<select v-model="order.paymentMethod" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-2 py-2.5 text-xs font-bold"><option v-for="m in paymentMethods" :key="m" :value="m">{{ m }}</option></select></label>
+                        <label class="text-[10px] font-black text-slate-400">金額<input type="number" inputmode="decimal" v-model.number="orderEditDraft(order).amount" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-black text-right"></label>
+                        <label class="text-[10px] font-black text-slate-400">付款方式<select v-model="orderEditDraft(order).paymentMethod" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-2 py-2.5 text-xs font-bold"><option v-for="m in paymentMethods" :key="m" :value="m">{{ m }}</option></select></label>
                       </div>
-                      <div v-if="order.paymentMethod === '現金＋儲值扣款'" class="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-sky-50 border border-sky-100">
-                        <label class="text-[10px] font-black text-slate-500">現金付款<input type="number" inputmode="decimal" v-model.number="order.cashAmount" @change="guardedSaveOrder(order)" min="0" :max="Number(order.amount) || 0" class="mt-1 w-full bg-white border border-sky-100 rounded-lg px-3 py-2.5 text-sm font-black text-right"></label>
-                        <div class="text-[10px] font-black text-slate-500">儲值扣款<div class="mt-1 min-h-[42px] flex items-center justify-end bg-white border border-sky-100 rounded-lg px-3 text-sm font-black text-sky-700">NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div></div>
+                      <div v-if="orderEditDraft(order).paymentMethod === '現金＋儲值扣款'" class="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-sky-50 border border-sky-100">
+                        <label class="text-[10px] font-black text-slate-500">現金付款<input type="number" inputmode="decimal" v-model.number="orderEditDraft(order).cashAmount" min="0" :max="Number(orderEditDraft(order).amount) || 0" class="mt-1 w-full bg-white border border-sky-100 rounded-lg px-3 py-2.5 text-sm font-black text-right"></label>
+                        <div class="text-[10px] font-black text-slate-500">儲值扣款<div class="mt-1 min-h-[42px] flex items-center justify-end bg-white border border-sky-100 rounded-lg px-3 text-sm font-black text-sky-700">NT$ {{ formatNumber(getMixedPrepaidAmount(orderEditDraft(order))) }}</div></div>
                       </div>
-                      <label v-if="order.paymentMethod === '儲值進帳'" class="block text-[10px] font-black text-slate-400">儲值收款方式<select v-model="order.topupChannel" @change="guardedSaveOrder(order)" class="mt-1 w-full jelly-input bg-white border border-emerald-100 rounded-xl px-3 py-2.5 text-sm font-bold"><option value="現金">現金</option><option value="轉帳">轉帳</option></select></label>
+                      <label v-if="orderEditDraft(order).paymentMethod === '儲值進帳'" class="block text-[10px] font-black text-slate-400">儲值收款方式<select v-model="orderEditDraft(order).topupChannel" class="mt-1 w-full jelly-input bg-white border border-emerald-100 rounded-xl px-3 py-2.5 text-sm font-bold"><option value="現金">現金</option><option value="轉帳">轉帳</option></select></label>
                       <div v-if="orderCorrectionLogs(order.id).length" class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
                         <div class="text-[10px] font-black text-slate-500 mb-1">最近修正</div>
                         <div v-for="log in orderCorrectionLogs(order.id).slice(0, 2)" :key="log.id" class="text-[10px] font-semibold text-slate-400 whitespace-pre-line leading-relaxed">
                           {{ formatDateTime(log.at) }}｜{{ log.detail }}
                         </div>
+                      </div>
+                      <div class="grid grid-cols-2 gap-2">
+                        <button @click.stop="cancelOrderDraft(order)" class="min-h-[42px] rounded-xl bg-white border border-slate-200 text-slate-500 text-xs font-black jelly-btn">取消修正</button>
+                        <button @click.stop="saveOrderDraft(order)" :disabled="!orderDraftHasChanges(order)" class="min-h-[42px] rounded-xl text-xs font-black jelly-btn disabled:opacity-40" :class="orderDraftHasChanges(order) ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'">儲存修正</button>
                       </div>
                       <button @click="deleteOrder(order.id)" class="w-full min-h-[42px] rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-xs font-black jelly-btn">刪除此筆業績</button>
                     </div>
@@ -3240,6 +3284,47 @@
             </div>
           </section>
 
+          <!-- Monthly settlement summary -->
+          <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
+            <div class="px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
+              <div>
+                <h2 class="text-base sm:text-lg font-black text-slate-800">月結摘要 · {{ monthlySettlementSummary.label }}</h2>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">給月底結算用：營業額、金流、淨利與未打烊日期集中確認</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button @click="copyMonthlySettlementSummary" class="min-h-[40px] px-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">複製月結</button>
+                <button v-if="monthlySettlementSummary.unclosedDates.length" @click="openCloseoutSheet(monthlySettlementSummary.unclosedDates[0])" class="min-h-[40px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">補打烊</button>
+              </div>
+            </div>
+            <div class="px-4 pt-4 sm:px-6 grid grid-cols-6 gap-1.5">
+              <button v-for="m in monthOptions" :key="'settle-' + m" @click="selectedMonth = m"
+                      class="min-h-[34px] rounded-xl text-[11px] font-black border transition-colors"
+                      :class="reportSettlementMonth === m ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200'">
+                {{ Number(m) }}月
+              </button>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100 mt-4 border-t border-slate-100">
+              <div class="p-4"><div class="text-[10px] font-black text-slate-400">營業額</div><div class="text-xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(monthlySettlementSummary.serviceRevenue) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlySettlementSummary.ordersCount }} 筆 · 客單 NT$ {{ formatNumber(monthlySettlementSummary.avgTicket) }}</div></div>
+              <div class="p-4"><div class="text-[10px] font-black text-slate-400">支出</div><div class="text-xl font-black text-sky-600 mt-1">NT$ {{ formatNumber(monthlySettlementSummary.expenses) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlySettlementSummary.businessDays }} 個有資料日期</div></div>
+              <div class="p-4"><div class="text-[10px] font-black text-slate-400">淨利</div><div class="text-xl font-black mt-1" :class="monthlySettlementSummary.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'">NT$ {{ formatNumber(monthlySettlementSummary.netProfit) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">營業額－支出</div></div>
+              <div class="p-4"><div class="text-[10px] font-black text-slate-400">淨利率</div><div class="text-xl font-black mt-1" :class="monthlySettlementSummary.profitMargin >= 20 ? 'text-emerald-600' : monthlySettlementSummary.profitMargin >= 0 ? 'text-amber-600' : 'text-rose-600'">{{ monthlySettlementSummary.profitMargin }}%</div><div class="text-[9px] font-bold text-slate-400 mt-1">月結健康度</div></div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-slate-100 bg-slate-50/70">
+              <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">現金入帳</div><div class="text-sm font-black text-slate-700">NT$ {{ formatNumber(monthlySettlementSummary.cashIn) }}</div></div>
+              <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">轉帳入帳</div><div class="text-sm font-black text-indigo-700">NT$ {{ formatNumber(monthlySettlementSummary.transferIn) }}</div></div>
+              <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">儲值扣款</div><div class="text-sm font-black text-sky-700">NT$ {{ formatNumber(monthlySettlementSummary.prepaidOut) }}</div></div>
+              <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">儲值進帳</div><div class="text-sm font-black text-emerald-700">NT$ {{ formatNumber(monthlySettlementSummary.prepaidIn) }}</div></div>
+              <div class="px-4 py-3 col-span-2 sm:col-span-1"><div class="text-[9px] font-black text-slate-400">打烊狀態</div><div class="text-sm font-black" :class="monthlySettlementSummary.ready ? 'text-emerald-700' : 'text-amber-700'">{{ monthlySettlementSummary.ready ? '已完整' : `未打烊 ${monthlySettlementSummary.unclosedDates.length} 天` }}</div></div>
+            </div>
+            <div v-if="monthlySettlementSummary.unclosedDates.length" class="px-4 py-3 sm:px-6 border-t border-amber-100 bg-amber-50/70">
+              <div class="text-[10px] font-black text-amber-700 mb-2">未打烊日期</div>
+              <div class="flex flex-wrap gap-1.5">
+                <button v-for="date in monthlySettlementSummary.unclosedDates.slice(0, 8)" :key="'settle-unclosed-' + date" @click="openCloseoutSheet(date)" class="min-h-[30px] px-2.5 rounded-lg bg-white border border-amber-100 text-[10px] font-black text-amber-700">{{ date }}</button>
+                <span v-if="monthlySettlementSummary.unclosedDates.length > 8" class="min-h-[30px] inline-flex items-center px-2.5 rounded-lg text-[10px] font-black text-amber-700">+{{ monthlySettlementSummary.unclosedDates.length - 8 }}</span>
+              </div>
+            </div>
+          </section>
+
           <!-- One monthly trend chart -->
           <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
             <div class="px-4 py-4 sm:px-6 flex items-center justify-between border-b border-slate-100">
@@ -3522,7 +3607,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.06.30-conflict-diff-modal';
+    const APP_VERSION = '2026.06.30-draft-monthly-backup';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -3672,6 +3757,7 @@
           closeoutCashCount: null,
           closeoutNote: '',
           editSnapshots: {},
+          orderEditDrafts: {},
           crmFormulas: {},
           online: navigator.onLine,
           isStandalone: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true,
@@ -3786,8 +3872,25 @@
         backupSummaryText() {
           if (this.backupStatus === 'saving') return '雲端備份中';
           if (this.backupStatus === 'error') return '雲端備份失敗';
-          if (!this.lastBackupAt) return '尚無自動備份';
+          if (!this.lastBackupAt) return '尚無正式備份';
           return `最近備份 ${this.formatDateTime(this.lastBackupAt)}`;
+        },
+        backupReminder() {
+          const now = new Date();
+          const last = this.lastBackupAt ? new Date(this.lastBackupAt) : null;
+          const validLast = last && !Number.isNaN(last.getTime()) ? last : null;
+          const days = validLast ? Math.floor((now - validLast) / 86400000) : null;
+          const due = this.backupStatus === 'error' || days === null || days >= 7;
+          return {
+            due,
+            days,
+            tone: this.backupStatus === 'error' ? 'error' : due ? 'warn' : 'ok',
+            title: this.backupStatus === 'error' ? '備份失敗，需要重新建立' : due ? '該建立正式備份了' : '正式備份正常',
+            message: days === null
+              ? '尚未留下可追蹤的備份時間。建議先建立一次雲端備份或下載 JSON。'
+              : `距離上次備份 ${days} 天。建議每 7 天至少備份一次，月底結算前也要備份。`,
+            actionLabel: this.cloudReady && this.authUser ? '立即雲端備份' : '下載 JSON 備份'
+          };
         },
         integritySummaryText() {
           if (!this.integrityReport) return '尚未檢查完整性';
@@ -4670,6 +4773,79 @@
             }, 0);
           return { cashIn, prepaidIn, prepaidOut };
         },
+        reportSettlementMonth() {
+          if (this.selectedMonth && this.selectedMonth !== 'All') return String(this.selectedMonth).padStart(2, '0');
+          const now = new Date();
+          if (this.selectedYear === String(now.getFullYear())) return String(now.getMonth() + 1).padStart(2, '0');
+          const latestActive = [...this.annualMonthlyData]
+            .reverse()
+            .find(month => month.revenue > 0 || month.expenses > 0);
+          return latestActive ? String(latestActive.month).padStart(2, '0') : '01';
+        },
+        monthlySettlementSummary() {
+          const month = this.reportSettlementMonth;
+          const year = String(this.selectedYear);
+          const prefix = `${year}-${month}`;
+          const today = new Date().toLocaleDateString('sv-SE');
+          const startDate = this.pendingActionStartDate || '2026-07-01';
+          const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+          const monthOrders = (this.orders || []).filter(order => {
+            if (!order || !validDate(order.date) || !String(order.date).startsWith(prefix)) return false;
+            return this.isOrderActive(order) && order.customerName && !this.isBlockedSlot(order.customerName);
+          });
+          const serviceOrders = monthOrders.filter(order => order.paymentMethod !== '儲值進帳');
+          const monthExpenses = (this.expenses || []).filter(expense => validDate(expense?.date) && String(expense.date).startsWith(prefix));
+          const dates = new Set([
+            ...monthOrders.map(order => order.date),
+            ...monthExpenses.map(expense => expense.date)
+          ]);
+          const totals = {
+            cash: 0,
+            transfer: 0,
+            prepaidOut: 0,
+            prepaidIn: 0,
+            cashPrepaidIn: 0,
+            transferPrepaidIn: 0,
+            actualCashIn: 0,
+            serviceRevenue: 0,
+            expenses: 0,
+            netProfit: 0
+          };
+          [...dates].forEach(date => {
+            const day = this.calculateCloseoutForDate(date);
+            totals.cash += day.cash;
+            totals.transfer += day.transfer;
+            totals.prepaidOut += day.prepaidOut;
+            totals.prepaidIn += day.prepaidIn;
+            totals.cashPrepaidIn += day.cashPrepaidIn;
+            totals.transferPrepaidIn += day.transferPrepaidIn;
+            totals.actualCashIn += day.actualCashIn;
+            totals.serviceRevenue += day.serviceRevenue;
+            totals.expenses += day.expenses;
+            totals.netProfit += day.netProfit;
+          });
+          const unclosedDates = [...dates]
+            .filter(date => date >= startDate && date <= today && !this.closeoutRecords?.[date])
+            .sort();
+          const closedDays = [...dates].filter(date => this.closeoutRecords?.[date]).length;
+          const profitMargin = totals.serviceRevenue > 0 ? Math.round(totals.netProfit / totals.serviceRevenue * 100) : 0;
+          return {
+            year,
+            month,
+            label: `${year}/${Number(month)} 月`,
+            ...totals,
+            cashIn: totals.cash + totals.cashPrepaidIn,
+            transferIn: totals.transfer + totals.transferPrepaidIn,
+            ordersCount: serviceOrders.length,
+            topupCount: monthOrders.length - serviceOrders.length,
+            avgTicket: serviceOrders.length ? Math.round(totals.serviceRevenue / serviceOrders.length) : 0,
+            profitMargin,
+            businessDays: dates.size,
+            closedDays,
+            unclosedDates,
+            ready: unclosedDates.length === 0
+          };
+        },
         reportComparisons() {
           const percentage = (current, previous) => previous ? Math.round((current - previous) / previous * 100) : 0;
           return {
@@ -5086,6 +5262,125 @@
           return (this.operationLogs || [])
             .filter(log => log?.meta?.orderId === orderId && ['order_correction', 'order_update'].includes(log.action))
             .slice(0, 3);
+        },
+        cloneOrderForDraft(order = {}) {
+          return {
+            id: order.id,
+            date: order.date || new Date().toLocaleDateString('sv-SE'),
+            customerId: order.customerId || '',
+            customerName: order.customerName || '',
+            gender: order.gender || '女',
+            serviceName: order.serviceName || '',
+            amount: Number(order.amount) || 0,
+            paymentMethod: order.paymentMethod || '現金',
+            cashAmount: order.cashAmount === null || order.cashAmount === undefined ? null : Number(order.cashAmount) || 0,
+            topupChannel: order.topupChannel || (order.paymentMethod === '儲值進帳' ? '現金' : null),
+            category: order.category || '',
+            sourceEventId: order.sourceEventId || null,
+            orderId: order.orderId || null,
+            syncStatus: order.syncStatus || 'active',
+            createdAt: order.createdAt || null,
+            lastSyncedAt: order.lastSyncedAt || null
+          };
+        },
+        beginOrderDraft(order) {
+          if (!order?.id) return null;
+          if (!this.orderEditDrafts[order.id]) {
+            this.orderEditDrafts = {
+              ...this.orderEditDrafts,
+              [order.id]: this.cloneOrderForDraft(order)
+            };
+          }
+          return this.orderEditDrafts[order.id];
+        },
+        orderEditDraft(order) {
+          return this.beginOrderDraft(order) || this.cloneOrderForDraft(order);
+        },
+        clearOrderDraft(orderId) {
+          if (!orderId || !this.orderEditDrafts[orderId]) return;
+          const next = { ...this.orderEditDrafts };
+          delete next[orderId];
+          this.orderEditDrafts = next;
+        },
+        cancelOrderDraft(order) {
+          this.clearOrderDraft(order?.id);
+          this.showToast('已取消本次修正');
+        },
+        orderDraftChangedFields(order) {
+          const draft = this.orderEditDraft(order);
+          return this.orderAuditFields().filter(field =>
+            JSON.stringify(order?.[field] ?? null) !== JSON.stringify(draft?.[field] ?? null)
+          );
+        },
+        orderDraftHasChanges(order) {
+          return this.orderDraftChangedFields(order).length > 0;
+        },
+        selectOrderDraftCustomer(order) {
+          const draft = this.orderEditDraft(order);
+          const customer = this.customerMap[draft.customerId];
+          if (!customer) return;
+          draft.customerName = customer.name;
+          draft.gender = customer.gender || draft.gender || '女';
+        },
+        validateOrderDraft(order, draft) {
+          if (!this.assertDateUnlocked(order?.date) || !this.assertDateUnlocked(draft?.date)) return false;
+          if (!draft.customerId || !this.customerMap[draft.customerId]) {
+            this.showToast('請選擇有效顧客', 'error');
+            return false;
+          }
+          if (!String(draft.serviceName || '').trim()) {
+            this.showToast('請輸入服務內容', 'error');
+            return false;
+          }
+          if ((Number(draft.amount) || 0) <= 0) {
+            this.showToast('金額必須大於 0', 'error');
+            return false;
+          }
+          if (draft.paymentMethod === '現金＋儲值扣款') {
+            const cash = Number(draft.cashAmount) || 0;
+            const amount = Number(draft.amount) || 0;
+            if (cash <= 0 || cash >= amount) {
+              this.showToast('混合付款的現金金額必須大於 0，且小於消費總額', 'error', 5000);
+              return false;
+            }
+          }
+          if (draft.paymentMethod === '儲值進帳' && !['現金', '轉帳'].includes(draft.topupChannel)) {
+            this.showToast('請選擇儲值收款方式：現金或轉帳', 'error');
+            return false;
+          }
+          return true;
+        },
+        saveOrderDraft(order) {
+          const draft = this.orderEditDraft(order);
+          if (!this.validateOrderDraft(order, draft)) return false;
+          this.selectOrderDraftCustomer(order);
+          const before = JSON.parse(JSON.stringify(order));
+          const normalizedDraft = {
+            ...draft,
+            serviceName: String(draft.serviceName || '').trim(),
+            amount: Number(draft.amount) || 0,
+            cashAmount: draft.paymentMethod === '現金＋儲值扣款' ? Number(draft.cashAmount) || 0 : null,
+            topupChannel: draft.paymentMethod === '儲值進帳' ? (draft.topupChannel || '現金') : null
+          };
+          const changed = this.orderAuditFields().filter(field =>
+            JSON.stringify(before?.[field] ?? null) !== JSON.stringify(normalizedDraft?.[field] ?? null)
+          );
+          if (!changed.length) {
+            this.clearOrderDraft(order.id);
+            this.showToast('沒有需要儲存的修正');
+            return true;
+          }
+          Object.assign(order, normalizedDraft, { updatedAt: new Date().toISOString() });
+          this.saveOrders();
+          this.recordOperation('order_correction', '修正業績', this.buildOrderCorrectionDetail(before, order, changed), {
+            orderId: order.id,
+            fields: changed,
+            before: this.orderAuditFields().reduce((acc, field) => ({ ...acc, [field]: before?.[field] ?? null }), {}),
+            after: this.orderAuditFields().reduce((acc, field) => ({ ...acc, [field]: order?.[field] ?? null }), {})
+          });
+          this.clearOrderDraft(order.id);
+          this.showToast('業績修正已儲存');
+          return true;
         },
         guardedSaveOrder(order) {
           const snapshot = this.editSnapshots[`orders:${order?.id}`];
@@ -6018,6 +6313,22 @@
         },
         copyCloseoutDraftSummary() {
           this.copyTextToClipboard(this.buildCloseoutSummary(this.buildCloseoutDraftRecord()), '目前打烊摘要已複製');
+        },
+        copyMonthlySettlementSummary() {
+          const s = this.monthlySettlementSummary;
+          const lines = [
+            `摸摸頭 momohair 月結摘要 ${s.label}`,
+            `營業額：NT$ ${this.formatNumber(s.serviceRevenue)}（${s.ordersCount} 筆，客單 NT$ ${this.formatNumber(s.avgTicket)}）`,
+            `支出：NT$ ${this.formatNumber(s.expenses)}`,
+            `淨利：NT$ ${this.formatNumber(s.netProfit)}（淨利率 ${s.profitMargin}%）`,
+            `現金入帳：NT$ ${this.formatNumber(s.cashIn)}`,
+            `轉帳入帳：NT$ ${this.formatNumber(s.transferIn)}`,
+            `儲值扣款：NT$ ${this.formatNumber(s.prepaidOut)}`,
+            `儲值進帳：NT$ ${this.formatNumber(s.prepaidIn)}`,
+            `打烊狀態：${s.ready ? '已完整' : `未打烊 ${s.unclosedDates.length} 天`}`
+          ];
+          if (s.unclosedDates.length) lines.push(`未打烊日期：${s.unclosedDates.join('、')}`);
+          this.copyTextToClipboard(lines.join('\n'), '月結摘要已複製');
         },
         compactFormulaSummary(formula = {}, note = '') {
           const chunks = [
@@ -8016,7 +8327,14 @@
           };
         },
         toggleOrderEditor(id) {
-          this.expandedOrderId = this.expandedOrderId === id ? null : id;
+          if (this.expandedOrderId === id) {
+            this.clearOrderDraft(id);
+            this.expandedOrderId = null;
+            return;
+          }
+          const order = this.orders.find(item => item.id === id);
+          if (order) this.beginOrderDraft(order);
+          this.expandedOrderId = id;
         },
 
         // --- Tab 3: Expenses CRUD ---
@@ -8294,6 +8612,13 @@
             return false;
           }
         },
+        async handleBackupReminderAction() {
+          if (this.cloudReady && this.authUser) {
+            await this.createAutomaticBackup({ force: true, silent: false });
+            return;
+          }
+          this.exportBackup();
+        },
 
         // --- Data Tools Actions ---
         exportBackup() {
@@ -8306,6 +8631,11 @@
           link.download = `MOMO營運總部_備份_${dateStr}.json`;
           link.click();
           URL.revokeObjectURL(url);
+          const createdAt = new Date().toISOString();
+          this.lastBackupAt = createdAt;
+          localStorage.setItem('momo_last_backup_at', createdAt);
+          this.backupStatus = 'ready';
+          this.recordOperation('backup_export', '匯出正式備份', link.download);
           this.showToast('備份 JSON 檔案已下載');
           this.showDataTools = false;
         },

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v16-conflict-diff-modal';
+const CACHE_NAME = 'momohair-shell-v17-draft-monthly-backup';
 const APP_SHELL = [
   '/',
   '/assets/tailwind.css',
