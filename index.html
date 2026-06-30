@@ -1015,6 +1015,7 @@
                   <div>現金 NT$ {{ formatNumber(todayCloseout.cash) }}</div>
                   <div>轉帳 NT$ {{ formatNumber(todayCloseout.transfer) }}</div>
                   <div>儲扣 NT$ {{ formatNumber(todayCloseout.prepaidOut) }}</div>
+                  <div>儲值進帳 NT$ {{ formatNumber(todayCloseout.prepaidIn) }}</div>
                 </div>
               </div>
               <div class="p-4 sm:p-5">
@@ -1109,8 +1110,11 @@
               </label>
               <label class="block">
                 <span class="block text-[10px] font-black text-slate-400 mb-1">實際盤點現金</span>
-                <input type="number" inputmode="numeric" v-model.number="closeoutCashCount" placeholder="輸入抽屜與現金總額"
-                       class="jelly-input w-full min-h-[44px] rounded-2xl border border-orange-100 bg-orange-50/30 px-4 text-sm font-black text-slate-700">
+                <div class="grid grid-cols-[1fr_auto] gap-2">
+                  <input type="number" inputmode="numeric" v-model.number="closeoutCashCount" placeholder="輸入抽屜與現金總額"
+                         class="jelly-input w-full min-h-[44px] rounded-2xl border border-orange-100 bg-orange-50/30 px-4 text-sm font-black text-slate-700">
+                  <button type="button" @click="setCloseoutCashToExpected" class="min-h-[44px] px-3 rounded-2xl bg-slate-50 border border-slate-100 text-[10px] font-black text-slate-600">帶入</button>
+                </div>
               </label>
               <label class="block">
                 <span class="block text-[10px] font-black text-slate-400 mb-1">打烊備註</span>
@@ -1119,6 +1123,9 @@
               </label>
               <button @click="saveSelectedCloseout" class="jelly-btn min-h-[44px] px-5 rounded-2xl bg-slate-800 text-white text-xs font-black">
                 {{ selectedCloseoutRecord ? '更新打烊' : '完成打烊' }}
+              </button>
+              <button @click="copyCloseoutDraftSummary" class="jelly-btn min-h-[44px] px-5 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">
+                複製摘要
               </button>
               <div v-if="todayCloseoutDifference !== null" class="sm:col-span-3 rounded-2xl px-3 py-2 text-xs font-black flex justify-between"
                    :class="todayCloseoutDifference === 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'">
@@ -1698,10 +1705,26 @@
                     </div>
                     <div class="mt-3 text-[10px] font-bold text-white/50">只要輸入實際盤點現金，系統會自動算差額並鎖帳。</div>
                   </div>
-                  <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">實際盤點現金</span><input type="number" inputmode="numeric" v-model.number="closeoutCashCount" placeholder="輸入現金總額" class="jelly-input w-full min-h-[50px] rounded-xl border border-slate-200 px-4 text-lg font-black"></label>
-                  <div v-if="todayCloseoutDifference !== null" class="rounded-xl px-3 py-3 text-sm font-black flex justify-between" :class="todayCloseoutDifference === 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'"><span>{{ todayCloseoutDifference === 0 ? '帳實相符' : '帳實差額' }}</span><span>{{ todayCloseoutDifference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutDifference) }}</span></div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="rounded-xl bg-orange-50 border border-orange-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">現金</div><div class="text-sm font-black text-slate-800">NT$ {{ formatNumber(selectedCloseout.cash) }}</div></div>
+                    <div class="rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">轉帳</div><div class="text-sm font-black text-indigo-700">NT$ {{ formatNumber(selectedCloseout.transfer) }}</div></div>
+                    <div class="rounded-xl bg-sky-50 border border-sky-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值扣款</div><div class="text-sm font-black text-sky-700">NT$ {{ formatNumber(selectedCloseout.prepaidOut) }}</div></div>
+                    <div class="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值進帳</div><div class="text-sm font-black text-emerald-700">NT$ {{ formatNumber(selectedCloseout.prepaidIn) }}</div></div>
+                  </div>
+                  <label class="block">
+                    <span class="block text-[10px] font-black text-slate-400 mb-1">實際盤點現金</span>
+                    <div class="grid grid-cols-[1fr_auto] gap-2">
+                      <input type="number" inputmode="numeric" v-model.number="closeoutCashCount" placeholder="輸入現金總額" class="jelly-input w-full min-h-[50px] rounded-xl border border-slate-200 px-4 text-lg font-black">
+                      <button type="button" @click="setCloseoutCashToExpected" class="min-h-[50px] px-3 rounded-xl bg-slate-100 text-slate-700 text-[11px] font-black">帶入</button>
+                    </div>
+                  </label>
+                  <div v-if="todayCloseoutDifference !== null" class="rounded-2xl px-4 py-3 text-sm font-black flex justify-between border"
+                       :class="todayCloseoutDifference === 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'">
+                    <span>{{ todayCloseoutDifference === 0 ? '帳實相符' : '帳實差額需確認' }}</span><span>{{ todayCloseoutDifference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutDifference) }}</span>
+                  </div>
                   <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">打烊備註</span><input type="text" v-model="closeoutNote" placeholder="差額原因、找零或臨時採買" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-semibold"></label>
                   <div class="ios-action-bar">
+                    <button @click="copyCloseoutDraftSummary" class="mb-2 w-full min-h-[46px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-black">複製目前摘要</button>
                     <button @click="completeCloseoutFromSheet" class="ios-primary-action w-full min-h-[52px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ selectedCloseoutRecord ? '更新打烊紀錄' : '完成打烊並鎖帳' }}</button>
                   </div>
                   <details class="rounded-xl border border-slate-100 bg-white overflow-hidden">
@@ -1858,6 +1881,9 @@
                     <option value="現金">現金</option>
                     <option value="轉帳">轉帳</option>
                   </select>
+                </div>
+                <div v-if="newOrderWarningsPreview.length" class="rounded-2xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] font-black text-amber-700 space-y-1">
+                  <div v-for="warning in newOrderWarningsPreview" :key="warning">{{ warning }}</div>
                 </div>
                 <div class="ios-action-bar">
                   <label class="mb-2 flex items-center justify-between gap-3 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2 text-[11px] font-black text-slate-500">
@@ -3281,7 +3307,7 @@
           <div class="ios-sheet-handle sm:hidden"></div>
           <div class="p-6 space-y-2">
             <div class="mx-auto w-10 h-1.5 rounded-full bg-rose-100"></div>
-            <p class="text-sm font-bold text-slate-700 text-center leading-relaxed">{{ confirmModal.message }}</p>
+            <p class="text-sm font-bold text-slate-700 text-center leading-relaxed whitespace-pre-line">{{ confirmModal.message }}</p>
           </div>
           <div class="flex border-t border-orange-100">
             <button @click="closeConfirm"
@@ -3290,7 +3316,7 @@
             </button>
             <button @click="doConfirm"
                     class="flex-1 py-4 text-rose-500 text-sm font-black jelly-btn hover:bg-rose-50 transition-colors">
-              確定刪除
+              確認
             </button>
           </div>
         </div>
@@ -3405,7 +3431,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.06.30-orders-fast-entry';
+    const APP_VERSION = '2026.06.30-order-guard-closeout';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -3700,6 +3726,13 @@
               name: service.name,
               price: Number(service.price) || null
             }));
+        },
+        newOrderWarningsPreview() {
+          const amount = Number(this.newOrder.amount) || 0;
+          const serviceName = String(this.newOrder.serviceName || '').trim();
+          if (!this.newOrder.date || !this.newOrder.customerName || !serviceName || amount <= 0) return [];
+          const customer = this.customerMap[this.newOrder.customerId] || this.findCustomerByName(this.newOrder.customerName);
+          return this.collectNewOrderWarnings(customer, amount, Number(this.newOrder.cashAmount) || 0, serviceName);
         },
         yearOptions() {
           // 動態產生：當年前後各一年 + 資料中出現的年份
@@ -5781,6 +5814,35 @@
           }
           this.copyTextToClipboard(text, '打烊摘要已複製');
         },
+        buildCloseoutDraftRecord() {
+          const totals = this.selectedCloseout;
+          const counted = this.closeoutCashCount === null || this.closeoutCashCount === '' ? null : Number(this.closeoutCashCount);
+          const expected = totals.actualCashIn;
+          return {
+            date: this.closeoutDate || new Date().toLocaleDateString('sv-SE'),
+            expectedCash: expected,
+            countedCash: counted ?? expected,
+            difference: counted === null ? 0 : counted - expected,
+            cash: totals.cash,
+            transfer: totals.transfer,
+            prepaidOut: totals.prepaidOut,
+            prepaidIn: totals.prepaidIn,
+            cashPrepaidIn: totals.cashPrepaidIn,
+            transferPrepaidIn: totals.transferPrepaidIn,
+            serviceRevenue: totals.serviceRevenue,
+            expenses: totals.expenses,
+            netProfit: totals.netProfit,
+            ordersCount: totals.ordersCount,
+            note: String(this.closeoutNote || '').trim()
+          };
+        },
+        setCloseoutCashToExpected() {
+          this.closeoutCashCount = this.selectedCloseout.actualCashIn;
+          this.showToast('已帶入應有現金');
+        },
+        copyCloseoutDraftSummary() {
+          this.copyTextToClipboard(this.buildCloseoutSummary(this.buildCloseoutDraftRecord()), '目前打烊摘要已複製');
+        },
         copyFollowupMessage(cust) {
           const text = `${cust.name}你好，我是摸摸頭 momohair。距離上次${cust.lastService || '整理頭髮'}已經一段時間，想提醒你可以安排下一次整理，有需要再告訴我適合的時間。`;
           this.copyTextToClipboard(text, '回訪訊息已複製');
@@ -7463,10 +7525,66 @@
           if (!this.assertDateUnlocked(this.newOrder.date)) return;
           const totalAmount = Number(this.newOrder.amount) || 0;
           const cashAmount = Number(this.newOrder.cashAmount) || 0;
+          const serviceName = String(this.newOrder.serviceName || '').trim();
+          if (!serviceName) {
+            this.showToast('請輸入服務內容', 'error');
+            return;
+          }
+          if (totalAmount <= 0) {
+            this.showToast('金額必須大於 0', 'error');
+            return;
+          }
+          if (this.newOrder.paymentMethod === '儲值進帳' && !['現金', '轉帳'].includes(this.newOrder.topupChannel)) {
+            this.showToast('請選擇儲值收款方式：現金或轉帳', 'error');
+            return;
+          }
           if (this.newOrder.paymentMethod === '現金＋儲值扣款' && (cashAmount <= 0 || cashAmount >= totalAmount)) {
             this.showToast('混合付款的現金金額必須大於 0，且小於消費總額', 'error', 5000);
             return;
           }
+          const selectedCustomer = this.customerMap[this.newOrder.customerId];
+          const existingCustomer = selectedCustomer || this.findCustomerByName(this.newOrder.customerName);
+          const warnings = this.collectNewOrderWarnings(existingCustomer, totalAmount, cashAmount, serviceName);
+          if (warnings.length) {
+            this.showConfirm(`新增前請確認：\n\n${warnings.join('\n')}\n\n仍要寫入這筆業績嗎？`, () => this.createOrderFromForm());
+            return;
+          }
+          this.createOrderFromForm();
+        },
+        collectNewOrderWarnings(customer, totalAmount, cashAmount, serviceName) {
+          const warnings = [];
+          const date = this.newOrder.date;
+          const normalizedName = this.normalizeCustomerName(customer?.name || this.newOrder.customerName);
+          const duplicate = this.orders.find(order => {
+            if (!this.isOrderActive(order) || order.date !== date) return false;
+            const sameCustomer = order.customerId && customer?.id
+              ? order.customerId === customer.id
+              : this.normalizeCustomerName(order.customerName) === normalizedName;
+            return sameCustomer
+              && String(order.serviceName || '').trim() === serviceName
+              && Number(order.amount || 0) === totalAmount;
+          });
+          if (duplicate) warnings.push(`・疑似重複：${date} ${customer?.name || this.newOrder.customerName}／${serviceName}／NT$ ${this.formatNumber(totalAmount)}`);
+          if (totalAmount >= 20000) warnings.push(`・金額偏高：NT$ ${this.formatNumber(totalAmount)}，請確認沒有多打一個 0`);
+
+          const prepaidUse = this.newOrder.paymentMethod === '儲值扣款'
+            ? totalAmount
+            : this.newOrder.paymentMethod === '現金＋儲值扣款'
+              ? Math.max(0, totalAmount - cashAmount)
+              : 0;
+          if (prepaidUse > 0) {
+            if (!customer?.id) {
+              warnings.push('・此筆會扣儲值，但目前尚未對應到既有顧客');
+            } else {
+              const balance = Number(this.prepaidTotalsByCustomer?.[customer.id]?.balance || 0);
+              if (balance < prepaidUse) warnings.push(`・儲值餘額不足：目前 NT$ ${this.formatNumber(balance)}，本次需扣 NT$ ${this.formatNumber(prepaidUse)}`);
+            }
+          }
+          return warnings;
+        },
+        createOrderFromForm() {
+          const totalAmount = Number(this.newOrder.amount) || 0;
+          const cashAmount = Number(this.newOrder.cashAmount) || 0;
           const selectedCustomer = this.customerMap[this.newOrder.customerId];
           const customer = selectedCustomer || this.findOrCreateCustomer(
             this.newOrder.customerName,
