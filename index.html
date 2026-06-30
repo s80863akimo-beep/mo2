@@ -25,46 +25,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      future: {
-        hoverOnlyWhenSupported: true
-      },
-      theme: {
-        extend: {
-          colors: {
-            macaron: {
-              cream: '#FFF9F6',
-              peach: {
-                50: '#FFF0E8',
-                100: '#FFE2D1',
-                200: '#FFC5A3',
-                300: '#FFA475',
-                400: '#FF7F47',
-                500: '#FF5A1F'
-              },
-              rose: '#FFAAA6',
-              pink: '#FF8B94',
-              mint: '#D8F3DC',
-              lavender: '#E8AEFF',
-              sky: '#A8DADC',
-              yellow: '#FFF5C0',
-              soft: '#FFEBE1'
-            }
-          },
-          fontFamily: {
-            sans: ['Nunito', 'Noto Sans TC', 'sans-serif']
-          },
-          borderRadius: {
-            '4xl': '2rem',
-            '5xl': '2.5rem'
-          }
-        }
-      }
-    }
-  </script>
+  <!-- Tailwind CSS production build -->
+  <link rel="stylesheet" href="/assets/tailwind.css">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -3525,7 +3487,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.06.30-conflict-audit-log';
+    const APP_VERSION = '2026.06.30-local-tailwind-build';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];

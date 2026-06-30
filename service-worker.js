@@ -1,6 +1,7 @@
-const CACHE_NAME = 'momohair-shell-v13-conflict-audit-log';
+const CACHE_NAME = 'momohair-shell-v14-local-tailwind-build';
 const APP_SHELL = [
   '/',
+  '/assets/tailwind.css',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
