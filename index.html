@@ -1627,12 +1627,12 @@
                 <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(yieldSummary.average) }}</div>
               </div>
               <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">已分析服務</div>
-                <div class="text-lg font-black text-emerald-600 mt-1">{{ yieldSummary.serviceCount }} 項</div>
+                <div class="text-[10px] font-black text-slate-400">預估總工時</div>
+                <div class="text-lg font-black text-sky-600 mt-1">{{ yieldSummary.totalHours }} hr</div>
               </div>
               <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">缺少時長</div>
-                <div class="text-lg font-black mt-1" :class="yieldSummary.unmatched.length ? 'text-amber-600' : 'text-emerald-600'">{{ yieldSummary.unmatched.length }}</div>
+                <div class="text-[10px] font-black text-slate-400">已分析服務</div>
+                <div class="text-lg font-black text-emerald-600 mt-1">{{ yieldSummary.serviceCount }} 項</div>
               </div>
             </div>
             <div class="px-4 py-3 sm:px-6 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between gap-3">
@@ -1641,7 +1641,7 @@
                 <div class="text-[11px] font-bold text-slate-600 truncate">服務收入 ÷ 預估工時；不含儲值進帳</div>
               </div>
               <button v-if="yieldSummary.unmatched.length" @click="openServiceConfigModal" class="min-h-[34px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-[10px] font-black whitespace-nowrap">
-                補時長
+                {{ yieldSummary.unmatched.length }} 項缺時長
               </button>
             </div>
           </section>
@@ -3856,7 +3856,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.01-mobile-tools-priority';
+    const APP_VERSION = '2026.07.01-overview-time-hours';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
