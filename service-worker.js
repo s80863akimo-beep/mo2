@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v28-brand-icon';
+const CACHE_NAME = 'momohair-shell-v29-time-value-report';
 const APP_SHELL = [
   '/',
   '/assets/tailwind.css',

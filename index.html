@@ -1584,53 +1584,39 @@
             <button @click="retryCalendarSync" :disabled="syncing" class="min-h-[38px] px-3 rounded-xl bg-rose-500 text-white text-[11px] font-black disabled:opacity-50 whitespace-nowrap">重試</button>
           </section>
 
-          <!-- Time value -->
+          <!-- Time value summary -->
           <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
             <div class="px-4 py-4 sm:px-6 flex items-center justify-between gap-3 border-b border-slate-100">
               <div class="min-w-0">
                 <h2 class="text-base sm:text-lg font-black text-slate-800">時間價值</h2>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">看每小時產值，排班與服務定價用這裡判斷</p>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }} · 詳細分析移到報表</p>
               </div>
-              <button v-if="yieldSummary.unmatched.length" @click="openServiceConfigModal" class="min-h-[38px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-[11px] font-black whitespace-nowrap">
-                補時長 {{ yieldSummary.unmatched.length }}
+              <button @click="activeTab = 'report'" class="min-h-[38px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black whitespace-nowrap">
+                看報表
               </button>
             </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-[0.42fr_0.58fr]">
-              <div class="grid grid-cols-3 lg:grid-cols-1 divide-x lg:divide-x-0 lg:divide-y divide-slate-100 border-b lg:border-b-0 lg:border-r border-slate-100">
-                <div class="p-4">
-                  <div class="text-[10px] font-black text-slate-400">平均每小時</div>
-                  <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(yieldSummary.average) }}</div>
-                </div>
-                <div class="p-4">
-                  <div class="text-[10px] font-black text-slate-400">高效服務</div>
-                  <div class="text-lg font-black text-emerald-600 mt-1">{{ yieldSummary.highEfficiency }} 項</div>
-                </div>
-                <div class="p-4">
-                  <div class="text-[10px] font-black text-slate-400">缺少時長</div>
-                  <div class="text-lg font-black mt-1" :class="yieldSummary.unmatched.length ? 'text-amber-600' : 'text-emerald-600'">{{ yieldSummary.unmatched.length }}</div>
-                </div>
+            <div class="grid grid-cols-3 divide-x divide-slate-100">
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">平均每小時</div>
+                <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(yieldSummary.average) }}</div>
               </div>
-
-              <div class="p-4 sm:p-5">
-                <div v-if="serviceYieldAnalysis.length === 0" class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-5 text-center text-xs font-bold text-slate-400">
-                  目前沒有可分析的服務時長資料
-                </div>
-                <div v-else class="space-y-2">
-                  <div v-for="item in serviceYieldAnalysis.slice(0, 5)" :key="item.serviceName" class="rounded-xl border border-orange-100/60 bg-orange-50/20 px-3 py-2.5">
-                    <div class="flex items-center justify-between gap-3">
-                      <div class="min-w-0">
-                        <div class="text-sm font-black text-slate-700 truncate">{{ item.serviceName }}</div>
-                        <div class="text-[10px] font-bold text-slate-400 mt-0.5">總額 NT$ {{ formatNumber(item.totalAmount) }} · 預估 {{ item.minutesPerService }} 分鐘</div>
-                      </div>
-                      <span class="shrink-0 text-[11px] font-black px-2 py-0.5 rounded-full"
-                            :class="item.level === '高效' ? 'text-emerald-700 bg-emerald-50' : item.level === '穩定' ? 'text-sky-700 bg-sky-50' : 'text-amber-700 bg-amber-50'">
-                        {{ item.level }} · NT$ {{ formatNumber(item.yieldPerHour) }}/hr
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">已分析服務</div>
+                <div class="text-lg font-black text-emerald-600 mt-1">{{ yieldSummary.serviceCount }} 項</div>
               </div>
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">缺少時長</div>
+                <div class="text-lg font-black mt-1" :class="yieldSummary.unmatched.length ? 'text-amber-600' : 'text-emerald-600'">{{ yieldSummary.unmatched.length }}</div>
+              </div>
+            </div>
+            <div class="px-4 py-3 sm:px-6 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-[10px] font-black text-slate-400">公式</div>
+                <div class="text-[11px] font-bold text-slate-600 truncate">服務收入 ÷ 預估工時；不含儲值進帳</div>
+              </div>
+              <button v-if="yieldSummary.unmatched.length" @click="openServiceConfigModal" class="min-h-[34px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-[10px] font-black whitespace-nowrap">
+                補時長
+              </button>
             </div>
           </section>
 
@@ -3427,7 +3413,7 @@
                 <h2 class="text-lg sm:text-xl font-black text-slate-800">損益報表</h2>
                 <p class="text-[10px] sm:text-xs font-bold text-slate-400 mt-0.5">服務營業額不含儲值進帳</p>
               </div>
-              <button @click="exportAnnualReportCSV" class="min-h-[42px] px-3 sm:px-4 rounded-xl border border-macaron-peach-200 bg-white text-macaron-peach-500 text-xs font-black">匯出 CSV</button>
+              <button @click="exportAnnualReport" class="min-h-[42px] px-3 sm:px-4 rounded-xl border border-macaron-peach-200 bg-white text-macaron-peach-500 text-xs font-black">匯出 CSV</button>
             </div>
             <div class="grid grid-cols-[44px_1fr_44px] items-center border-b border-slate-100">
               <button @click="prevReportYear" class="min-h-[52px] text-xl font-black text-slate-500 border-r border-slate-100" aria-label="上一年">‹</button>
@@ -3499,6 +3485,65 @@
               <div class="flex flex-wrap gap-1.5">
                 <button v-for="date in monthlySettlementSummary.unclosedDates.slice(0, 8)" :key="'settle-unclosed-' + date" @click="openCloseoutSheet(date)" class="min-h-[30px] px-2.5 rounded-lg bg-white border border-amber-100 text-[10px] font-black text-amber-700">{{ date }}</button>
                 <span v-if="monthlySettlementSummary.unclosedDates.length > 8" class="min-h-[30px] inline-flex items-center px-2.5 rounded-lg text-[10px] font-black text-amber-700">+{{ monthlySettlementSummary.unclosedDates.length - 8 }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Time value analysis -->
+          <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
+            <div class="px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
+              <div>
+                <h2 class="text-base sm:text-lg font-black text-slate-800">時間價值分析 · {{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }}</h2>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">公式：服務收入 ÷ 預估工時；排除儲值進帳，不受業績頁搜尋篩選影響</p>
+              </div>
+              <button v-if="yieldSummary.unmatched.length" @click="openServiceConfigModal" class="min-h-[40px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">補齊 {{ yieldSummary.unmatched.length }} 項時長</button>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100">
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">本期平均每小時</div>
+                <div class="text-xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(yieldSummary.average) }}</div>
+              </div>
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">納入服務收入</div>
+                <div class="text-xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(yieldSummary.totalAmount) }}</div>
+              </div>
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">預估總工時</div>
+                <div class="text-xl font-black text-sky-600 mt-1">{{ yieldSummary.totalHours }} hr</div>
+              </div>
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">高效服務</div>
+                <div class="text-xl font-black text-emerald-600 mt-1">{{ yieldSummary.highEfficiency }} 項</div>
+              </div>
+            </div>
+
+            <div class="p-4 sm:p-6 border-t border-slate-100">
+              <div v-if="serviceYieldRows.length === 0" class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-8 text-center text-xs font-bold text-slate-400">
+                此期間沒有可分析的服務時長資料
+              </div>
+              <div v-else class="space-y-2.5">
+                <div v-for="item in serviceYieldRows" :key="'report-yield-' + item.serviceName" class="rounded-2xl border border-orange-100/70 bg-orange-50/20 px-3 py-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="text-sm font-black text-slate-800 truncate">{{ item.serviceName }}</div>
+                      <div class="text-[10px] font-bold text-slate-400 mt-1">
+                        {{ item.count }} 筆 · 總額 NT$ {{ formatNumber(item.totalAmount) }} · {{ Math.round(item.totalHours * 10) / 10 }} hr · 單次 {{ item.minutesPerService }} 分
+                      </div>
+                    </div>
+                    <span class="shrink-0 text-[11px] font-black px-2 py-0.5 rounded-full"
+                          :class="item.level === '高效' ? 'text-emerald-700 bg-emerald-50' : item.level === '穩定' ? 'text-sky-700 bg-sky-50' : 'text-amber-700 bg-amber-50'">
+                      {{ item.level }} · NT$ {{ formatNumber(item.yieldPerHour) }}/hr
+                    </span>
+                  </div>
+                  <div class="h-1.5 rounded-full bg-white overflow-hidden mt-2">
+                    <div class="h-full rounded-full bg-gradient-to-r from-macaron-peach-300 to-macaron-rose"
+                         :style="{ width: Math.min(100, (item.yieldPerHour / 2000) * 100) + '%' }"></div>
+                  </div>
+                </div>
+              </div>
+              <div v-if="yieldSummary.unmatched.length" class="mt-3 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-[10px] font-bold text-amber-700">
+                缺少標準時長：{{ yieldSummary.unmatched.slice(0, 6).join('、') }}<span v-if="yieldSummary.unmatched.length > 6"> 等 {{ yieldSummary.unmatched.length }} 項</span>
               </div>
             </div>
           </section>
@@ -4619,24 +4664,26 @@
             .slice(0, 4);
         },
 
-        // Hour yield analysis (Top 5)
-        serviceYieldAnalysis() {
+        // Hour yield analysis based on the selected period, not the orders-page search/filter state.
+        serviceYieldRows() {
           const serviceMap = {};
-          this.filteredOrders.forEach(o => {
-            const minutes = this.getServiceMinutes(o.serviceName);
-            if (!minutes) return; // Skip unknown services for yield analysis
+          this.periodOrders
+            .filter(o => o.paymentMethod !== '儲值進帳')
+            .forEach(o => {
+              const minutes = this.getServiceMinutes(o.serviceName);
+              if (!minutes) return; // Skip unknown services for yield analysis
 
-            if (!serviceMap[o.serviceName]) {
-              serviceMap[o.serviceName] = {
-                serviceName: o.serviceName,
-                totalAmount: 0,
-                count: 0,
-                minutesPerService: minutes
-              };
-            }
-            serviceMap[o.serviceName].totalAmount += (Number(o.amount) || 0);
-            serviceMap[o.serviceName].count += 1;
-          });
+              if (!serviceMap[o.serviceName]) {
+                serviceMap[o.serviceName] = {
+                  serviceName: o.serviceName,
+                  totalAmount: 0,
+                  count: 0,
+                  minutesPerService: minutes
+                };
+              }
+              serviceMap[o.serviceName].totalAmount += (Number(o.amount) || 0);
+              serviceMap[o.serviceName].count += 1;
+            });
 
           return Object.values(serviceMap)
             .map(item => {
@@ -4644,19 +4691,32 @@
               const totalHours = (item.minutesPerService / 60) * item.count;
               const yieldPerHour = totalHours > 0 ? Math.round(item.totalAmount / totalHours) : 0;
               const level = yieldPerHour >= 1600 ? '高效' : yieldPerHour >= 1000 ? '穩定' : '待優化';
-              return { ...item, yieldPerHour, level };
+              return { ...item, totalHours, yieldPerHour, level };
             })
-            .sort((a, b) => b.yieldPerHour - a.yieldPerHour)
-            .slice(0, 5);
+            .sort((a, b) => b.yieldPerHour - a.yieldPerHour);
+        },
+        // Top 5 for overview.
+        serviceYieldAnalysis() {
+          return this.serviceYieldRows.slice(0, 5);
         },
         yieldSummary() {
-          const items = this.serviceYieldAnalysis;
-          const average = items.length ? Math.round(items.reduce((sum, item) => sum + item.yieldPerHour, 0) / items.length) : 0;
-          const unmatched = [...new Set(this.filteredOrders
+          const items = this.serviceYieldRows;
+          const totalAmount = items.reduce((sum, item) => sum + (Number(item.totalAmount) || 0), 0);
+          const totalHours = items.reduce((sum, item) => sum + (Number(item.totalHours) || 0), 0);
+          const average = totalHours > 0 ? Math.round(totalAmount / totalHours) : 0;
+          const unmatched = [...new Set(this.periodOrders
             .filter(o => o.paymentMethod !== '儲值進帳' && !this.getServiceMinutes(o.serviceName))
             .map(o => o.serviceName)
             .filter(Boolean))];
-          return { average, unmatched, highEfficiency: items.filter(item => item.level === '高效').length };
+          return {
+            average,
+            totalAmount,
+            totalHours: Math.round(totalHours * 10) / 10,
+            unmatched,
+            highEfficiency: items.filter(item => item.level === '高效').length,
+            serviceCount: items.length,
+            topService: items[0] || null
+          };
         },
 
         crmFilters() {
