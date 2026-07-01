@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v29-time-value-report';
+const CACHE_NAME = 'momohair-shell-v30-cache-first-pwa';
 const APP_SHELL = [
   '/',
   '/assets/tailwind.css',
@@ -8,6 +8,27 @@ const APP_SHELL = [
   '/icons/apple-touch-icon.png',
   '/icons/momo-logo-mark.png'
 ];
+
+async function isValidAppShellResponse(response) {
+  if (!response || !response.ok) return false;
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('text/html')) return false;
+  try {
+    const text = await response.clone().text();
+    return text.includes('<div id="app"') && text.includes('摸摸頭營運總部');
+  } catch (error) {
+    return false;
+  }
+}
+
+async function fetchAndUpdateAppShell(request) {
+  const response = await fetch(request);
+  if (await isValidAppShellResponse(response)) {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put('/', response.clone());
+  }
+  return response;
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -38,13 +59,11 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('/', copy));
-          return response;
-        })
-        .catch(() => caches.match('/'))
+      caches.match('/').then((cached) => {
+        const networkUpdate = fetchAndUpdateAppShell(request).catch(() => null);
+        event.waitUntil(networkUpdate);
+        return cached || networkUpdate;
+      })
     );
     return;
   }
