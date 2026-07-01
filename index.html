@@ -805,87 +805,110 @@
 
           <div class="p-4 space-y-4">
             <section class="space-y-2">
-              <div class="px-1 text-[10px] font-black text-slate-400">系統工具</div>
-              <button v-if="authConfig.configured" @click="showMobileTools = false; authUser ? signOutSupabase() : (showAuthSheet = true)" class="w-full min-h-[50px] px-4 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-between text-left">
-                <span class="text-sm font-black text-violet-700">{{ authUser ? '🔐 ' + authUser.email : '🔓 登入雲端' }}</span><span class="text-violet-300">{{ authUser ? '登出' : '›' }}</span>
-              </button>
-              <button @click="showMobileTools = false; openServiceConfigModal()" class="w-full min-h-[50px] px-4 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-between text-left">
-                <span class="text-sm font-black text-slate-700">服務定價與時長</span>
-                <span class="text-slate-300">›</span>
-              </button>
-              <button v-if="!isStandalone" @click="showMobileTools = false; showIosGuide = true" class="w-full min-h-[50px] px-4 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-between text-left">
-                <span><span class="mr-2">📱</span><span class="text-sm font-black text-sky-700">加入 iPhone 主畫面</span></span>
-                <span class="text-sky-300">›</span>
-              </button>
-            </section>
-
-            <section class="space-y-2">
-              <div class="px-1 text-[10px] font-black text-slate-400">App 更新</div>
-              <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3 space-y-2">
+              <div class="px-1 flex items-center justify-between">
+                <span class="text-[10px] font-black text-slate-400">常用操作</span>
+                <span class="text-[10px] font-black" :class="cloudReady ? 'text-emerald-600' : authConfig.configured ? 'text-violet-500' : 'text-slate-400'">
+                  {{ cloudReady ? '雲端正常' : authConfig.configured ? '可連接雲端' : '本機模式' }}
+                </span>
+              </div>
+              <div class="rounded-[1.6rem] bg-gradient-to-br from-orange-50 via-white to-violet-50 border border-orange-100 p-3 macaron-shadow">
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0">
-                    <div class="text-xs font-black text-slate-700">目前版本</div>
-                    <div class="mt-0.5 text-[10px] font-bold text-slate-400 truncate">{{ appVersion }}</div>
+                    <div class="text-sm font-black text-slate-800">資料狀態</div>
+                    <p class="mt-1 text-[11px] font-bold text-slate-500 leading-relaxed">
+                      {{ cloudReady ? '已連接雲端，可手動備份或重新載入。' : authConfig.configured ? '需要時可登入或重新連接雲端資料。' : '目前以本機資料為主，建議定期匯出 JSON。' }}
+                    </p>
                   </div>
-                  <span class="shrink-0 px-2 py-1 rounded-full text-[10px] font-black"
-                        :class="updateAvailable ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">
-                    {{ updateAvailable ? '可更新' : '最新版' }}
+                  <span class="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-black"
+                        :class="cloudReady ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-700'">
+                    {{ cloudReady ? '已同步' : '待確認' }}
                   </span>
                 </div>
-                <div class="grid grid-cols-2 gap-2 text-[10px] font-bold">
-                  <div class="rounded-xl bg-white border border-slate-100 px-3 py-2">
-                    <div class="text-slate-400">Service Worker</div>
-                    <div class="mt-0.5 text-slate-700">{{ pwaStatusText }}</div>
-                  </div>
-                  <div class="rounded-xl bg-white border border-slate-100 px-3 py-2">
-                    <div class="text-slate-400">快取</div>
-                    <div class="mt-0.5 text-slate-700">{{ pwaCacheCountText }}</div>
-                  </div>
-                </div>
-                <p class="px-1 text-[10px] font-bold text-slate-400">{{ pwaLastCheckedText }}</p>
-                <div class="grid grid-cols-2 gap-2">
-                  <button @click="checkPwaUpdate(true)" :disabled="pwaCheckingUpdate" class="min-h-[44px] rounded-2xl bg-white border border-slate-100 text-slate-700 text-xs font-black disabled:opacity-50">
-                    {{ pwaCheckingUpdate ? '檢查中…' : '檢查更新' }}
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                  <button v-if="authUser || authSession?.access_token" @click="showMobileTools = false; reloadCloudData(true)" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="min-h-[52px] rounded-2xl bg-slate-900 text-white text-xs font-black disabled:opacity-50">
+                    {{ cloudReady ? '重載雲端' : '連接雲端' }}
                   </button>
-                  <button @click="applyPwaUpdate" :disabled="!updateAvailable && !pendingServiceWorker" class="min-h-[44px] rounded-2xl bg-slate-900 text-white text-xs font-black disabled:opacity-30">立即套用</button>
+                  <button v-else-if="authConfig.configured" @click="showMobileTools = false; showAuthSheet = true" class="min-h-[52px] rounded-2xl bg-slate-900 text-white text-xs font-black">登入雲端</button>
+                  <button v-else @click="showMobileTools = false; exportBackup()" class="min-h-[52px] rounded-2xl bg-slate-900 text-white text-xs font-black">匯出備份</button>
+                  <button v-if="cloudReady" @click="showMobileTools = false; createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="min-h-[52px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black disabled:opacity-50">雲端備份</button>
+                  <button v-else-if="authConfig.configured" @click="showMobileTools = false; exportBackup()" class="min-h-[52px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">JSON 備份</button>
+                  <button v-else @click="showMobileTools = false; runIntegrityCheck(true)" class="min-h-[52px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black">檢查資料</button>
                 </div>
-                <button @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" class="w-full min-h-[44px] rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-black disabled:opacity-50">
-                  {{ pwaClearingCache ? '清理中…' : '清除舊快取並重載' }}
+                <p v-if="authUser" class="mt-2 px-1 text-[10px] font-bold text-slate-400 truncate">{{ cloudMessage }}</p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <button @click="showMobileTools = false; openServiceConfigModal()" class="min-h-[50px] px-4 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-between text-left">
+                  <span class="text-xs font-black text-orange-700">服務定價</span>
+                  <span class="text-orange-300">›</span>
+                </button>
+                <button v-if="authConfig.configured" @click="showMobileTools = false; authUser ? signOutSupabase() : (showAuthSheet = true)" class="min-h-[50px] px-4 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-between text-left">
+                  <span class="text-xs font-black text-violet-700">{{ authUser ? '登出雲端' : '登入設定' }}</span>
+                  <span class="text-violet-300">›</span>
+                </button>
+                <button v-if="!isStandalone" @click="showMobileTools = false; showIosGuide = true" class="min-h-[50px] px-4 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-between text-left" :class="authConfig.configured ? 'col-span-2' : ''">
+                  <span class="text-xs font-black text-sky-700">加入 iPhone 主畫面</span>
+                  <span class="text-sky-300">›</span>
                 </button>
               </div>
             </section>
 
             <section class="space-y-2">
-              <div class="px-1 text-[10px] font-black text-slate-400">資料安全</div>
-              <div class="grid grid-cols-2 gap-2">
-                <button @click="showMobileTools = false; exportBackup()" class="min-h-[50px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">匯出備份</button>
-                <label class="min-h-[50px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black flex items-center justify-center cursor-pointer">
-                  匯入還原
-                  <input type="file" @change="showMobileTools = false; importBackup($event)" accept=".json" class="hidden">
-                </label>
+              <div class="px-1 text-[10px] font-black text-slate-400">App 更新</div>
+              <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3 space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="text-xs font-black text-slate-700">{{ updateAvailable ? '有新版可以套用' : '目前是最新版' }}</div>
+                    <div class="mt-0.5 text-[10px] font-bold text-slate-400 truncate">{{ appVersion }}</div>
+                  </div>
+                  <span class="shrink-0 px-2 py-1 rounded-full text-[10px] font-black"
+                        :class="updateAvailable ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">
+                    {{ updateAvailable ? '可更新' : pwaStatusText }}
+                  </span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <button @click="checkPwaUpdate(true)" :disabled="pwaCheckingUpdate" class="min-h-[44px] rounded-2xl bg-white border border-slate-100 text-slate-700 text-xs font-black disabled:opacity-50">
+                    {{ pwaCheckingUpdate ? '檢查中…' : '檢查更新' }}
+                  </button>
+                  <button @click="applyPwaUpdate" :disabled="!updateAvailable && !pendingServiceWorker" class="min-h-[44px] rounded-2xl bg-slate-900 text-white text-xs font-black disabled:opacity-30">套用新版</button>
+                </div>
+                <p class="px-1 text-[10px] font-bold text-slate-400">{{ pwaLastCheckedText }} · 快取 {{ pwaCacheCountText }}</p>
               </div>
-              <button v-if="cloudMigrationNeeded" @click="showMobileTools = false; migrateLocalDataToSupabase()" :disabled="cloudStatus === 'syncing'" class="w-full min-h-[50px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">首次搬移到 Supabase</button>
-              <button v-if="authUser || authSession?.access_token" @click="showMobileTools = false; reloadCloudData(true)" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="w-full min-h-[50px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">
-                {{ cloudReady ? '重新載入雲端資料' : '重新連接並載入雲端' }}
-              </button>
-              <button v-else-if="authConfig.configured" @click="showMobileTools = false; showAuthSheet = true" class="w-full min-h-[50px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black">登入後載入雲端資料</button>
-              <div class="grid grid-cols-2 gap-2">
-                <button v-if="cloudReady" @click="showMobileTools = false; createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="min-h-[50px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black disabled:opacity-50">雲端備份</button>
-                <button @click="showMobileTools = false; runIntegrityCheck(true)" class="min-h-[50px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black">完整性檢查</button>
-              </div>
-              <button @click="showMobileTools = false; showOperationLogModal = true" class="w-full min-h-[50px] rounded-2xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">查看操作紀錄</button>
-              <p v-if="authUser" class="px-1 text-[10px] font-bold text-slate-400">{{ cloudMessage }}</p>
-              <p class="px-1 text-[10px] font-bold" :class="integrityReport?.status === 'ok' ? 'text-emerald-600' : integrityReport ? 'text-amber-600' : 'text-slate-400'">{{ backupSummaryText }} · {{ integritySummaryText }}</p>
             </section>
 
             <section class="space-y-2">
-              <div class="px-1 text-[10px] font-black text-slate-400">匯出報表</div>
-              <div class="rounded-2xl border border-slate-100 overflow-hidden divide-y divide-slate-100">
-                <button @click="showMobileTools = false; exportCSV()" class="w-full min-h-[48px] px-4 flex items-center justify-between text-left text-sm font-bold text-slate-600"><span>當期業績 CSV</span><span class="text-slate-300">›</span></button>
-                <button @click="showMobileTools = false; exportCrmCSV()" class="w-full min-h-[48px] px-4 flex items-center justify-between text-left text-sm font-bold text-slate-600"><span>CRM 顧客 CSV</span><span class="text-slate-300">›</span></button>
-                <button @click="showMobileTools = false; exportExpensesCSV()" class="w-full min-h-[48px] px-4 flex items-center justify-between text-left text-sm font-bold text-slate-600"><span>支出明細 CSV</span><span class="text-slate-300">›</span></button>
+              <div class="px-1 text-[10px] font-black text-slate-400">報表匯出</div>
+              <div class="grid grid-cols-3 gap-2">
+                <button @click="showMobileTools = false; exportCSV()" class="min-h-[48px] rounded-2xl bg-white border border-slate-100 text-[11px] font-black text-slate-600">業績</button>
+                <button @click="showMobileTools = false; exportCrmCSV()" class="min-h-[48px] rounded-2xl bg-white border border-slate-100 text-[11px] font-black text-slate-600">顧客</button>
+                <button @click="showMobileTools = false; exportExpensesCSV()" class="min-h-[48px] rounded-2xl bg-white border border-slate-100 text-[11px] font-black text-slate-600">支出</button>
               </div>
             </section>
+
+            <details class="group rounded-[1.6rem] border border-slate-100 bg-white overflow-hidden">
+              <summary class="min-h-[54px] px-4 flex items-center justify-between cursor-pointer list-none">
+                <div>
+                  <div class="text-sm font-black text-slate-700">進階與維護</div>
+                  <div class="mt-0.5 text-[10px] font-bold text-slate-400">還原、檢查資料、清快取與操作紀錄</div>
+                </div>
+                <span class="text-slate-300 group-open:rotate-90 transition-transform">›</span>
+              </summary>
+              <div class="px-3 pb-3 space-y-2">
+                <p class="px-1 text-[10px] font-bold" :class="integrityReport?.status === 'ok' ? 'text-emerald-600' : integrityReport ? 'text-amber-600' : 'text-slate-400'">{{ backupSummaryText }} · {{ integritySummaryText }}</p>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="min-h-[48px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black flex items-center justify-center cursor-pointer">
+                    匯入還原
+                    <input type="file" @change="showMobileTools = false; importBackup($event)" accept=".json" class="hidden">
+                  </label>
+                  <button @click="showMobileTools = false; runIntegrityCheck(true)" class="min-h-[48px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black">完整性檢查</button>
+                </div>
+                <button v-if="cloudMigrationNeeded" @click="showMobileTools = false; migrateLocalDataToSupabase()" :disabled="cloudStatus === 'syncing'" class="w-full min-h-[48px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">首次搬移到 Supabase</button>
+                <button @click="showMobileTools = false; showOperationLogModal = true" class="w-full min-h-[48px] rounded-2xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">查看操作紀錄</button>
+                <button @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" class="w-full min-h-[48px] rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-black disabled:opacity-50">
+                  {{ pwaClearingCache ? '清理中…' : '清除舊快取並重載' }}
+                </button>
+              </div>
+            </details>
           </div>
         </div>
       </div>
@@ -3833,7 +3856,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.01-expense-clean-add-button';
+    const APP_VERSION = '2026.07.01-mobile-tools-priority';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
