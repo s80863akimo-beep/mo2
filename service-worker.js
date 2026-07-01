@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v33-overview-time-hours';
+const CACHE_NAME = 'momohair-shell-v34-console-cleanup';
 const APP_SHELL = [
   '/',
   '/assets/tailwind.css',

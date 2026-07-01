@@ -3856,7 +3856,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.01-overview-time-hours';
+    const APP_VERSION = '2026.07.02-console-cleanup';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -8780,6 +8780,9 @@
           link.click();
           URL.revokeObjectURL(url);
           this.showToast(`${this.selectedYear} 年度損益報表已匯出`);
+        },
+        exportAnnualReportCSV() {
+          return this.exportAnnualReport();
         },
 
         // --- 薪水匯入 ---
