@@ -1,11 +1,12 @@
-const CACHE_NAME = 'momohair-shell-v27-crm-clean-editor';
+const CACHE_NAME = 'momohair-shell-v28-brand-icon';
 const APP_SHELL = [
   '/',
   '/assets/tailwind.css',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  '/icons/apple-touch-icon.png'
+  '/icons/apple-touch-icon.png',
+  '/icons/momo-logo-mark.png'
 ];
 
 self.addEventListener('install', (event) => {
