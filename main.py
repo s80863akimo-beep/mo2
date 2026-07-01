@@ -669,6 +669,8 @@ def frontend_asset(filename: str):
         ".js": "application/javascript",
         ".json": "application/json",
         ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
         ".svg": "image/svg+xml",
         ".webp": "image/webp",
     }
@@ -680,7 +682,7 @@ def frontend_asset(filename: str):
 
 @app.get("/icons/{filename}", include_in_schema=False)
 def pwa_icon(filename: str):
-    allowed = {"icon-192.png", "icon-512.png", "apple-touch-icon.png"}
+    allowed = {"icon-192.png", "icon-512.png", "apple-touch-icon.png", "momo-logo-mark.png"}
     if filename not in allowed:
         raise HTTPException(status_code=404, detail="Icon not found")
     return FileResponse(BASE_DIR / "icons" / filename, media_type="image/png")
