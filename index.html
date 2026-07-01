@@ -733,8 +733,8 @@
                   <button v-if="cloudMigrationNeeded" @click="migrateLocalDataToSupabase" :disabled="cloudStatus === 'syncing'" class="text-left w-full px-4 py-2.5 text-sm font-black rounded-2xl bg-violet-50 text-violet-700 flex items-center gap-2 disabled:opacity-50">
                     首次搬移到 Supabase
                   </button>
-                  <button v-else-if="cloudReady" @click="reloadCloudData" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-violet-50 text-violet-600 flex items-center gap-2 disabled:opacity-50">
-                    重新載入雲端資料
+                  <button v-if="authUser || authSession?.access_token" @click="reloadCloudData(true)" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-violet-50 text-violet-600 flex items-center gap-2 disabled:opacity-50">
+                    {{ cloudReady ? '重新載入雲端資料' : '重新連接並載入雲端' }}
                   </button>
                   <div class="px-4 py-1 text-[10px] font-bold text-slate-400">{{ cloudMessage }}</div>
                   <button v-if="cloudReady" @click="createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-emerald-50 text-emerald-700 flex items-center gap-2 disabled:opacity-50">
@@ -865,7 +865,10 @@
                 </label>
               </div>
               <button v-if="cloudMigrationNeeded" @click="showMobileTools = false; migrateLocalDataToSupabase()" :disabled="cloudStatus === 'syncing'" class="w-full min-h-[50px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">首次搬移到 Supabase</button>
-              <button v-else-if="cloudReady" @click="showMobileTools = false; reloadCloudData()" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="w-full min-h-[50px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">重新載入雲端資料</button>
+              <button v-if="authUser || authSession?.access_token" @click="showMobileTools = false; reloadCloudData(true)" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="w-full min-h-[50px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">
+                {{ cloudReady ? '重新載入雲端資料' : '重新連接並載入雲端' }}
+              </button>
+              <button v-else-if="authConfig.configured" @click="showMobileTools = false; showAuthSheet = true" class="w-full min-h-[50px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black">登入後載入雲端資料</button>
               <div class="grid grid-cols-2 gap-2">
                 <button v-if="cloudReady" @click="showMobileTools = false; createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="min-h-[50px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black disabled:opacity-50">雲端備份</button>
                 <button @click="showMobileTools = false; runIntegrityCheck(true)" class="min-h-[50px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black">完整性檢查</button>
@@ -8250,15 +8253,33 @@
           }
           else this.cloudMigrationNeeded = true;
         },
-        async reloadCloudData() {
-          if (!this.cloudReady || this.cloudStatus === 'loading' || this.cloudStatus === 'syncing') return;
+        async reloadCloudData(force = false) {
+          if (this.cloudStatus === 'loading' || this.cloudStatus === 'syncing') return;
+          if (!this.authSession?.access_token) {
+            this.showAuthSheet = true;
+            this.showToast('請先登入雲端帳號，再載入雲端資料', 'error', 5000);
+            return;
+          }
+          if (!this.authUser) {
+            const restored = await this.restoreSupabaseSession();
+            if (!restored || !this.authUser) {
+              this.showAuthSheet = true;
+              this.showToast('登入狀態已過期，請重新登入後載入雲端資料', 'error', 5000);
+              return;
+            }
+          }
+          if (!force && !this.cloudReady) return;
           this.cloudStatus = 'loading';
           this.cloudMessage = '正在重新載入雲端資料…';
           try {
+            await this.restoreSupabaseSession();
             const snapshot = await this.fetchCloudSnapshot();
             this.createPreCloudBackup();
             this.applyCloudSnapshot(snapshot);
             this.startCloudVersionPolling();
+            localStorage.setItem(this.cloudMigrationKey(), '1');
+            this.cloudReady = true;
+            this.cloudMigrationNeeded = false;
             this.cloudStatus = 'synced';
             this.cloudLastSync = new Date().toISOString();
             localStorage.setItem('momo_cloud_last_sync', this.cloudLastSync);
