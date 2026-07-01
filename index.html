@@ -135,6 +135,22 @@
       line-height: 1.25 !important;
     }
 
+    .crm-save-bar {
+      position: sticky;
+      top: calc(4.25rem + env(safe-area-inset-top, 0px));
+      z-index: 20;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .crm-end-marker {
+      background: linear-gradient(90deg, transparent, rgba(255, 164, 117, 0.3), transparent);
+    }
+
+    .crm-customer-card {
+      scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px));
+    }
+
     /* Prevent iOS auto-zoom on form inputs by ensuring font-size is at least 16px on mobile, and increase tap height */
     @media (max-width: 768px) {
       input, select, textarea, .jelly-input {
@@ -448,6 +464,10 @@
         height: 2.35rem !important;
         border-radius: 999px !important;
         line-height: 1.25 !important;
+      }
+
+      .crm-save-bar {
+        top: calc(3.25rem + env(safe-area-inset-top, 0px));
       }
     }
 
@@ -2751,9 +2771,9 @@
                   <div class="text-[9px] font-black text-slate-400">顧客</div>
                   <div class="text-lg font-black text-slate-800">{{ crmStats.totalCustomers }}</div>
                 </div>
-                <div class="rounded-2xl bg-rose-50/70 px-3 py-3">
-                  <div class="text-[9px] font-black text-slate-400">待回訪</div>
-                  <div class="text-lg font-black text-rose-600">{{ crmStats.followupCustomers }}</div>
+                <div class="rounded-2xl bg-violet-50/70 px-3 py-3">
+                  <div class="text-[9px] font-black text-slate-400">有配方</div>
+                  <div class="text-lg font-black text-violet-700">{{ crmStats.formulaCount }}</div>
                 </div>
                 <div class="rounded-2xl bg-amber-50/70 px-3 py-3">
                   <div class="text-[9px] font-black text-slate-400">需儲值</div>
@@ -2776,75 +2796,13 @@
           </section>
 
           <template v-if="crmViewMode === 'customers'">
-            <section class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-              <div class="rounded-3xl border border-rose-100 bg-white macaron-shadow overflow-hidden">
-                <div class="px-4 py-3 bg-rose-50/70 flex items-center justify-between">
-                  <div>
-                    <div class="text-xs font-black text-rose-600">待回訪名單</div>
-                    <div class="text-[10px] font-bold text-slate-400">超過建議週期就提醒</div>
-                  </div>
-                  <button @click="crmFilterMode = 'followup'" class="min-h-[34px] px-3 rounded-xl bg-white border border-rose-100 text-[10px] font-black text-rose-600">全部</button>
-                </div>
-                <div v-if="!crmActionFollowups.length" class="px-4 py-5 text-xs font-bold text-slate-400">目前沒有急著回訪的顧客</div>
-                <div v-else class="divide-y divide-rose-50">
-                  <div v-for="cust in crmActionFollowups" :key="'followup-' + cust.id" class="p-3 flex items-center justify-between gap-2">
-                    <button @click="goToCustomerCRM(cust.id)" class="min-w-0 text-left">
-                      <div class="text-sm font-black text-slate-800 truncate">{{ cust.name }}</div>
-                      <div class="text-[10px] font-bold text-slate-400 truncate">{{ cust.lastService || '最近服務未填' }} · {{ cust.daysSinceLastVisit }} 天未回訪</div>
-                    </button>
-                    <button @click="copyFollowupMessage(cust)" class="min-h-[34px] px-3 rounded-xl bg-rose-50 text-rose-600 text-[10px] font-black shrink-0">複製</button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="rounded-3xl border border-amber-100 bg-white macaron-shadow overflow-hidden">
-                <div class="px-4 py-3 bg-amber-50/70 flex items-center justify-between">
-                  <div>
-                    <div class="text-xs font-black text-amber-700">儲值快用完</div>
-                    <div class="text-[10px] font-bold text-slate-400">低於平均消費一半會提醒</div>
-                  </div>
-                  <button @click="crmFilterMode = 'needsTopup'" class="min-h-[34px] px-3 rounded-xl bg-white border border-amber-100 text-[10px] font-black text-amber-700">全部</button>
-                </div>
-                <div v-if="!crmActionTopups.length" class="px-4 py-5 text-xs font-bold text-slate-400">目前沒有需要補儲值的顧客</div>
-                <div v-else class="divide-y divide-amber-50">
-                  <div v-for="cust in crmActionTopups" :key="'topup-' + cust.id" class="p-3 flex items-center justify-between gap-2">
-                    <button @click="goToCustomerCRM(cust.id)" class="min-w-0 text-left">
-                      <div class="text-sm font-black text-slate-800 truncate">{{ cust.name }}</div>
-                      <div class="text-[10px] font-bold text-slate-400 truncate">餘額 NT$ {{ formatNumber(cust.prepaidBalance) }} · 平均 NT$ {{ formatNumber(cust.avgTicket) }}</div>
-                    </button>
-                    <button @click="copyTopupMessage(cust)" class="min-h-[34px] px-3 rounded-xl bg-amber-50 text-amber-700 text-[10px] font-black shrink-0">複製</button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="rounded-3xl border border-orange-100 bg-white macaron-shadow overflow-hidden">
-                <div class="px-4 py-3 bg-orange-50/70 flex items-center justify-between">
-                  <div>
-                    <div class="text-xs font-black text-slate-700">最近服務 / 配方</div>
-                    <div class="text-[10px] font-bold text-slate-400">快速回想上次做什麼</div>
-                  </div>
-                  <button @click="crmSortMode = 'lastDate'" class="min-h-[34px] px-3 rounded-xl bg-white border border-orange-100 text-[10px] font-black text-slate-500">最近</button>
-                </div>
-                <div v-if="!crmActionRecent.length" class="px-4 py-5 text-xs font-bold text-slate-400">尚無最近服務資料</div>
-                <div v-else class="divide-y divide-orange-50">
-                  <div v-for="cust in crmActionRecent" :key="'recent-' + cust.id" class="p-3 flex items-center justify-between gap-2">
-                    <button @click="goToCustomerCRM(cust.id)" class="min-w-0 text-left">
-                      <div class="text-sm font-black text-slate-800 truncate">{{ cust.name }} · {{ cust.lastDate || '未填日期' }}</div>
-                      <div class="text-[10px] font-bold text-slate-400 truncate">{{ cust.lastService || '服務未填' }}｜{{ cust.formulaSummary }}</div>
-                    </button>
-                    <button @click="copyCustomerBrief(cust)" class="min-h-[34px] px-3 rounded-xl bg-orange-50 text-macaron-peach-500 text-[10px] font-black shrink-0">摘要</button>
-                  </div>
-                </div>
-              </div>
-            </section>
-
             <section class="bg-white rounded-3xl border border-orange-50 macaron-shadow p-3 sm:p-4 space-y-3">
               <div class="flex flex-col sm:flex-row gap-2">
                 <div class="relative flex-1">
                   <input type="text" v-model="crmSearchQuery" placeholder="搜尋顧客、服務或配方..."
-                         class="w-full min-h-[44px] jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl pl-10 pr-9 text-sm font-semibold text-slate-700">
-                  <span class="absolute left-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-slate-300"></span>
-                  <button v-if="crmSearchQuery" @click="crmSearchQuery = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-black">×</button>
+                         class="compact-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-9 pr-9 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
+                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                  <button v-if="crmSearchQuery" @click="crmSearchQuery = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-black text-sm">×</button>
                 </div>
                 <select v-model="crmSortMode" class="min-h-[44px] jelly-input bg-white border border-orange-100 rounded-2xl px-3 text-xs font-black text-slate-600 sm:w-44">
                   <option value="lastDate">最近來訪</option>
@@ -2873,8 +2831,8 @@
             </div>
 
             <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              <article v-for="cust in filteredCrmList" :key="cust.id"
-                       class="bg-white rounded-3xl border macaron-shadow overflow-hidden transition-all"
+              <article v-for="cust in filteredCrmList" :key="cust.id" :id="'crm-card-' + cust.id"
+                       class="crm-customer-card bg-white rounded-3xl border macaron-shadow overflow-hidden transition-all"
                        :class="expandedCrmCustomerName === cust.id ? 'border-macaron-peach-200' : 'border-orange-50'">
                 <button type="button" @click="toggleCrmCustomer(cust.id)" class="w-full p-4 text-left">
                   <div class="flex items-start justify-between gap-3">
@@ -2901,14 +2859,27 @@
                 </button>
 
                 <div v-if="expandedCrmCustomerName === cust.id" class="border-t border-orange-100 bg-orange-50/20 p-4 space-y-3">
+                  <div class="crm-save-bar rounded-2xl border border-slate-200 bg-white/90 p-1.5 sm:p-2 shadow-lg shadow-orange-100/60">
+                    <div class="flex items-center gap-2">
+                      <div class="min-w-0 flex-1">
+                        <div class="text-[11px] font-black" :class="crmDraftHasChanges(cust) ? 'text-amber-700' : 'text-slate-700'">
+                          {{ crmDraftHasChanges(cust) ? '有修改尚未儲存' : '編輯完成按右側儲存' }}
+                        </div>
+                        <div class="hidden sm:block text-[9px] font-bold text-slate-400 truncate">這裡會固定跟著畫面，避免滑動時找不到儲存</div>
+                      </div>
+                      <button @click.stop="cancelCrmDraft(cust)" class="min-h-[34px] px-3 rounded-xl bg-white border border-slate-200 text-slate-500 text-[11px] font-black shrink-0">還原</button>
+                      <button @click.stop="saveCrmDraft(cust)" :disabled="!crmDraftHasChanges(cust)" class="min-h-[34px] px-3 sm:px-4 rounded-xl text-[11px] font-black shrink-0 disabled:opacity-45" :class="crmDraftHasChanges(cust) ? 'bg-slate-900 text-white shadow-md shadow-slate-200' : 'bg-slate-100 text-slate-400'">儲存顧客資料</button>
+                    </div>
+                  </div>
+
                   <div class="rounded-2xl border border-orange-100 bg-white p-3">
                     <div class="flex items-center justify-between gap-2 mb-2">
                       <div class="text-xs font-black text-slate-700">顧客快照</div>
                       <button @click="copyCustomerBrief(cust)" class="min-h-[32px] px-3 rounded-xl bg-orange-50 text-macaron-peach-500 text-[10px] font-black">複製摘要</button>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                      <div class="rounded-xl bg-slate-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">最近服務</div><div class="text-xs font-black text-slate-700 truncate">{{ cust.lastService || '尚無' }}</div></div>
-                      <div class="rounded-xl bg-slate-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">最近日期</div><div class="text-xs font-black text-slate-700">{{ cust.lastDate || '尚無' }}</div></div>
+                      <div class="rounded-xl bg-slate-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">來訪次數</div><div class="text-xs font-black text-slate-700">{{ cust.count }} 次</div></div>
+                      <div class="rounded-xl bg-slate-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">上次日期</div><div class="text-xs font-black text-slate-700">{{ cust.lastDate || '尚無' }}</div></div>
                       <div class="rounded-xl bg-emerald-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值狀態</div><div class="text-xs font-black" :class="cust.prepaidLow ? 'text-amber-700' : 'text-emerald-700'">{{ cust.prepaidLow ? '建議提醒' : '正常' }} · NT$ {{ formatNumber(cust.prepaidBalance) }}</div></div>
                       <div class="rounded-xl bg-violet-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">配方狀態</div><div class="text-xs font-black text-violet-700 truncate">{{ cust.formulaSummary }}</div></div>
                     </div>
@@ -2920,7 +2891,7 @@
                     </summary>
                     <div class="p-3 pt-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div class="sm:col-span-2 rounded-xl px-3 py-2 text-[11px] font-black" :class="crmDraftHasChanges(cust) ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'">
-                        {{ crmDraftHasChanges(cust) ? '尚未儲存：CRM 修正完成後請按「儲存 CRM」' : 'CRM 草稿：修改後不會立即同步' }}
+                        {{ crmDraftHasChanges(cust) ? '尚未儲存：修改完成後請按固定列的「儲存顧客資料」' : '修改後會先停在草稿，按「儲存顧客資料」才會寫入' }}
                       </div>
                       <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">顧客姓名</span><input v-model="crmProfileDraft(cust).name" class="w-full min-h-[42px] rounded-xl border border-orange-100 bg-white px-3 text-sm font-black"></label>
                       <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">性別</span><select v-model="crmProfileDraft(cust).gender" class="w-full min-h-[42px] rounded-xl border border-orange-100 bg-white px-3 text-sm font-black"><option value="女">女</option><option value="男">男</option></select></label>
@@ -2954,8 +2925,10 @@
                     <div class="flex justify-between mt-2 text-[9px] font-bold text-slate-400"><span>已扣 {{ formatNumber(cust.prepaidOut) }}</span><span>總儲值 {{ formatNumber(cust.prepaidIn) }}</span></div>
                   </div>
 
-                  <div class="rounded-2xl border border-orange-100 bg-white overflow-hidden">
-                    <div class="px-3 py-2 text-[10px] font-black text-slate-400 bg-orange-50/50 flex justify-between"><span>最近消費</span><button @click="openCustomerOrders(cust.id)" class="text-macaron-peach-500">查看全部</button></div>
+                  <details class="rounded-2xl border border-orange-100 bg-white overflow-hidden">
+                    <summary class="min-h-[42px] cursor-pointer px-3 flex items-center justify-between text-xs font-black text-slate-600">
+                      <span>消費紀錄</span><span class="text-[10px] text-macaron-peach-500">可展開查看</span>
+                    </summary>
                     <div v-if="!cust.recentOrders.length" class="px-3 py-3 text-xs font-bold text-slate-400">尚無服務紀錄</div>
                     <div v-else class="divide-y divide-orange-50">
                       <div v-for="order in cust.recentOrders" :key="order.id" class="px-3 py-2.5 flex justify-between gap-3">
@@ -2963,7 +2936,8 @@
                         <div class="text-xs font-black text-slate-700 shrink-0">NT$ {{ formatNumber(order.amount) }}</div>
                       </div>
                     </div>
-                  </div>
+                    <div class="px-3 py-2 bg-orange-50/40"><button @click="openCustomerOrders(cust.id)" class="w-full min-h-[36px] rounded-xl bg-white border border-orange-100 text-macaron-peach-500 text-[10px] font-black">查看完整客史</button></div>
+                  </details>
 
                   <details class="rounded-2xl border border-orange-100 bg-white overflow-hidden">
                     <summary class="min-h-[44px] cursor-pointer px-3 flex items-center justify-between text-xs font-black text-slate-600">
@@ -2975,9 +2949,10 @@
                         <input v-model="crmDraftFormula(cust)[field.key]" :placeholder="field.placeholder" class="w-full min-h-[42px] rounded-xl border border-orange-100 bg-white px-3 text-xs font-semibold">
                       </label>
                       <label class="block sm:col-span-2"><span class="block text-[10px] font-black text-slate-400 mb-1">補充紀錄</span><textarea v-model="crmProfileDraft(cust).note" placeholder="操作細節、個人喜好或注意事項..." class="w-full h-20 border border-orange-100 rounded-xl px-3 py-2 text-xs font-semibold resize-none"></textarea></label>
-                      <div class="sm:col-span-2 grid grid-cols-2 gap-2">
-                        <button @click.stop="cancelCrmDraft(cust)" class="min-h-[42px] rounded-xl bg-white border border-slate-200 text-slate-500 text-xs font-black">取消 CRM 修正</button>
-                        <button @click.stop="saveCrmDraft(cust)" :disabled="!crmDraftHasChanges(cust)" class="min-h-[42px] rounded-xl text-xs font-black disabled:opacity-40" :class="crmDraftHasChanges(cust) ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'">儲存 CRM</button>
+                      <div class="sm:col-span-2 flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2">
+                        <span class="crm-end-marker h-px flex-1"></span>
+                        <span class="text-[10px] font-black text-slate-400 shrink-0">可編輯區到底了</span>
+                        <span class="crm-end-marker h-px flex-1"></span>
                       </div>
                     </div>
                   </details>
@@ -3001,6 +2976,11 @@
                     </div>
                   </details>
                   <button v-if="cust.followupDue" @click="copyFollowupMessage(cust)" class="w-full min-h-[42px] rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-black">複製回訪提醒 · 已 {{ cust.daysSinceLastVisit }} 天</button>
+                  <div class="flex items-center gap-2 rounded-2xl bg-white/70 px-3 py-3 border border-orange-50">
+                    <span class="crm-end-marker h-px flex-1"></span>
+                    <span class="text-[10px] font-black text-slate-400 shrink-0">顧客資料底部</span>
+                    <span class="crm-end-marker h-px flex-1"></span>
+                  </div>
                 </div>
               </article>
             </div>
@@ -8563,7 +8543,14 @@
           window.scrollTo({ top: 0, behavior: 'smooth' });
         },
         toggleCrmCustomer(customerId) {
-          this.expandedCrmCustomerName = this.expandedCrmCustomerName === customerId ? null : customerId;
+          const shouldOpen = this.expandedCrmCustomerName !== customerId;
+          this.expandedCrmCustomerName = shouldOpen ? customerId : null;
+          if (shouldOpen) {
+            this.$nextTick(() => {
+              const card = document.getElementById(`crm-card-${customerId}`);
+              if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+          }
         },
         startOrderForCustomer(cust) {
           this.newOrder.date = new Date().toLocaleDateString('sv-SE');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v26-expense-clean-add-button';
+const CACHE_NAME = 'momohair-shell-v27-crm-clean-editor';
 const APP_SHELL = [
   '/',
   '/assets/tailwind.css',
