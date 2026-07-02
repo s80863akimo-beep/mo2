@@ -1,7 +1,8 @@
-const CACHE_NAME = 'momohair-shell-v37-overview-action-tone';
+const CACHE_NAME = 'momohair-shell-v38-cache-refresh';
+const APP_VERSION = '2026.07.02-cache-refresh';
 const APP_SHELL = [
   '/',
-  '/assets/tailwind.css',
+  `/assets/tailwind.css?v=${APP_VERSION}`,
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -15,14 +16,14 @@ async function isValidAppShellResponse(response) {
   if (!contentType.includes('text/html')) return false;
   try {
     const text = await response.clone().text();
-    return text.includes('<div id="app"') && text.includes('摸摸頭營運總部');
+    return text.includes('<div id="app"') && text.includes('APP_VERSION');
   } catch (error) {
     return false;
   }
 }
 
 async function fetchAndUpdateAppShell(request) {
-  const response = await fetch(request);
+  const response = await fetch(request, { cache: 'reload' });
   if (await isValidAppShellResponse(response)) {
     const cache = await caches.open(CACHE_NAME);
     await cache.put('/', response.clone());
@@ -31,7 +32,13 @@ async function fetchAndUpdateAppShell(request) {
 }
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+  self.skipWaiting();
+  event.waitUntil(caches.open(CACHE_NAME).then(async (cache) => {
+    await Promise.all(APP_SHELL.map(async (url) => {
+      const response = await fetch(url, { cache: 'reload' });
+      if (response.ok) await cache.put(url, response);
+    }));
+  }));
 });
 
 self.addEventListener('activate', (event) => {
@@ -59,11 +66,20 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      caches.match('/').then((cached) => {
-        const networkUpdate = fetchAndUpdateAppShell(request).catch(() => null);
-        event.waitUntil(networkUpdate);
-        return cached || networkUpdate;
-      })
+      fetchAndUpdateAppShell(request).catch(() => caches.match('/'))
+    );
+    return;
+  }
+
+  if (url.pathname === '/assets/tailwind.css') {
+    event.respondWith(
+      fetch(request, { cache: 'reload' }).then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)));
+        }
+        return response;
+      }).catch(() => caches.match(request))
     );
     return;
   }
