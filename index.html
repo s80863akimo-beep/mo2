@@ -2847,7 +2847,12 @@
                 <button type="button" @click="toggleCrmCustomer(cust.id)" class="w-full p-4 text-left">
                   <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
-                      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-macaron-cream to-macaron-peach-200 flex items-center justify-center font-black text-lg text-macaron-peach-500 shrink-0">{{ cust.name[0] }}</div>
+                      <div class="w-11 h-11 rounded-2xl bg-white border border-orange-100 shadow-sm flex items-center justify-center shrink-0">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-slate-50 to-orange-50 border border-white flex flex-col items-center justify-center leading-none">
+                          <span class="text-[12px] text-slate-400">♡</span>
+                          <span class="mt-0.5 text-[7px] font-black tracking-widest text-slate-400">CRM</span>
+                        </div>
+                      </div>
                       <div class="min-w-0">
                         <div class="flex items-center gap-2">
                           <h4 class="font-black text-slate-800 truncate">{{ cust.name }}</h4>
@@ -3856,7 +3861,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.02-console-cleanup';
+    const APP_VERSION = '2026.07.02-crm-avatar-polish';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
