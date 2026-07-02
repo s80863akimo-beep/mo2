@@ -1097,7 +1097,7 @@
               </div>
               <div class="p-4 sm:p-5 col-span-2 lg:col-span-1 flex items-center gap-2">
                 <button @click="activeTab = 'orders'; showMobileAddOrderForm = true"
-                        class="jelly-btn flex-1 min-h-[44px] rounded-2xl bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-xs font-black shadow-md">
+                        class="jelly-btn flex-1 min-h-[44px] rounded-2xl bg-orange-50 border border-orange-100 text-orange-700 text-xs font-black shadow-sm">
                   新增業績
                 </button>
                 <button @click="openCloseoutSheet()"
@@ -1561,7 +1561,7 @@
 
               <div class="grid grid-cols-3 lg:grid-cols-1 border-t lg:border-t-0 border-slate-100">
                 <button @click="activeTab = 'orders'; showMobileAddOrderForm = true"
-                        class="min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-macaron-peach-500 text-white border-r lg:border-r-0 lg:border-b border-white/25 text-xs font-black">
+                        class="min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-orange-50 text-orange-700 border-r lg:border-r-0 lg:border-b border-orange-100 text-xs font-black">
                   <span class="text-xl leading-none">＋</span><span>新增業績</span>
                 </button>
                 <button @click="openExpenseFormForToday"
@@ -3861,7 +3861,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.02-auto-update-check';
+    const APP_VERSION = '2026.07.02-overview-action-tone';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
