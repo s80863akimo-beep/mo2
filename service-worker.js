@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v40-order-add-tone';
-const APP_VERSION = '2026.07.03-order-add-tone';
+const CACHE_NAME = 'momohair-shell-v41-cache-first-start';
+const APP_VERSION = '2026.07.03-cache-first-start';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
@@ -66,20 +66,28 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetchAndUpdateAppShell(request).catch(() => caches.match('/'))
+      caches.match('/').then((cached) => {
+        const networkUpdate = fetchAndUpdateAppShell(request).catch(() => null);
+        event.waitUntil(networkUpdate);
+        return cached || networkUpdate;
+      })
     );
     return;
   }
 
   if (url.pathname === '/assets/tailwind.css') {
     event.respondWith(
-      fetch(request, { cache: 'reload' }).then((response) => {
-        if (response.ok) {
-          const copy = response.clone();
-          event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)));
-        }
-        return response;
-      }).catch(() => caches.match(request))
+      caches.match(request).then((cached) => {
+        const networkUpdate = fetch(request, { cache: 'reload' }).then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)));
+          }
+          return response;
+        }).catch(() => null);
+        event.waitUntil(networkUpdate);
+        return cached || networkUpdate;
+      })
     );
     return;
   }
