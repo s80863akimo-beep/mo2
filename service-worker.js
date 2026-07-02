@@ -1,4 +1,4 @@
-const CACHE_NAME = 'momohair-shell-v35-crm-avatar-polish';
+const CACHE_NAME = 'momohair-shell-v36-auto-update-check';
 const APP_SHELL = [
   '/',
   '/assets/tailwind.css',

@@ -3861,7 +3861,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.02-crm-avatar-polish';
+    const APP_VERSION = '2026.07.02-auto-update-check';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -4032,6 +4032,7 @@
           pwaClearingCache: false,
           pwaCacheNames: [],
           pwaLastCheckedAt: null,
+          pwaAutoCheckTimer: null,
           pwaStatus: '初始化中',
           showMobileAddOrderForm: false,
           expandedOrderId: null,
@@ -4175,7 +4176,7 @@
           return count ? `${count} 組` : '尚無快取';
         },
         pwaLastCheckedText() {
-          if (!this.pwaLastCheckedAt) return '尚未手動檢查更新';
+          if (!this.pwaLastCheckedAt) return '尚未自動檢查更新';
           return `最後檢查 ${this.formatDateTime(this.pwaLastCheckedAt)}`;
         },
         quickServiceOptions() {
@@ -5466,6 +5467,7 @@
       beforeUnmount() {
         if (this.cloudVersionPollTimer) clearInterval(this.cloudVersionPollTimer);
         if (this.cloudSyncTimer) clearTimeout(this.cloudSyncTimer);
+        if (this.pwaAutoCheckTimer) clearTimeout(this.pwaAutoCheckTimer);
       },
       methods: {
         inventorySafetyStock(item = {}) {
@@ -6093,6 +6095,22 @@
             this.refreshPwaCacheStatus();
           }
         },
+        schedulePwaAutoCheck(delay = 800, force = false) {
+          if (!('serviceWorker' in navigator)) return;
+          if (this.pwaAutoCheckTimer) clearTimeout(this.pwaAutoCheckTimer);
+          this.pwaAutoCheckTimer = setTimeout(() => {
+            this.runPwaAutoCheck(force);
+          }, delay);
+        },
+        async runPwaAutoCheck(force = false) {
+          if (!('serviceWorker' in navigator)) return false;
+          if (this.pwaCheckingUpdate || this.updateAvailable) return false;
+          if (!force && this.pwaLastCheckedAt) {
+            const elapsed = Date.now() - Date.parse(this.pwaLastCheckedAt);
+            if (Number.isFinite(elapsed) && elapsed < 2 * 60 * 1000) return false;
+          }
+          return this.checkPwaUpdate(false);
+        },
         clearPwaCachesAndReload() {
           this.showConfirm('確定清除 App 舊快取並重新載入嗎？這不會刪除業績、CRM 或備份資料。', async () => {
             this.pwaClearingCache = true;
@@ -6134,6 +6152,7 @@
               if (registration.waiting && navigator.serviceWorker.controller) {
                 showUpdatePrompt(registration.waiting);
               }
+              this.schedulePwaAutoCheck(1500, true);
 
               registration.addEventListener('updatefound', () => {
                 const worker = registration.installing;
@@ -6156,9 +6175,11 @@
               });
 
               document.addEventListener('visibilitychange', () => {
-                if (!document.hidden) registration.update().catch(() => {});
+                if (!document.hidden) this.schedulePwaAutoCheck(300, false);
               });
-              setInterval(() => registration.update().catch(() => {}), 60 * 60 * 1000);
+              window.addEventListener('focus', () => this.schedulePwaAutoCheck(500, false));
+              window.addEventListener('pageshow', () => this.schedulePwaAutoCheck(800, false));
+              setInterval(() => this.runPwaAutoCheck(true), 60 * 60 * 1000);
             } catch (error) {
               console.warn('PWA service worker registration failed:', error);
               this.pwaStatus = '註冊失敗';
