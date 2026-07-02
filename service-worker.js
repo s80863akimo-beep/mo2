@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v39-action-button-colors';
-const APP_VERSION = '2026.07.02-action-button-colors';
+const CACHE_NAME = 'momohair-shell-v40-order-add-tone';
+const APP_VERSION = '2026.07.03-order-add-tone';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
