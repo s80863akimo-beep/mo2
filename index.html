@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.03-visual-system-closeout-fix">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.03-visual-polish-pack">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -108,6 +108,123 @@
       background: #f0f9ff !important;
       border-color: #e0f2fe !important;
       color: #0369a1 !important;
+    }
+
+    /* 1) Sheet / modal consistency */
+    body.momo-polish .ios-sheet {
+      border-color: rgba(226, 232, 240, 0.9) !important;
+      box-shadow: 0 24px 60px -32px rgba(15, 23, 42, 0.42) !important;
+      overflow-x: hidden !important;
+    }
+
+    body.momo-polish .ios-sheet-handle {
+      background: #CBD5E1;
+      opacity: 0.9;
+    }
+
+    body.momo-polish .ios-sheet h3,
+    body.momo-polish .ios-sheet h2 {
+      letter-spacing: -0.01em;
+    }
+
+    body.momo-polish .ios-sheet input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    body.momo-polish .ios-sheet select,
+    body.momo-polish .ios-sheet textarea {
+      border-color: rgba(226, 232, 240, 0.95) !important;
+      background-color: rgba(255, 255, 255, 0.98) !important;
+      box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+    }
+
+    body.momo-polish .ios-sheet input:focus,
+    body.momo-polish .ios-sheet select:focus,
+    body.momo-polish .ios-sheet textarea:focus {
+      border-color: #FDA4AF !important;
+      box-shadow: 0 0 0 3px rgba(253, 164, 175, 0.18) !important;
+    }
+
+    body.momo-polish .ios-action-bar {
+      background: rgba(255, 255, 255, 0.97);
+      border-top-color: rgba(226, 232, 240, 0.9);
+    }
+
+    /* 2) Home / overview card refinement */
+    body.momo-polish .momo-dashboard-page section,
+    body.momo-polish .momo-dashboard-page > div.bg-white {
+      border-color: rgba(226, 232, 240, 0.78) !important;
+    }
+
+    body.momo-polish .momo-dashboard-page .grid .rounded-2xl {
+      box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+    }
+
+    body.momo-polish .momo-dashboard-page .text-2xl,
+    body.momo-polish .momo-dashboard-page .text-xl {
+      letter-spacing: -0.03em;
+    }
+
+    /* 3) Bottom tab bar refinement */
+    body.momo-polish .floating-nav {
+      background: rgba(255, 255, 255, 0.72) !important;
+      border-color: rgba(226, 232, 240, 0.84) !important;
+      box-shadow: 0 12px 28px -20px rgba(15, 23, 42, 0.35) !important;
+    }
+
+    body.momo-polish .floating-nav button {
+      transition: color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+    }
+
+    body.momo-polish .floating-nav button.text-slate-900 {
+      background: rgba(15, 23, 42, 0.06) !important;
+      color: #0f172a !important;
+    }
+
+    body.momo-polish .floating-nav button.text-slate-400 {
+      color: #94a3b8 !important;
+    }
+
+    body.momo-polish .floating-nav .tab-active-indicator {
+      background: #0f172a !important;
+      opacity: 0.88;
+    }
+
+    /* 4) Detail/list card consistency */
+    body.momo-polish .momo-list-page div[class*="bg-white/95"] {
+      border-color: rgba(226, 232, 240, 0.78) !important;
+      box-shadow: 0 12px 30px -24px rgba(15, 23, 42, 0.28);
+    }
+
+    body.momo-polish .momo-list-page .rounded-2xl.border,
+    body.momo-polish .momo-list-page .rounded-xl.border {
+      border-color: rgba(226, 232, 240, 0.82) !important;
+    }
+
+    body.momo-polish .momo-list-page table {
+      border-color: rgba(226, 232, 240, 0.72);
+    }
+
+    body.momo-polish .momo-list-page table tr:hover {
+      background: rgba(248, 250, 252, 0.85);
+    }
+
+    /* 5) Report page as a clean monthly readout */
+    body.momo-polish .momo-report-page section,
+    body.momo-polish .momo-report-page > div.bg-white {
+      border-color: rgba(226, 232, 240, 0.78) !important;
+      box-shadow: 0 14px 34px -26px rgba(15, 23, 42, 0.3);
+    }
+
+    body.momo-polish .momo-report-page h2,
+    body.momo-polish .momo-report-page h3 {
+      letter-spacing: -0.015em;
+    }
+
+    body.momo-polish .momo-report-page .text-2xl,
+    body.momo-polish .momo-report-page .text-xl {
+      letter-spacing: -0.035em;
+    }
+
+    body.momo-polish .momo-report-page .overflow-x-auto {
+      border-color: rgba(226, 232, 240, 0.78) !important;
     }
 
     .closeout-sheet-overlay {
@@ -1048,7 +1165,7 @@
       <transition name="fade" mode="out-in">
 
         <!-- Tab 1: Dashboard -->
-        <div v-if="activeTab === 'dashboard'" key="dashboard" class="space-y-6">
+        <div v-if="activeTab === 'dashboard'" key="dashboard" class="momo-dashboard-page space-y-6">
           <template v-if="false">
 
           <!-- Welcome Banner (Desktop only) -->
@@ -1911,7 +2028,7 @@
         </div>
 
         <!-- Tab 2: Orders -->
-        <div v-else-if="activeTab === 'orders'" key="orders" class="space-y-6">
+        <div v-else-if="activeTab === 'orders'" key="orders" class="momo-list-page space-y-6">
 
           <!-- A. 當期業績摘要 -->
           <div class="bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
@@ -2297,7 +2414,7 @@
         </div>
 
         <!-- Tab 3: Expenses -->
-        <div v-else-if="activeTab === 'expenses'" key="expenses" class="space-y-6">
+        <div v-else-if="activeTab === 'expenses'" key="expenses" class="momo-list-page space-y-6">
           <!-- 當期支出摘要 -->
           <section class="bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
             <div class="px-5 py-3 border-b border-orange-50">
@@ -2567,7 +2684,7 @@
         </div>
 
         <!-- Tab 4: Inventory -->
-        <div v-else-if="activeTab === 'inventory'" key="inventory" class="space-y-6">
+        <div v-else-if="activeTab === 'inventory'" key="inventory" class="momo-list-page space-y-6">
           <section class="bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
             <div class="px-5 py-3 border-b border-orange-50">
               <h3 class="font-black text-slate-700 text-sm">庫存狀態摘要</h3>
@@ -2840,7 +2957,7 @@
         </div>
 
         <!-- Tab 5: CRM 與儲值帳本 -->
-        <div v-else-if="activeTab === 'crm'" key="crm" class="space-y-4 sm:space-y-6">
+        <div v-else-if="activeTab === 'crm'" key="crm" class="momo-list-page space-y-4 sm:space-y-6">
           <section class="bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
             <div class="p-4 sm:p-6 bg-gradient-to-r from-white to-orange-50/40 border-b border-orange-100/40">
               <div class="flex items-start justify-between gap-3">
@@ -3119,7 +3236,7 @@
         </div>
 
         <!-- Tab 6: 損益報表 -->
-        <div v-else-if="activeTab === 'report'" key="report" class="space-y-6">
+        <div v-else-if="activeTab === 'report'" key="report" class="momo-report-page space-y-6">
           <template v-if="false">
 
           <!-- 年份快速切換列 -->
@@ -3935,7 +4052,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.03-visual-system-closeout-fix';
+    const APP_VERSION = '2026.07.03-visual-polish-pack';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];

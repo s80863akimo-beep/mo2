@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v42-visual-system-closeout-fix';
-const APP_VERSION = '2026.07.03-visual-system-closeout-fix';
+const CACHE_NAME = 'momohair-shell-v43-visual-polish-pack';
+const APP_VERSION = '2026.07.03-visual-polish-pack';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
