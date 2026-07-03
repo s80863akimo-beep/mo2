@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.03-cache-first-start">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.03-visual-system-closeout-fix">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -55,23 +55,98 @@
 
     /* Soft Macaron Shadows - Optimized for Mobile Performance */
     .macaron-shadow {
-      box-shadow: 0 4px 12px -2px rgba(255, 170, 166, 0.15);
+      box-shadow: 0 10px 26px -18px rgba(15, 23, 42, 0.24);
     }
     .macaron-shadow-lg {
-      box-shadow: 0 10px 20px -5px rgba(255, 170, 166, 0.2);
+      box-shadow: 0 18px 44px -26px rgba(15, 23, 42, 0.32);
     }
     .macaron-shadow-sm {
-      box-shadow: 0 2px 8px -2px rgba(255, 170, 166, 0.08);
+      box-shadow: 0 6px 18px -14px rgba(15, 23, 42, 0.18);
     }
     @media (min-width: 768px) {
       .macaron-shadow {
-        box-shadow: 0 10px 30px -5px rgba(255, 170, 166, 0.18);
+        box-shadow: 0 16px 36px -24px rgba(15, 23, 42, 0.28);
       }
       .macaron-shadow-lg {
-        box-shadow: 0 20px 40px -10px rgba(255, 170, 166, 0.25);
+        box-shadow: 0 24px 58px -30px rgba(15, 23, 42, 0.36);
       }
       .macaron-shadow-sm {
-        box-shadow: 0 4px 15px -3px rgba(255, 170, 166, 0.1);
+        box-shadow: 0 8px 22px -16px rgba(15, 23, 42, 0.2);
+      }
+    }
+
+    /* MOMO visual system: quieter cards, consistent app-like controls */
+    body.momo-polish main section.bg-white,
+    body.momo-polish main div.bg-white.rounded-3xl,
+    body.momo-polish main div.bg-white.rounded-4xl {
+      border-color: rgba(226, 232, 240, 0.78) !important;
+    }
+
+    body.momo-polish main .hover-lift:hover {
+      transform: translateY(-2px) scale(1.002);
+    }
+
+    body.momo-polish .momo-subtle-action {
+      background: rgba(255, 255, 255, 0.94) !important;
+      border-color: rgba(226, 232, 240, 0.9) !important;
+      color: #334155 !important;
+    }
+
+    body.momo-polish .momo-danger-action {
+      background: #fff1f2 !important;
+      border-color: #ffe4e6 !important;
+      color: #be123c !important;
+    }
+
+    body.momo-polish .momo-success-action {
+      background: #ecfdf5 !important;
+      border-color: #d1fae5 !important;
+      color: #047857 !important;
+    }
+
+    body.momo-polish .momo-info-action {
+      background: #f0f9ff !important;
+      border-color: #e0f2fe !important;
+      color: #0369a1 !important;
+    }
+
+    .closeout-sheet-overlay {
+      overflow: hidden;
+      overscroll-behavior: contain;
+      overscroll-behavior-x: none;
+      touch-action: pan-y;
+    }
+
+    .closeout-sheet-panel {
+      max-width: min(100vw, 32rem);
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+      touch-action: pan-y;
+    }
+
+    .closeout-sheet-panel *,
+    .closeout-sheet-panel *::before,
+    .closeout-sheet-panel *::after {
+      box-sizing: border-box;
+      min-width: 0;
+    }
+
+    .closeout-sheet-body {
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+      touch-action: pan-y;
+    }
+
+    .closeout-money-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    @media (max-width: 640px) {
+      .closeout-sheet-panel {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        border-left: 0 !important;
+        border-right: 0 !important;
       }
     }
 
@@ -576,7 +651,7 @@
     [v-cloak] { display: none !important; }
   </style>
 </head>
-<body class="text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
+<body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <!-- Glowing Background Blobs (Hidden on mobile to save CPU/GPU scroll rendering lag) -->
   <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none hidden md:block">
     <div class="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-tr from-macaron-rose/15 to-macaron-yellow/15 blur-[80px] animate-float-slow"></div>
@@ -1097,12 +1172,11 @@
               </div>
               <div class="p-4 sm:p-5 col-span-2 lg:col-span-1 flex items-center gap-2">
                 <button @click="activeTab = 'orders'; showMobileAddOrderForm = true"
-                        class="jelly-btn flex-1 min-h-[44px] rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-black shadow-sm">
+                        class="momo-subtle-action jelly-btn flex-1 min-h-[44px] rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-black shadow-sm">
                   新增業績
                 </button>
                 <button @click="openCloseoutSheet()"
-                        class="jelly-btn flex-1 min-h-[44px] rounded-2xl border text-xs font-black shadow-sm"
-                        :class="todayCloseoutRecord ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-white border-orange-200 text-slate-700'">
+                        class="momo-success-action jelly-btn flex-1 min-h-[44px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black shadow-sm">
                   {{ todayCloseoutRecord ? '已打烊' : '去打烊' }}
                 </button>
               </div>
@@ -1561,15 +1635,15 @@
 
               <div class="grid grid-cols-3 lg:grid-cols-1 border-t lg:border-t-0 border-slate-100">
                 <button @click="activeTab = 'orders'; showMobileAddOrderForm = true"
-                        class="min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-white text-slate-700 border-r lg:border-r-0 lg:border-b border-slate-100 text-xs font-black">
+                        class="momo-subtle-action min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-white text-slate-700 border-r lg:border-r-0 lg:border-b border-slate-100 text-xs font-black">
                   <span class="text-xl leading-none">＋</span><span>新增業績</span>
                 </button>
                 <button @click="openExpenseFormForToday"
-                        class="min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-emerald-50 text-emerald-700 border-r lg:border-r-0 lg:border-b border-emerald-100 text-xs font-black">
+                        class="momo-danger-action min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-rose-50 text-rose-700 border-r lg:border-r-0 lg:border-b border-rose-100 text-xs font-black">
                   <span class="text-lg leading-none">－</span><span>新增支出</span>
                 </button>
                 <button @click="openCloseoutSheet()"
-                        class="min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-sky-50 text-sky-700 text-xs font-black">
+                        class="momo-success-action min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-emerald-50 text-emerald-700 text-xs font-black">
                   <span class="text-lg leading-none">✓</span><span>{{ todayCloseoutRecord ? '查看打烊' : '完成打烊' }}</span>
                 </button>
               </div>
@@ -1779,14 +1853,14 @@
 
           <!-- Closeout bottom sheet -->
           <transition name="fade">
-            <div v-if="showCloseoutSheet" class="fixed inset-0 z-[70] bg-slate-900/40 flex items-end sm:items-center justify-center sm:p-4" @click="showCloseoutSheet = false">
-              <div class="ios-sheet w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden safe-pb" @click.stop>
+            <div v-if="showCloseoutSheet" class="closeout-sheet-overlay fixed inset-0 z-[70] bg-slate-900/40 flex items-end sm:items-center justify-center sm:p-4" @click="showCloseoutSheet = false">
+              <div class="closeout-sheet-panel ios-sheet w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden safe-pb" @click.stop>
                 <div class="ios-sheet-handle sm:hidden"></div>
-                <div class="px-4 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div class="px-4 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
                   <div><h3 class="text-base font-black text-slate-800">每日打烊對帳</h3><p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ selectedCloseoutDateLabel }}</p></div>
                   <button @click="showCloseoutSheet = false" class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉">✕</button>
                 </div>
-                <div class="ios-sheet-body p-4 space-y-4 max-h-[75vh] overflow-y-auto">
+                <div class="closeout-sheet-body ios-sheet-body p-4 space-y-4 max-h-[75vh] overflow-y-auto">
                   <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">打烊日期</span><input type="date" v-model="closeoutDate" @change="loadCloseoutFormForDate" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-black"></label>
                   <div class="p-4 rounded-xl bg-slate-900 text-white">
                     <div class="flex items-center justify-between gap-3">
@@ -1795,7 +1869,7 @@
                     </div>
                     <div class="mt-3 text-[10px] font-bold text-white/50">只要輸入實際盤點現金，系統會自動算差額並鎖帳。</div>
                   </div>
-                  <div class="grid grid-cols-2 gap-2">
+                  <div class="closeout-money-grid grid grid-cols-2 gap-2">
                     <div class="rounded-xl bg-orange-50 border border-orange-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">現金</div><div class="text-sm font-black text-slate-800">NT$ {{ formatNumber(selectedCloseout.cash) }}</div></div>
                     <div class="rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">轉帳</div><div class="text-sm font-black text-indigo-700">NT$ {{ formatNumber(selectedCloseout.transfer) }}</div></div>
                     <div class="rounded-xl bg-sky-50 border border-sky-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值扣款</div><div class="text-sm font-black text-sky-700">NT$ {{ formatNumber(selectedCloseout.prepaidOut) }}</div></div>
@@ -2299,7 +2373,7 @@
                   </div>
                   <button type="button" @click="importMomoSalary"
                           :disabled="selectedMonth === 'All' || kpis.momoSalary === 0"
-                          class="jelly-btn bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-xs font-black px-4 py-2.5 rounded-2xl shadow-md disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
+                          class="momo-danger-action jelly-btn bg-rose-50 border border-rose-100 text-rose-700 text-xs font-black px-4 py-2.5 rounded-2xl shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
                     寫入支出 →
                   </button>
                 </div>
@@ -2363,7 +2437,7 @@
                     </h3>
                     <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredExpenses.length }} 筆 · NT$ {{ formatNumber(filteredExpensesTotal) }}</p>
                   </div>
-                  <button @click="showExpenseForm = true" class="jelly-btn min-h-[34px] shrink-0 px-3.5 rounded-full bg-slate-900 text-white text-[11px] font-black shadow-sm">＋ 新增支出</button>
+                  <button @click="showExpenseForm = true" class="momo-danger-action jelly-btn min-h-[34px] shrink-0 px-3.5 rounded-full bg-rose-50 border border-rose-100 text-rose-700 text-[11px] font-black shadow-sm">＋ 新增支出</button>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="relative flex-1 sm:w-56">
@@ -2604,7 +2678,7 @@
                     <h3 class="font-black text-slate-800 text-base sm:text-lg">庫存商品</h3>
                     <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredInventory.length }} 項 · 共 {{ inventorySummary.units }} 件</p>
                   </div>
-                  <button @click="showInventoryForm = true" class="jelly-btn min-h-[34px] shrink-0 px-3.5 rounded-full bg-sky-50 border border-sky-100 text-sky-700 text-[11px] font-black shadow-sm">＋ 新增</button>
+                  <button @click="showInventoryForm = true" class="momo-info-action jelly-btn min-h-[34px] shrink-0 px-3.5 rounded-full bg-sky-50 border border-sky-100 text-sky-700 text-[11px] font-black shadow-sm">＋ 新增</button>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="relative flex-1 sm:w-56">
@@ -3259,7 +3333,7 @@
                 </button>
                 <!-- 匯出 CSV -->
                 <button @click="exportAnnualReport"
-                        class="jelly-btn bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1">
+                        class="momo-info-action jelly-btn bg-sky-50 border border-sky-100 text-sky-700 text-[10px] font-black px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1">
                   匯出 CSV
                 </button>
               </div>
@@ -3861,7 +3935,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.03-cache-first-start';
+    const APP_VERSION = '2026.07.03-visual-system-closeout-fix';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
