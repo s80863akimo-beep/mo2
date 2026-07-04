@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.04-overview-sync-polish">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.04-home-section-unify">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -278,6 +278,88 @@
 
     body.momo-polish .today-action-rail button:hover {
       background: rgba(248, 250, 252, 0.92) !important;
+    }
+
+    body.momo-polish .momo-home-card {
+      background: rgba(255, 255, 255, 0.97) !important;
+      border-color: rgba(226, 232, 240, 0.82) !important;
+      box-shadow: 0 16px 40px -30px rgba(15, 23, 42, 0.36) !important;
+    }
+
+    body.momo-polish .momo-home-card-header {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.72)) !important;
+      border-bottom-color: rgba(226, 232, 240, 0.82) !important;
+    }
+
+    body.momo-polish .momo-home-card-footer {
+      background: rgba(248, 250, 252, 0.68) !important;
+      border-top-color: rgba(226, 232, 240, 0.78) !important;
+    }
+
+    body.momo-polish .momo-home-stat-value {
+      color: #0f172a !important;
+    }
+
+    body.momo-polish .momo-home-alert {
+      position: relative;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.96) !important;
+      border-color: rgba(226, 232, 240, 0.84) !important;
+      box-shadow: 0 12px 32px -28px rgba(15, 23, 42, 0.32);
+    }
+
+    body.momo-polish .momo-home-alert::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.75rem;
+      bottom: 0.75rem;
+      width: 3px;
+      border-radius: 999px;
+      background: #cbd5e1;
+    }
+
+    body.momo-polish .momo-home-alert--ok::before { background: #34d399; }
+    body.momo-polish .momo-home-alert--warn::before { background: #fbbf24; }
+    body.momo-polish .momo-home-alert--error::before { background: #fb7185; }
+
+    body.momo-polish .momo-home-alert button {
+      background: rgba(255, 255, 255, 0.98) !important;
+      border-color: rgba(226, 232, 240, 0.86) !important;
+      color: #334155 !important;
+    }
+
+    body.momo-polish .momo-home-list-item {
+      position: relative;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.96) !important;
+      border-color: rgba(226, 232, 240, 0.86) !important;
+    }
+
+    body.momo-polish .momo-home-list-item::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.65rem;
+      bottom: 0.65rem;
+      width: 3px;
+      border-radius: 999px;
+      background: #fbbf24;
+    }
+
+    body.momo-polish .momo-home-list-item--error::before { background: #fb7185; }
+    body.momo-polish .momo-home-list-item--ok::before { background: #34d399; }
+
+    body.momo-polish .momo-home-empty {
+      background: rgba(248, 250, 252, 0.72) !important;
+      border-color: rgba(226, 232, 240, 0.84) !important;
+      color: #475569 !important;
+    }
+
+    body.momo-polish .momo-home-soft-button {
+      background: rgba(255, 255, 255, 0.98) !important;
+      border-color: rgba(226, 232, 240, 0.86) !important;
+      color: #334155 !important;
     }
 
     /* 3) Bottom tab bar refinement */
@@ -1889,43 +1971,42 @@
             </div>
           </section>
 
-          <section v-if="todayCloseoutRecord" class="border border-emerald-100 bg-emerald-50 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+          <section v-if="todayCloseoutRecord" class="momo-home-alert momo-home-alert--ok border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
             <div class="min-w-0">
-              <div class="text-xs font-black text-emerald-700">今日打烊摘要已建立</div>
+              <div class="text-xs font-black text-slate-800">今日打烊摘要已建立</div>
               <div class="text-[10px] text-slate-500 font-semibold truncate">
                 應有現金 NT$ {{ formatNumber(todayCloseoutRecord.expectedCash) }} · 實點 NT$ {{ formatNumber(todayCloseoutRecord.countedCash) }} · 差額 {{ todayCloseoutRecord.difference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutRecord.difference) }}
               </div>
             </div>
-            <button @click="copyCloseoutSummary(todayCloseoutRecord)" class="min-h-[38px] px-3 rounded-xl bg-white border border-emerald-100 text-[11px] font-black text-emerald-700 whitespace-nowrap">複製摘要</button>
+            <button @click="copyCloseoutSummary(todayCloseoutRecord)" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-[11px] font-black text-slate-700 whitespace-nowrap">複製摘要</button>
           </section>
 
-          <section class="rounded-2xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                   :class="backupReminder.tone === 'ok' ? 'bg-emerald-50 border-emerald-100' : backupReminder.tone === 'error' ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'">
+          <section class="momo-home-alert rounded-2xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                   :class="backupReminder.tone === 'ok' ? 'momo-home-alert--ok' : backupReminder.tone === 'error' ? 'momo-home-alert--error' : 'momo-home-alert--warn'">
             <div class="min-w-0">
-              <div class="text-xs font-black" :class="backupReminder.tone === 'ok' ? 'text-emerald-700' : backupReminder.tone === 'error' ? 'text-rose-700' : 'text-amber-700'">{{ backupReminder.title }}</div>
-              <div class="text-[10px] font-semibold mt-0.5" :class="backupReminder.tone === 'ok' ? 'text-emerald-600' : backupReminder.tone === 'error' ? 'text-rose-600' : 'text-amber-700'">{{ backupReminder.message }}</div>
+              <div class="text-xs font-black text-slate-800">{{ backupReminder.title }}</div>
+              <div class="text-[10px] font-semibold mt-0.5 text-slate-500">{{ backupReminder.message }}</div>
               <div class="text-[9px] font-bold text-slate-400 mt-1">{{ backupSummaryText }} · {{ integritySummaryText }}</div>
             </div>
             <div class="grid grid-cols-2 sm:flex gap-2">
-              <button @click="handleBackupReminderAction" :disabled="backupStatus === 'saving'" class="min-h-[40px] px-4 rounded-xl bg-white border text-xs font-black disabled:opacity-50"
-                      :class="backupReminder.tone === 'ok' ? 'border-emerald-100 text-emerald-700' : backupReminder.tone === 'error' ? 'border-rose-100 text-rose-700' : 'border-amber-100 text-amber-700'">
+              <button @click="handleBackupReminderAction" :disabled="backupStatus === 'saving'" class="momo-home-soft-button min-h-[40px] px-4 rounded-xl bg-white border border-slate-200 text-xs font-black text-slate-700 disabled:opacity-50">
                 {{ backupStatus === 'saving' ? '備份中…' : backupReminder.actionLabel }}
               </button>
-              <button @click="runIntegrityCheck(true)" class="min-h-[40px] px-4 rounded-xl bg-white border border-sky-100 text-sky-700 text-xs font-black">檢查資料</button>
+              <button @click="runIntegrityCheck(true)" class="momo-home-soft-button min-h-[40px] px-4 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-black">檢查資料</button>
             </div>
           </section>
 
-          <section v-if="syncError" class="border border-rose-200 bg-rose-50 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+          <section v-if="syncError" class="momo-home-alert momo-home-alert--error border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
             <div class="min-w-0">
-              <div class="text-xs font-black text-rose-700">{{ syncError.title }}</div>
-              <div class="text-[10px] text-rose-600 font-semibold line-clamp-2">{{ syncError.message }}</div>
+              <div class="text-xs font-black text-slate-800">{{ syncError.title }}</div>
+              <div class="text-[10px] text-slate-500 font-semibold line-clamp-2">{{ syncError.message }}</div>
             </div>
-            <button @click="retryCalendarSync" :disabled="syncing" class="min-h-[38px] px-3 rounded-xl bg-rose-500 text-white text-[11px] font-black disabled:opacity-50 whitespace-nowrap">重試</button>
+            <button @click="retryCalendarSync" :disabled="syncing" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black disabled:opacity-50 whitespace-nowrap">重試</button>
           </section>
 
           <!-- Time value summary -->
-          <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-4 sm:px-6 flex items-center justify-between gap-3 border-b border-slate-100">
+          <section class="momo-home-card bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+            <div class="momo-home-card-header px-4 py-4 sm:px-6 flex items-center justify-between gap-3 border-b border-slate-100">
               <div class="min-w-0">
                 <h2 class="text-base sm:text-lg font-black text-slate-800">時間價值</h2>
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }} · 詳細分析移到報表</p>
@@ -1937,54 +2018,54 @@
             <div class="grid grid-cols-3 divide-x divide-slate-100">
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">平均每小時</div>
-                <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(yieldSummary.average) }}</div>
+                <div class="momo-home-stat-value text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(yieldSummary.average) }}</div>
               </div>
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">預估總工時</div>
-                <div class="text-lg font-black text-sky-600 mt-1">{{ yieldSummary.totalHours }} hr</div>
+                <div class="momo-home-stat-value text-lg font-black text-slate-800 mt-1">{{ yieldSummary.totalHours }} hr</div>
               </div>
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">已分析服務</div>
-                <div class="text-lg font-black text-emerald-600 mt-1">{{ yieldSummary.serviceCount }} 項</div>
+                <div class="momo-home-stat-value text-lg font-black text-slate-800 mt-1">{{ yieldSummary.serviceCount }} 項</div>
               </div>
             </div>
-            <div class="px-4 py-3 sm:px-6 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between gap-3">
+            <div class="momo-home-card-footer px-4 py-3 sm:px-6 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between gap-3">
               <div class="min-w-0">
                 <div class="text-[10px] font-black text-slate-400">公式</div>
                 <div class="text-[11px] font-bold text-slate-600 truncate">服務收入 ÷ 預估工時；不含儲值進帳</div>
               </div>
-              <button v-if="yieldSummary.unmatched.length" @click="openServiceConfigModal" class="min-h-[34px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-[10px] font-black whitespace-nowrap">
+              <button v-if="yieldSummary.unmatched.length" @click="openServiceConfigModal" class="momo-home-soft-button min-h-[34px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-[10px] font-black whitespace-nowrap">
                 {{ yieldSummary.unmatched.length }} 項缺時長
               </button>
             </div>
           </section>
 
           <!-- Monthly operations -->
-          <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-4 sm:px-6 flex items-center justify-between border-b border-slate-100">
+          <section class="momo-home-card bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+            <div class="momo-home-card-header px-4 py-4 sm:px-6 flex items-center justify-between border-b border-slate-100">
               <div>
                 <h2 class="text-base sm:text-lg font-black text-slate-800">本月營運</h2>
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }}</p>
               </div>
-              <button @click="activeTab = 'report'" class="min-h-[40px] px-3 rounded-xl text-xs font-black text-slate-500 border border-slate-200 bg-white">詳細報表</button>
+              <button @click="activeTab = 'report'" class="momo-home-soft-button min-h-[40px] px-3 rounded-xl text-xs font-black text-slate-700 border border-slate-200 bg-white">詳細報表</button>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100">
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">營業額</div>
-                <div class="text-lg sm:text-xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(kpis.revenue) }}</div>
+                <div class="momo-home-stat-value text-lg sm:text-xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(kpis.revenue) }}</div>
               </div>
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">支出</div>
-                <div class="text-lg sm:text-xl font-black text-sky-600 mt-1">NT$ {{ formatNumber(totalExpenses) }}</div>
+                <div class="momo-home-stat-value text-lg sm:text-xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(totalExpenses) }}</div>
               </div>
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">淨利</div>
-                <div class="text-lg sm:text-xl font-black mt-1" :class="kpis.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'">NT$ {{ formatNumber(kpis.netProfit) }}</div>
+                <div class="momo-home-stat-value text-lg sm:text-xl font-black mt-1 text-slate-800">NT$ {{ formatNumber(kpis.netProfit) }}</div>
               </div>
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">客單價</div>
-                <div class="text-lg sm:text-xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(kpis.aov) }}</div>
+                <div class="momo-home-stat-value text-lg sm:text-xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(kpis.aov) }}</div>
               </div>
             </div>
 
@@ -2015,27 +2096,27 @@
           </section>
 
           <!-- Pending actions -->
-          <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex items-center justify-between gap-3">
+          <section class="momo-home-card bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+            <div class="momo-home-card-header px-4 py-4 sm:px-6 border-b border-slate-100 flex items-center justify-between gap-3">
               <div class="min-w-0">
                 <h2 class="text-base sm:text-lg font-black text-slate-800">待處理事項</h2>
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">自 2026/7/1 起，優先處理未打烊、帳務異常與儲值風險</p>
               </div>
-              <button @click="runIntegrityCheck(true)" class="min-h-[40px] px-3 rounded-xl text-xs font-black text-slate-500 border border-slate-200 bg-white whitespace-nowrap">重新檢查</button>
+              <button @click="runIntegrityCheck(true)" class="momo-home-soft-button min-h-[40px] px-3 rounded-xl text-xs font-black text-slate-700 border border-slate-200 bg-white whitespace-nowrap">重新檢查</button>
             </div>
 
             <div class="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100">
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">未打烊</div>
-                <div class="text-xl font-black mt-1" :class="pendingActionSummary.unclosedCount ? 'text-amber-600' : 'text-emerald-600'">{{ pendingActionSummary.unclosedCount }}</div>
+                <div class="momo-home-stat-value text-xl font-black mt-1 text-slate-800">{{ pendingActionSummary.unclosedCount }}</div>
               </div>
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">異常待確認</div>
-                <div class="text-xl font-black mt-1" :class="pendingActionSummary.anomalyCount ? 'text-amber-600' : 'text-emerald-600'">{{ pendingActionSummary.anomalyCount }}</div>
+                <div class="momo-home-stat-value text-xl font-black mt-1 text-slate-800">{{ pendingActionSummary.anomalyCount }}</div>
               </div>
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">需修正</div>
-                <div class="text-xl font-black mt-1" :class="pendingActionSummary.blockers ? 'text-rose-600' : 'text-emerald-600'">{{ pendingActionSummary.blockers }}</div>
+                <div class="momo-home-stat-value text-xl font-black mt-1 text-slate-800">{{ pendingActionSummary.blockers }}</div>
               </div>
             </div>
 
@@ -2048,7 +2129,7 @@
                 <div v-if="unclosedCloseoutDates.length" class="space-y-2">
                   <button v-for="item in unclosedCloseoutDates.slice(0, 8)" :key="item.date"
                           @click="openCloseoutSheet(item.date)"
-                          class="w-full rounded-xl border border-amber-100 bg-amber-50/60 px-3 py-3 text-left hover:bg-amber-50 transition-colors">
+                          class="momo-home-list-item w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-left transition-colors">
                     <div class="flex items-center justify-between gap-3">
                       <div class="min-w-0">
                         <div class="text-sm font-black text-slate-800">{{ item.date }} · {{ item.label }}</div>
@@ -2058,13 +2139,13 @@
                       </div>
                       <div class="text-right shrink-0">
                         <div class="text-[10px] font-black text-slate-400">應有現金</div>
-                        <div class="text-sm font-black text-amber-700">NT$ {{ formatNumber(item.actualCashIn) }}</div>
+                        <div class="text-sm font-black text-slate-800">NT$ {{ formatNumber(item.actualCashIn) }}</div>
                       </div>
                     </div>
                   </button>
                   <div v-if="unclosedCloseoutDates.length > 8" class="text-[10px] font-bold text-slate-400 text-center">另有 {{ unclosedCloseoutDates.length - 8 }} 天未顯示，請先處理最近日期</div>
                 </div>
-                <div v-else class="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-4 text-center text-xs font-black text-emerald-700">沒有未打烊日期</div>
+                <div v-else class="momo-home-empty rounded-xl bg-slate-50 border border-slate-200 px-3 py-4 text-center text-xs font-black text-slate-600">沒有未打烊日期</div>
               </div>
 
               <div>
@@ -2075,7 +2156,8 @@
                 <div v-if="pendingActionSummary.anomalyItems.length" class="space-y-2">
                   <button v-for="item in pendingActionSummary.anomalyItems" :key="item.code + item.message"
                           @click="goToAnomaly(item)"
-                          class="w-full text-left rounded-xl bg-white border border-slate-100 px-3 py-2 text-[11px] font-bold text-slate-600 hover:bg-orange-50/40 hover:border-orange-100 transition-colors">
+                          class="momo-home-list-item w-full text-left rounded-xl bg-white border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-600 transition-colors"
+                          :class="item.severity === 'error' ? 'momo-home-list-item--error' : ''">
                     <div class="flex items-center justify-between gap-2">
                       <div class="min-w-0">
                         <span class="font-black" :class="item.severity === 'error' ? 'text-rose-600' : 'text-amber-600'">{{ item.severity === 'error' ? '需修正' : '需確認' }}</span>
@@ -2085,7 +2167,7 @@
                     </div>
                   </button>
                 </div>
-                <div v-else class="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-4 text-center text-xs font-black text-emerald-700">目前沒有待處理異常</div>
+                <div v-else class="momo-home-empty rounded-xl bg-slate-50 border border-slate-200 px-3 py-4 text-center text-xs font-black text-slate-600">目前沒有待處理異常</div>
               </div>
             </div>
           </section>
@@ -4174,7 +4256,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.04-overview-sync-polish';
+    const APP_VERSION = '2026.07.04-home-section-unify';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
