@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.04-system-status-safety">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.05-daily-home-focus">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -362,6 +362,30 @@
 
     body.momo-polish .today-action-rail button:hover {
       background: rgba(248, 250, 252, 0.92) !important;
+    }
+
+    body.momo-polish .momo-daily-home .daily-cash-panel {
+      background: rgba(248, 250, 252, 0.72) !important;
+      border-color: rgba(226, 232, 240, 0.86) !important;
+    }
+
+    body.momo-polish .momo-daily-home .daily-action-button {
+      background: rgba(255, 255, 255, 0.98) !important;
+      border-color: rgba(226, 232, 240, 0.92) !important;
+      color: #334155 !important;
+      box-shadow: 0 1px 0 rgba(15, 23, 42, 0.035);
+      transition: transform 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    body.momo-polish .momo-daily-home .daily-action-button:active {
+      transform: scale(0.98);
+    }
+
+    body.momo-polish .momo-daily-home .daily-action-button--primary {
+      background: #111827 !important;
+      border-color: #111827 !important;
+      color: #ffffff !important;
+      box-shadow: 0 12px 28px -22px rgba(15, 23, 42, 0.7);
     }
 
     body.momo-polish .momo-home-card {
@@ -2016,88 +2040,83 @@
           </div>
           </template>
 
-          <!-- Today accounting workspace -->
-          <section class="momo-today-overview bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+          <!-- Daily-use only home workspace -->
+          <section class="momo-today-overview momo-daily-home bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
             <div class="momo-today-overview-header px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-100 flex items-center justify-between gap-3">
-              <div>
+              <div class="min-w-0">
                 <h2 class="text-lg sm:text-xl font-black text-slate-800">今日總覽</h2>
-                <p class="text-[11px] font-bold text-slate-400 mt-0.5">{{ todayDateLabel }} · 業績、金流、支出與打烊</p>
+                <p class="text-[11px] font-bold text-slate-400 mt-0.5 truncate">{{ todayDateLabel }} · 只保留記帳、對帳、打烊</p>
               </div>
-              <span class="today-status-pill text-[10px] font-black px-2.5 py-1 rounded-full"
-                    :class="online ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'">
-                {{ online ? '已連線' : '離線' }}
+              <span class="today-status-pill text-[10px] font-black px-2.5 py-1 rounded-full whitespace-nowrap"
+                    :class="todayCloseoutRecord ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
+                {{ todayCloseoutRecord ? '已打烊' : '待打烊' }}
               </span>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-[1.35fr_0.65fr]">
-              <div class="p-4 sm:p-6 lg:border-r border-slate-100">
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div class="today-metric-card rounded-2xl bg-white border border-slate-200 p-3">
-                    <div class="text-[10px] font-black text-slate-400">今日業績</div>
-                    <div class="today-metric-value text-2xl font-black text-slate-800 mt-1">{{ todayOrders.length }} <span class="text-xs text-slate-400">筆</span></div>
-                  </div>
-                  <div class="today-metric-card today-metric-card--cash rounded-2xl bg-white border border-slate-200 p-3">
-                    <div class="text-[10px] font-black text-slate-400">今日應有現金</div>
-                    <div class="today-metric-value text-2xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div>
-                  </div>
-                  <div class="today-metric-card today-metric-card--expense rounded-2xl bg-white border border-slate-200 p-3">
-                    <div class="text-[10px] font-black text-slate-400">今日支出</div>
-                    <div class="today-metric-value text-xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.expenses) }}</div>
-                  </div>
-                  <div class="today-metric-card rounded-2xl border p-3" :class="todayCloseoutRecord ? 'today-metric-card--closed bg-white border-slate-200' : 'today-metric-card--open bg-white border-slate-200'">
-                    <div class="text-[10px] font-black text-slate-400">打烊狀態</div>
-                    <div class="today-metric-value text-sm font-black mt-1 text-slate-800">{{ todayCloseoutRecord ? '已打烊 / 已鎖帳' : '尚未打烊' }}</div>
-                  </div>
+            <div class="p-4 sm:p-6 space-y-4">
+              <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="today-metric-card rounded-2xl bg-white border border-slate-200 p-3">
+                  <div class="text-[10px] font-black text-slate-400">今日營收</div>
+                  <div class="today-metric-value text-xl sm:text-2xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.serviceRevenue) }}</div>
+                  <div class="text-[10px] font-bold text-slate-400 mt-1">{{ todayOrders.length }} 筆已記帳</div>
                 </div>
-
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-4 border-t border-slate-100">
-                  <div class="today-payment-chip rounded-xl bg-slate-50/70 border border-slate-200 px-3 py-2"><div class="text-[9px] font-black text-slate-400">現金</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(todayCloseout.cash) }}</div></div>
-                  <div class="today-payment-chip rounded-xl bg-slate-50/70 border border-slate-200 px-3 py-2"><div class="text-[9px] font-black text-slate-400">轉帳</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(todayCloseout.transfer) }}</div></div>
-                  <div class="today-payment-chip rounded-xl bg-slate-50/70 border border-slate-200 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值扣款</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(todayCloseout.prepaidOut) }}</div></div>
-                  <div class="today-payment-chip rounded-xl bg-slate-50/70 border border-slate-200 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值進帳</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(todayCloseout.prepaidIn) }}</div></div>
+                <div class="today-metric-card today-metric-card--cash rounded-2xl bg-white border border-slate-200 p-3">
+                  <div class="text-[10px] font-black text-slate-400">應有現金</div>
+                  <div class="today-metric-value text-xl sm:text-2xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div>
+                  <div class="text-[10px] font-bold text-slate-400 mt-1">現金 + 現金儲值</div>
+                </div>
+                <div class="today-metric-card today-metric-card--expense rounded-2xl bg-white border border-slate-200 p-3">
+                  <div class="text-[10px] font-black text-slate-400">今日支出</div>
+                  <div class="today-metric-value text-xl sm:text-2xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.expenses) }}</div>
+                  <div class="text-[10px] font-bold text-slate-400 mt-1">{{ todayCloseout.expenses ? '已扣淨收' : '尚無支出' }}</div>
+                </div>
+                <div class="today-metric-card rounded-2xl border p-3" :class="todayCloseout.netProfit >= 0 ? 'today-metric-card--closed bg-white border-slate-200' : 'today-metric-card--open bg-white border-slate-200'">
+                  <div class="text-[10px] font-black text-slate-400">今日淨收</div>
+                  <div class="today-metric-value text-xl sm:text-2xl font-black mt-1 text-slate-800">NT$ {{ formatNumber(todayCloseout.netProfit) }}</div>
+                  <div class="text-[10px] font-bold text-slate-400 mt-1">營收 - 支出</div>
                 </div>
               </div>
 
-              <div class="today-action-rail grid grid-cols-3 lg:grid-cols-1 border-t lg:border-t-0 border-slate-100">
-                <button @click="activeTab = 'orders'; showMobileAddOrderForm = true"
-                        class="momo-subtle-action min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-white text-slate-700 border-r lg:border-r-0 lg:border-b border-slate-100 text-xs font-black">
-                  <span class="text-xl leading-none">＋</span><span>新增業績</span>
-                </button>
-                <button @click="openExpenseFormForToday"
-                        class="momo-danger-action min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-rose-50 text-rose-700 border-r lg:border-r-0 lg:border-b border-rose-100 text-xs font-black">
-                  <span class="text-lg leading-none">－</span><span>新增支出</span>
-                </button>
-                <button @click="openCloseoutSheet()"
-                        class="momo-success-action min-h-[82px] lg:min-h-[64px] px-2 flex flex-col lg:flex-row items-center justify-center gap-1.5 lg:gap-3 bg-emerald-50 text-emerald-700 text-xs font-black">
-                  <span class="text-lg leading-none">✓</span><span>{{ todayCloseoutRecord ? '查看打烊' : '完成打烊' }}</span>
-                </button>
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <div class="daily-cash-panel rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+                  <div class="flex items-center justify-between gap-3 mb-2">
+                    <div class="text-xs font-black text-slate-700">今日金流拆分</div>
+                    <div class="text-[10px] font-bold text-slate-400">打烊核對用</div>
+                  </div>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div class="today-payment-chip rounded-xl bg-white border border-slate-200 px-3 py-2"><div class="text-[9px] font-black text-slate-400">現金</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(todayCloseout.cash) }}</div></div>
+                    <div class="today-payment-chip rounded-xl bg-white border border-slate-200 px-3 py-2"><div class="text-[9px] font-black text-slate-400">轉帳</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(todayCloseout.transfer) }}</div></div>
+                    <div class="today-payment-chip rounded-xl bg-white border border-slate-200 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值扣款</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(todayCloseout.prepaidOut) }}</div></div>
+                    <div class="today-payment-chip rounded-xl bg-white border border-slate-200 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值進帳</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(todayCloseout.prepaidIn) }}</div></div>
+                  </div>
+                </div>
+
+                <div class="daily-primary-actions grid grid-cols-3 gap-2">
+                  <button @click="activeTab = 'orders'; showMobileAddOrderForm = true"
+                          class="daily-action-button min-h-[58px] sm:min-h-[68px] rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-black flex flex-col items-center justify-center gap-1">
+                    <span class="text-lg leading-none">＋</span><span>新增業績</span>
+                  </button>
+                  <button @click="openExpenseFormForToday"
+                          class="daily-action-button min-h-[58px] sm:min-h-[68px] rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-black flex flex-col items-center justify-center gap-1">
+                    <span class="text-lg leading-none">－</span><span>新增支出</span>
+                  </button>
+                  <button @click="openCloseoutSheet()"
+                          class="daily-action-button daily-action-button--primary min-h-[58px] sm:min-h-[68px] rounded-2xl bg-slate-900 border border-slate-900 text-white text-xs font-black flex flex-col items-center justify-center gap-1">
+                    <span class="text-lg leading-none">✓</span><span>{{ todayCloseoutRecord ? '查看打烊' : '完成打烊' }}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </section>
 
           <section v-if="todayCloseoutRecord" class="momo-home-alert momo-home-alert--ok border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
             <div class="min-w-0">
-              <div class="text-xs font-black text-slate-800">今日打烊摘要已建立</div>
+              <div class="text-xs font-black text-slate-800">今日打烊摘要</div>
               <div class="text-[10px] text-slate-500 font-semibold truncate">
-                應有現金 NT$ {{ formatNumber(todayCloseoutRecord.expectedCash) }} · 實點 NT$ {{ formatNumber(todayCloseoutRecord.countedCash) }} · 差額 {{ todayCloseoutRecord.difference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutRecord.difference) }}
+                應有 NT$ {{ formatNumber(todayCloseoutRecord.expectedCash) }} · 實點 NT$ {{ formatNumber(todayCloseoutRecord.countedCash) }} · 差額 {{ todayCloseoutRecord.difference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutRecord.difference) }}
               </div>
             </div>
-            <button @click="copyCloseoutSummary(todayCloseoutRecord)" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-[11px] font-black text-slate-700 whitespace-nowrap">複製摘要</button>
-          </section>
-
-          <section class="momo-home-alert rounded-2xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                   :class="backupReminder.tone === 'ok' ? 'momo-home-alert--ok' : backupReminder.tone === 'error' ? 'momo-home-alert--error' : 'momo-home-alert--warn'">
-            <div class="min-w-0">
-              <div class="text-xs font-black text-slate-800">{{ backupReminder.title }}</div>
-              <div class="text-[10px] font-semibold mt-0.5 text-slate-500">{{ backupReminder.message }}</div>
-              <div class="text-[9px] font-bold text-slate-400 mt-1">{{ backupSummaryText }} · {{ integritySummaryText }}</div>
-            </div>
-            <div class="grid grid-cols-2 sm:flex gap-2">
-              <button @click="handleBackupReminderAction" :disabled="backupStatus === 'saving'" class="momo-home-soft-button min-h-[40px] px-4 rounded-xl bg-white border border-slate-200 text-xs font-black text-slate-700 disabled:opacity-50">
-                {{ backupStatus === 'saving' ? '備份中…' : backupReminder.actionLabel }}
-              </button>
-              <button @click="runIntegrityCheck(true)" class="momo-home-soft-button min-h-[40px] px-4 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-black">檢查資料</button>
-            </div>
+            <button @click="copyCloseoutSummary(todayCloseoutRecord)" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-[11px] font-black text-slate-700 whitespace-nowrap">複製</button>
           </section>
 
           <section v-if="syncError" class="momo-home-alert momo-home-alert--error border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
@@ -2108,170 +2127,55 @@
             <button @click="retryCalendarSync" :disabled="syncing" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black disabled:opacity-50 whitespace-nowrap">重試</button>
           </section>
 
-          <!-- Time value summary -->
-          <section class="momo-home-card bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-            <div class="momo-home-card-header px-4 py-4 sm:px-6 flex items-center justify-between gap-3 border-b border-slate-100">
-              <div class="min-w-0">
-                <h2 class="text-base sm:text-lg font-black text-slate-800">時間價值</h2>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }} · 詳細分析移到報表</p>
-              </div>
-              <button @click="activeTab = 'report'" class="min-h-[38px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black whitespace-nowrap">
-                看報表
-              </button>
-            </div>
-            <div class="grid grid-cols-3 divide-x divide-slate-100">
-              <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">平均每小時</div>
-                <div class="momo-home-stat-value text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(yieldSummary.average) }}</div>
-              </div>
-              <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">預估總工時</div>
-                <div class="momo-home-stat-value text-lg font-black text-slate-800 mt-1">{{ yieldSummary.totalHours }} hr</div>
-              </div>
-              <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">已分析服務</div>
-                <div class="momo-home-stat-value text-lg font-black text-slate-800 mt-1">{{ yieldSummary.serviceCount }} 項</div>
-              </div>
-            </div>
-            <div class="momo-home-card-footer px-4 py-3 sm:px-6 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between gap-3">
-              <div class="min-w-0">
-                <div class="text-[10px] font-black text-slate-400">公式</div>
-                <div class="text-[11px] font-bold text-slate-600 truncate">服務收入 ÷ 預估工時；不含儲值進帳</div>
-              </div>
-              <button v-if="yieldSummary.unmatched.length" @click="openServiceConfigModal" class="momo-home-soft-button min-h-[34px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-[10px] font-black whitespace-nowrap">
-                {{ yieldSummary.unmatched.length }} 項缺時長
-              </button>
-            </div>
-          </section>
-
-          <!-- Monthly operations -->
-          <section class="momo-home-card bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-            <div class="momo-home-card-header px-4 py-4 sm:px-6 flex items-center justify-between border-b border-slate-100">
-              <div>
-                <h2 class="text-base sm:text-lg font-black text-slate-800">本月營運</h2>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }}</p>
-              </div>
-              <button @click="activeTab = 'report'" class="momo-home-soft-button min-h-[40px] px-3 rounded-xl text-xs font-black text-slate-700 border border-slate-200 bg-white">詳細報表</button>
-            </div>
-
-            <div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100">
-              <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">營業額</div>
-                <div class="momo-home-stat-value text-lg sm:text-xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(kpis.revenue) }}</div>
-              </div>
-              <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">支出</div>
-                <div class="momo-home-stat-value text-lg sm:text-xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(totalExpenses) }}</div>
-              </div>
-              <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">淨利</div>
-                <div class="momo-home-stat-value text-lg sm:text-xl font-black mt-1 text-slate-800">NT$ {{ formatNumber(kpis.netProfit) }}</div>
-              </div>
-              <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">客單價</div>
-                <div class="momo-home-stat-value text-lg sm:text-xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(kpis.aov) }}</div>
-              </div>
-            </div>
-
-            <div class="p-4 sm:p-6 border-t border-slate-100">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="text-xs sm:text-sm font-black text-slate-700">營業額趨勢</h3>
-                <span v-if="hoveredPoint" class="text-[10px] font-black text-macaron-peach-500">{{ hoveredPoint.label }} · NT$ {{ formatNumber(hoveredPoint.total) }}</span>
-                <span v-else class="text-[10px] font-bold text-slate-400">觸碰節點查看</span>
-              </div>
-              <div class="relative w-full overflow-hidden">
-                <svg viewBox="0 0 600 120" class="w-full h-auto min-h-[120px]">
-                  <line x1="15" y1="15" x2="585" y2="15" stroke="#E2E8F0" stroke-dasharray="3,3" stroke-width="0.8"></line>
-                  <line x1="15" y1="60" x2="585" y2="60" stroke="#E2E8F0" stroke-dasharray="3,3" stroke-width="0.8"></line>
-                  <line x1="15" y1="105" x2="585" y2="105" stroke="#CBD5E1" stroke-width="1"></line>
-                  <path v-if="trendChartPath.points.length" :d="trendChartPath.path" fill="none" stroke="#FF716A" stroke-width="3" stroke-linecap="round"></path>
-                  <g v-for="pt in trendChartPath.points" :key="pt.key">
-                    <rect :x="pt.x - (600 / trendChartPath.points.length / 2)" y="0" :width="600 / trendChartPath.points.length" height="120" fill="transparent"
-                          @mouseenter="hoveredPoint = pt" @mouseleave="hoveredPoint = null" @touchstart.passive="hoveredPoint = pt"></rect>
-                    <circle :cx="pt.x" :cy="pt.y" :r="pt.total > 0 ? 3.5 : 0" fill="#FF716A" stroke="white" stroke-width="1.5"></circle>
-                  </g>
-                </svg>
-              </div>
-              <div class="flex justify-between text-[9px] text-slate-400 font-bold px-2">
-                <span>{{ trendChartPath.points[0]?.label || '' }}</span>
-                <span>{{ trendChartPath.points[trendChartPath.points.length - 1]?.label || '' }}</span>
-              </div>
-            </div>
-          </section>
-
-          <!-- Pending actions -->
-          <section class="momo-home-card bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+          <!-- Show only when action is needed -->
+          <section v-if="pendingActionSummary.total" class="momo-home-card bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
             <div class="momo-home-card-header px-4 py-4 sm:px-6 border-b border-slate-100 flex items-center justify-between gap-3">
               <div class="min-w-0">
-                <h2 class="text-base sm:text-lg font-black text-slate-800">待處理事項</h2>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">自 2026/7/1 起，優先處理未打烊、帳務異常與儲值風險</p>
+                <h2 class="text-base sm:text-lg font-black text-slate-800">需要處理</h2>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ pendingActionSummary.total }} 筆 · 只在有未打烊或異常時出現</p>
               </div>
-              <button @click="runIntegrityCheck(true)" class="momo-home-soft-button min-h-[40px] px-3 rounded-xl text-xs font-black text-slate-700 border border-slate-200 bg-white whitespace-nowrap">重新檢查</button>
+              <button @click="runIntegrityCheck(true)" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl text-[11px] font-black text-slate-700 border border-slate-200 bg-white whitespace-nowrap">重新檢查</button>
             </div>
 
-            <div class="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100">
-              <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">未打烊</div>
-                <div class="momo-home-stat-value text-xl font-black mt-1 text-slate-800">{{ pendingActionSummary.unclosedCount }}</div>
-              </div>
-              <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">異常待確認</div>
-                <div class="momo-home-stat-value text-xl font-black mt-1 text-slate-800">{{ pendingActionSummary.anomalyCount }}</div>
-              </div>
-              <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">需修正</div>
-                <div class="momo-home-stat-value text-xl font-black mt-1 text-slate-800">{{ pendingActionSummary.blockers }}</div>
-              </div>
-            </div>
-
-            <div class="p-4 sm:p-6 space-y-5">
-              <div>
-                <div class="flex items-center justify-between mb-3">
-                  <h3 class="text-xs sm:text-sm font-black text-slate-700">未打烊日期清單</h3>
-                  <span class="text-[10px] font-bold text-slate-400">{{ unclosedCloseoutDates.length ? '自 7/1 起 · 點日期可補打烊' : '自 7/1 起都已完成' }}</span>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 p-4 sm:p-6">
+              <div v-if="unclosedCloseoutDates.length" class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-xs font-black text-slate-700">未打烊</h3>
+                  <span class="text-[10px] font-bold text-slate-400">顯示最近 3 天</span>
                 </div>
-                <div v-if="unclosedCloseoutDates.length" class="space-y-2">
-                  <button v-for="item in unclosedCloseoutDates.slice(0, 8)" :key="item.date"
-                          @click="openCloseoutSheet(item.date)"
-                          class="momo-home-list-item w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-left transition-colors">
-                    <div class="flex items-center justify-between gap-3">
-                      <div class="min-w-0">
-                        <div class="text-sm font-black text-slate-800">{{ item.date }} · {{ item.label }}</div>
-                        <div class="text-[10px] font-bold text-slate-500 mt-0.5">
-                          {{ item.ordersCount }} 筆業績 · 支出 NT$ {{ formatNumber(item.expenses) }}
-                        </div>
-                      </div>
-                      <div class="text-right shrink-0">
-                        <div class="text-[10px] font-black text-slate-400">應有現金</div>
-                        <div class="text-sm font-black text-slate-800">NT$ {{ formatNumber(item.actualCashIn) }}</div>
-                      </div>
+                <button v-for="item in unclosedCloseoutDates.slice(0, 3)" :key="item.date"
+                        @click="openCloseoutSheet(item.date)"
+                        class="momo-home-list-item w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-left transition-colors">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="text-sm font-black text-slate-800">{{ item.label }}</div>
+                      <div class="text-[10px] font-bold text-slate-500 mt-0.5">{{ item.ordersCount }} 筆 · 支出 NT$ {{ formatNumber(item.expenses) }}</div>
                     </div>
-                  </button>
-                  <div v-if="unclosedCloseoutDates.length > 8" class="text-[10px] font-bold text-slate-400 text-center">另有 {{ unclosedCloseoutDates.length - 8 }} 天未顯示，請先處理最近日期</div>
-                </div>
-                <div v-else class="momo-home-empty rounded-xl bg-slate-50 border border-slate-200 px-3 py-4 text-center text-xs font-black text-slate-600">沒有未打烊日期</div>
+                    <div class="text-right shrink-0">
+                      <div class="text-[10px] font-black text-slate-400">應有現金</div>
+                      <div class="text-sm font-black text-slate-800">NT$ {{ formatNumber(item.actualCashIn) }}</div>
+                    </div>
+                  </div>
+                </button>
               </div>
 
-              <div>
-                <div class="flex items-center justify-between mb-3">
-                  <h3 class="text-xs sm:text-sm font-black text-slate-700">帳務異常</h3>
-                  <span class="text-[10px] font-bold text-slate-400">{{ pendingActionSummary.anomalyCount ? `${pendingActionSummary.anomalyCount} 筆待確認` : '目前正常' }}</span>
+              <div v-if="pendingActionSummary.anomalyItems.length" class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-xs font-black text-slate-700">帳務異常</h3>
+                  <span class="text-[10px] font-bold text-slate-400">點擊可前往</span>
                 </div>
-                <div v-if="pendingActionSummary.anomalyItems.length" class="space-y-2">
-                  <button v-for="item in pendingActionSummary.anomalyItems" :key="item.code + item.message"
-                          @click="goToAnomaly(item)"
-                          class="momo-home-list-item w-full text-left rounded-xl bg-white border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-600 transition-colors"
-                          :class="item.severity === 'error' ? 'momo-home-list-item--error' : ''">
-                    <div class="flex items-center justify-between gap-2">
-                      <div class="min-w-0">
-                        <span class="font-black" :class="item.severity === 'error' ? 'text-rose-600' : 'text-amber-600'">{{ item.severity === 'error' ? '需修正' : '需確認' }}</span>
-                        <span class="ml-1">{{ item.message }}</span>
-                      </div>
-                      <span class="text-[10px] font-black text-macaron-peach-500 shrink-0">前往 ›</span>
+                <button v-for="item in pendingActionSummary.anomalyItems.slice(0, 3)" :key="item.code + item.message"
+                        @click="goToAnomaly(item)"
+                        class="momo-home-list-item w-full text-left rounded-xl bg-white border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-600 transition-colors"
+                        :class="item.severity === 'error' ? 'momo-home-list-item--error' : ''">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0 truncate">
+                      <span class="font-black" :class="item.severity === 'error' ? 'text-rose-600' : 'text-amber-600'">{{ item.severity === 'error' ? '需修正' : '需確認' }}</span>
+                      <span class="ml-1">{{ item.message }}</span>
                     </div>
-                  </button>
-                </div>
-                <div v-else class="momo-home-empty rounded-xl bg-slate-50 border border-slate-200 px-3 py-4 text-center text-xs font-black text-slate-600">目前沒有待處理異常</div>
+                    <span class="text-[10px] font-black text-macaron-peach-500 shrink-0">前往 ›</span>
+                  </div>
+                </button>
               </div>
             </div>
           </section>
@@ -4360,7 +4264,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.04-system-status-safety';
+    const APP_VERSION = '2026.07.05-daily-home-focus';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
