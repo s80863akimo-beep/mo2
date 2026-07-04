@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v43-visual-polish-pack';
-const APP_VERSION = '2026.07.03-visual-polish-pack';
+const CACHE_NAME = 'momohair-shell-v44-overview-sync-polish';
+const APP_VERSION = '2026.07.04-overview-sync-polish';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
