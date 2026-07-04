@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.04-header-polish">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.04-system-status-safety">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -175,6 +175,23 @@
     body.momo-polish .momo-header-menu {
       border-color: rgba(226, 232, 240, 0.86) !important;
       box-shadow: 0 18px 44px -30px rgba(15, 23, 42, 0.38) !important;
+    }
+
+    body.momo-polish .momo-system-center {
+      background: rgba(255, 255, 255, 0.97) !important;
+      border-color: rgba(226, 232, 240, 0.84) !important;
+      box-shadow: 0 16px 38px -30px rgba(15, 23, 42, 0.38) !important;
+    }
+
+    body.momo-polish .momo-system-item {
+      background: rgba(248, 250, 252, 0.72) !important;
+      border-color: rgba(226, 232, 240, 0.82) !important;
+    }
+
+    body.momo-polish .momo-system-action {
+      background: rgba(255, 255, 255, 0.98) !important;
+      border-color: rgba(226, 232, 240, 0.86) !important;
+      color: #334155 !important;
     }
 
     body.momo-polish .momo-sync-button {
@@ -1185,6 +1202,29 @@
               <!-- Dropdown Menu -->
               <transition name="fade">
                 <div v-if="showDataTools" class="momo-header-menu absolute right-0 mt-2 w-56 bg-white rounded-3xl macaron-shadow-lg border border-slate-200 p-2 z-50 flex flex-col gap-1">
+                  <div class="momo-system-center rounded-2xl border border-slate-200 p-3 mb-1">
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="min-w-0">
+                        <div class="text-xs font-black text-slate-800">系統狀態中心</div>
+                        <div class="mt-0.5 text-[10px] font-bold text-slate-400 truncate">{{ systemStatusDetail }}</div>
+                      </div>
+                      <span class="shrink-0 px-2 py-0.5 rounded-full border text-[9px] font-black" :class="statusToneClasses(systemStatusTone)">
+                        {{ systemStatusTitle }}
+                      </span>
+                    </div>
+                    <div class="mt-2 grid grid-cols-2 gap-1.5">
+                      <div v-for="item in systemStatusItems" :key="'desktop-' + item.key" class="momo-system-item rounded-xl border px-2 py-1.5">
+                        <div class="flex items-center gap-1.5">
+                          <span class="w-1.5 h-1.5 rounded-full" :class="statusToneClasses(item.tone, 'dot')"></span>
+                          <span class="text-[9px] font-black text-slate-400">{{ item.label }}</span>
+                        </div>
+                        <div class="mt-0.5 text-[10px] font-black text-slate-700 truncate">{{ item.value }}</div>
+                      </div>
+                    </div>
+                    <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="momo-system-action mt-2 w-full min-h-[34px] rounded-xl border text-[10px] font-black disabled:opacity-50">
+                      {{ safetyChecking || pwaCheckingUpdate ? '檢查中…' : '立即安全檢查' }}
+                    </button>
+                  </div>
                   <button @click="exportBackup" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-slate-700 flex items-center gap-2 transition-colors">
                     匯出備份 (JSON)
                   </button>
@@ -1203,8 +1243,8 @@
                   <button v-if="cloudReady" @click="createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-emerald-50 text-emerald-700 flex items-center gap-2 disabled:opacity-50">
                     {{ backupStatus === 'saving' ? '備份建立中…' : '立即建立雲端備份' }}
                   </button>
-                  <button @click="runIntegrityCheck(true)" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-sky-50 text-sky-700 flex items-center gap-2">
-                    檢查資料完整性
+                  <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-sky-50 text-sky-700 flex items-center gap-2 disabled:opacity-50">
+                    {{ safetyChecking || pwaCheckingUpdate ? '檢查中…' : '立即安全檢查' }}
                   </button>
                   <button @click="showOperationLogModal = true; showDataTools = false" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-amber-50 text-amber-700 flex items-center gap-2">
                     查看操作紀錄
@@ -1269,25 +1309,44 @@
           <div class="p-4 space-y-4">
             <section class="space-y-2">
               <div class="px-1 flex items-center justify-between">
-                <span class="text-[10px] font-black text-slate-400">常用操作</span>
-                <span class="text-[10px] font-black" :class="cloudReady ? 'text-emerald-600' : authConfig.configured ? 'text-violet-500' : 'text-slate-400'">
-                  {{ cloudReady ? '雲端正常' : authConfig.configured ? '可連接雲端' : '本機模式' }}
+                <span class="text-[10px] font-black text-slate-400">系統狀態中心</span>
+                <span class="text-[10px] font-black" :class="systemStatusTone === 'ok' ? 'text-emerald-600' : systemStatusTone === 'error' ? 'text-rose-600' : 'text-amber-600'">
+                  {{ systemStatusTitle }}
                 </span>
               </div>
-              <div class="rounded-[1.6rem] bg-gradient-to-br from-orange-50 via-white to-violet-50 border border-orange-100 p-3 macaron-shadow">
+              <div class="momo-system-center rounded-[1.6rem] bg-white border border-slate-200 p-3 macaron-shadow">
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0">
-                    <div class="text-sm font-black text-slate-800">資料狀態</div>
+                    <div class="text-sm font-black text-slate-800">{{ systemStatusTitle }}</div>
                     <p class="mt-1 text-[11px] font-bold text-slate-500 leading-relaxed">
-                      {{ cloudReady ? '已連接雲端，可手動備份或重新載入。' : authConfig.configured ? '需要時可登入或重新連接雲端資料。' : '目前以本機資料為主，建議定期匯出 JSON。' }}
+                      {{ systemStatusDetail }}
                     </p>
                   </div>
-                  <span class="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-black"
-                        :class="cloudReady ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-700'">
-                    {{ cloudReady ? '已同步' : '待確認' }}
+                  <span class="shrink-0 px-2.5 py-1 rounded-full border text-[10px] font-black" :class="statusToneClasses(systemStatusTone)">
+                    {{ safetyChecking || pwaCheckingUpdate ? '檢查中' : safetySummaryText }}
                   </span>
                 </div>
                 <div class="mt-3 grid grid-cols-2 gap-2">
+                  <div v-for="item in systemStatusItems" :key="'mobile-' + item.key" class="momo-system-item rounded-2xl border border-slate-200 bg-slate-50/70 p-2.5">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="text-[10px] font-black text-slate-400">{{ item.label }}</span>
+                      <span class="w-2 h-2 rounded-full" :class="statusToneClasses(item.tone, 'dot')"></span>
+                    </div>
+                    <div class="mt-1 text-xs font-black text-slate-800 truncate">{{ item.value }}</div>
+                    <div class="mt-0.5 text-[9px] font-bold text-slate-400 truncate">{{ item.detail }}</div>
+                  </div>
+                </div>
+                <div v-if="safetyReport?.issues?.length" class="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-2">
+                  <div class="text-[10px] font-black text-slate-400">優先處理</div>
+                  <div class="mt-1 text-[11px] font-bold text-slate-600 leading-relaxed line-clamp-2">{{ safetyReport.issues[0].message }}</div>
+                </div>
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                  <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="momo-system-action min-h-[48px] rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-black disabled:opacity-50">
+                    {{ safetyChecking || pwaCheckingUpdate ? '檢查中…' : '立即檢查' }}
+                  </button>
+                  <button @click="applyPwaUpdate" :disabled="!updateAvailable && !pendingServiceWorker" class="min-h-[48px] rounded-2xl bg-slate-900 text-white text-xs font-black disabled:opacity-30">
+                    {{ updateAvailable ? '套用新版' : '已是新版' }}
+                  </button>
                   <button v-if="authUser || authSession?.access_token" @click="showMobileTools = false; reloadCloudData(true)" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="min-h-[52px] rounded-2xl bg-slate-900 text-white text-xs font-black disabled:opacity-50">
                     {{ cloudReady ? '重載雲端' : '連接雲端' }}
                   </button>
@@ -1300,6 +1359,7 @@
                 <p v-if="authUser" class="mt-2 px-1 text-[10px] font-bold text-slate-400 truncate">{{ cloudMessage }}</p>
               </div>
 
+              <div class="px-1 text-[10px] font-black text-slate-400">常用操作</div>
               <div class="grid grid-cols-2 gap-2">
                 <button @click="showMobileTools = false; openServiceConfigModal()" class="min-h-[50px] px-4 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-between text-left">
                   <span class="text-xs font-black text-orange-700">服務定價</span>
@@ -1313,29 +1373,6 @@
                   <span class="text-xs font-black text-sky-700">加入 iPhone 主畫面</span>
                   <span class="text-sky-300">›</span>
                 </button>
-              </div>
-            </section>
-
-            <section class="space-y-2">
-              <div class="px-1 text-[10px] font-black text-slate-400">App 更新</div>
-              <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3 space-y-3">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="min-w-0">
-                    <div class="text-xs font-black text-slate-700">{{ updateAvailable ? '有新版可以套用' : '目前是最新版' }}</div>
-                    <div class="mt-0.5 text-[10px] font-bold text-slate-400 truncate">{{ appVersion }}</div>
-                  </div>
-                  <span class="shrink-0 px-2 py-1 rounded-full text-[10px] font-black"
-                        :class="updateAvailable ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">
-                    {{ updateAvailable ? '可更新' : pwaStatusText }}
-                  </span>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                  <button @click="checkPwaUpdate(true)" :disabled="pwaCheckingUpdate" class="min-h-[44px] rounded-2xl bg-white border border-slate-100 text-slate-700 text-xs font-black disabled:opacity-50">
-                    {{ pwaCheckingUpdate ? '檢查中…' : '檢查更新' }}
-                  </button>
-                  <button @click="applyPwaUpdate" :disabled="!updateAvailable && !pendingServiceWorker" class="min-h-[44px] rounded-2xl bg-slate-900 text-white text-xs font-black disabled:opacity-30">套用新版</button>
-                </div>
-                <p class="px-1 text-[10px] font-bold text-slate-400">{{ pwaLastCheckedText }} · 快取 {{ pwaCacheCountText }}</p>
               </div>
             </section>
 
@@ -1363,7 +1400,7 @@
                     匯入還原
                     <input type="file" @change="showMobileTools = false; importBackup($event)" accept=".json" class="hidden">
                   </label>
-                  <button @click="showMobileTools = false; runIntegrityCheck(true)" class="min-h-[48px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black">完整性檢查</button>
+                  <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="min-h-[48px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black disabled:opacity-50">安全檢查</button>
                 </div>
                 <button v-if="cloudMigrationNeeded" @click="showMobileTools = false; migrateLocalDataToSupabase()" :disabled="cloudStatus === 'syncing'" class="w-full min-h-[48px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">首次搬移到 Supabase</button>
                 <button @click="showMobileTools = false; showOperationLogModal = true" class="w-full min-h-[48px] rounded-2xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">查看操作紀錄</button>
@@ -4323,7 +4360,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.04-header-polish';
+    const APP_VERSION = '2026.07.04-system-status-safety';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -4465,6 +4502,8 @@
           backupStatus: 'idle',
           lastBackupAt: localStorage.getItem('momo_last_backup_at') || null,
           integrityReport: safeParse(localStorage.getItem('momo_integrity_report'), null),
+          safetyReport: safeParse(localStorage.getItem('momo_safety_report'), null),
+          safetyChecking: false,
           pendingActionStartDate: '2026-07-01',
           operationLogs: safeParse(localStorage.getItem('momo_operation_logs'), []),
           showOperationLogModal: false,
@@ -4640,6 +4679,83 @@
         pwaLastCheckedText() {
           if (!this.pwaLastCheckedAt) return '尚未自動檢查更新';
           return `最後檢查 ${this.formatDateTime(this.pwaLastCheckedAt)}`;
+        },
+        localDataCount() {
+          return (this.orders?.length || 0)
+            + (this.expenses?.length || 0)
+            + (this.inventory?.length || 0)
+            + (this.customers?.length || 0)
+            + (this.prepaidLedger?.length || 0)
+            + Object.keys(this.closeoutRecords || {}).length;
+        },
+        safetySummaryText() {
+          if (this.safetyChecking) return '檢查中';
+          if (!this.safetyReport) return '尚未自動檢查';
+          if (this.safetyReport.status === 'ok') return '資料安全正常';
+          return `${this.safetyReport.errorCount || 0} 錯誤、${this.safetyReport.warningCount || 0} 提醒`;
+        },
+        systemStatusTone() {
+          if (this.cloudStatus === 'error' || this.cloudStatus === 'conflict' || this.safetyReport?.status === 'error') return 'error';
+          if (this.updateAvailable || this.cloudMigrationNeeded || this.cloudSyncPending || this.backupReminder.due || this.safetyReport?.status === 'warning') return 'warn';
+          return 'ok';
+        },
+        systemStatusTitle() {
+          if (this.systemStatusTone === 'error') return '需要處理';
+          if (this.systemStatusTone === 'warn') return '有提醒';
+          return '系統正常';
+        },
+        systemStatusDetail() {
+          if (this.systemStatusTone === 'error') return '資料或雲端狀態有異常，請先處理紅色項目。';
+          if (this.systemStatusTone === 'warn') return '目前可使用，但建議先完成提醒項目。';
+          return '版本、資料、備份與雲端狀態都正常。';
+        },
+        systemStatusItems() {
+          const cloudTone = this.cloudStatus === 'error' || this.cloudStatus === 'conflict'
+            ? 'error'
+            : this.cloudMigrationNeeded || this.cloudSyncPending || this.cloudSyncInFlight
+              ? 'warn'
+              : this.cloudReady
+                ? 'ok'
+                : this.authConfig.configured
+                  ? 'warn'
+                  : 'neutral';
+          const safetyTone = this.safetyReport?.status === 'error'
+            ? 'error'
+            : this.safetyReport?.status === 'warning'
+              ? 'warn'
+              : this.safetyReport?.status === 'ok'
+                ? 'ok'
+                : 'neutral';
+          return [
+            {
+              key: 'version',
+              label: '版本',
+              value: this.updateAvailable ? '有新版' : this.pwaStatusText,
+              detail: `${this.appVersion} · ${this.pwaLastCheckedText}`,
+              tone: this.updateAvailable ? 'warn' : 'ok'
+            },
+            {
+              key: 'cloud',
+              label: '雲端',
+              value: this.cloudStatus === 'syncing' ? '同步中' : this.cloudStatus === 'conflict' ? '衝突待處理' : this.cloudMigrationNeeded ? '待搬移' : this.cloudReady ? '已連接' : this.authConfig.configured ? '待確認' : '本機模式',
+              detail: this.cloudMessage || (this.cloudReady ? '雲端資料可用' : '目前以本機資料為主'),
+              tone: cloudTone
+            },
+            {
+              key: 'backup',
+              label: '備份',
+              value: this.backupReminder.due ? '需備份' : '正常',
+              detail: this.backupSummaryText,
+              tone: this.backupReminder.tone
+            },
+            {
+              key: 'safety',
+              label: '安全檢查',
+              value: this.safetySummaryText,
+              detail: this.safetyReport?.checkedAt ? `最後檢查 ${this.formatDateTime(this.safetyReport.checkedAt)}` : `本機資料 ${this.localDataCount} 筆`,
+              tone: safetyTone
+            }
+          ];
         },
         quickServiceOptions() {
           return this.servicesConfig
@@ -5891,8 +6007,10 @@
       },
       mounted() {
         this.loadFromLocalStorage();
+        this.runDataSafetyCheck(false);
         this.initAuth();
         this.setupPwaUpdateListener();
+        setTimeout(() => this.runSystemStatusCheck(false), 3500);
         window.addEventListener('online', () => { this.online = true; });
         window.addEventListener('offline', () => { this.online = false; });
         const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -9616,6 +9734,100 @@
           }, 1000); // 1-second debounce
         },
 
+        statusToneClasses(tone, type = 'pill') {
+          const map = {
+            ok: type === 'dot' ? 'bg-emerald-500' : 'bg-emerald-50 text-emerald-700 border-emerald-100',
+            warn: type === 'dot' ? 'bg-amber-400' : 'bg-amber-50 text-amber-700 border-amber-100',
+            error: type === 'dot' ? 'bg-rose-500' : 'bg-rose-50 text-rose-700 border-rose-100',
+            neutral: type === 'dot' ? 'bg-slate-300' : 'bg-slate-50 text-slate-600 border-slate-200'
+          };
+          return map[tone] || map.neutral;
+        },
+        buildDataSafetyReport() {
+          const issues = [];
+          const addIssue = (severity, code, message) => issues.push({ severity, code, message });
+          const localDataCount = this.localDataCount;
+          const storageBytes = (() => {
+            try { return new Blob(Object.values(localStorage)).size; }
+            catch (error) { return 0; }
+          })();
+          const integrity = this.runIntegrityCheck(false);
+
+          if (!this.hasMeaningfulLocalData()) {
+            addIssue('warning', 'no_local_data', '目前沒有可用的本機業務資料；若不是新裝置，請先重新載入雲端或匯入備份。');
+          }
+          if (integrity.status === 'error') addIssue('error', 'integrity_error', `完整性檢查有 ${integrity.errorCount} 個錯誤。`);
+          if (integrity.status === 'warning') addIssue('warning', 'integrity_warning', `完整性檢查有 ${integrity.warningCount} 個提醒。`);
+          if (this.backupStatus === 'error') addIssue('error', 'backup_error', '最近一次雲端備份失敗，請重新建立備份。');
+          else if (this.backupReminder.due) addIssue('warning', 'backup_due', this.backupReminder.message);
+          if (this.cloudStatus === 'conflict' || this.cloudConflict) addIssue('error', 'cloud_conflict', '雲端有版本衝突，請先選擇保留雲端或保留本機。');
+          if (this.cloudStatus === 'error') addIssue('error', 'cloud_error', this.cloudMessage || '雲端同步狀態異常。');
+          if (this.cloudMigrationNeeded) addIssue('warning', 'cloud_migration', '本機資料尚未完成首次搬移到 Supabase。');
+          if (this.cloudSyncPending || this.cloudSyncInFlight) addIssue('warning', 'cloud_pending', '有本機修改正在等待雲端同步。');
+          try {
+            if (this.hasLocalVersionedChanges()) addIssue('warning', 'local_version_changes', '偵測到本機資料與雲端基準不同，建議同步完成後再關閉 App。');
+          } catch (error) {
+            // Baseline may not be ready yet; skip this optional check.
+          }
+          if (this.updateAvailable) addIssue('warning', 'pwa_update_available', '已有新版可套用，建議更新後再繼續使用。');
+          if (storageBytes > 4 * 1024 * 1024) addIssue('warning', 'storage_large', '本機儲存空間已接近上限，建議先匯出 JSON 備份。');
+
+          const errorCount = issues.filter(issue => issue.severity === 'error').length;
+          const warningCount = issues.filter(issue => issue.severity === 'warning').length;
+          return {
+            status: errorCount ? 'error' : warningCount ? 'warning' : 'ok',
+            errorCount,
+            warningCount,
+            checkedAt: new Date().toISOString(),
+            localDataCount,
+            storageBytes,
+            issues: issues.slice(0, 20)
+          };
+        },
+        runDataSafetyCheck(showResult = true) {
+          this.safetyChecking = true;
+          try {
+            const report = this.buildDataSafetyReport();
+            this.safetyReport = report;
+            localStorage.setItem('momo_safety_report', JSON.stringify(report));
+            if (showResult) {
+              const firstIssue = report.issues?.[0]?.message;
+              this.showToast(
+                report.status === 'ok'
+                  ? '資料安全檢查通過'
+                  : `資料安全檢查：${report.errorCount} 錯誤、${report.warningCount} 提醒${firstIssue ? `｜${firstIssue}` : ''}`,
+                report.status === 'ok' ? 'success' : 'error',
+                9000
+              );
+            }
+            return report;
+          } finally {
+            this.safetyChecking = false;
+          }
+        },
+        async runSystemStatusCheck(showResult = true) {
+          if (this.safetyChecking || this.pwaCheckingUpdate) return this.safetyReport;
+          this.safetyChecking = true;
+          try {
+            await this.checkPwaUpdate(false);
+            const report = this.buildDataSafetyReport();
+            this.safetyReport = report;
+            localStorage.setItem('momo_safety_report', JSON.stringify(report));
+            if (showResult) {
+              const firstIssue = report.issues?.[0]?.message;
+              this.showToast(
+                report.status === 'ok'
+                  ? '系統狀態檢查完成：目前正常'
+                  : `系統狀態檢查：${report.errorCount} 錯誤、${report.warningCount} 提醒${firstIssue ? `｜${firstIssue}` : ''}`,
+                report.status === 'ok' ? 'success' : 'error',
+                9000
+              );
+            }
+            return report;
+          } finally {
+            this.safetyChecking = false;
+          }
+        },
         buildBackupData() {
           return {
             schemaVersion: this.dataSchemaVersion,
@@ -9763,6 +9975,7 @@
             this.lastBackupAt = createdAt;
             localStorage.setItem('momo_last_backup_at', createdAt);
             this.backupStatus = 'ready';
+            this.runDataSafetyCheck(false);
             if (!silent) this.showToast('雲端備份已建立，並保留最近 30 天');
             return true;
           } catch (error) {
@@ -9795,6 +10008,7 @@
           this.lastBackupAt = createdAt;
           localStorage.setItem('momo_last_backup_at', createdAt);
           this.backupStatus = 'ready';
+          this.runDataSafetyCheck(false);
           this.recordOperation('backup_export', '匯出正式備份', link.download);
           this.showToast('備份 JSON 檔案已下載');
           this.showDataTools = false;

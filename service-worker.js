@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v46-header-polish';
-const APP_VERSION = '2026.07.04-header-polish';
+const CACHE_NAME = 'momohair-shell-v47-system-status-safety';
+const APP_VERSION = '2026.07.04-system-status-safety';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
