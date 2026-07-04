@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v45-home-section-unify';
-const APP_VERSION = '2026.07.04-home-section-unify';
+const CACHE_NAME = 'momohair-shell-v46-header-polish';
+const APP_VERSION = '2026.07.04-header-polish';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
