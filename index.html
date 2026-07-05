@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.05-expense-templates">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.05-auto-calendar-sync">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -1204,9 +1204,10 @@
             </button>
             <button type="button" @click="shiftMonth(1)" class="w-8 min-h-[38px] rounded-full text-slate-500 font-black" aria-label="下一個月">›</button>
           </div>
-          <button @click="syncFromApi" :disabled="syncing"
+          <button @click="syncFromApi()" :disabled="syncing"
                   :class="{ 'is-syncing': syncing }"
                   :aria-busy="syncing ? 'true' : 'false'"
+                  :title="calendarSyncCaption || '同步行事曆'"
                   aria-label="同步行事曆"
                   class="momo-sync-button mobile-sync-button jelly-btn rounded-2xl bg-white text-slate-700 text-xs font-black flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50">
             <svg :class="{ 'animate-spin': syncing }" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992M2.985 19.644v-4.992h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182V4.356"/></svg>
@@ -1247,10 +1248,11 @@
             <!-- Sync Calendar Button & Last Sync Time -->
             <div class="relative flex flex-col items-center">
               <button
-                @click="syncFromApi"
+                @click="syncFromApi()"
                 :disabled="syncing"
                 :class="{ 'is-syncing': syncing }"
                 :aria-busy="syncing ? 'true' : 'false'"
+                :title="calendarSyncCaption || '同步行事曆'"
                 class="momo-sync-button jelly-btn bg-white border border-slate-200 text-slate-700 text-sm font-extrabold px-4 py-2.5 rounded-full flex items-center gap-2 shadow-sm disabled:opacity-50"
               >
                 <!-- Sync Icon (SVG) -->
@@ -1259,8 +1261,8 @@
                 </svg>
                 <span>{{ syncing ? '同步中...' : '同步' }}</span>
               </button>
-              <span v-if="lastSyncTime" class="absolute top-full mt-0.5 left-1/2 -translate-x-1/2 text-[9px] text-slate-400 font-semibold whitespace-nowrap select-none">
-                最後同步：{{ lastSyncTime }}
+              <span v-if="calendarSyncCaption" class="absolute top-full mt-0.5 left-1/2 -translate-x-1/2 text-[9px] text-slate-400 font-semibold whitespace-nowrap select-none">
+                {{ calendarSyncCaption }}
               </span>
             </div>
 
@@ -4364,7 +4366,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.05-expense-templates';
+    const APP_VERSION = '2026.07.05-auto-calendar-sync';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -4504,6 +4506,10 @@
           lastSyncTime: localStorage.getItem('momo_last_sync_time') || null,
           syncReport: safeParse(localStorage.getItem('momo_sync_report'), null),
           syncError: safeParse(localStorage.getItem('momo_sync_error'), null),
+          calendarAutoSyncState: safeParse(localStorage.getItem('momo_calendar_auto_sync_state'), {}),
+          calendarAutoSyncTimer: null,
+          calendarAutoSyncStatus: 'idle',
+          calendarAutoSyncMessage: '',
           backupStatus: 'idle',
           lastBackupAt: localStorage.getItem('momo_last_backup_at') || null,
           integrityReport: safeParse(localStorage.getItem('momo_integrity_report'), null),
@@ -4690,6 +4696,13 @@
         pwaLastCheckedText() {
           if (!this.pwaLastCheckedAt) return '尚未自動檢查更新';
           return `最後檢查 ${this.formatDateTime(this.pwaLastCheckedAt)}`;
+        },
+        calendarSyncCaption() {
+          if (this.syncing && this.calendarAutoSyncStatus === 'syncing') return '背景同步行事曆…';
+          if (this.syncing) return '同步中…';
+          if (this.calendarAutoSyncMessage) return this.calendarAutoSyncMessage;
+          if (this.lastSyncTime) return `最後同步：${this.lastSyncTime}`;
+          return '尚未同步行事曆';
         },
         localDataCount() {
           return (this.orders?.length || 0)
@@ -6042,10 +6055,13 @@
         if (this.iosPerfMode) document.body.classList.add('momo-ios-perf');
         this.loadFromLocalStorage();
         this.runDataSafetyCheck(false);
-        this.initAuth();
+        this.initAuth().finally(() => this.scheduleInitialCalendarAutoSync());
         this.setupPwaUpdateListener();
         setTimeout(() => this.runSystemStatusCheck(false), 3500);
-        window.addEventListener('online', () => { this.online = true; });
+        window.addEventListener('online', () => {
+          this.online = true;
+          this.scheduleInitialCalendarAutoSync(1500);
+        });
         window.addEventListener('offline', () => { this.online = false; });
         if (this.isIOSDevice && !this.isStandalone && localStorage.getItem('momo_ios_guide_dismissed') !== '1') {
           setTimeout(() => { this.showIosGuide = true; }, 1200);
@@ -6084,6 +6100,7 @@
       beforeUnmount() {
         if (this.cloudVersionPollTimer) clearInterval(this.cloudVersionPollTimer);
         if (this.cloudSyncTimer) clearTimeout(this.cloudSyncTimer);
+        if (this.calendarAutoSyncTimer) clearTimeout(this.calendarAutoSyncTimer);
         if (this.pwaAutoCheckTimer) clearTimeout(this.pwaAutoCheckTimer);
         if (this.pwaAutoCheckInterval) clearInterval(this.pwaAutoCheckInterval);
         if (this.iosViewportResizeHandler && window.visualViewport) window.visualViewport.removeEventListener('resize', this.iosViewportResizeHandler);
@@ -7813,7 +7830,7 @@
             month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
           });
         },
-        setCalendarSyncError(error, status = 0, detail = '') {
+        setCalendarSyncError(error, status = 0, detail = '', options = {}) {
           const isTimeout = error?.name === 'AbortError';
           const isOffline = !navigator.onLine;
           let title = '行事曆同步失敗';
@@ -7834,7 +7851,7 @@
           }
           this.syncError = { title, message: String(message).slice(0, 240), status, at: new Date().toISOString() };
           localStorage.setItem('momo_sync_error', JSON.stringify(this.syncError));
-          this.showToast(`${title}：${message}`, 'error', 8000);
+          if (!options.silent) this.showToast(`${title}：${message}`, 'error', 8000);
         },
         clearCalendarSyncError() {
           this.syncError = null;
@@ -7842,6 +7859,100 @@
         },
         retryCalendarSync() {
           if (!this.syncing) this.syncFromApi();
+        },
+        calendarAutoSyncStorageKey() {
+          return 'momo_calendar_auto_sync_state';
+        },
+        calendarAutoSyncPeriod() {
+          return `${this.selectedYear}-${this.selectedMonth}`;
+        },
+        persistCalendarAutoSyncState(patch = {}) {
+          const next = {
+            ...(this.calendarAutoSyncState || {}),
+            ...patch,
+            updatedAt: new Date().toISOString()
+          };
+          this.calendarAutoSyncState = next;
+          localStorage.setItem(this.calendarAutoSyncStorageKey(), JSON.stringify(next));
+        },
+        calendarAutoSyncDecision() {
+          const now = Date.now();
+          const state = this.calendarAutoSyncState || {};
+          const period = this.calendarAutoSyncPeriod();
+          const today = new Date().toLocaleDateString('sv-SE');
+          const lastSuccessAt = Date.parse(state.lastSuccessAt || '');
+          const lastAttemptAt = Date.parse(state.lastAttemptAt || '');
+          const minSuccessInterval = 3 * 60 * 60 * 1000;
+          const minRetryInterval = 30 * 60 * 1000;
+
+          if (!this.online || !navigator.onLine) return { run: false, reason: 'offline' };
+          if (document.hidden) return { run: false, reason: 'hidden' };
+          if (this.syncing) return { run: false, reason: 'syncing' };
+          if (this.selectedMonth === 'All') return { run: false, reason: 'annual' };
+          if (this.authConfig.required && !this.authSession?.access_token) return { run: false, reason: 'auth' };
+          if (this.cloudConflict) return { run: false, reason: 'conflict' };
+          if (this.cloudMigrationNeeded) return { run: false, reason: 'migration' };
+          if (state.lastAttemptResult === 'error' && lastAttemptAt && now - lastAttemptAt < minRetryInterval) return { run: false, reason: 'recent_error' };
+          if (state.period !== period || state.lastSuccessDate !== today) return { run: true, reason: 'new_day_or_period' };
+          if (!lastSuccessAt || now - lastSuccessAt >= minSuccessInterval) return { run: true, reason: 'stale' };
+          return { run: false, reason: 'fresh' };
+        },
+        scheduleInitialCalendarAutoSync(delayMs = 3000) {
+          if (this.calendarAutoSyncTimer) clearTimeout(this.calendarAutoSyncTimer);
+          if (this.calendarAutoSyncStatus === 'syncing' || this.syncing) return;
+          this.calendarAutoSyncTimer = setTimeout(() => {
+            this.calendarAutoSyncTimer = null;
+            this.runInitialCalendarAutoSync();
+          }, delayMs);
+        },
+        async runInitialCalendarAutoSync() {
+          const decision = this.calendarAutoSyncDecision();
+          if (!decision.run) {
+            if (decision.reason === 'offline') this.calendarAutoSyncMessage = '離線中，暫停自動同步';
+            if (decision.reason === 'recent_error') this.calendarAutoSyncMessage = '自動同步暫停，可手動同步';
+            return false;
+          }
+          this.calendarAutoSyncStatus = 'syncing';
+          this.calendarAutoSyncMessage = '背景同步行事曆…';
+          return this.syncFromApi({ automatic: true, silent: true });
+        },
+        normalizeCalendarSyncOptions(options = {}) {
+          if (options && options.type && options.target) return {};
+          return options || {};
+        },
+        markCalendarSyncAttempt(options = {}) {
+          this.persistCalendarAutoSyncState({
+            period: this.calendarAutoSyncPeriod(),
+            lastAttemptAt: new Date().toISOString(),
+            lastAttemptResult: 'pending',
+            source: options.automatic ? 'auto' : 'manual'
+          });
+        },
+        markCalendarSyncSuccess(options = {}) {
+          const syncedAt = new Date();
+          const timeText = syncedAt.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+          this.persistCalendarAutoSyncState({
+            period: this.calendarAutoSyncPeriod(),
+            lastSuccessAt: syncedAt.toISOString(),
+            lastSuccessDate: syncedAt.toLocaleDateString('sv-SE'),
+            lastAttemptAt: syncedAt.toISOString(),
+            lastAttemptResult: 'success',
+            source: options.automatic ? 'auto' : 'manual'
+          });
+          this.calendarAutoSyncStatus = 'synced';
+          this.calendarAutoSyncMessage = options.automatic ? `行事曆已自動更新 ${timeText}` : `行事曆已更新 ${timeText}`;
+        },
+        markCalendarSyncFailure(error, options = {}) {
+          this.persistCalendarAutoSyncState({
+            period: this.calendarAutoSyncPeriod(),
+            lastAttemptAt: new Date().toISOString(),
+            lastAttemptResult: 'error',
+            lastErrorAt: new Date().toISOString(),
+            lastErrorMessage: String(error?.message || '同步失敗').slice(0, 160),
+            source: options.automatic ? 'auto' : 'manual'
+          });
+          this.calendarAutoSyncStatus = 'error';
+          this.calendarAutoSyncMessage = options.automatic ? '自動同步失敗，可手動同步' : '同步失敗，可重新同步';
         },
 
         // Supabase Authentication
@@ -7987,6 +8098,7 @@
             this.authForm.password = '';
             this.showAuthSheet = false;
             await this.initializeCloudData();
+            this.scheduleInitialCalendarAutoSync();
             this.showToast(this.cloudMigrationNeeded ? '🔐 登入成功，請執行首次資料搬移' : '🔐 雲端登入成功');
           } catch (error) {
             this.authError = error.message || '登入失敗，請稍後再試';
@@ -9022,21 +9134,34 @@
             this.selectedMonth = 'All';
           }
         },
-        async syncFromApi() {
+        async syncFromApi(options = {}) {
+          const syncOptions = this.normalizeCalendarSyncOptions(options);
+          const silent = Boolean(syncOptions.silent);
+          if (this.syncing) return false;
           if (this.authConfig.required && !this.authSession?.access_token) {
             this.authError = '請先登入後再同步行事曆';
-            this.showAuthSheet = true;
-            this.setCalendarSyncError(new Error('尚未登入'), 401);
-            return;
+            if (!silent) this.showAuthSheet = true;
+            const error = new Error('尚未登入');
+            this.setCalendarSyncError(error, 401, '', { silent });
+            this.markCalendarSyncFailure(error, syncOptions);
+            return false;
           }
           // 全年模式下提示用戶選擇月份
           if (this.selectedMonth === 'All') {
-            this.showToast('📅 請先選擇特定月份再同步，全年模式下後端只會回傳當月資料', 'error', 5000);
-            return;
+            if (!silent) this.showToast('📅 請先選擇特定月份再同步，全年模式下後端只會回傳當月資料', 'error', 5000);
+            return false;
           }
 
           this.syncing = true;
-          this.showToast('正在向伺服器同步資料...', 'success');
+          this.markCalendarSyncAttempt(syncOptions);
+          if (silent) {
+            this.calendarAutoSyncStatus = 'syncing';
+            this.calendarAutoSyncMessage = '背景同步行事曆…';
+          } else {
+            this.calendarAutoSyncStatus = 'syncing';
+            this.calendarAutoSyncMessage = '同步中…';
+            this.showToast('正在向伺服器同步資料...', 'success');
+          }
 
           // 根據當前選擇的年月份建立 Query 參數，讓同步能配合當前檢視區間
           const params = [];
@@ -9067,12 +9192,13 @@
           } catch (e) {
             if (primaryApi === productionApi) {
               console.error('API Sync Error:', e);
-              this.setCalendarSyncError(e);
+              this.setCalendarSyncError(e, 0, '', { silent });
+              this.markCalendarSyncFailure(e, syncOptions);
               this.syncing = false;
-              return;
+              return false;
             }
             console.log('本機後端未啟動或連線超時，切換為 Render 雲端後端...');
-            this.showToast('連線雲端伺服器，冷啟動約需 30 秒，請稍候...', 'success');
+            if (!silent) this.showToast('連線雲端伺服器，冷啟動約需 30 秒，請稍候...', 'success');
             try {
               response = await fetch(`${productionApi}/api/sync${queryString}`, {
                 method: 'POST',
@@ -9081,9 +9207,10 @@
               });
             } catch (err) {
               console.error('API Sync Error:', err);
-              this.setCalendarSyncError(err);
+              this.setCalendarSyncError(err, 0, '', { silent });
+              this.markCalendarSyncFailure(err, syncOptions);
               this.syncing = false;
-              return;
+              return false;
             }
           }
 
@@ -9100,14 +9227,16 @@
             const orders = resData.orders || (resData.data && resData.data.orders);
             if (resData && Array.isArray(orders)) {
               const cancelledEventIds = resData.cancelledEventIds || (resData.data && resData.data.cancelledEventIds) || [];
-              const report = this.washAndMergeOrders(orders, cancelledEventIds);
+              const report = this.washAndMergeOrders(orders, cancelledEventIds, { silent });
               this.lastSyncTime = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
               localStorage.setItem('momo_last_sync_time', this.lastSyncTime);
               this.syncReport = { ...report, syncedAt: new Date().toISOString(), period: `${this.selectedYear}-${this.selectedMonth}` };
               localStorage.setItem('momo_sync_report', JSON.stringify(this.syncReport));
               this.clearCalendarSyncError();
+              this.markCalendarSyncSuccess(syncOptions);
               this.runIntegrityCheck(false);
               await this.createAutomaticBackup({ silent: true });
+              return true;
             } else {
               throw new Error('伺服器回傳之資料格式有誤');
             }
@@ -9118,13 +9247,15 @@
               const parsed = detail ? JSON.parse(detail) : null;
               detail = parsed?.detail || detail;
             } catch (_) {}
-            this.setCalendarSyncError(e, e.httpStatus || 0, detail);
+            this.setCalendarSyncError(e, e.httpStatus || 0, detail, { silent });
+            this.markCalendarSyncFailure(e, syncOptions);
+            return false;
           } finally {
             this.syncing = false;
           }
         },
 
-        washAndMergeOrders(rawOrders, cancelledEventIds = []) {
+        washAndMergeOrders(rawOrders, cancelledEventIds = [], options = {}) {
           let mergedCount = 0;
           let updatedCount = 0;
           let unchangedCount = 0;
@@ -9291,10 +9422,12 @@
           });
 
           this.saveOrders();
-          if (mergedCount || updatedCount || cancelledCount) {
-            this.showToast(`同步完成：新增 ${mergedCount}、更新 ${updatedCount}、取消 ${cancelledCount} 筆`);
-          } else {
-            this.showToast('同步完成，行事曆資料沒有變更');
+          if (!options.silent) {
+            if (mergedCount || updatedCount || cancelledCount) {
+              this.showToast(`同步完成：新增 ${mergedCount}、更新 ${updatedCount}、取消 ${cancelledCount} 筆`);
+            } else {
+              this.showToast('同步完成，行事曆資料沒有變更');
+            }
           }
           return {
             received: rawOrders.length,

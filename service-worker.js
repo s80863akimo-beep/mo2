@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v50-expense-templates';
-const APP_VERSION = '2026.07.05-expense-templates';
+const CACHE_NAME = 'momohair-shell-v51-auto-calendar-sync';
+const APP_VERSION = '2026.07.05-auto-calendar-sync';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
