@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.05-daily-home-focus">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.05-ios-performance-pass">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -468,6 +468,75 @@
       background: rgba(255, 255, 255, 0.98) !important;
       border-color: rgba(226, 232, 240, 0.86) !important;
       color: #334155 !important;
+    }
+
+    /* iOS performance mode: keep the same layout, reduce expensive blur/shadow/repaint work in PWA. */
+    body.momo-ios-perf {
+      background-attachment: scroll !important;
+    }
+
+    body.momo-ios-perf .momo-app-header,
+    body.momo-ios-perf .floating-nav,
+    body.momo-ios-perf .ios-action-bar,
+    body.momo-ios-perf .crm-save-bar,
+    body.momo-ios-perf .glass-panel {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background: rgba(255, 255, 255, 0.96) !important;
+    }
+
+    body.momo-ios-perf .macaron-shadow,
+    body.momo-ios-perf .macaron-shadow-lg,
+    body.momo-ios-perf .macaron-shadow-sm,
+    body.momo-ios-perf .momo-today-overview,
+    body.momo-ios-perf .momo-home-card,
+    body.momo-ios-perf .momo-home-alert,
+    body.momo-ios-perf .momo-system-center,
+    body.momo-ios-perf .momo-header-menu {
+      box-shadow: 0 8px 18px -16px rgba(15, 23, 42, 0.26) !important;
+    }
+
+    body.momo-ios-perf .jelly-btn,
+    body.momo-ios-perf .hover-lift,
+    body.momo-ios-perf .daily-action-button,
+    body.momo-ios-perf .floating-nav button,
+    body.momo-ios-perf .jelly-input {
+      will-change: auto !important;
+      transition-duration: 0.12s !important;
+    }
+
+    body.momo-ios-perf .jelly-btn:active,
+    body.momo-ios-perf .daily-action-button:active,
+    body.momo-ios-perf .floating-nav button:active {
+      transform: scale(0.98) !important;
+    }
+
+    body.momo-ios-perf .fade-enter-active,
+    body.momo-ios-perf .fade-leave-active {
+      transition: opacity 0.12s ease !important;
+      will-change: auto !important;
+    }
+
+    body.momo-ios-perf .fade-enter-from,
+    body.momo-ios-perf .fade-leave-to {
+      transform: none !important;
+    }
+
+    body.momo-ios-perf .animate-float-slow,
+    body.momo-ios-perf .animate-float-delayed,
+    body.momo-ios-perf .animate-bounce-slow,
+    body.momo-ios-perf .animate-pulse-subtle {
+      animation: none !important;
+    }
+
+    @supports (content-visibility: auto) {
+      body.momo-ios-perf .momo-list-page > section,
+      body.momo-ios-perf .momo-report-page > section,
+      body.momo-ios-perf .crm-customer-card,
+      body.momo-ios-perf .momo-list-page .rounded-xl.border.border-slate-100.bg-white {
+        content-visibility: auto;
+        contain-intrinsic-size: 1px 220px;
+      }
     }
 
     /* 3) Bottom tab bar refinement */
@@ -4264,7 +4333,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.05-daily-home-focus';
+    const APP_VERSION = '2026.07.05-ios-performance-pass';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -4344,6 +4413,7 @@
         // Init filters
         const todayStr = new Date().toLocaleDateString('sv-SE');
         const [curYear, curMonth] = todayStr.split('-');
+        const isIOSDevice = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
         return {
           activeTab: 'dashboard',
@@ -4422,6 +4492,10 @@
           crmEditDrafts: {},
           crmFormulas: {},
           online: navigator.onLine,
+          isIOSDevice,
+          iosPerfMode: isIOSDevice,
+          iosViewportResizeHandler: null,
+          iosViewportRaf: null,
           isStandalone: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true,
           showIosGuide: false,
           hoveredPoint: null,
@@ -4438,6 +4512,7 @@
           pwaCacheNames: [],
           pwaLastCheckedAt: null,
           pwaAutoCheckTimer: null,
+          pwaAutoCheckInterval: null,
           pwaStatus: '初始化中',
           showMobileAddOrderForm: false,
           expandedOrderId: null,
@@ -5910,6 +5985,7 @@
         }
       },
       mounted() {
+        if (this.iosPerfMode) document.body.classList.add('momo-ios-perf');
         this.loadFromLocalStorage();
         this.runDataSafetyCheck(false);
         this.initAuth();
@@ -5917,8 +5993,7 @@
         setTimeout(() => this.runSystemStatusCheck(false), 3500);
         window.addEventListener('online', () => { this.online = true; });
         window.addEventListener('offline', () => { this.online = false; });
-        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-        if (isIos && !this.isStandalone && localStorage.getItem('momo_ios_guide_dismissed') !== '1') {
+        if (this.isIOSDevice && !this.isStandalone && localStorage.getItem('momo_ios_guide_dismissed') !== '1') {
           setTimeout(() => { this.showIosGuide = true; }, 1200);
         }
 
@@ -5932,28 +6007,47 @@
         // iOS 鍵盤彈起時隱藏浮動導航，避免跑位遮住輸入框
         if (window.visualViewport) {
           const nav = () => document.querySelector('.floating-nav');
-          window.visualViewport.addEventListener('resize', () => {
-            const keyboardOpen = window.visualViewport.height < window.innerHeight * 0.75;
-            const el = nav();
-            if (!el) return;
-            if (keyboardOpen) {
-              el.style.opacity = '0';
-              el.style.pointerEvents = 'none';
-              el.style.transform = 'translateX(-50%) translateY(20px)';
-            } else {
-              el.style.opacity = '1';
-              el.style.pointerEvents = '';
-              el.style.transform = 'translateX(-50%)';
-            }
-          });
+          this.iosViewportResizeHandler = () => {
+            if (this.iosViewportRaf) cancelAnimationFrame(this.iosViewportRaf);
+            this.iosViewportRaf = requestAnimationFrame(() => {
+              const keyboardOpen = window.visualViewport.height < window.innerHeight * 0.75;
+              const el = nav();
+              if (!el) return;
+              if (keyboardOpen) {
+                el.style.opacity = '0';
+                el.style.pointerEvents = 'none';
+                el.style.transform = 'translateX(-50%) translateY(20px)';
+              } else {
+                el.style.opacity = '1';
+                el.style.pointerEvents = '';
+                el.style.transform = 'translateX(-50%)';
+              }
+            });
+          };
+          window.visualViewport.addEventListener('resize', this.iosViewportResizeHandler, { passive: true });
         }
       },
       beforeUnmount() {
         if (this.cloudVersionPollTimer) clearInterval(this.cloudVersionPollTimer);
         if (this.cloudSyncTimer) clearTimeout(this.cloudSyncTimer);
         if (this.pwaAutoCheckTimer) clearTimeout(this.pwaAutoCheckTimer);
+        if (this.pwaAutoCheckInterval) clearInterval(this.pwaAutoCheckInterval);
+        if (this.iosViewportResizeHandler && window.visualViewport) window.visualViewport.removeEventListener('resize', this.iosViewportResizeHandler);
+        if (this.iosViewportRaf) cancelAnimationFrame(this.iosViewportRaf);
+        document.body.classList.remove('momo-ios-perf');
       },
       methods: {
+        scrollToTopForNavigation() {
+          window.scrollTo({ top: 0, behavior: this.iosPerfMode ? 'auto' : 'smooth' });
+        },
+        scrollElementIntoViewForNavigation(element, options = {}) {
+          if (!element) return;
+          element.scrollIntoView({
+            block: options.block || 'start',
+            inline: options.inline || 'nearest',
+            behavior: this.iosPerfMode ? 'auto' : 'smooth'
+          });
+        },
         inventorySafetyStock(item = {}) {
           const value = Number(item.minStock);
           return Number.isFinite(value) && value > 0 ? Math.round(value) : 3;
@@ -6576,14 +6670,19 @@
             return false;
           } finally {
             this.pwaCheckingUpdate = false;
-            this.refreshPwaCacheStatus();
+            if (manual || !this.iosPerfMode) this.refreshPwaCacheStatus();
           }
         },
         schedulePwaAutoCheck(delay = 800, force = false) {
           if (!('serviceWorker' in navigator)) return;
           if (this.pwaAutoCheckTimer) clearTimeout(this.pwaAutoCheckTimer);
           this.pwaAutoCheckTimer = setTimeout(() => {
-            this.runPwaAutoCheck(force);
+            const run = () => this.runPwaAutoCheck(force);
+            if (this.iosPerfMode && 'requestIdleCallback' in window) {
+              window.requestIdleCallback(run, { timeout: 2500 });
+            } else {
+              run();
+            }
           }, delay);
         },
         async runPwaAutoCheck(force = false) {
@@ -6591,7 +6690,8 @@
           if (this.pwaCheckingUpdate || this.updateAvailable) return false;
           if (!force && this.pwaLastCheckedAt) {
             const elapsed = Date.now() - Date.parse(this.pwaLastCheckedAt);
-            if (Number.isFinite(elapsed) && elapsed < 2 * 60 * 1000) return false;
+            const minInterval = this.iosPerfMode ? 5 * 60 * 1000 : 2 * 60 * 1000;
+            if (Number.isFinite(elapsed) && elapsed < minInterval) return false;
           }
           return this.checkPwaUpdate(false);
         },
@@ -6636,7 +6736,7 @@
               if (registration.waiting && navigator.serviceWorker.controller) {
                 showUpdatePrompt(registration.waiting);
               }
-              this.schedulePwaAutoCheck(1500, true);
+              this.schedulePwaAutoCheck(this.iosPerfMode ? 3200 : 1500, false);
 
               registration.addEventListener('updatefound', () => {
                 const worker = registration.installing;
@@ -6659,11 +6759,11 @@
               });
 
               document.addEventListener('visibilitychange', () => {
-                if (!document.hidden) this.schedulePwaAutoCheck(300, false);
+                if (!document.hidden) this.schedulePwaAutoCheck(this.iosPerfMode ? 1600 : 300, false);
               });
-              window.addEventListener('focus', () => this.schedulePwaAutoCheck(500, false));
-              window.addEventListener('pageshow', () => this.schedulePwaAutoCheck(800, false));
-              setInterval(() => this.runPwaAutoCheck(true), 60 * 60 * 1000);
+              window.addEventListener('focus', () => this.schedulePwaAutoCheck(this.iosPerfMode ? 1800 : 500, false));
+              window.addEventListener('pageshow', () => this.schedulePwaAutoCheck(this.iosPerfMode ? 2200 : 800, false));
+              this.pwaAutoCheckInterval = setInterval(() => this.runPwaAutoCheck(false), 60 * 60 * 1000);
             } catch (error) {
               console.warn('PWA service worker registration failed:', error);
               this.pwaStatus = '註冊失敗';
@@ -7246,7 +7346,7 @@
             this.ordersFilterCategory = 'All';
             this.ordersFilterPayment = 'All';
             if (issue.orderId) this.expandedOrderId = issue.orderId;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            this.scrollToTopForNavigation();
             this.showToast(issue.orderId ? '已展開異常業績' : '已跳到業績頁，請依提示查找');
             return;
           }
@@ -7255,7 +7355,7 @@
             this.expenseSearchQuery = '';
             this.expenseFilterCategory = 'All';
             if (issue.expenseId) this.expandedExpenseId = issue.expenseId;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            this.scrollToTopForNavigation();
             this.showToast(issue.expenseId ? '已展開異常支出' : '已跳到支出頁，請依提示查找');
             return;
           }
@@ -7265,7 +7365,7 @@
             return;
           }
           this.activeTab = 'dashboard';
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          this.scrollToTopForNavigation();
           this.showToast('已回到今日總覽');
         },
         expenseWarnings(expense, periodTotal = this.expensesSummary?.total || 0) {
@@ -7290,7 +7390,7 @@
           this.collapsedExpenseDates = { ...this.collapsedExpenseDates, [expense.date]: false };
           this.beginExpenseDraft(expense);
           this.expandedExpenseId = expenseId;
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          this.scrollToTopForNavigation();
         },
         applyExpensePreset(preset, { openForm = true } = {}) {
           if (!preset) return;
@@ -9152,7 +9252,7 @@
           this.crmSortMode = 'lastDate';
           this.crmSearchQuery = name;
           this.expandedCrmCustomerName = customer?.id || null;
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          this.scrollToTopForNavigation();
         },
         toggleCrmCustomer(customerId) {
           const shouldOpen = this.expandedCrmCustomerName !== customerId;
@@ -9160,7 +9260,7 @@
           if (shouldOpen) {
             this.$nextTick(() => {
               const card = document.getElementById(`crm-card-${customerId}`);
-              if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              if (card) this.scrollElementIntoViewForNavigation(card, { block: 'start' });
             });
           }
         },
@@ -9210,7 +9310,7 @@
           this.ordersFilterCategory = 'All';
           this.ordersFilterPayment = 'All';
           this.activeTab = 'orders';
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          this.scrollToTopForNavigation();
         },
         closeCustomerHistory() {
           this.ordersCustomerHistoryId = null;
@@ -9259,7 +9359,7 @@
           this.ordersCustomerHistoryId = null;
           this.selectedMonth = String(month).padStart(2, '0');
           this.activeTab = 'orders';
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          this.scrollToTopForNavigation();
         },
         exportAnnualReport() {
           const headers = ['月份', '收入(NT$)', '支出(NT$)', '淨利(NT$)', '淨利率', '服務人次'];

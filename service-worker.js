@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v48-daily-home-focus';
-const APP_VERSION = '2026.07.05-daily-home-focus';
+const CACHE_NAME = 'momohair-shell-v49-ios-performance-pass';
+const APP_VERSION = '2026.07.05-ios-performance-pass';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
