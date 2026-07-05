@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.05-ios-performance-pass">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.05-expense-templates">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -2737,6 +2737,36 @@
             </div>
           </section>
 
+          <section class="bg-white rounded-3xl border border-orange-50 macaron-shadow overflow-hidden">
+            <div class="px-4 py-3 border-b border-orange-50 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h3 class="text-sm font-black text-slate-800">常用支出模板</h3>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">點一下帶入分類、備註與固定支出上次金額</p>
+              </div>
+              <button @click="showExpenseForm = true" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl border border-slate-200 bg-white text-[11px] font-black text-slate-700 whitespace-nowrap">
+                手動新增
+              </button>
+            </div>
+            <div class="p-3 sm:p-4 grid grid-cols-2 md:grid-cols-4 gap-2.5">
+              <button v-for="template in expenseTemplateCards" :key="'page-template-' + template.label"
+                      type="button"
+                      @click="applyExpensePreset(template)"
+                      class="expense-template-card text-left rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-[0_1px_0_rgba(15,23,42,0.03)] transition-colors">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <div class="text-sm font-black text-slate-800 truncate">{{ template.label }}</div>
+                    <div class="mt-0.5 text-[10px] font-black text-slate-400">{{ template.category }}</div>
+                  </div>
+                  <span class="shrink-0 rounded-full bg-slate-50 border border-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-500">
+                    {{ template.reuseLastAmount ? '上次' : '手填' }}
+                  </span>
+                </div>
+                <div class="mt-2 text-xs font-black text-slate-700">{{ expenseTemplateAmountText(template) }}</div>
+                <div class="mt-0.5 text-[10px] font-bold text-slate-400 truncate">{{ expenseTemplateHintText(template) }}</div>
+              </button>
+            </div>
+          </section>
+
           <div>
 
             <!-- Add Expense Form -->
@@ -2777,16 +2807,17 @@
                 </div>
               </div>
               <form @submit.prevent="addExpense" class="space-y-4">
-                <div>
+                <div class="rounded-2xl border border-slate-200 bg-slate-50/60 p-3">
                   <div class="flex items-center justify-between mb-2">
-                    <label class="block text-xs font-black text-slate-400 uppercase">常用支出</label>
-                    <span class="text-[10px] font-bold text-slate-300">點一下自動帶入</span>
+                    <label class="block text-xs font-black text-slate-500 uppercase">常用支出模板</label>
+                    <span class="text-[10px] font-bold text-slate-400">套用後仍可修改</span>
                   </div>
-                  <div class="grid grid-cols-3 gap-2">
-                    <button v-for="preset in expenseQuickPresets" :key="'form-' + preset.label" type="button"
-                            @click="applyExpensePreset(preset, { openForm: false })"
-                            class="min-h-[40px] rounded-xl bg-orange-50/60 border border-orange-100 text-[11px] font-black text-slate-600">
-                      {{ preset.label }}
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <button v-for="template in expenseTemplateCards" :key="'form-template-' + template.label" type="button"
+                            @click="applyExpensePreset(template, { openForm: false })"
+                            class="min-h-[54px] rounded-xl bg-white border border-slate-200 px-2.5 py-2 text-left">
+                      <div class="text-[11px] font-black text-slate-700 truncate">{{ template.label }}</div>
+                      <div class="mt-0.5 text-[9px] font-bold text-slate-400 truncate">{{ expenseTemplateAmountText(template) }}</div>
                     </button>
                   </div>
                 </div>
@@ -4333,7 +4364,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.05-ios-performance-pass';
+    const APP_VERSION = '2026.07.05-expense-templates';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -4593,12 +4624,13 @@
           paymentMethods: ['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'],
           expenseCategories: ['材料費', '房租', '水電費', '行銷費', '薪資', '其他'],
           expenseQuickPresets: [
-            { label: '材料進貨', category: '材料費', amount: null, notes: '材料進貨' },
-            { label: '房租', category: '房租', amount: null, notes: '房租' },
-            { label: '水電', category: '水電費', amount: null, notes: '水電費' },
-            { label: '廣告', category: '行銷費', amount: null, notes: '廣告投放' },
-            { label: '薪資', category: '薪資', amount: null, notes: '薪資' },
-            { label: '其他', category: '其他', amount: null, notes: '' }
+            { label: '材料進貨', category: '材料費', amount: null, notes: '材料進貨', hint: '金額每次不同', reuseLastAmount: false },
+            { label: '房租', category: '房租', amount: null, notes: '房租', hint: '固定支出', reuseLastAmount: true },
+            { label: '水電瓦斯', category: '水電費', amount: null, notes: '水電費', hint: '可沿用上次', reuseLastAmount: true },
+            { label: '廣告投放', category: '行銷費', amount: null, notes: '廣告投放', hint: '行銷費', reuseLastAmount: true },
+            { label: '網路電話', category: '其他', amount: null, notes: '網路電話費', hint: '固定雜支', reuseLastAmount: true },
+            { label: '清潔用品', category: '其他', amount: null, notes: '清潔用品', hint: '日常採買', reuseLastAmount: false },
+            { label: '臨時雜支', category: '其他', amount: null, notes: '臨時支出', hint: '手動補充', reuseLastAmount: false }
           ],
           crmTagPresets: ['VIP', '固定染髮', '固定燙髮', '儲值客', '頭皮敏感', '怕推銷', '喜歡安靜', '久未回訪'],
           formulaFields: [
@@ -4870,6 +4902,28 @@
         },
         filteredExpensesTotal() {
           return this.filteredExpenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+        },
+        expenseTemplateCards() {
+          const validExpenses = [...(this.expenses || [])]
+            .filter(expense => expense?.date && Number(expense.amount) > 0)
+            .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+          return this.expenseQuickPresets.map((preset) => {
+            const lastExpense = validExpenses.find(expense => {
+              if (expense.category !== preset.category) return false;
+              const note = String(expense.notes || '');
+              const keyword = String(preset.notes || preset.label || '').trim();
+              return !keyword || note.includes(keyword) || note.includes(String(preset.label || '').trim());
+            }) || null;
+            const presetAmount = Number(preset.amount) > 0 ? Number(preset.amount) : null;
+            const lastAmount = lastExpense ? Number(lastExpense.amount) || null : null;
+            const suggestedAmount = presetAmount || (preset.reuseLastAmount ? lastAmount : null);
+            return {
+              ...preset,
+              lastAmount,
+              lastDate: lastExpense?.date || '',
+              suggestedAmount
+            };
+          });
         },
         groupedExpenses() {
           const groups = {};
@@ -7394,12 +7448,23 @@
         },
         applyExpensePreset(preset, { openForm = true } = {}) {
           if (!preset) return;
-          this.newExpense.date = this.newExpense.date || new Date().toLocaleDateString('sv-SE');
+          this.newExpense.date = new Date().toLocaleDateString('sv-SE');
           this.newExpense.category = preset.category || this.newExpense.category || '其他';
-          this.newExpense.amount = preset.amount || null;
+          const amount = Number(preset.suggestedAmount ?? preset.amount) || 0;
+          this.newExpense.amount = amount > 0 ? amount : null;
           this.newExpense.notes = preset.notes || '';
           if (openForm) this.showExpenseForm = true;
           this.showToast(`已帶入：${preset.label || preset.category}`);
+        },
+        expenseTemplateAmountText(template) {
+          if (Number(template?.suggestedAmount) > 0) return `帶入 NT$ ${this.formatNumber(template.suggestedAmount)}`;
+          return '金額手動輸入';
+        },
+        expenseTemplateHintText(template) {
+          if (!template) return '';
+          if (template.lastDate && template.reuseLastAmount && Number(template.suggestedAmount) > 0) return `${template.lastDate} 的金額，可再修改`;
+          if (template.lastDate && Number(template.lastAmount) > 0) return `上次 ${template.lastDate} · NT$ ${this.formatNumber(template.lastAmount)}`;
+          return template.hint || template.notes || '套用後可修改';
         },
         loadCloseoutFormForDate() {
           const date = this.closeoutDate || new Date().toLocaleDateString('sv-SE');
