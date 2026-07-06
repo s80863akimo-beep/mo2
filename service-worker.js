@@ -1,8 +1,9 @@
-const CACHE_NAME = 'momohair-shell-v57-correction-ledger-reversal';
-const APP_VERSION = '2026.07.06-correction-ledger-reversal';
+const CACHE_NAME = 'momohair-shell-v58-core-maintainability';
+const APP_VERSION = '2026.07.06-core-maintainability';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
+  `/assets/momo-core.js?v=${APP_VERSION}`,
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',

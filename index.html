@@ -4545,10 +4545,15 @@
 
   </div>
 
+  <!-- Core accounting rules -->
+  <script src="/assets/momo-core.js?v=2026.07.06-core-maintainability"></script>
+
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.06-correction-ledger-reversal';
+    const APP_VERSION = '2026.07.06-core-maintainability';
+    if (!window.MomoCore) throw new Error('MomoCore not loaded');
+    const MomoCore = window.MomoCore;
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -6671,9 +6676,7 @@
           return false;
         },
         isCorrectionSlip(order = {}) {
-          return Boolean(order?.correctionSlip)
-            || order?.source === 'correction_slip'
-            || String(order?.serviceName || '').startsWith('更正單');
+          return MomoCore.isCorrectionSlip(order);
         },
         orderDraftNotice(order) {
           if (!this.orderDraftHasChanges(order)) return '編輯草稿：修改後不會立即寫入資料';
@@ -6841,74 +6844,13 @@
           return true;
         },
         orderMoneyVector(order = {}) {
-          const vector = {
-            cash: 0,
-            transfer: 0,
-            prepaidOut: 0,
-            prepaidIn: 0,
-            cashPrepaidIn: 0,
-            transferPrepaidIn: 0,
-            serviceRevenue: 0
-          };
-          if (!order || !this.isOrderActive(order)) return vector;
-          const amount = Math.round(Number(order.amount) || 0);
-          const method = order.paymentMethod || '現金';
-          if (method === '現金') {
-            vector.cash += amount;
-            vector.serviceRevenue += amount;
-          } else if (method === '轉帳') {
-            vector.transfer += amount;
-            vector.serviceRevenue += amount;
-          } else if (method === '儲值扣款') {
-            vector.prepaidOut += amount;
-            vector.serviceRevenue += amount;
-          } else if (method === '現金＋儲值扣款') {
-            const cash = amount >= 0 ? this.getMixedCashAmount(order) : Math.round(Number(order.cashAmount) || 0);
-            vector.cash += cash;
-            vector.prepaidOut += amount - cash;
-            vector.serviceRevenue += amount;
-          } else if (method === '儲值進帳') {
-            vector.prepaidIn += amount;
-            if (this.getTopupChannel(order) === '轉帳') vector.transferPrepaidIn += amount;
-            else vector.cashPrepaidIn += amount;
-          }
-          return vector;
+          return MomoCore.orderMoneyVector(order);
         },
         orderCorrectionLinesFromVector(vector = {}, source = {}, suffix = '差額') {
-          const baseLabel = `${source.date || ''} ${source.customerName || ''} ${source.serviceName || ''}`.trim();
-          const makeLine = (key, paymentMethod, label, topupChannel = null) => {
-            const amount = Math.round(Number(vector[key]) || 0);
-            if (!amount) return null;
-            return {
-              amount,
-              paymentMethod,
-              topupChannel,
-              customerId: source.customerId,
-              customerName: source.customerName,
-              gender: source.gender || '女',
-              serviceName: `更正單：${baseLabel}｜${suffix}${label ? ` ${label}` : ''}`
-            };
-          };
-          return [
-            makeLine('cash', '現金', '現金'),
-            makeLine('transfer', '轉帳', '轉帳'),
-            makeLine('prepaidOut', '儲值扣款', '儲值扣款'),
-            makeLine('cashPrepaidIn', '儲值進帳', '儲值現金', '現金'),
-            makeLine('transferPrepaidIn', '儲值進帳', '儲值轉帳', '轉帳')
-          ].filter(Boolean);
+          return MomoCore.orderCorrectionLinesFromVector(vector, source, suffix);
         },
         buildLockedOrderCorrectionLines(before = {}, after = {}) {
-          const beforeVector = this.orderMoneyVector(before);
-          const afterVector = this.orderMoneyVector(after);
-          if ((before.customerId || '') !== (after.customerId || '')) {
-            const negativeBefore = Object.fromEntries(Object.entries(beforeVector).map(([key, value]) => [key, -value]));
-            return [
-              ...this.orderCorrectionLinesFromVector(negativeBefore, before, '原顧客沖銷'),
-              ...this.orderCorrectionLinesFromVector(afterVector, after, '新顧客補登')
-            ];
-          }
-          const deltaVector = Object.fromEntries(Object.keys(afterVector).map(key => [key, (afterVector[key] || 0) - (beforeVector[key] || 0)]));
-          return this.orderCorrectionLinesFromVector(deltaVector, after, '差額');
+          return MomoCore.buildLockedOrderCorrectionLines(before, after);
         },
         createLockedOrderCorrectionSlip(order, draft) {
           this.selectOrderDraftCustomer(order);
@@ -7680,40 +7622,19 @@
           return entry;
         },
         getOrderPrepaidBucket(order = {}) {
-          if (order.paymentMethod === '儲值進帳') return 'topup';
-          if (order.paymentMethod === '儲值扣款' || order.paymentMethod === '現金＋儲值扣款') return 'debit';
-          return null;
+          return MomoCore.getOrderPrepaidBucket(order);
         },
         prepaidKindForTarget(target, bucket, fallback = 'adjustment') {
-          const amount = Number(target) || 0;
-          if (!amount) return fallback;
-          if (bucket === 'topup') return amount > 0 ? 'topup' : 'reversal';
-          if (bucket === 'debit') return amount < 0 ? 'debit' : 'reversal';
-          return amount > 0 ? 'topup' : 'debit';
+          return MomoCore.prepaidKindForTarget(target, bucket, fallback);
         },
         getOrderPrepaidTarget(order) {
-          if (!order || !this.isOrderActive(order) || !order.customerId) return 0;
-          const amount = this.isCorrectionSlip(order)
-            ? Math.round(Number(order.amount) || 0)
-            : Math.max(0, Number(order.amount) || 0);
-          if (order.paymentMethod === '儲值進帳') return amount;
-          if (order.paymentMethod === '儲值扣款') return -amount;
-          if (order.paymentMethod === '現金＋儲值扣款') return -this.getMixedPrepaidAmount(order);
-          return 0;
+          return MomoCore.getOrderPrepaidTarget(order);
         },
         prepaidEntryReversed(entry = {}) {
-          if (!entry?.id) return false;
-          const marker = `沖銷:${entry.id}`;
-          return (this.prepaidLedger || []).some(item =>
-            item?.kind === 'reversal'
-            && (item.reversalOfEntryId === entry.id || String(item.note || '').includes(marker))
-          );
+          return MomoCore.prepaidEntryReversed(this.prepaidLedger, entry);
         },
         canReversePrepaidEntry(entry = {}) {
-          return Boolean(entry?.id)
-            && entry.kind !== 'reversal'
-            && Number(entry.signedAmount)
-            && !this.prepaidEntryReversed(entry);
+          return MomoCore.canReversePrepaidEntry(this.prepaidLedger, entry);
         },
         reversePrepaidLedgerEntry(entry = {}) {
           if (!this.canReversePrepaidEntry(entry)) {
@@ -7729,18 +7650,7 @@
           this.showConfirm(
             `確定沖銷這筆儲值帳本嗎？\n\n${entry.date} ${entry.customerName || entry.customerNameSnapshot || ''}\n${this.ledgerKindLabel(entry.kind)}：${amount >= 0 ? '+' : ''}NT$ ${this.formatNumber(amount)}\n\n系統會新增一筆反向分錄，不會刪除原紀錄。`,
             () => {
-              const reversal = this.appendPrepaidLedgerEntry({
-                customerId: entry.customerId,
-                signedAmount: -amount,
-                kind: 'reversal',
-                bucket: entry.bucket || (amount > 0 ? 'topup' : 'debit'),
-                date: today,
-                sourceOrderId: null,
-                serviceName: entry.serviceName || '儲值帳本沖銷',
-                paymentMethod: entry.paymentMethod || '',
-                note: `手動沖銷:${entry.id}｜原日 ${entry.date}`,
-                reversalOfEntryId: entry.id
-              });
+              const reversal = this.appendPrepaidLedgerEntry(MomoCore.buildPrepaidReversalPayload(entry, today));
               this.saveCustomerData();
               this.recordOperation('prepaid_ledger_reversal', '儲值帳本反向沖銷', `${entry.customerName || entry.customerNameSnapshot || ''} ${this.ledgerKindLabel(entry.kind)} NT$ ${this.formatNumber(amount)}`, {
                 ledgerEntryId: entry.id,
@@ -11749,17 +11659,16 @@
           return Math.round(Number(val) || 0).toLocaleString();
         },
         isOrderActive(order) {
-          return !order || order.syncStatus !== 'cancelled';
+          return MomoCore.isOrderActive(order);
         },
         getMixedCashAmount(order) {
-          const total = Math.max(0, Number(order && order.amount) || 0);
-          return Math.min(total, Math.max(0, Number(order && order.cashAmount) || 0));
+          return MomoCore.getMixedCashAmount(order);
         },
         getMixedPrepaidAmount(order) {
-          return Math.max(0, (Number(order && order.amount) || 0) - this.getMixedCashAmount(order));
+          return MomoCore.getMixedPrepaidAmount(order);
         },
         getTopupChannel(order) {
-          return order && order.paymentMethod === '儲值進帳' && order.topupChannel === '轉帳' ? '轉帳' : '現金';
+          return MomoCore.getTopupChannel(order);
         },
         getWeekday(dateStr) {
           const days = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
