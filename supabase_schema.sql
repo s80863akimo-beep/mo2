@@ -20,7 +20,11 @@ create table if not exists public.orders (
   order_date date not null,
   service_name text not null,
   category text,
-  amount bigint not null check (amount >= 0),
+  amount bigint not null,
+  correction_slip boolean not null default false,
+  correction_for_order_id text,
+  correction_for_date date,
+  correction_reason text,
   payment_method text not null check (payment_method in ('現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳')),
   cash_amount bigint check (cash_amount is null or cash_amount >= 0),
   topup_channel text check (topup_channel is null or topup_channel in ('現金', '轉帳')),
@@ -35,7 +39,8 @@ create table if not exists public.orders (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   check (payment_method = '現金＋儲值扣款' or cash_amount is null),
-  check (payment_method <> '現金＋儲值扣款' or (cash_amount > 0 and cash_amount < amount)),
+  check ((correction_slip and amount <> 0) or (not correction_slip and amount >= 0)),
+  check (payment_method <> '現金＋儲值扣款' or correction_slip or (cash_amount > 0 and cash_amount < amount)),
   check (payment_method = '儲值進帳' or topup_channel is null)
 );
 

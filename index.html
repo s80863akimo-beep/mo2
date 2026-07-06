@@ -2620,6 +2620,7 @@
                         <option value="燙髮">燙髮</option>
                         <option value="染髮">染髮</option>
                         <option value="洗護其他">洗護其他</option>
+                        <option value="更正">更正</option>
                       </select>
                       <select v-model="ordersFilterPayment"
                               class="min-h-[38px] bg-white border border-orange-100 rounded-xl px-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-macaron-peach-300">
@@ -2707,6 +2708,7 @@
                           <td class="py-3 px-3">
                             <div class="flex items-center gap-2">
                               <span class="text-[10px] font-black px-1.5 py-0.5 rounded-lg shrink-0" :style="{ backgroundColor: getCategoryInfo(order).bg, color: getCategoryInfo(order).color }">{{ getCategoryInfo(order).label }}</span>
+                              <span v-if="isCorrectionSlip(order)" class="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-md shrink-0">更正單</span>
                               <span>{{ order.serviceName }}</span>
                               <span v-if="order.paymentMethod === '儲值進帳'" class="text-[9px] font-black text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-md">不列入營業額</span>
                               <span v-if="order.paymentMethod === '現金＋儲值扣款'" class="text-[9px] font-black text-amber-700">現 {{ formatNumber(getMixedCashAmount(order)) }}／儲 {{ formatNumber(getMixedPrepaidAmount(order)) }}</span>
@@ -2724,7 +2726,7 @@
                           <td colspan="6" class="p-4">
                             <div class="grid grid-cols-6 gap-3 items-end">
                               <div class="col-span-6 rounded-xl px-3 py-2 text-[11px] font-black" :class="orderDraftHasChanges(order) ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'">
-                                {{ orderDraftHasChanges(order) ? '尚未儲存：確認後請按「儲存修正」' : '編輯草稿：修改後不會立即寫入資料' }}
+                                {{ orderDraftNotice(order) }}
                               </div>
                               <label class="col-span-2 text-[10px] font-black text-slate-400">顧客（穩定 ID）<select v-model="orderEditDraft(order).customerId" @change="selectOrderDraftCustomer(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold text-slate-700"><option v-for="c in customerOptions" :key="c.id" :value="c.id">{{ c.name }} · {{ shortCustomerId(c.id) }}</option></select></label>
                               <label class="text-[10px] font-black text-slate-400">性別<select v-model="orderEditDraft(order).gender" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"><option value="女">女</option><option value="男">男</option></select></label>
@@ -2743,7 +2745,7 @@
                                 </div>
                               </div>
                               <button @click.stop="cancelOrderDraft(order)" class="col-span-2 min-h-[40px] rounded-xl bg-white border border-slate-200 text-slate-500 text-xs font-black jelly-btn">取消修正</button>
-                              <button @click.stop="saveOrderDraft(order)" :disabled="!orderDraftHasChanges(order)" class="col-span-2 min-h-[40px] rounded-xl bg-slate-900 text-white text-xs font-black jelly-btn disabled:opacity-30">儲存修正</button>
+                              <button @click.stop="saveOrderDraft(order)" :disabled="!orderDraftHasChanges(order)" class="col-span-2 min-h-[40px] rounded-xl bg-slate-900 text-white text-xs font-black jelly-btn disabled:opacity-30">{{ isDateLocked(order.date) ? '建立更正單' : '儲存修正' }}</button>
                               <button @click.stop="deleteOrder(order.id)" class="col-span-2 min-h-[40px] rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-xs font-black jelly-btn">刪除此筆</button>
                             </div>
                           </td>
@@ -2762,6 +2764,7 @@
                           <div class="flex items-center gap-1.5 min-w-0">
                             <div class="text-sm font-black text-slate-800 truncate">{{ order.customerName }}</div>
                             <span class="text-[9px] font-black px-1.5 py-0.5 rounded-md shrink-0" :style="{ backgroundColor: getCategoryInfo(order).bg, color: getCategoryInfo(order).color }">{{ getCategoryInfo(order).label }}</span>
+                            <span v-if="isCorrectionSlip(order)" class="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-md shrink-0">更正單</span>
                           </div>
                           <div class="mt-0.5 text-[11px] font-semibold text-slate-400 truncate">{{ order.serviceName }}</div>
                         </div>
@@ -2776,7 +2779,7 @@
                     <div v-if="expandedOrderId === order.id" class="p-3.5 pt-0 border-t border-slate-100 bg-slate-50/60 space-y-3">
                       <div class="grid grid-cols-3 gap-2 pt-3">
                         <div class="col-span-3 rounded-xl px-3 py-2 text-[11px] font-black" :class="orderDraftHasChanges(order) ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'">
-                          {{ orderDraftHasChanges(order) ? '尚未儲存：確認後請按「儲存修正」' : '編輯草稿：修改後不會立即寫入資料' }}
+                          {{ orderDraftNotice(order) }}
                         </div>
                         <label class="col-span-2 text-[10px] font-black text-slate-400">顧客（穩定 ID）<select v-model="orderEditDraft(order).customerId" @change="selectOrderDraftCustomer(order)" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-bold"><option v-for="c in customerOptions" :key="c.id" :value="c.id">{{ c.name }} · {{ shortCustomerId(c.id) }}</option></select></label>
                         <label class="text-[10px] font-black text-slate-400">性別<select v-model="orderEditDraft(order).gender" class="mt-1 w-full jelly-input bg-white border border-orange-100 rounded-xl px-2 py-2.5 text-sm font-bold"><option value="女">女</option><option value="男">男</option></select></label>
@@ -2799,7 +2802,7 @@
                       </div>
                       <div class="grid grid-cols-2 gap-2">
                         <button @click.stop="cancelOrderDraft(order)" class="min-h-[42px] rounded-xl bg-white border border-slate-200 text-slate-500 text-xs font-black jelly-btn">取消修正</button>
-                        <button @click.stop="saveOrderDraft(order)" :disabled="!orderDraftHasChanges(order)" class="min-h-[42px] rounded-xl text-xs font-black jelly-btn disabled:opacity-40" :class="orderDraftHasChanges(order) ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'">儲存修正</button>
+                        <button @click.stop="saveOrderDraft(order)" :disabled="!orderDraftHasChanges(order)" class="min-h-[42px] rounded-xl text-xs font-black jelly-btn disabled:opacity-40" :class="orderDraftHasChanges(order) ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'">{{ isDateLocked(order.date) ? '建立更正單' : '儲存修正' }}</button>
                       </div>
                       <button @click="deleteOrder(order.id)" class="w-full min-h-[42px] rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-xs font-black jelly-btn">刪除此筆業績</button>
                     </div>
@@ -3655,7 +3658,14 @@
                       <span class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0" :class="entry.type === 'in' ? 'bg-emerald-50 text-emerald-700' : 'bg-sky-50 text-sky-700'">{{ entry.type === 'in' ? '＋' : '－' }}</span>
                       <div class="min-w-0"><div class="text-sm font-black text-slate-800 truncate">{{ entry.customerName }}</div><div class="text-[10px] font-bold text-slate-400 truncate">{{ entry.serviceName }} · {{ ledgerKindLabel(entry.kind) }}<span v-if="entry.note"> · {{ entry.note }}</span></div></div>
                     </div>
-                    <div class="text-right shrink-0"><div class="text-sm font-black" :class="entry.type === 'in' ? 'text-emerald-700' : 'text-sky-700'">{{ entry.type === 'in' ? '+' : '-' }} NT$ {{ formatNumber(entry.amount) }}</div><div class="text-[9px] font-bold text-slate-400">異動後 {{ formatNumber(entry.balanceAfter) }}</div></div>
+                    <div class="shrink-0 flex items-center gap-2">
+                      <div class="text-right">
+                        <div class="text-sm font-black" :class="entry.type === 'in' ? 'text-emerald-700' : 'text-sky-700'">{{ entry.type === 'in' ? '+' : '-' }} NT$ {{ formatNumber(entry.amount) }}</div>
+                        <div class="text-[9px] font-bold text-slate-400">異動後 {{ formatNumber(entry.balanceAfter) }}</div>
+                        <div v-if="prepaidEntryReversed(entry)" class="text-[9px] font-black text-amber-600">已沖銷</div>
+                      </div>
+                      <button v-if="canReversePrepaidEntry(entry)" @click="reversePrepaidLedgerEntry(entry)" class="min-h-[32px] px-2.5 rounded-lg bg-amber-50 border border-amber-100 text-[10px] font-black text-amber-700 jelly-btn">沖銷</button>
+                    </div>
                   </div>
                 </div>
               </section>
@@ -4538,7 +4548,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.06-sync-issue-workbench';
+    const APP_VERSION = '2026.07.06-correction-ledger-reversal';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -4672,6 +4682,7 @@
           cloudCloseoutBreakdownSupported: true,
           cloudCloseoutCountSupported: true,
           cloudActualTimeSupported: true,
+          cloudCorrectionSlipSupported: true,
           cloudVersionPollTimer: null,
           authForm: {
             email: '',
@@ -5303,7 +5314,7 @@
         },
         todayOrdersCount() {
           const todayStr = new Date().toLocaleDateString('sv-SE');
-          return this.orders.filter(o => this.isOrderActive(o) && o.date === todayStr && o.customerName && !this.isBlockedSlot(o.customerName) && o.paymentMethod !== '儲值進帳').length;
+          return this.orders.filter(o => this.isOrderActive(o) && !this.isCorrectionSlip(o) && o.date === todayStr && o.customerName && !this.isBlockedSlot(o.customerName) && o.paymentMethod !== '儲值進帳').length;
         },
         todayDateLabel() {
           const d = new Date();
@@ -5316,7 +5327,7 @@
             .sort((a, b) => String(a.id).localeCompare(String(b.id)));
         },
         nextTodayOrder() {
-          return this.todayOrders.find(o => o.paymentMethod !== '儲值進帳') || this.todayOrders[0] || null;
+          return this.todayOrders.find(o => !this.isCorrectionSlip(o) && o.paymentMethod !== '儲值進帳') || this.todayOrders[0] || null;
         },
         todayExpenses() {
           const todayStr = new Date().toLocaleDateString('sv-SE');
@@ -5419,9 +5430,11 @@
         // KPI Calculations（排除儲值進帳，避免業績虛高）
         kpis() {
           const serviceOrders = this.filteredOrders.filter(o => o.paymentMethod !== '儲值進帳');
+          const countableOrders = serviceOrders.filter(o => !this.isCorrectionSlip(o));
           const revenue = serviceOrders.reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
-          const ordersCount = serviceOrders.length;
-          const aov = ordersCount > 0 ? Math.round(revenue / ordersCount) : 0;
+          const ordersCount = countableOrders.length;
+          const countableRevenue = countableOrders.reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
+          const aov = ordersCount > 0 ? Math.round(countableRevenue / ordersCount) : 0;
           const momoSalary = Math.round(revenue * 0.45);
           const totalExp = this.periodExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
           const netProfit = revenue - totalExp;
@@ -5518,11 +5531,13 @@
         ordersSummary() {
           const serviceOrders = this.periodOrders.filter(o => o.paymentMethod !== '儲值進帳');
           const total = serviceOrders.reduce((s, o) => s + (Number(o.amount) || 0), 0);
-          const count = serviceOrders.length;
-          const avg = count > 0 ? Math.round(total / count) : 0;
+          const countableOrders = serviceOrders.filter(o => !this.isCorrectionSlip(o));
+          const count = countableOrders.length;
+          const avgBase = countableOrders.reduce((s, o) => s + (Number(o.amount) || 0), 0);
+          const avg = count > 0 ? Math.round(avgBase / count) : 0;
           // 最高單日
           const dayMap = {};
-          serviceOrders.forEach(o => {
+          countableOrders.forEach(o => {
             dayMap[o.date] = (dayMap[o.date] || 0) + (Number(o.amount) || 0);
           });
           const best = Object.entries(dayMap).sort((a, b) => b[1] - a[1])[0];
@@ -5540,11 +5555,11 @@
 
         // 服務類別收入佔比
         categoryBreakdown() {
-          const cats = { '剪髮': 0, '燙髮': 0, '染髮': 0, '洗護其他': 0 };
+          const cats = { '剪髮': 0, '燙髮': 0, '染髮': 0, '洗護其他': 0, '更正': 0 };
           this.filteredOrders
             .filter(o => o.paymentMethod !== '儲值進帳')
             .forEach(o => {
-              const cat = o.category || this.classifyCategory(o.serviceName);
+              const cat = this.isCorrectionSlip(o) ? '更正' : (o.category || this.classifyCategory(o.serviceName));
               if (cats[cat] !== undefined) cats[cat] += Number(o.amount) || 0;
               else cats['洗護其他'] += Number(o.amount) || 0;
             });
@@ -5560,7 +5575,8 @@
             '剪髮':    { color: '#FFAAA6', emoji: '✂️' },
             '燙髮':    { color: '#A8DADC', emoji: '🌀' },
             '染髮':    { color: '#E8AEFF', emoji: '🎨' },
-            '洗護其他': { color: '#FFC5A3', emoji: '💆' }
+            '洗護其他': { color: '#FFC5A3', emoji: '💆' },
+            '更正': { color: '#FBBF24', emoji: '↺' }
           };
 
           let cumulative = 0;
@@ -5598,7 +5614,7 @@
               map[customerId] = { id: o.customerId || null, name, gender: o.gender, totalSpent: 0, count: 0 };
             }
             map[customerId].totalSpent += (Number(o.amount) || 0);
-            map[customerId].count += 1;
+            if (!this.isCorrectionSlip(o)) map[customerId].count += 1;
           });
 
           return Object.values(map)
@@ -5608,14 +5624,14 @@
 
         // Hour yield analysis based on the selected period, not the orders-page search/filter state.
         serviceYieldRows() {
-          return this.buildServiceYieldRows(this.periodOrders.filter(o => o.paymentMethod !== '儲值進帳'));
+          return this.buildServiceYieldRows(this.periodOrders.filter(o => o.paymentMethod !== '儲值進帳' && !this.isCorrectionSlip(o)));
         },
         // Top 5 for overview.
         serviceYieldAnalysis() {
           return this.serviceYieldRows.slice(0, 5);
         },
         yieldSummary() {
-          const serviceOrders = this.periodOrders.filter(o => o.paymentMethod !== '儲值進帳');
+          const serviceOrders = this.periodOrders.filter(o => o.paymentMethod !== '儲值進帳' && !this.isCorrectionSlip(o));
           return this.buildYieldSummary(this.serviceYieldRows, serviceOrders);
         },
 
@@ -5714,8 +5730,10 @@
               const amount = Number(o.amount) || 0;
               const serviceName = o.serviceName || '未填服務';
               record.totalSpent += amount;
-              record.count += 1;
-              record.serviceMap[serviceName] = (record.serviceMap[serviceName] || 0) + 1;
+              if (!this.isCorrectionSlip(o)) {
+                record.count += 1;
+                record.serviceMap[serviceName] = (record.serviceMap[serviceName] || 0) + 1;
+              }
               record.recentOrders.push({
                 id: o.id,
                 date: o.date,
@@ -5896,10 +5914,11 @@
                 && o.paymentMethod !== '儲值進帳';
             });
             const revenue  = monthOrders.reduce((s, o) => s + (Number(o.amount) || 0), 0);
+            const count = monthOrders.filter(o => !this.isCorrectionSlip(o)).length;
             const expenses = this.expenses
               .filter(e => { const [y, m] = e.date.split('-'); return y === lastYear && m === mStr; })
               .reduce((s, e) => s + (Number(e.amount) || 0), 0);
-            return { month: i + 1, revenue, expenses, net: revenue - expenses };
+            return { month: i + 1, revenue, expenses, net: revenue - expenses, count };
           });
         },
         lastYearSummary() {
@@ -5923,7 +5942,7 @@
                 && o.paymentMethod !== '儲值進帳';
             });
             const revenue  = monthOrders.reduce((s, o) => s + (Number(o.amount) || 0), 0);
-            const count    = monthOrders.length;
+            const count    = monthOrders.filter(o => !this.isCorrectionSlip(o)).length;
             const expenses = this.expenses
               .filter(e => {
                 const [y, m] = e.date.split('-');
@@ -5990,7 +6009,7 @@
             .sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.id).localeCompare(String(b.id)));
         },
         settlementServiceOrders() {
-          return this.settlementOrders.filter(order => order.paymentMethod !== '儲值進帳');
+          return this.settlementOrders.filter(order => order.paymentMethod !== '儲值進帳' && !this.isCorrectionSlip(order));
         },
         settlementExpenses() {
           const prefix = this.reportSettlementPrefix;
@@ -6260,7 +6279,7 @@
           });
         },
         annualCategoryBreakdown() {
-          const cats = { '剪髮': 0, '燙髮': 0, '染髮': 0, '洗護其他': 0 };
+          const cats = { '剪髮': 0, '燙髮': 0, '染髮': 0, '洗護其他': 0, '更正': 0 };
           this.orders
             .filter(o => {
               const [y] = o.date.split('-');
@@ -6270,7 +6289,7 @@
                 && o.paymentMethod !== '儲值進帳';
             })
             .forEach(o => {
-              const cat = o.category || this.classifyCategory(o.serviceName);
+              const cat = this.isCorrectionSlip(o) ? '更正' : (o.category || this.classifyCategory(o.serviceName));
               if (cats[cat] !== undefined) cats[cat] += Number(o.amount) || 0;
               else cats['洗護其他'] += Number(o.amount) || 0;
             });
@@ -6284,7 +6303,8 @@
             '剪髮': { color: '#FFAAA6', emoji: '✂️' },
             '燙髮': { color: '#A8DADC', emoji: '🌀' },
             '染髮': { color: '#E8AEFF', emoji: '🎨' },
-            '洗護其他': { color: '#FFC5A3', emoji: '💆' }
+            '洗護其他': { color: '#FFC5A3', emoji: '💆' },
+            '更正': { color: '#FBBF24', emoji: '↺' }
           };
           let cumulative = 0;
           const allSegments = Object.entries(cats).map(([cat, amount]) => {
@@ -6501,8 +6521,9 @@
           const closeoutExpenses = this.expenses
             .filter(e => e.date === date)
             .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-          const serviceOrdersCount = closeoutOrders.filter(o => o.paymentMethod !== '儲值進帳').length;
-          const topupCount = closeoutOrders.length - serviceOrdersCount;
+          const countableOrders = closeoutOrders.filter(o => !this.isCorrectionSlip(o));
+          const serviceOrdersCount = countableOrders.filter(o => o.paymentMethod !== '儲值進帳').length;
+          const topupCount = countableOrders.length - serviceOrdersCount;
           const totals = {
             cash: 0,
             transfer: 0,
@@ -6515,7 +6536,7 @@
             actualCashIn: 0,
             expenses: closeoutExpenses,
             netProfit: 0,
-            ordersCount: closeoutOrders.length,
+            ordersCount: countableOrders.length,
             serviceOrdersCount,
             topupCount
           };
@@ -6642,12 +6663,23 @@
           return Boolean(date && this.closeoutRecords && this.closeoutRecords[date]);
         },
         lockMessage(date) {
-          return `${date || '這一天'} 已完成打烊鎖帳；如需修正，請先到每日打烊對帳解除鎖帳。`;
+          return `${date || '這一天'} 已完成打烊鎖帳；原始明細不可直接修改，請用更正單或反向沖銷補登。`;
         },
         assertDateUnlocked(date) {
           if (!this.isDateLocked(date)) return true;
           this.showToast(this.lockMessage(date), 'error', 7000);
           return false;
+        },
+        isCorrectionSlip(order = {}) {
+          return Boolean(order?.correctionSlip)
+            || order?.source === 'correction_slip'
+            || String(order?.serviceName || '').startsWith('更正單');
+        },
+        orderDraftNotice(order) {
+          if (!this.orderDraftHasChanges(order)) return '編輯草稿：修改後不會立即寫入資料';
+          return this.isDateLocked(order?.date)
+            ? '已鎖帳：確認後會建立更正單，不修改原始明細'
+            : '尚未儲存：確認後請按「儲存修正」';
         },
         rememberEditSnapshot(type, row) {
           if (!row?.id) return;
@@ -6697,7 +6729,7 @@
         },
         orderCorrectionLogs(orderId) {
           return (this.operationLogs || [])
-            .filter(log => log?.meta?.orderId === orderId && ['order_correction', 'order_update'].includes(log.action))
+            .filter(log => log?.meta?.orderId === orderId && ['order_correction', 'order_update', 'locked_order_correction_slip', 'locked_order_correction_note', 'locked_order_delete_correction_slip'].includes(log.action))
             .slice(0, 3);
         },
         cloneOrderForDraft(order = {}) {
@@ -6715,6 +6747,11 @@
             category: order.category || '',
             sourceEventId: order.sourceEventId || null,
             orderId: order.orderId || null,
+            source: order.source || null,
+            correctionSlip: Boolean(order.correctionSlip),
+            correctionForOrderId: order.correctionForOrderId || null,
+            correctionForDate: order.correctionForDate || null,
+            correctionReason: order.correctionReason || '',
             calendarStart: order.calendarStart || null,
             calendarEnd: order.calendarEnd || null,
             calendarDurationMinutes: this.normalizeMinutes(order.calendarDurationMinutes),
@@ -6766,8 +6803,17 @@
           draft.customerName = customer.name;
           draft.gender = customer.gender || draft.gender || '女';
         },
-        validateOrderDraft(order, draft) {
-          if (!this.assertDateUnlocked(order?.date) || !this.assertDateUnlocked(draft?.date)) return false;
+        normalizeOrderDraft(draft = {}) {
+          return {
+            ...draft,
+            serviceName: String(draft.serviceName || '').trim(),
+            amount: Number(draft.amount) || 0,
+            cashAmount: draft.paymentMethod === '現金＋儲值扣款' ? Number(draft.cashAmount) || 0 : null,
+            topupChannel: draft.paymentMethod === '儲值進帳' ? (draft.topupChannel || '現金') : null
+          };
+        },
+        validateOrderDraft(order, draft, options = {}) {
+          if (!options.allowLocked && (!this.assertDateUnlocked(order?.date) || !this.assertDateUnlocked(draft?.date))) return false;
           if (!draft.customerId || !this.customerMap[draft.customerId]) {
             this.showToast('請選擇有效顧客', 'error');
             return false;
@@ -6794,18 +6840,216 @@
           }
           return true;
         },
+        orderMoneyVector(order = {}) {
+          const vector = {
+            cash: 0,
+            transfer: 0,
+            prepaidOut: 0,
+            prepaidIn: 0,
+            cashPrepaidIn: 0,
+            transferPrepaidIn: 0,
+            serviceRevenue: 0
+          };
+          if (!order || !this.isOrderActive(order)) return vector;
+          const amount = Math.round(Number(order.amount) || 0);
+          const method = order.paymentMethod || '現金';
+          if (method === '現金') {
+            vector.cash += amount;
+            vector.serviceRevenue += amount;
+          } else if (method === '轉帳') {
+            vector.transfer += amount;
+            vector.serviceRevenue += amount;
+          } else if (method === '儲值扣款') {
+            vector.prepaidOut += amount;
+            vector.serviceRevenue += amount;
+          } else if (method === '現金＋儲值扣款') {
+            const cash = amount >= 0 ? this.getMixedCashAmount(order) : Math.round(Number(order.cashAmount) || 0);
+            vector.cash += cash;
+            vector.prepaidOut += amount - cash;
+            vector.serviceRevenue += amount;
+          } else if (method === '儲值進帳') {
+            vector.prepaidIn += amount;
+            if (this.getTopupChannel(order) === '轉帳') vector.transferPrepaidIn += amount;
+            else vector.cashPrepaidIn += amount;
+          }
+          return vector;
+        },
+        orderCorrectionLinesFromVector(vector = {}, source = {}, suffix = '差額') {
+          const baseLabel = `${source.date || ''} ${source.customerName || ''} ${source.serviceName || ''}`.trim();
+          const makeLine = (key, paymentMethod, label, topupChannel = null) => {
+            const amount = Math.round(Number(vector[key]) || 0);
+            if (!amount) return null;
+            return {
+              amount,
+              paymentMethod,
+              topupChannel,
+              customerId: source.customerId,
+              customerName: source.customerName,
+              gender: source.gender || '女',
+              serviceName: `更正單：${baseLabel}｜${suffix}${label ? ` ${label}` : ''}`
+            };
+          };
+          return [
+            makeLine('cash', '現金', '現金'),
+            makeLine('transfer', '轉帳', '轉帳'),
+            makeLine('prepaidOut', '儲值扣款', '儲值扣款'),
+            makeLine('cashPrepaidIn', '儲值進帳', '儲值現金', '現金'),
+            makeLine('transferPrepaidIn', '儲值進帳', '儲值轉帳', '轉帳')
+          ].filter(Boolean);
+        },
+        buildLockedOrderCorrectionLines(before = {}, after = {}) {
+          const beforeVector = this.orderMoneyVector(before);
+          const afterVector = this.orderMoneyVector(after);
+          if ((before.customerId || '') !== (after.customerId || '')) {
+            const negativeBefore = Object.fromEntries(Object.entries(beforeVector).map(([key, value]) => [key, -value]));
+            return [
+              ...this.orderCorrectionLinesFromVector(negativeBefore, before, '原顧客沖銷'),
+              ...this.orderCorrectionLinesFromVector(afterVector, after, '新顧客補登')
+            ];
+          }
+          const deltaVector = Object.fromEntries(Object.keys(afterVector).map(key => [key, (afterVector[key] || 0) - (beforeVector[key] || 0)]));
+          return this.orderCorrectionLinesFromVector(deltaVector, after, '差額');
+        },
+        createLockedOrderCorrectionSlip(order, draft) {
+          this.selectOrderDraftCustomer(order);
+          const before = JSON.parse(JSON.stringify(order));
+          const normalizedDraft = this.normalizeOrderDraft(draft);
+          const changed = this.orderAuditFields().filter(field =>
+            JSON.stringify(before?.[field] ?? null) !== JSON.stringify(normalizedDraft?.[field] ?? null)
+          );
+          if (!changed.length) {
+            this.clearOrderDraft(order.id);
+            this.showToast('沒有需要建立更正單的變更');
+            return true;
+          }
+
+          const detail = this.buildOrderCorrectionDetail(before, normalizedDraft, changed);
+          const correctionDate = new Date().toLocaleDateString('sv-SE');
+          if (this.isDateLocked(correctionDate)) {
+            this.showToast(`${correctionDate} 也已打烊鎖帳；請先選擇尚未鎖帳的補登日期。`, 'error', 7000);
+            return false;
+          }
+
+          const lines = this.buildLockedOrderCorrectionLines(before, normalizedDraft);
+          if (!lines.length) {
+            this.recordOperation('locked_order_correction_note', '鎖帳更正備註', detail, {
+              orderId: before.id,
+              fields: changed
+            });
+            this.clearOrderDraft(order.id);
+            this.showToast('已記錄鎖帳更正備註；此修正不影響金流');
+            return true;
+          }
+
+          const linePreview = lines
+            .map(line => `・${line.customerName} ${line.paymentMethod}${line.topupChannel ? `(${line.topupChannel})` : ''}：${line.amount >= 0 ? '+' : ''}NT$ ${this.formatNumber(line.amount)}`)
+            .join('\n');
+          this.showConfirm(
+            `${before.date} 已鎖帳，系統會在 ${correctionDate} 建立更正單，不修改原始明細。\n\n${linePreview}\n\n確定建立嗎？`,
+            () => {
+              const now = new Date().toISOString();
+              const correctionOrders = lines.map(line => ({
+                id: this.generateStableId('corr'),
+                date: correctionDate,
+                customerId: line.customerId,
+                customerName: line.customerName,
+                gender: line.gender || '女',
+                serviceName: line.serviceName,
+                category: '更正',
+                amount: line.amount,
+                paymentMethod: line.paymentMethod,
+                cashAmount: null,
+                topupChannel: line.paymentMethod === '儲值進帳' ? (line.topupChannel || '現金') : null,
+                source: 'correction_slip',
+                correctionSlip: true,
+                correctionForOrderId: before.id,
+                correctionForDate: before.date,
+                correctionReason: detail,
+                syncStatus: 'active',
+                createdAt: now,
+                updatedAt: now
+              }));
+              this.orders.push(...correctionOrders);
+              this.saveOrders();
+              this.recordOperation('locked_order_correction_slip', '建立鎖帳更正單', detail, {
+                orderId: before.id,
+                correctionOrderIds: correctionOrders.map(item => item.id),
+                fields: changed,
+                before: this.orderAuditFields().reduce((acc, field) => ({ ...acc, [field]: before?.[field] ?? null }), {}),
+                after: this.orderAuditFields().reduce((acc, field) => ({ ...acc, [field]: normalizedDraft?.[field] ?? null }), {})
+              });
+              this.clearOrderDraft(order.id);
+              this.showToast(`已建立 ${correctionOrders.length} 筆更正單`);
+            }
+          );
+          return false;
+        },
+        createLockedOrderDeleteCorrection(order) {
+          if (!order?.id) return false;
+          const correctionDate = new Date().toLocaleDateString('sv-SE');
+          if (this.isDateLocked(correctionDate)) {
+            this.showToast(`${correctionDate} 已打烊鎖帳，無法在今日新增刪除沖銷更正單`, 'error', 7000);
+            return false;
+          }
+          const before = JSON.parse(JSON.stringify(order));
+          const negativeVector = Object.fromEntries(Object.entries(this.orderMoneyVector(before)).map(([key, value]) => [key, -value]));
+          const lines = this.orderCorrectionLinesFromVector(negativeVector, before, '刪除沖銷');
+          if (!lines.length) {
+            this.showToast('此筆沒有可沖銷的金流金額', 'error');
+            return false;
+          }
+          const detail = `${before.date || ''} ${before.customerName || ''} ${before.serviceName || ''}\n刪除已鎖帳原單，改以更正單全額沖銷。`;
+          const linePreview = lines
+            .map(line => `・${line.customerName} ${line.paymentMethod}${line.topupChannel ? `(${line.topupChannel})` : ''}：${line.amount >= 0 ? '+' : ''}NT$ ${this.formatNumber(line.amount)}`)
+            .join('\n');
+          this.showConfirm(
+            `${before.date} 已鎖帳，不能刪除原始明細。\n\n系統會在 ${correctionDate} 建立刪除沖銷更正單：\n${linePreview}\n\n確定建立嗎？`,
+            () => {
+              const now = new Date().toISOString();
+              const correctionOrders = lines.map(line => ({
+                id: this.generateStableId('corr'),
+                date: correctionDate,
+                customerId: line.customerId,
+                customerName: line.customerName,
+                gender: line.gender || '女',
+                serviceName: line.serviceName,
+                category: '更正',
+                amount: line.amount,
+                paymentMethod: line.paymentMethod,
+                cashAmount: null,
+                topupChannel: line.paymentMethod === '儲值進帳' ? (line.topupChannel || '現金') : null,
+                source: 'correction_slip',
+                correctionSlip: true,
+                correctionForOrderId: before.id,
+                correctionForDate: before.date,
+                correctionReason: detail,
+                syncStatus: 'active',
+                createdAt: now,
+                updatedAt: now
+              }));
+              this.orders.push(...correctionOrders);
+              if (this.expandedOrderId === before.id) this.expandedOrderId = null;
+              this.clearOrderDraft(before.id);
+              this.saveOrders();
+              this.recordOperation('locked_order_delete_correction_slip', '建立鎖帳刪除沖銷更正單', detail, {
+                orderId: before.id,
+                correctionOrderIds: correctionOrders.map(item => item.id)
+              });
+              this.showToast(`已建立 ${correctionOrders.length} 筆刪除沖銷更正單`);
+            }
+          );
+          return false;
+        },
         saveOrderDraft(order) {
           const draft = this.orderEditDraft(order);
+          if (this.isDateLocked(order?.date) || this.isDateLocked(draft?.date)) {
+            if (!this.validateOrderDraft(order, draft, { allowLocked: true })) return false;
+            return this.createLockedOrderCorrectionSlip(order, draft);
+          }
           if (!this.validateOrderDraft(order, draft)) return false;
           this.selectOrderDraftCustomer(order);
           const before = JSON.parse(JSON.stringify(order));
-          const normalizedDraft = {
-            ...draft,
-            serviceName: String(draft.serviceName || '').trim(),
-            amount: Number(draft.amount) || 0,
-            cashAmount: draft.paymentMethod === '現金＋儲值扣款' ? Number(draft.cashAmount) || 0 : null,
-            topupChannel: draft.paymentMethod === '儲值進帳' ? (draft.topupChannel || '現金') : null
-          };
+          const normalizedDraft = this.normalizeOrderDraft(draft);
           const changed = this.orderAuditFields().filter(field =>
             JSON.stringify(before?.[field] ?? null) !== JSON.stringify(normalizedDraft?.[field] ?? null)
           );
@@ -7412,7 +7656,7 @@
               };
             });
         },
-        appendPrepaidLedgerEntry({ customerId, signedAmount, kind, bucket, date, sourceOrderId, serviceName, paymentMethod, note }) {
+        appendPrepaidLedgerEntry({ customerId, signedAmount, kind, bucket, date, sourceOrderId, serviceName, paymentMethod, note, reversalOfEntryId }) {
           const amount = Math.round(Number(signedAmount) || 0);
           if (!customerId || !amount) return null;
           const customer = this.customerMap[customerId];
@@ -7429,18 +7673,83 @@
             serviceName: serviceName || (amount > 0 ? '儲值進帳' : '儲值扣款'),
             paymentMethod: paymentMethod || (amount > 0 ? '儲值進帳' : '儲值扣款'),
             note: note || '',
+            reversalOfEntryId: reversalOfEntryId || null,
             createdAt: new Date().toISOString()
           };
           this.prepaidLedger.push(entry);
           return entry;
         },
+        getOrderPrepaidBucket(order = {}) {
+          if (order.paymentMethod === '儲值進帳') return 'topup';
+          if (order.paymentMethod === '儲值扣款' || order.paymentMethod === '現金＋儲值扣款') return 'debit';
+          return null;
+        },
+        prepaidKindForTarget(target, bucket, fallback = 'adjustment') {
+          const amount = Number(target) || 0;
+          if (!amount) return fallback;
+          if (bucket === 'topup') return amount > 0 ? 'topup' : 'reversal';
+          if (bucket === 'debit') return amount < 0 ? 'debit' : 'reversal';
+          return amount > 0 ? 'topup' : 'debit';
+        },
         getOrderPrepaidTarget(order) {
           if (!order || !this.isOrderActive(order) || !order.customerId) return 0;
-          const amount = Math.max(0, Number(order.amount) || 0);
+          const amount = this.isCorrectionSlip(order)
+            ? Math.round(Number(order.amount) || 0)
+            : Math.max(0, Number(order.amount) || 0);
           if (order.paymentMethod === '儲值進帳') return amount;
           if (order.paymentMethod === '儲值扣款') return -amount;
           if (order.paymentMethod === '現金＋儲值扣款') return -this.getMixedPrepaidAmount(order);
           return 0;
+        },
+        prepaidEntryReversed(entry = {}) {
+          if (!entry?.id) return false;
+          const marker = `沖銷:${entry.id}`;
+          return (this.prepaidLedger || []).some(item =>
+            item?.kind === 'reversal'
+            && (item.reversalOfEntryId === entry.id || String(item.note || '').includes(marker))
+          );
+        },
+        canReversePrepaidEntry(entry = {}) {
+          return Boolean(entry?.id)
+            && entry.kind !== 'reversal'
+            && Number(entry.signedAmount)
+            && !this.prepaidEntryReversed(entry);
+        },
+        reversePrepaidLedgerEntry(entry = {}) {
+          if (!this.canReversePrepaidEntry(entry)) {
+            this.showToast('此儲值分錄已沖銷或不可沖銷', 'error');
+            return;
+          }
+          const today = new Date().toLocaleDateString('sv-SE');
+          if (this.isDateLocked(today)) {
+            this.showToast(`${today} 已打烊鎖帳，無法在今日新增沖銷分錄`, 'error', 7000);
+            return;
+          }
+          const amount = Math.round(Number(entry.signedAmount) || 0);
+          this.showConfirm(
+            `確定沖銷這筆儲值帳本嗎？\n\n${entry.date} ${entry.customerName || entry.customerNameSnapshot || ''}\n${this.ledgerKindLabel(entry.kind)}：${amount >= 0 ? '+' : ''}NT$ ${this.formatNumber(amount)}\n\n系統會新增一筆反向分錄，不會刪除原紀錄。`,
+            () => {
+              const reversal = this.appendPrepaidLedgerEntry({
+                customerId: entry.customerId,
+                signedAmount: -amount,
+                kind: 'reversal',
+                bucket: entry.bucket || (amount > 0 ? 'topup' : 'debit'),
+                date: today,
+                sourceOrderId: null,
+                serviceName: entry.serviceName || '儲值帳本沖銷',
+                paymentMethod: entry.paymentMethod || '',
+                note: `手動沖銷:${entry.id}｜原日 ${entry.date}`,
+                reversalOfEntryId: entry.id
+              });
+              this.saveCustomerData();
+              this.recordOperation('prepaid_ledger_reversal', '儲值帳本反向沖銷', `${entry.customerName || entry.customerNameSnapshot || ''} ${this.ledgerKindLabel(entry.kind)} NT$ ${this.formatNumber(amount)}`, {
+                ledgerEntryId: entry.id,
+                reversalEntryId: reversal?.id || null,
+                customerId: entry.customerId
+              });
+              this.showToast('已新增反向沖銷分錄');
+            }
+          );
         },
         reconcilePrepaidLedger() {
           const today = new Date().toLocaleDateString('sv-SE');
@@ -7503,7 +7812,7 @@
             const currentTotal = totals.get(targetKey) || 0;
             const targetEntries = relatedEntries.filter(entry => entry.customerId === order.customerId);
             const latestTargetEntry = [...targetEntries].reverse()[0];
-            const targetBucket = target > 0 ? 'topup' : target < 0 ? 'debit' : (latestTargetEntry?.bucket || (currentTotal > 0 ? 'topup' : 'debit'));
+            const targetBucket = this.getOrderPrepaidBucket(order) || (target > 0 ? 'topup' : target < 0 ? 'debit' : (latestTargetEntry?.bucket || (currentTotal > 0 ? 'topup' : 'debit')));
 
             if (currentTotal && target && Math.sign(currentTotal) !== Math.sign(target)) {
               appendAndTrack({
@@ -7520,8 +7829,8 @@
               appendAndTrack({
                 customerId: order.customerId,
                 signedAmount: target,
-                kind: target > 0 ? 'topup' : 'debit',
-                bucket: target > 0 ? 'topup' : 'debit',
+                kind: this.prepaidKindForTarget(target, targetBucket, 'adjustment'),
+                bucket: targetBucket,
                 date: today,
                 sourceOrderId: orderId,
                 serviceName: order.serviceName,
@@ -7537,7 +7846,7 @@
             appendAndTrack({
               customerId: order.customerId,
               signedAmount: difference,
-              kind: isInitial ? (target > 0 ? 'topup' : 'debit') : (target === 0 ? 'reversal' : 'adjustment'),
+              kind: isInitial ? this.prepaidKindForTarget(target, targetBucket, 'adjustment') : (target === 0 ? 'reversal' : 'adjustment'),
               bucket: targetBucket,
               date: isInitial ? order.date : today,
               sourceOrderId: orderId,
@@ -7813,8 +8122,9 @@
             if (!orderKeyFirst[key]) orderKeyFirst[key] = order;
 
             if (!order.paymentMethod) push('error', 'order_missing_payment', `${label} 缺少付款方式`, target);
-            if (amount <= 0) push('error', 'order_zero_amount', `${label} 金額為 0，會影響報表`, target);
-            if (order.paymentMethod === '現金＋儲值扣款' && !(Number(order.cashAmount) > 0 && Number(order.cashAmount) < amount)) {
+            if (!this.isCorrectionSlip(order) && amount <= 0) push('error', 'order_zero_amount', `${label} 金額為 0，會影響報表`, target);
+            if (this.isCorrectionSlip(order) && !amount) push('error', 'correction_zero_amount', `${label} 更正單金額不可為 0`, target);
+            if (!this.isCorrectionSlip(order) && order.paymentMethod === '現金＋儲值扣款' && !(Number(order.cashAmount) > 0 && Number(order.cashAmount) < amount)) {
               push('error', 'order_invalid_mixed_payment', `${label} 混合付款現金金額不完整`, target);
             }
             if (order.paymentMethod === '儲值進帳' && !['現金', '轉帳'].includes(this.getTopupChannel(order))) {
@@ -8218,7 +8528,7 @@
         buildServiceYieldRows(orders = []) {
           const serviceMap = {};
           (orders || [])
-            .filter(o => this.isOrderActive(o) && o.paymentMethod !== '儲值進帳' && o.customerName && !this.isBlockedSlot(o.customerName))
+            .filter(o => this.isOrderActive(o) && !this.isCorrectionSlip(o) && o.paymentMethod !== '儲值進帳' && o.customerName && !this.isBlockedSlot(o.customerName))
             .forEach(o => {
               const serviceName = o.serviceName || '未填服務';
               const standardMinutes = this.getServiceMinutes(serviceName);
@@ -8429,7 +8739,7 @@
 
         // 日業績熱力背景色（業績愈高顏色愈深）
         getDayHeatStyle(dayTotal) {
-          const ratio = this.maxDayTotal > 0 ? dayTotal / this.maxDayTotal : 0;
+          const ratio = this.maxDayTotal > 0 ? Math.max(0, dayTotal) / this.maxDayTotal : 0;
           const opacity = 0.06 + ratio * 0.38;
           return {
             background: `linear-gradient(to right, rgba(255,170,166,${opacity.toFixed(2)}), rgba(255,235,225,${(opacity * 0.5).toFixed(2)}))`
@@ -8442,7 +8752,8 @@
             '剪髮':    { label: '剪', color: '#E8635A', bg: '#FFF0EE' },
             '燙髮':    { label: '燙', color: '#3AABB0', bg: '#E8F8F8' },
             '染髮':    { label: '染', color: '#AA55EE', bg: '#F5E8FF' },
-            '洗護其他': { label: '護', color: '#E07040', bg: '#FFF0E8' }
+            '洗護其他': { label: '護', color: '#E07040', bg: '#FFF0E8' },
+            '更正': { label: '更', color: '#B45309', bg: '#FEF3C7' }
           };
           return map[cat] || map['洗護其他'];
         },
@@ -8450,6 +8761,7 @@
         // 服務名稱分類（同步資料有 category 欄位，手動新增的用此方法補充）
         classifyCategory(serviceName) {
           if (!serviceName) return '洗護其他';
+          if (/更正單/.test(serviceName)) return '更正';
           if (/燙/.test(serviceName)) return '燙髮';
           if (/染|特殊色/.test(serviceName)) return '染髮';
           if (/剪/.test(serviceName)) return '剪髮';
@@ -8876,6 +9188,11 @@
               && requestBody
               && orderActualTimeColumns.some(column => detail.includes(column))
               && /(column|schema cache|could not find|PGRST204)/i.test(detail);
+            const orderCorrectionColumns = ['correction_slip', 'correction_for_order_id', 'correction_for_date', 'correction_reason'];
+            const missingOrderCorrectionSlip = table === 'orders'
+              && requestBody
+              && orderCorrectionColumns.some(column => detail.includes(column))
+              && /(column|schema cache|could not find|PGRST204)/i.test(detail);
             const closeoutBreakdownColumns = ['cash', 'transfer', 'prepaid_out', 'prepaid_in', 'cash_prepaid_in', 'transfer_prepaid_in', 'net_profit', 'orders_count'];
             const closeoutCountColumns = ['service_orders_count', 'topup_count'];
             const missingCloseoutCounts = table === 'closeouts'
@@ -8914,6 +9231,24 @@
               requestBody = Array.isArray(requestBody)
                 ? requestBody.map(stripOrderActualTime)
                 : stripOrderActualTime(requestBody);
+              response = await execute();
+              if (response.status === 401 && await this.refreshSupabaseSession()) response = await execute();
+              if (response.ok) {
+                if (response.status === 204) return null;
+                const retryText = await response.text();
+                return retryText ? JSON.parse(retryText) : null;
+              }
+            }
+            if (missingOrderCorrectionSlip) {
+              this.cloudCorrectionSlipSupported = false;
+              const stripOrderCorrectionSlip = row => {
+                const copy = { ...row };
+                orderCorrectionColumns.forEach(column => delete copy[column]);
+                return copy;
+              };
+              requestBody = Array.isArray(requestBody)
+                ? requestBody.map(stripOrderCorrectionSlip)
+                : stripOrderCorrectionSlip(requestBody);
               response = await execute();
               if (response.status === 401 && await this.refreshSupabaseSession()) response = await execute();
               if (response.ok) {
@@ -9084,6 +9419,10 @@
               ['payment_method', '付款方式'],
               ['cash_amount', '現金付款'],
               ['topup_channel', '儲值收款'],
+              ['correction_slip', '更正單'],
+              ['correction_for_order_id', '更正原訂單'],
+              ['correction_for_date', '更正原日期'],
+              ['correction_reason', '更正原因'],
               ['actual_duration_minutes', '實際工時'],
               ['calendar_duration_minutes', '行事曆工時'],
               ['sync_status', '資料狀態']
@@ -9377,6 +9716,11 @@
                 paymentMethod: row.payment_method,
                 cashAmount: row.cash_amount === null ? null : Number(row.cash_amount),
                 topupChannel: row.topup_channel || (row.payment_method === '儲值進帳' ? '現金' : null),
+                source: row.source || null,
+                correctionSlip: Boolean(row.correction_slip),
+                correctionForOrderId: row.correction_for_order_id || null,
+                correctionForDate: row.correction_for_date || null,
+                correctionReason: row.correction_reason || '',
                 calendarStart: row.calendar_start_at || null,
                 calendarEnd: row.calendar_end_at || null,
                 calendarDurationMinutes: this.normalizeMinutes(row.calendar_duration_minutes),
@@ -9530,13 +9874,16 @@
               updated_at: customer.updatedAt || now
             })),
             orders: this.orders.filter(order => order.id && customerIds.has(order.customerId)).map(order => {
-              const amount = Math.max(0, Math.round(Number(order.amount) || 0));
+              const correctionSlip = this.isCorrectionSlip(order);
+              const amount = correctionSlip
+                ? Math.round(Number(order.amount) || 0)
+                : Math.max(0, Math.round(Number(order.amount) || 0));
               let paymentMethod = order.paymentMethod || '現金';
               let cashAmount = paymentMethod === '現金＋儲值扣款' ? Math.round(Number(order.cashAmount) || 0) : null;
-              if (paymentMethod === '現金＋儲值扣款' && cashAmount <= 0) {
+              if (!correctionSlip && paymentMethod === '現金＋儲值扣款' && cashAmount <= 0) {
                 paymentMethod = '儲值扣款';
                 cashAmount = null;
-              } else if (paymentMethod === '現金＋儲值扣款' && cashAmount >= amount) {
+              } else if (!correctionSlip && paymentMethod === '現金＋儲值扣款' && cashAmount >= amount) {
                 paymentMethod = '現金';
                 cashAmount = null;
               }
@@ -9551,13 +9898,19 @@
                 payment_method: paymentMethod,
                 cash_amount: cashAmount,
                 ...(this.cloudTopupChannelSupported ? { topup_channel: paymentMethod === '儲值進帳' ? this.getTopupChannel(order) : null } : {}),
+                ...(this.cloudCorrectionSlipSupported ? {
+                  correction_slip: correctionSlip,
+                  correction_for_order_id: order.correctionForOrderId || null,
+                  correction_for_date: order.correctionForDate || null,
+                  correction_reason: order.correctionReason || null
+                } : {}),
                 ...(this.cloudActualTimeSupported ? {
                   actual_duration_minutes: this.normalizeMinutes(order.actualDurationMinutes),
                   calendar_duration_minutes: this.normalizeMinutes(order.calendarDurationMinutes),
                   calendar_start_at: order.calendarStart || null,
                   calendar_end_at: order.calendarEnd || null
                 } : {}),
-                source: order.sourceEventId ? 'google_calendar' : 'manual',
+                source: order.sourceEventId ? 'google_calendar' : (correctionSlip ? 'correction_slip' : 'manual'),
                 source_event_id: order.sourceEventId || null,
                 external_order_id: order.orderId || null,
                 sync_status: order.syncStatus || 'active',
@@ -10804,6 +11157,10 @@
         },
         deleteOrder(id) {
           const order = this.orders.find(o => o.id === id);
+          if (this.isDateLocked(order?.date)) {
+            this.createLockedOrderDeleteCorrection(order);
+            return;
+          }
           if (!this.assertDateUnlocked(order?.date)) return;
           this.showConfirm('確定要刪除這筆業績紀錄嗎？', () => {
             this.orders = this.orders.filter(o => o.id !== id);
@@ -11126,10 +11483,14 @@
             const target = { tab: 'orders', orderId: order.id, customerId: order.customerId };
             if (!customerIds.has(order.customerId)) addIssue('error', 'order_orphan_customer', `業績 ${order.id || '未知'} 找不到對應顧客`, target);
             if (!validDate(order.date)) addIssue('error', 'order_invalid_date', `業績 ${order.id || '未知'} 日期格式錯誤`, target);
-            if (!Number.isFinite(Number(order.amount)) || Number(order.amount) < 0) addIssue('error', 'order_invalid_amount', `業績 ${order.id || '未知'} 金額錯誤`, target);
+            if (!Number.isFinite(Number(order.amount))
+              || (!this.isCorrectionSlip(order) && Number(order.amount) < 0)
+              || (this.isCorrectionSlip(order) && Number(order.amount) === 0)) {
+              addIssue('error', 'order_invalid_amount', `業績 ${order.id || '未知'} 金額錯誤`, target);
+            }
             if (!['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'].includes(order.paymentMethod)) addIssue('error', 'order_invalid_payment', `業績 ${order.id || '未知'} 付款方式錯誤`, target);
             if (order.paymentMethod === '儲值進帳' && !['現金', '轉帳'].includes(this.getTopupChannel(order))) addIssue('error', 'order_invalid_topup_channel', `業績 ${order.id || '未知'} 儲值收款方式錯誤`, target);
-            if (order.paymentMethod === '現金＋儲值扣款' && !(Number(order.cashAmount) > 0 && Number(order.cashAmount) < Number(order.amount))) {
+            if (!this.isCorrectionSlip(order) && order.paymentMethod === '現金＋儲值扣款' && !(Number(order.cashAmount) > 0 && Number(order.cashAmount) < Number(order.amount))) {
               addIssue('error', 'order_invalid_mixed_payment', `業績 ${order.id || '未知'} 混合付款金額錯誤`, target);
             }
             if (order.sourceEventId) {
