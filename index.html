@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.05-auto-calendar-sync">
+    <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.06-monthly-closeout-snapshots">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -2074,12 +2074,12 @@
               <div v-else class="space-y-3">
                 <div class="grid grid-cols-2 gap-2">
                   <div class="rounded-2xl bg-slate-50 border border-slate-100 p-2.5">
-                    <div class="text-[9px] font-black text-slate-400">平均每小時產值</div>
+                    <div class="text-[9px] font-black text-slate-400">{{ yieldSummary.actualAverage ? '實際每小時產值' : '預估每小時產值' }}</div>
                     <div class="text-sm font-black text-slate-800">NT$ {{ formatNumber(yieldSummary.average) }}</div>
                   </div>
                   <div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-2.5">
-                    <div class="text-[9px] font-black text-emerald-600">高效服務</div>
-                    <div class="text-sm font-black text-emerald-700">{{ yieldSummary.highEfficiency }} 項</div>
+                    <div class="text-[9px] font-black text-emerald-600">實際工時覆蓋</div>
+                    <div class="text-sm font-black text-emerald-700">{{ yieldSummary.actualCoverage }}%</div>
                   </div>
                 </div>
                 <div v-for="(item, idx) in serviceYieldAnalysis" :key="item.serviceName"
@@ -2093,7 +2093,7 @@
                   </div>
                   <div class="flex justify-between text-xs text-slate-400 font-medium">
                     <span>總額: NT$ {{ formatNumber(item.totalAmount) }}</span>
-                    <span>預估單次: {{ item.minutesPerService }}分</span>
+                    <span>{{ item.actualMinutesPerService ? '實際單次: ' + item.actualMinutesPerService + '分' : '預估單次: ' + item.minutesPerService + '分' }}</span>
                   </div>
                   <!-- Visual performance indicator bar -->
                   <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
@@ -3989,9 +3989,10 @@
             <div class="px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
               <div>
                 <h2 class="text-base sm:text-lg font-black text-slate-800">月結摘要 · {{ monthlySettlementSummary.label }}</h2>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">給月底結算用：營業額、金流、淨利與未打烊日期集中確認</p>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">正式口徑：已打烊日期用固定快照，未打烊日期才暫用明細計算</p>
               </div>
               <div class="flex items-center gap-2">
+                <button @click="exportMonthlySettlementReport" class="min-h-[40px] px-3 rounded-xl bg-slate-900 text-white text-xs font-black">匯出正式月結</button>
                 <button @click="copyMonthlySettlementSummary" class="min-h-[40px] px-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">複製月結</button>
                 <button v-if="monthlySettlementSummary.unclosedDates.length" @click="openCloseoutSheet(monthlySettlementSummary.unclosedDates[0])" class="min-h-[40px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">補打烊</button>
               </div>
@@ -4016,6 +4017,16 @@
               <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">儲值進帳</div><div class="text-sm font-black text-emerald-700">NT$ {{ formatNumber(monthlySettlementSummary.prepaidIn) }}</div></div>
               <div class="px-4 py-3 col-span-2 sm:col-span-1"><div class="text-[9px] font-black text-slate-400">打烊狀態</div><div class="text-sm font-black" :class="monthlySettlementSummary.ready ? 'text-emerald-700' : 'text-amber-700'">{{ monthlySettlementSummary.ready ? '已完整' : `未打烊 ${monthlySettlementSummary.unclosedDates.length} 天` }}</div></div>
             </div>
+            <div class="px-4 py-3 sm:px-6 border-t border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <div class="text-[10px] font-black text-slate-500">月結口徑</div>
+                <div class="mt-0.5 text-[11px] font-bold text-slate-400">{{ monthlySettlementSummary.settlementBasis }}</div>
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                <span class="min-h-[28px] inline-flex items-center px-2.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-black">快照 {{ monthlySettlementSummary.snapshotDays }} 天</span>
+                <span class="min-h-[28px] inline-flex items-center px-2.5 rounded-lg bg-amber-50 text-amber-700 text-[10px] font-black">暫算 {{ monthlySettlementSummary.liveDays }} 天</span>
+              </div>
+            </div>
             <div v-if="monthlySettlementSummary.unclosedDates.length" class="px-4 py-3 sm:px-6 border-t border-amber-100 bg-amber-50/70">
               <div class="text-[10px] font-black text-amber-700 mb-2">未打烊日期</div>
               <div class="flex flex-wrap gap-1.5">
@@ -4025,19 +4036,60 @@
             </div>
           </section>
 
+          <!-- Prepaid period reconciliation -->
+          <section class="bg-white border border-emerald-100/80 rounded-2xl overflow-hidden shadow-sm">
+            <div class="px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
+              <div>
+                <h2 class="text-base sm:text-lg font-black text-slate-800">儲值期間對帳 · {{ monthlySettlementSummary.label }}</h2>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">期初儲值餘額 + 本期進帳 - 本期扣款 + 調整 = 期末儲值餘額</p>
+              </div>
+              <span class="min-h-[30px] inline-flex items-center px-2.5 rounded-lg text-[10px] font-black" :class="monthlyPrepaidReconciliation.balanced ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'">
+                {{ monthlyPrepaidReconciliation.balanced ? '帳面平衡' : '需檢查' }}
+              </span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-slate-100">
+              <div class="p-4"><div class="text-[10px] font-black text-slate-400">期初餘額</div><div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(monthlyPrepaidReconciliation.openingBalance) }}</div></div>
+              <div class="p-4"><div class="text-[10px] font-black text-emerald-600">本期進帳</div><div class="text-lg font-black text-emerald-700 mt-1">NT$ {{ formatNumber(monthlyPrepaidReconciliation.topupIn) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlyPrepaidReconciliation.topupCount }} 筆</div></div>
+              <div class="p-4"><div class="text-[10px] font-black text-sky-600">本期扣款</div><div class="text-lg font-black text-sky-700 mt-1">NT$ {{ formatNumber(monthlyPrepaidReconciliation.debitOut) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlyPrepaidReconciliation.debitCount }} 筆</div></div>
+              <div class="p-4"><div class="text-[10px] font-black text-amber-600">調整 / 沖銷</div><div class="text-lg font-black" :class="monthlyPrepaidReconciliation.adjustments >= 0 ? 'text-amber-700' : 'text-rose-600'">NT$ {{ formatNumber(monthlyPrepaidReconciliation.adjustments) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlyPrepaidReconciliation.adjustmentCount }} 筆</div></div>
+              <div class="p-4 col-span-2 sm:col-span-1"><div class="text-[10px] font-black text-slate-400">期末餘額</div><div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(monthlyPrepaidReconciliation.closingBalance) }}</div></div>
+            </div>
+            <div class="border-t border-slate-100 overflow-x-auto">
+              <table class="w-full min-w-[680px] text-left">
+                <thead class="bg-emerald-50/50 text-[10px] font-black text-slate-400">
+                  <tr><th class="px-4 py-3">顧客</th><th class="px-4 py-3 text-right">期初</th><th class="px-4 py-3 text-right">進帳</th><th class="px-4 py-3 text-right">扣款</th><th class="px-4 py-3 text-right">調整</th><th class="px-4 py-3 text-right">期末</th></tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr v-for="row in monthlyPrepaidReconciliation.customerRows.slice(0, 12)" :key="'prepaid-recon-' + row.customerId">
+                    <td class="px-4 py-3 text-sm font-black text-slate-700">{{ row.customerName }}</td>
+                    <td class="px-4 py-3 text-right text-xs font-bold text-slate-600">NT$ {{ formatNumber(row.openingBalance) }}</td>
+                    <td class="px-4 py-3 text-right text-xs font-bold text-emerald-700">NT$ {{ formatNumber(row.topupIn) }}</td>
+                    <td class="px-4 py-3 text-right text-xs font-bold text-sky-700">NT$ {{ formatNumber(row.debitOut) }}</td>
+                    <td class="px-4 py-3 text-right text-xs font-bold" :class="row.adjustments >= 0 ? 'text-amber-700' : 'text-rose-600'">NT$ {{ formatNumber(row.adjustments) }}</td>
+                    <td class="px-4 py-3 text-right text-xs font-black text-slate-800">NT$ {{ formatNumber(row.closingBalance) }}</td>
+                  </tr>
+                  <tr v-if="!monthlyPrepaidReconciliation.customerRows.length"><td colspan="6" class="px-4 py-8 text-center text-xs font-bold text-slate-400">此月份沒有儲值異動或期初餘額</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-if="monthlyPrepaidReconciliation.customerRows.length > 12" class="px-4 py-2 text-[10px] font-bold text-slate-400 border-t border-slate-100">
+              另有 {{ monthlyPrepaidReconciliation.customerRows.length - 12 }} 位顧客，完整資料會包含在正式月結 CSV。
+            </div>
+          </section>
+
           <!-- Time value analysis -->
           <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
             <div class="px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
               <div>
                 <h2 class="text-base sm:text-lg font-black text-slate-800">時間價值分析 · {{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }}</h2>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">公式：服務收入 ÷ 預估工時；排除儲值進帳，不受業績頁搜尋篩選影響</p>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">公式：服務收入 ÷ 實際或標準工時；排除儲值進帳，不受業績頁搜尋篩選影響</p>
               </div>
               <button v-if="yieldSummary.unmatched.length" @click="openServiceConfigModal" class="min-h-[40px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">補齊 {{ yieldSummary.unmatched.length }} 項時長</button>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100">
               <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">本期平均每小時</div>
+                <div class="text-[10px] font-black text-slate-400">{{ yieldSummary.actualAverage ? '本期實際每小時' : '本期預估每小時' }}</div>
                 <div class="text-xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(yieldSummary.average) }}</div>
               </div>
               <div class="p-4">
@@ -4045,12 +4097,12 @@
                 <div class="text-xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(yieldSummary.totalAmount) }}</div>
               </div>
               <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">預估總工時</div>
-                <div class="text-xl font-black text-sky-600 mt-1">{{ yieldSummary.totalHours }} hr</div>
+                <div class="text-[10px] font-black text-slate-400">實際 / 預估工時</div>
+                <div class="text-xl font-black text-sky-600 mt-1">{{ formatHours(yieldSummary.actualHours) }} / {{ formatHours(yieldSummary.totalHours) }} hr</div>
               </div>
               <div class="p-4">
-                <div class="text-[10px] font-black text-slate-400">高效服務</div>
-                <div class="text-xl font-black text-emerald-600 mt-1">{{ yieldSummary.highEfficiency }} 項</div>
+                <div class="text-[10px] font-black text-slate-400">實際工時覆蓋</div>
+                <div class="text-xl font-black text-emerald-600 mt-1">{{ yieldSummary.actualCoverage }}%</div>
               </div>
             </div>
 
@@ -4064,13 +4116,16 @@
                     <div class="min-w-0">
                       <div class="text-sm font-black text-slate-800 truncate">{{ item.serviceName }}</div>
                       <div class="text-[10px] font-bold text-slate-400 mt-1">
-                        {{ item.count }} 筆 · 總額 NT$ {{ formatNumber(item.totalAmount) }} · {{ Math.round(item.totalHours * 10) / 10 }} hr · 單次 {{ item.minutesPerService }} 分
+                        {{ item.count }} 筆 · 總額 NT$ {{ formatNumber(item.totalAmount) }} · 實際 {{ formatHours(item.actualHours) }} hr · 預估 {{ formatHours(item.totalHours) }} hr
                       </div>
                     </div>
                     <span class="shrink-0 text-[11px] font-black px-2 py-0.5 rounded-full"
                           :class="item.level === '高效' ? 'text-emerald-700 bg-emerald-50' : item.level === '穩定' ? 'text-sky-700 bg-sky-50' : 'text-amber-700 bg-amber-50'">
                       {{ item.level }} · NT$ {{ formatNumber(item.yieldPerHour) }}/hr
                     </span>
+                  </div>
+                  <div class="mt-1 text-[10px] font-bold text-slate-400">
+                    實際 NT$ {{ formatNumber(item.actualYieldPerHour) }}/hr · 標準 NT$ {{ formatNumber(item.standardYieldPerHour) }}/hr · 覆蓋 {{ item.actualCoverage }}%
                   </div>
                   <div class="h-1.5 rounded-full bg-white overflow-hidden mt-2">
                     <div class="h-full rounded-full bg-gradient-to-r from-macaron-peach-300 to-macaron-rose"
@@ -4080,6 +4135,9 @@
               </div>
               <div v-if="yieldSummary.unmatched.length" class="mt-3 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-[10px] font-bold text-amber-700">
                 缺少標準時長：{{ yieldSummary.unmatched.slice(0, 6).join('、') }}<span v-if="yieldSummary.unmatched.length > 6"> 等 {{ yieldSummary.unmatched.length }} 項</span>
+              </div>
+              <div v-if="yieldSummary.actualMissing.length" class="mt-2 rounded-xl bg-sky-50 border border-sky-100 px-3 py-2 text-[10px] font-bold text-sky-700">
+                缺少實際工時：{{ yieldSummary.actualMissing.slice(0, 6).join('、') }}<span v-if="yieldSummary.actualMissing.length > 6"> 等 {{ yieldSummary.actualMissing.length }} 項</span>
               </div>
             </div>
           </section>
@@ -4366,7 +4424,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.05-auto-calendar-sync';
+    const APP_VERSION = '2026.07.06-unified-service-pricing';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -4498,6 +4556,8 @@
           cloudConflict: null,
           cloudTopupChannelSupported: true,
           cloudCloseoutBreakdownSupported: true,
+          cloudCloseoutCountSupported: true,
+          cloudActualTimeSupported: true,
           cloudVersionPollTimer: null,
           authForm: {
             email: '',
@@ -4507,6 +4567,7 @@
           syncReport: safeParse(localStorage.getItem('momo_sync_report'), null),
           syncError: safeParse(localStorage.getItem('momo_sync_error'), null),
           calendarAutoSyncState: safeParse(localStorage.getItem('momo_calendar_auto_sync_state'), {}),
+          calendarSyncConfigured: null,
           calendarAutoSyncTimer: null,
           calendarAutoSyncStatus: 'idle',
           calendarAutoSyncMessage: '',
@@ -5322,57 +5383,15 @@
 
         // Hour yield analysis based on the selected period, not the orders-page search/filter state.
         serviceYieldRows() {
-          const serviceMap = {};
-          this.periodOrders
-            .filter(o => o.paymentMethod !== '儲值進帳')
-            .forEach(o => {
-              const minutes = this.getServiceMinutes(o.serviceName);
-              if (!minutes) return; // Skip unknown services for yield analysis
-
-              if (!serviceMap[o.serviceName]) {
-                serviceMap[o.serviceName] = {
-                  serviceName: o.serviceName,
-                  totalAmount: 0,
-                  count: 0,
-                  minutesPerService: minutes
-                };
-              }
-              serviceMap[o.serviceName].totalAmount += (Number(o.amount) || 0);
-              serviceMap[o.serviceName].count += 1;
-            });
-
-          return Object.values(serviceMap)
-            .map(item => {
-              // Formula: totalAmount / (minutesPerService * count / 60)
-              const totalHours = (item.minutesPerService / 60) * item.count;
-              const yieldPerHour = totalHours > 0 ? Math.round(item.totalAmount / totalHours) : 0;
-              const level = yieldPerHour >= 1600 ? '高效' : yieldPerHour >= 1000 ? '穩定' : '待優化';
-              return { ...item, totalHours, yieldPerHour, level };
-            })
-            .sort((a, b) => b.yieldPerHour - a.yieldPerHour);
+          return this.buildServiceYieldRows(this.periodOrders.filter(o => o.paymentMethod !== '儲值進帳'));
         },
         // Top 5 for overview.
         serviceYieldAnalysis() {
           return this.serviceYieldRows.slice(0, 5);
         },
         yieldSummary() {
-          const items = this.serviceYieldRows;
-          const totalAmount = items.reduce((sum, item) => sum + (Number(item.totalAmount) || 0), 0);
-          const totalHours = items.reduce((sum, item) => sum + (Number(item.totalHours) || 0), 0);
-          const average = totalHours > 0 ? Math.round(totalAmount / totalHours) : 0;
-          const unmatched = [...new Set(this.periodOrders
-            .filter(o => o.paymentMethod !== '儲值進帳' && !this.getServiceMinutes(o.serviceName))
-            .map(o => o.serviceName)
-            .filter(Boolean))];
-          return {
-            average,
-            totalAmount,
-            totalHours: Math.round(totalHours * 10) / 10,
-            unmatched,
-            highEfficiency: items.filter(item => item.level === '高效').length,
-            serviceCount: items.length,
-            topService: items[0] || null
-          };
+          const serviceOrders = this.periodOrders.filter(o => o.paymentMethod !== '儲值進帳');
+          return this.buildYieldSummary(this.serviceYieldRows, serviceOrders);
         },
 
         crmFilters() {
@@ -5732,23 +5751,136 @@
             .find(month => month.revenue > 0 || month.expenses > 0);
           return latestActive ? String(latestActive.month).padStart(2, '0') : '01';
         },
+        reportSettlementPrefix() {
+          return `${String(this.selectedYear)}-${this.reportSettlementMonth}`;
+        },
+        settlementOrders() {
+          const prefix = this.reportSettlementPrefix;
+          const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+          return (this.orders || [])
+            .filter(order => {
+              if (!order || !validDate(order.date) || !String(order.date).startsWith(prefix)) return false;
+              return this.isOrderActive(order) && order.customerName && !this.isBlockedSlot(order.customerName);
+            })
+            .sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.id).localeCompare(String(b.id)));
+        },
+        settlementServiceOrders() {
+          return this.settlementOrders.filter(order => order.paymentMethod !== '儲值進帳');
+        },
+        settlementExpenses() {
+          const prefix = this.reportSettlementPrefix;
+          const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+          return (this.expenses || [])
+            .filter(expense => validDate(expense?.date) && String(expense.date).startsWith(prefix))
+            .sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.id).localeCompare(String(b.id)));
+        },
+        settlementServiceYieldRows() {
+          return this.buildServiceYieldRows(this.settlementServiceOrders);
+        },
+        settlementYieldSummary() {
+          return this.buildYieldSummary(this.settlementServiceYieldRows, this.settlementServiceOrders);
+        },
+        monthlySettlementDailyRows() {
+          const prefix = this.reportSettlementPrefix;
+          const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+          const dates = new Set();
+
+          this.settlementOrders.forEach(order => {
+            if (validDate(order.date)) dates.add(order.date);
+          });
+          this.settlementExpenses.forEach(expense => {
+            if (validDate(expense.date)) dates.add(expense.date);
+          });
+          Object.entries(this.closeoutRecords || {}).forEach(([key, record]) => {
+            const date = record?.date || key;
+            if (validDate(date) && String(date).startsWith(prefix)) dates.add(date);
+          });
+
+          return [...dates]
+            .sort()
+            .map(date => this.getSettlementCloseoutForDate(date));
+        },
+        monthlyPrepaidReconciliation() {
+          const [year, month] = this.reportSettlementPrefix.split('-');
+          const startDate = `${year}-${month}-01`;
+          const rowsByCustomer = {};
+          const summary = {
+            openingBalance: 0,
+            topupIn: 0,
+            debitOut: 0,
+            adjustments: 0,
+            netChange: 0,
+            closingBalance: 0,
+            topupCount: 0,
+            debitCount: 0,
+            adjustmentCount: 0
+          };
+          const ensureRow = customerId => {
+            if (!rowsByCustomer[customerId]) {
+              const customer = this.customerMap[customerId];
+              rowsByCustomer[customerId] = {
+                customerId,
+                customerName: customer?.name || customerId || '未知顧客',
+                openingBalance: 0,
+                topupIn: 0,
+                debitOut: 0,
+                adjustments: 0,
+                netChange: 0,
+                closingBalance: 0
+              };
+            }
+            return rowsByCustomer[customerId];
+          };
+
+          (this.prepaidLedger || []).forEach(entry => {
+            if (!entry?.customerId || !/^\d{4}-\d{2}-\d{2}$/.test(String(entry.date || ''))) return;
+            const amount = Math.round(Number(entry.signedAmount) || 0);
+            if (!amount) return;
+            const row = ensureRow(entry.customerId);
+            if (entry.date < startDate) {
+              row.openingBalance += amount;
+              summary.openingBalance += amount;
+              return;
+            }
+            if (!String(entry.date).startsWith(this.reportSettlementPrefix)) return;
+
+            row.netChange += amount;
+            summary.netChange += amount;
+            const isTopupIn = amount > 0 && entry.bucket === 'topup';
+            const isDebitOut = amount < 0 && entry.bucket === 'debit';
+            if (isTopupIn) {
+              row.topupIn += amount;
+              summary.topupIn += amount;
+              summary.topupCount += 1;
+            } else if (isDebitOut) {
+              row.debitOut += Math.abs(amount);
+              summary.debitOut += Math.abs(amount);
+              summary.debitCount += 1;
+            } else {
+              row.adjustments += amount;
+              summary.adjustments += amount;
+              summary.adjustmentCount += 1;
+            }
+          });
+
+          const customerRows = Object.values(rowsByCustomer)
+            .map(row => ({
+              ...row,
+              closingBalance: row.openingBalance + row.netChange
+            }))
+            .filter(row => row.openingBalance || row.topupIn || row.debitOut || row.adjustments || row.closingBalance)
+            .sort((a, b) => Math.abs(b.closingBalance) - Math.abs(a.closingBalance) || String(a.customerName).localeCompare(String(b.customerName), 'zh-Hant'));
+
+          summary.closingBalance = summary.openingBalance + summary.netChange;
+          summary.balanced = summary.openingBalance + summary.topupIn - summary.debitOut + summary.adjustments === summary.closingBalance;
+          return { ...summary, customerRows };
+        },
         monthlySettlementSummary() {
           const month = this.reportSettlementMonth;
           const year = String(this.selectedYear);
-          const prefix = `${year}-${month}`;
           const today = new Date().toLocaleDateString('sv-SE');
           const startDate = this.pendingActionStartDate || '2026-07-01';
-          const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
-          const monthOrders = (this.orders || []).filter(order => {
-            if (!order || !validDate(order.date) || !String(order.date).startsWith(prefix)) return false;
-            return this.isOrderActive(order) && order.customerName && !this.isBlockedSlot(order.customerName);
-          });
-          const serviceOrders = monthOrders.filter(order => order.paymentMethod !== '儲值進帳');
-          const monthExpenses = (this.expenses || []).filter(expense => validDate(expense?.date) && String(expense.date).startsWith(prefix));
-          const dates = new Set([
-            ...monthOrders.map(order => order.date),
-            ...monthExpenses.map(expense => expense.date)
-          ]);
+          const dailyRows = this.monthlySettlementDailyRows;
           const totals = {
             cash: 0,
             transfer: 0,
@@ -5761,8 +5893,9 @@
             expenses: 0,
             netProfit: 0
           };
-          [...dates].forEach(date => {
-            const day = this.calculateCloseoutForDate(date);
+          let serviceOrdersCount = 0;
+          let topupCount = 0;
+          dailyRows.forEach(day => {
             totals.cash += day.cash;
             totals.transfer += day.transfer;
             totals.prepaidOut += day.prepaidOut;
@@ -5773,11 +5906,15 @@
             totals.serviceRevenue += day.serviceRevenue;
             totals.expenses += day.expenses;
             totals.netProfit += day.netProfit;
+            serviceOrdersCount += day.serviceOrdersCount;
+            topupCount += day.topupCount;
           });
-          const unclosedDates = [...dates]
-            .filter(date => date >= startDate && date <= today && !this.closeoutRecords?.[date])
+          const unclosedDates = dailyRows
+            .filter(day => day.date >= startDate && day.date <= today && day.source !== 'snapshot')
+            .map(day => day.date)
             .sort();
-          const closedDays = [...dates].filter(date => this.closeoutRecords?.[date]).length;
+          const closedDays = dailyRows.filter(day => day.source === 'snapshot').length;
+          const liveDays = dailyRows.length - closedDays;
           const profitMargin = totals.serviceRevenue > 0 ? Math.round(totals.netProfit / totals.serviceRevenue * 100) : 0;
           return {
             year,
@@ -5786,13 +5923,19 @@
             ...totals,
             cashIn: totals.cash + totals.cashPrepaidIn,
             transferIn: totals.transfer + totals.transferPrepaidIn,
-            ordersCount: serviceOrders.length,
-            topupCount: monthOrders.length - serviceOrders.length,
-            avgTicket: serviceOrders.length ? Math.round(totals.serviceRevenue / serviceOrders.length) : 0,
+            ordersCount: serviceOrdersCount,
+            topupCount,
+            avgTicket: serviceOrdersCount ? Math.round(totals.serviceRevenue / serviceOrdersCount) : 0,
             profitMargin,
-            businessDays: dates.size,
+            businessDays: dailyRows.length,
             closedDays,
+            snapshotDays: closedDays,
+            liveDays,
             unclosedDates,
+            dailyRows,
+            settlementBasis: closedDays
+              ? `已打烊 ${closedDays} 天使用固定快照${liveDays ? `，另有 ${liveDays} 天仍為明細暫算` : ''}`
+              : `尚無打烊快照，${liveDays} 天皆為明細暫算`,
             ready: unclosedDates.length === 0
           };
         },
@@ -6133,6 +6276,8 @@
           const closeoutExpenses = this.expenses
             .filter(e => e.date === date)
             .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+          const serviceOrdersCount = closeoutOrders.filter(o => o.paymentMethod !== '儲值進帳').length;
+          const topupCount = closeoutOrders.length - serviceOrdersCount;
           const totals = {
             cash: 0,
             transfer: 0,
@@ -6145,7 +6290,9 @@
             actualCashIn: 0,
             expenses: closeoutExpenses,
             netProfit: 0,
-            ordersCount: closeoutOrders.length
+            ordersCount: closeoutOrders.length,
+            serviceOrdersCount,
+            topupCount
           };
 
           closeoutOrders.forEach(o => {
@@ -6170,6 +6317,77 @@
           totals.actualCashIn = totals.cash + totals.cashPrepaidIn;
           totals.netProfit = totals.serviceRevenue - totals.expenses;
           return totals;
+        },
+        getSettlementCloseoutForDate(date) {
+          const live = this.calculateCloseoutForDate(date);
+          const record = this.closeoutRecords?.[date];
+          if (!record) {
+            return {
+              date,
+              source: 'live',
+              sourceLabel: '明細暫算',
+              ...live
+            };
+          }
+
+          const amount = value => Math.round(Number(value) || 0);
+          const cash = amount(record.cash);
+          const transfer = amount(record.transfer);
+          const prepaidOut = amount(record.prepaidOut);
+          const prepaidIn = amount(record.prepaidIn);
+          const cashPrepaidIn = amount(record.cashPrepaidIn);
+          const transferPrepaidIn = amount(record.transferPrepaidIn);
+          const serviceRevenue = amount(record.serviceRevenue);
+          const expenses = amount(record.expenses);
+          const netProfit = record.netProfit === undefined || record.netProfit === null
+            ? serviceRevenue - expenses
+            : amount(record.netProfit);
+          const ordersCount = Math.max(0, amount(record.ordersCount));
+          const rawTopupCount = record.topupCount;
+          const rawServiceOrdersCount = record.serviceOrdersCount;
+          const topupCount = rawTopupCount === undefined || rawTopupCount === null
+            ? Math.max(0, live.topupCount)
+            : Math.max(0, amount(rawTopupCount));
+          const serviceOrdersCount = rawServiceOrdersCount === undefined || rawServiceOrdersCount === null
+            || (ordersCount > 0 && amount(rawServiceOrdersCount) === 0 && amount(rawTopupCount) === 0 && live.serviceOrdersCount > 0)
+            ? Math.max(0, ordersCount ? (ordersCount - topupCount || live.serviceOrdersCount) : live.serviceOrdersCount)
+            : Math.max(0, amount(rawServiceOrdersCount));
+          const actualCashIn = record.actualCashIn === undefined || record.actualCashIn === null
+            ? cash + cashPrepaidIn
+            : amount(record.actualCashIn);
+          const expectedCash = record.expectedCash === undefined || record.expectedCash === null
+            ? actualCashIn
+            : amount(record.expectedCash);
+          const countedCash = record.countedCash === undefined || record.countedCash === null
+            ? expectedCash
+            : amount(record.countedCash);
+
+          return {
+            date,
+            source: 'snapshot',
+            sourceLabel: '打烊快照',
+            cash,
+            transfer,
+            prepaidOut,
+            prepaidIn,
+            cashPrepaidIn,
+            transferPrepaidIn,
+            other: amount(record.other),
+            serviceRevenue,
+            actualCashIn,
+            expenses,
+            netProfit,
+            ordersCount,
+            serviceOrdersCount,
+            topupCount,
+            expectedCash,
+            countedCash,
+            difference: record.difference === undefined || record.difference === null
+              ? countedCash - expectedCash
+              : amount(record.difference),
+            note: record.note || '',
+            completedAt: record.completedAt || null
+          };
         },
         recordOperation(action, label, detail = '', meta = {}) {
           const log = {
@@ -6272,6 +6490,13 @@
             category: order.category || '',
             sourceEventId: order.sourceEventId || null,
             orderId: order.orderId || null,
+            calendarStart: order.calendarStart || null,
+            calendarEnd: order.calendarEnd || null,
+            calendarDurationMinutes: this.normalizeMinutes(order.calendarDurationMinutes),
+            actualDurationMinutes: this.normalizeMinutes(order.actualDurationMinutes),
+            pricingSource: order.pricingSource || null,
+            pricingUnmatchedServices: Array.isArray(order.pricingUnmatchedServices) ? [...order.pricingUnmatchedServices] : [],
+            serviceConfigUpdatedAt: order.serviceConfigUpdatedAt || null,
             syncStatus: order.syncStatus || 'active',
             createdAt: order.createdAt || null,
             lastSyncedAt: order.lastSyncedAt || null
@@ -7520,9 +7745,12 @@
             cashPrepaidIn: totals.cashPrepaidIn,
             transferPrepaidIn: totals.transferPrepaidIn,
             serviceRevenue: totals.serviceRevenue,
+            actualCashIn: totals.actualCashIn,
             expenses: totals.expenses,
             netProfit: totals.netProfit,
             ordersCount: totals.ordersCount,
+            serviceOrdersCount: totals.serviceOrdersCount,
+            topupCount: totals.topupCount,
             note: this.closeoutNote.trim(),
             completedAt: new Date().toISOString()
           };
@@ -7559,7 +7787,7 @@
             `應有現金：NT$ ${this.formatNumber(record.expectedCash)}`,
             `實點現金：NT$ ${this.formatNumber(record.countedCash)}`,
             `帳實差額：${diff > 0 ? '+' : ''}NT$ ${this.formatNumber(diff)}`,
-            `服務筆數：${record.ordersCount || 0} 筆`
+            `服務筆數：${record.serviceOrdersCount ?? record.ordersCount ?? 0} 筆`
           ];
           if (record.note) line.push(`備註：${record.note}`);
           return line.join('\n');
@@ -7601,9 +7829,12 @@
             cashPrepaidIn: totals.cashPrepaidIn,
             transferPrepaidIn: totals.transferPrepaidIn,
             serviceRevenue: totals.serviceRevenue,
+            actualCashIn: totals.actualCashIn,
             expenses: totals.expenses,
             netProfit: totals.netProfit,
             ordersCount: totals.ordersCount,
+            serviceOrdersCount: totals.serviceOrdersCount,
+            topupCount: totals.topupCount,
             note: String(this.closeoutNote || '').trim()
           };
         },
@@ -7616,6 +7847,7 @@
         },
         copyMonthlySettlementSummary() {
           const s = this.monthlySettlementSummary;
+          const p = this.monthlyPrepaidReconciliation;
           const lines = [
             `摸摸頭 momohair 月結摘要 ${s.label}`,
             `營業額：NT$ ${this.formatNumber(s.serviceRevenue)}（${s.ordersCount} 筆，客單 NT$ ${this.formatNumber(s.avgTicket)}）`,
@@ -7625,6 +7857,8 @@
             `轉帳入帳：NT$ ${this.formatNumber(s.transferIn)}`,
             `儲值扣款：NT$ ${this.formatNumber(s.prepaidOut)}`,
             `儲值進帳：NT$ ${this.formatNumber(s.prepaidIn)}`,
+            `月結口徑：${s.settlementBasis}`,
+            `儲值對帳：期初 NT$ ${this.formatNumber(p.openingBalance)} + 進帳 NT$ ${this.formatNumber(p.topupIn)} - 扣款 NT$ ${this.formatNumber(p.debitOut)} + 調整 NT$ ${this.formatNumber(p.adjustments)} = 期末 NT$ ${this.formatNumber(p.closingBalance)}`,
             `打烊狀態：${s.ready ? '已完整' : `未打烊 ${s.unclosedDates.length} 天`}`
           ];
           if (s.unclosedDates.length) lines.push(`未打烊日期：${s.unclosedDates.join('、')}`);
@@ -7663,6 +7897,124 @@
         dismissIosGuide() {
           this.showIosGuide = false;
           localStorage.setItem('momo_ios_guide_dismissed', '1');
+        },
+
+        normalizeMinutes(value) {
+          const minutes = Math.round(Number(value) || 0);
+          return minutes > 0 ? minutes : null;
+        },
+        getOrderActualMinutes(order) {
+          return this.normalizeMinutes(order?.actualDurationMinutes)
+            || this.normalizeMinutes(order?.calendarDurationMinutes)
+            || this.normalizeMinutes(order?.durationMinutes);
+        },
+        formatHours(value) {
+          const hours = Math.round((Number(value) || 0) * 10) / 10;
+          return Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
+        },
+        serviceYieldLevel(value) {
+          const yieldPerHour = Number(value) || 0;
+          return yieldPerHour >= 1600 ? '高效' : yieldPerHour >= 1000 ? '穩定' : '待優化';
+        },
+        buildServiceYieldRows(orders = []) {
+          const serviceMap = {};
+          (orders || [])
+            .filter(o => this.isOrderActive(o) && o.paymentMethod !== '儲值進帳' && o.customerName && !this.isBlockedSlot(o.customerName))
+            .forEach(o => {
+              const serviceName = o.serviceName || '未填服務';
+              const standardMinutes = this.getServiceMinutes(serviceName);
+              const actualMinutes = this.getOrderActualMinutes(o);
+              if (!standardMinutes && !actualMinutes) return;
+
+              if (!serviceMap[serviceName]) {
+                serviceMap[serviceName] = {
+                  serviceName,
+                  totalAmount: 0,
+                  standardAmount: 0,
+                  actualAmount: 0,
+                  count: 0,
+                  standardMinutesTotal: 0,
+                  actualMinutesTotal: 0,
+                  standardMatchedCount: 0,
+                  actualMatchedCount: 0
+                };
+              }
+              const row = serviceMap[serviceName];
+              row.totalAmount += Number(o.amount) || 0;
+              row.count += 1;
+              if (standardMinutes) {
+                row.standardMinutesTotal += standardMinutes;
+                row.standardMatchedCount += 1;
+                row.standardAmount += Number(o.amount) || 0;
+              }
+              if (actualMinutes) {
+                row.actualMinutesTotal += actualMinutes;
+                row.actualMatchedCount += 1;
+                row.actualAmount += Number(o.amount) || 0;
+              }
+            });
+
+          return Object.values(serviceMap)
+            .map(item => {
+              const standardHours = item.standardMinutesTotal / 60;
+              const actualHours = item.actualMinutesTotal / 60;
+              const standardYieldPerHour = standardHours > 0 ? Math.round(item.standardAmount / standardHours) : 0;
+              const actualYieldPerHour = actualHours > 0 ? Math.round(item.actualAmount / actualHours) : 0;
+              const yieldPerHour = actualYieldPerHour || standardYieldPerHour;
+              const minutesPerService = item.standardMatchedCount
+                ? Math.round(item.standardMinutesTotal / item.standardMatchedCount)
+                : 0;
+              const actualMinutesPerService = item.actualMatchedCount
+                ? Math.round(item.actualMinutesTotal / item.actualMatchedCount)
+                : 0;
+              return {
+                ...item,
+                minutesPerService,
+                actualMinutesPerService,
+                totalHours: standardHours,
+                actualHours,
+                standardYieldPerHour,
+                actualYieldPerHour,
+                yieldPerHour,
+                level: this.serviceYieldLevel(yieldPerHour),
+                actualCoverage: item.count ? Math.round(item.actualMatchedCount / item.count * 100) : 0
+              };
+            })
+            .sort((a, b) => b.yieldPerHour - a.yieldPerHour);
+        },
+        buildYieldSummary(items = [], serviceOrders = []) {
+          const totalAmount = items.reduce((sum, item) => sum + (Number(item.totalAmount) || 0), 0);
+          const standardHours = items.reduce((sum, item) => sum + (Number(item.totalHours) || 0), 0);
+          const actualHours = items.reduce((sum, item) => sum + (Number(item.actualHours) || 0), 0);
+          const serviceRevenue = (serviceOrders || []).reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
+          const actualAmount = (serviceOrders || [])
+            .filter(order => this.getOrderActualMinutes(order))
+            .reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
+          const actualAverage = actualHours > 0 ? Math.round(actualAmount / actualHours) : 0;
+          const standardAverage = standardHours > 0 ? Math.round(totalAmount / standardHours) : 0;
+          const unmatched = [...new Set((serviceOrders || [])
+            .filter(o => !this.getServiceMinutes(o.serviceName))
+            .map(o => o.serviceName)
+            .filter(Boolean))];
+          const actualMissing = [...new Set((serviceOrders || [])
+            .filter(o => !this.getOrderActualMinutes(o))
+            .map(o => o.serviceName)
+            .filter(Boolean))];
+          return {
+            average: actualAverage || standardAverage,
+            actualAverage,
+            standardAverage,
+            totalAmount,
+            totalHours: Math.round(standardHours * 10) / 10,
+            actualHours: Math.round(actualHours * 10) / 10,
+            actualAmount,
+            actualCoverage: serviceRevenue > 0 ? Math.round(actualAmount / serviceRevenue * 100) : 0,
+            unmatched,
+            actualMissing,
+            highEfficiency: items.filter(item => item.level === '高效').length,
+            serviceCount: items.length,
+            topService: items[0] || null
+          };
         },
 
         // Helper to match service duration
@@ -7744,6 +8096,20 @@
             }
           }
           return null;
+        },
+
+        buildCalendarSyncPricingPayload() {
+          const serviceConfigs = (Array.isArray(this.servicesConfig) ? this.servicesConfig : [])
+            .map(service => ({
+              name: String(service?.name || '').trim(),
+              price: Number(service?.price) || 0,
+              duration: Number(service?.duration) || 0
+            }))
+            .filter(service => service.name && service.price > 0);
+          return {
+            serviceConfigs,
+            serviceConfigUpdatedAt: localStorage.getItem('momo_servicesConfigUpdatedAt') || null
+          };
         },
 
         // E: 取得日期所在週的週一（YYYY-MM-DD）
@@ -7890,6 +8256,7 @@
           if (this.syncing) return { run: false, reason: 'syncing' };
           if (this.selectedMonth === 'All') return { run: false, reason: 'annual' };
           if (this.authConfig.required && !this.authSession?.access_token) return { run: false, reason: 'auth' };
+          if (this.calendarSyncConfigured === false) return { run: false, reason: 'calendar_not_configured' };
           if (this.cloudConflict) return { run: false, reason: 'conflict' };
           if (this.cloudMigrationNeeded) return { run: false, reason: 'migration' };
           if (state.lastAttemptResult === 'error' && lastAttemptAt && now - lastAttemptAt < minRetryInterval) return { run: false, reason: 'recent_error' };
@@ -7910,6 +8277,7 @@
           if (!decision.run) {
             if (decision.reason === 'offline') this.calendarAutoSyncMessage = '離線中，暫停自動同步';
             if (decision.reason === 'recent_error') this.calendarAutoSyncMessage = '自動同步暫停，可手動同步';
+            if (decision.reason === 'calendar_not_configured') this.calendarAutoSyncMessage = '行事曆尚未設定，暫停自動同步';
             return false;
           }
           this.calendarAutoSyncStatus = 'syncing';
@@ -7997,6 +8365,7 @@
             supabaseUrl: config.supabase_url || '',
             publishableKey: config.supabase_publishable_key || ''
           };
+          this.calendarSyncConfigured = config.calendar_configured !== false;
 
           if (!this.authConfig.configured) {
             this.authLoading = false;
@@ -8203,7 +8572,17 @@
               && requestBody
               && /topup_channel/i.test(detail)
               && /(column|schema cache|could not find|PGRST204)/i.test(detail);
+            const orderActualTimeColumns = ['actual_duration_minutes', 'calendar_duration_minutes', 'calendar_start_at', 'calendar_end_at'];
+            const missingOrderActualTime = table === 'orders'
+              && requestBody
+              && orderActualTimeColumns.some(column => detail.includes(column))
+              && /(column|schema cache|could not find|PGRST204)/i.test(detail);
             const closeoutBreakdownColumns = ['cash', 'transfer', 'prepaid_out', 'prepaid_in', 'cash_prepaid_in', 'transfer_prepaid_in', 'net_profit', 'orders_count'];
+            const closeoutCountColumns = ['service_orders_count', 'topup_count'];
+            const missingCloseoutCounts = table === 'closeouts'
+              && requestBody
+              && closeoutCountColumns.some(column => detail.includes(column))
+              && /(column|schema cache|could not find|PGRST204)/i.test(detail);
             const missingCloseoutBreakdown = table === 'closeouts'
               && requestBody
               && closeoutBreakdownColumns.some(column => detail.includes(column))
@@ -8218,6 +8597,42 @@
               requestBody = Array.isArray(requestBody)
                 ? requestBody.map(stripTopupChannel)
                 : stripTopupChannel(requestBody);
+              response = await execute();
+              if (response.status === 401 && await this.refreshSupabaseSession()) response = await execute();
+              if (response.ok) {
+                if (response.status === 204) return null;
+                const retryText = await response.text();
+                return retryText ? JSON.parse(retryText) : null;
+              }
+            }
+            if (missingOrderActualTime) {
+              this.cloudActualTimeSupported = false;
+              const stripOrderActualTime = row => {
+                const copy = { ...row };
+                orderActualTimeColumns.forEach(column => delete copy[column]);
+                return copy;
+              };
+              requestBody = Array.isArray(requestBody)
+                ? requestBody.map(stripOrderActualTime)
+                : stripOrderActualTime(requestBody);
+              response = await execute();
+              if (response.status === 401 && await this.refreshSupabaseSession()) response = await execute();
+              if (response.ok) {
+                if (response.status === 204) return null;
+                const retryText = await response.text();
+                return retryText ? JSON.parse(retryText) : null;
+              }
+            }
+            if (missingCloseoutCounts) {
+              this.cloudCloseoutCountSupported = false;
+              const stripCloseoutCounts = row => {
+                const copy = { ...row };
+                closeoutCountColumns.forEach(column => delete copy[column]);
+                return copy;
+              };
+              requestBody = Array.isArray(requestBody)
+                ? requestBody.map(stripCloseoutCounts)
+                : stripCloseoutCounts(requestBody);
               response = await execute();
               if (response.status === 401 && await this.refreshSupabaseSession()) response = await execute();
               if (response.ok) {
@@ -8370,6 +8785,8 @@
               ['payment_method', '付款方式'],
               ['cash_amount', '現金付款'],
               ['topup_channel', '儲值收款'],
+              ['actual_duration_minutes', '實際工時'],
+              ['calendar_duration_minutes', '行事曆工時'],
               ['sync_status', '資料狀態']
             ],
             expenses: [
@@ -8400,7 +8817,9 @@
               ['prepaid_in', '儲值進帳'],
               ['expenses', '支出'],
               ['net_profit', '淨利'],
-              ['orders_count', '服務筆數'],
+              ['orders_count', '總筆數'],
+              ['service_orders_count', '服務筆數'],
+              ['topup_count', '儲值筆數'],
               ['note', '備註']
             ],
             service_configs: [
@@ -8448,9 +8867,9 @@
             'cash_prepaid_in', 'transfer_prepaid_in', 'expenses', 'net_profit', 'price'
           ]);
           if (moneyFields.has(field)) return `NT$ ${this.formatNumber(value)}`;
-          if (field === 'duration_minutes') return `${this.formatNumber(value)} 分鐘`;
+          if (['duration_minutes', 'actual_duration_minutes', 'calendar_duration_minutes'].includes(field)) return `${this.formatNumber(value)} 分鐘`;
           if (field === 'stock') return `${this.formatNumber(value)} 件`;
-          if (field === 'orders_count') return `${this.formatNumber(value)} 筆`;
+          if (['orders_count', 'service_orders_count', 'topup_count'].includes(field)) return `${this.formatNumber(value)} 筆`;
           if (typeof value === 'object') return JSON.stringify(value, null, 2);
           return String(value);
         },
@@ -8659,6 +9078,10 @@
                 paymentMethod: row.payment_method,
                 cashAmount: row.cash_amount === null ? null : Number(row.cash_amount),
                 topupChannel: row.topup_channel || (row.payment_method === '儲值進帳' ? '現金' : null),
+                calendarStart: row.calendar_start_at || null,
+                calendarEnd: row.calendar_end_at || null,
+                calendarDurationMinutes: this.normalizeMinutes(row.calendar_duration_minutes),
+                actualDurationMinutes: this.normalizeMinutes(row.actual_duration_minutes),
                 sourceEventId: row.source_event_id || null,
                 orderId: row.external_order_id || row.id,
                 syncStatus: row.sync_status || 'active',
@@ -8719,6 +9142,8 @@
               expenses: Number(row.expenses) || 0,
               netProfit: Number(row.net_profit) || 0,
               ordersCount: Number(row.orders_count) || 0,
+              ...(row.service_orders_count !== undefined ? { serviceOrdersCount: Number(row.service_orders_count) || 0 } : {}),
+              ...(row.topup_count !== undefined ? { topupCount: Number(row.topup_count) || 0 } : {}),
               note: row.note || '',
               completedAt: row.completed_at,
               version: Number(row.version) || 1
@@ -8730,6 +9155,14 @@
                 price: Number(row.price) || 0,
                 version: Number(row.version) || 1
               }));
+              const latestServiceConfigUpdate = snapshot.service_configs
+                .map(row => row.updated_at)
+                .filter(Boolean)
+                .sort()
+                .pop();
+              if (latestServiceConfigUpdate) {
+                localStorage.setItem('momo_servicesConfigUpdatedAt', latestServiceConfigUpdate);
+              }
             }
             this.captureCloudBaseline(snapshot);
             this.saveToLocalStorage();
@@ -8819,6 +9252,12 @@
                 payment_method: paymentMethod,
                 cash_amount: cashAmount,
                 ...(this.cloudTopupChannelSupported ? { topup_channel: paymentMethod === '儲值進帳' ? this.getTopupChannel(order) : null } : {}),
+                ...(this.cloudActualTimeSupported ? {
+                  actual_duration_minutes: this.normalizeMinutes(order.actualDurationMinutes),
+                  calendar_duration_minutes: this.normalizeMinutes(order.calendarDurationMinutes),
+                  calendar_start_at: order.calendarStart || null,
+                  calendar_end_at: order.calendarEnd || null
+                } : {}),
                 source: order.sourceEventId ? 'google_calendar' : 'manual',
                 source_event_id: order.sourceEventId || null,
                 external_order_id: order.orderId || null,
@@ -8883,6 +9322,10 @@
                 transfer_prepaid_in: Math.round(Number(record.transferPrepaidIn) || 0),
                 net_profit: Math.round(Number(record.netProfit) || 0),
                 orders_count: Math.max(0, Math.round(Number(record.ordersCount) || 0))
+              } : {}),
+              ...(this.cloudCloseoutCountSupported ? {
+                service_orders_count: Math.max(0, Math.round(Number(record.serviceOrdersCount) || 0)),
+                topup_count: Math.max(0, Math.round(Number(record.topupCount) || 0))
               } : {}),
               service_revenue: Math.round(Number(record.serviceRevenue) || 0),
               expenses: Math.round(Number(record.expenses) || 0),
@@ -9176,6 +9619,7 @@
           let response;
           const productionApi = 'https://mo2-z7d1.onrender.com';
           const primaryApi = this.apiBaseUrl || (window.location.origin === productionApi ? window.location.origin : productionApi);
+          const syncPayload = this.buildCalendarSyncPricingPayload();
           try {
             // 正式站直接使用同網域 API；本機開發時沿用偵測到的本機 API。
             const controller = new AbortController();
@@ -9184,7 +9628,7 @@
             response = await fetch(`${primaryApi}/api/sync${queryString}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
-              body: JSON.stringify({}),
+              body: JSON.stringify(syncPayload),
               signal: controller.signal
             });
             clearTimeout(timeoutId);
@@ -9203,7 +9647,7 @@
               response = await fetch(`${productionApi}/api/sync${queryString}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
-                body: JSON.stringify({})
+                body: JSON.stringify(syncPayload)
               });
             } catch (err) {
               console.error('API Sync Error:', err);
@@ -9305,6 +9749,16 @@
             const date = raw.date || new Date().toLocaleDateString('sv-SE');
             const sourceEventId = String(raw.sourceEventId || raw.eventId || '');
             const orderId = raw.orderId || raw.order_id || null;
+            const actualDurationMinutes = this.normalizeMinutes(raw.actualDurationMinutes || raw.calendarDurationMinutes);
+            const calendarDurationMinutes = this.normalizeMinutes(raw.calendarDurationMinutes || raw.actualDurationMinutes);
+            const calendarStart = raw.calendarStart || raw.calendar_start_at || null;
+            const calendarEnd = raw.calendarEnd || raw.calendar_end_at || null;
+            const pricingSource = raw.pricingSource || raw.pricing_source || null;
+            const rawUnmatchedServices = raw.pricingUnmatchedServices || raw.pricing_unmatched_services || [];
+            const pricingUnmatchedServices = Array.isArray(rawUnmatchedServices)
+              ? rawUnmatchedServices.map(item => String(item || '').trim()).filter(Boolean)
+              : [];
+            const serviceConfigUpdatedAt = raw.serviceConfigUpdatedAt || raw.service_config_updated_at || null;
 
             if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !customerName.trim() || !serviceName.trim()) {
               skippedCount++;
@@ -9317,6 +9771,7 @@
             }
             if (!sourceEventId) warningCount++;
             if (amount <= 0 || !['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'].includes(paymentMethod)) warningCount++;
+            if (pricingSource === 'unmatched_service_config' || pricingUnmatchedServices.length) warningCount++;
             if (paymentMethod === '現金＋儲值扣款' && (cashAmount <= 0 || cashAmount >= amount)) warningCount++;
             const syncedCustomer = this.findOrCreateCustomer(customerName, gender);
             if (!syncedCustomer) {
@@ -9331,7 +9786,7 @@
                 this.isOrderActive(order)
                 && order.date === date
                 && order.customerName === customerName
-                && Number(order.amount) === amount
+                && (Number(order.amount) === amount || (order.source === 'google_calendar' && Number(order.amount) > 0))
                 && order.serviceName === serviceName
               );
               if (legacyExisting) {
@@ -9353,6 +9808,13 @@
                 source: 'google_calendar',
                 sourceEventId: null,
                 orderId,
+                calendarStart,
+                calendarEnd,
+                calendarDurationMinutes,
+                actualDurationMinutes,
+                pricingSource,
+                pricingUnmatchedServices,
+                serviceConfigUpdatedAt,
                 syncStatus: 'active',
                 lastSyncedAt: new Date().toISOString()
               });
@@ -9368,7 +9830,7 @@
                 && String(order.id || '').startsWith('sync_')
                 && order.date === date
                 && order.customerName === customerName
-                && Number(order.amount) === amount
+                && (Number(order.amount) === amount || (order.source === 'google_calendar' && Number(order.amount) > 0))
                 && order.serviceName === serviceName
               );
             }
@@ -9386,6 +9848,13 @@
               source: 'google_calendar',
               sourceEventId: sourceEventId || null,
               orderId,
+              calendarStart,
+              calendarEnd,
+              calendarDurationMinutes,
+              actualDurationMinutes,
+              pricingSource,
+              pricingUnmatchedServices,
+              serviceConfigUpdatedAt,
               syncStatus: 'active',
               lastSyncedAt: new Date().toISOString()
             };
@@ -9399,9 +9868,19 @@
               if (sourceEventId) bySourceEventId.set(sourceEventId, newOrder);
               mergedCount++;
             } else {
-              const changed = ['date', 'customerId', 'customerName', 'gender', 'serviceName', 'amount', 'paymentMethod', 'cashAmount', 'topupChannel', 'syncStatus']
-                .some(key => existing[key] !== syncedFields[key]);
-              Object.assign(existing, syncedFields);
+              const mergedFields = { ...syncedFields };
+              if (Number(existing.amount) > 0) {
+                mergedFields.amount = Number(existing.amount) || 0;
+                mergedFields.paymentMethod = existing.paymentMethod || syncedFields.paymentMethod;
+                mergedFields.cashAmount = existing.cashAmount === undefined ? syncedFields.cashAmount : existing.cashAmount;
+                mergedFields.topupChannel = existing.topupChannel === undefined ? syncedFields.topupChannel : existing.topupChannel;
+                mergedFields.pricingSource = existing.pricingSource || 'preserved_existing_order';
+                mergedFields.pricingUnmatchedServices = Array.isArray(existing.pricingUnmatchedServices) ? existing.pricingUnmatchedServices : [];
+                mergedFields.serviceConfigUpdatedAt = existing.serviceConfigUpdatedAt || serviceConfigUpdatedAt;
+              }
+              const changed = ['date', 'customerId', 'customerName', 'gender', 'serviceName', 'amount', 'paymentMethod', 'cashAmount', 'topupChannel', 'calendarStart', 'calendarEnd', 'calendarDurationMinutes', 'actualDurationMinutes', 'pricingSource', 'pricingUnmatchedServices', 'serviceConfigUpdatedAt', 'syncStatus']
+                .some(key => JSON.stringify(existing[key] ?? null) !== JSON.stringify(mergedFields[key] ?? null));
+              Object.assign(existing, mergedFields);
               if (sourceEventId) bySourceEventId.set(sourceEventId, existing);
               changed ? updatedCount++ : unchangedCount++;
             }
@@ -9539,6 +10018,7 @@
           const filtered = this.tempServicesConfig.filter(s => s.name && s.name.trim());
           this.servicesConfig = filtered;
           localStorage.setItem('momo_servicesConfig', JSON.stringify(this.servicesConfig));
+          localStorage.setItem('momo_servicesConfigUpdatedAt', new Date().toISOString());
           this.queueCloudSync();
           this.showToast('🍬 服務定價對照設定已更新！');
           this.showServiceConfigModal = false;
@@ -9558,6 +10038,133 @@
           this.selectedMonth = String(month).padStart(2, '0');
           this.activeTab = 'orders';
           this.scrollToTopForNavigation();
+        },
+        exportMonthlySettlementReport() {
+          const s = this.monthlySettlementSummary;
+          const p = this.monthlyPrepaidReconciliation;
+          const sections = [
+            {
+              title: `正式月結摘要 ${s.label}`,
+              headers: ['項目', '數值'],
+              rows: [
+                ['月份', s.label],
+                ['報表口徑', '完整月結資料，不受畫面搜尋、分類、付款篩選影響；已打烊日期優先使用固定快照，未打烊日期暫用明細計算'],
+                ['月結來源', s.settlementBasis],
+                ['月結狀態', s.ready ? '已完整' : `未打烊 ${s.unclosedDates.length} 天`],
+                ['營業額(NT$)', s.serviceRevenue],
+                ['服務筆數', s.ordersCount],
+                ['平均客單(NT$)', s.avgTicket],
+                ['現金入帳(NT$)', s.cashIn],
+                ['轉帳入帳(NT$)', s.transferIn],
+                ['現金服務(NT$)', s.cash],
+                ['現金儲值(NT$)', s.cashPrepaidIn],
+                ['轉帳服務(NT$)', s.transfer],
+                ['轉帳儲值(NT$)', s.transferPrepaidIn],
+                ['儲值扣款(NT$)', s.prepaidOut],
+                ['儲值進帳(NT$)', s.prepaidIn],
+                ['支出(NT$)', s.expenses],
+                ['淨利(NT$)', s.netProfit],
+                ['淨利率', `${s.profitMargin}%`],
+                ['有資料日期', s.businessDays],
+                ['已打烊日期', s.closedDays],
+                ['快照天數', s.snapshotDays],
+                ['暫算天數', s.liveDays],
+                ['未打烊日期', s.unclosedDates.join('、')]
+              ]
+            },
+            {
+              title: '每日月結口徑',
+              headers: ['日期', '資料來源', '營業額(NT$)', '現金服務(NT$)', '轉帳服務(NT$)', '儲值扣款(NT$)', '儲值進帳(NT$)', '支出(NT$)', '淨利(NT$)', '服務筆數', '儲值筆數', '打烊時間', '備註'],
+              rows: s.dailyRows.map(day => [
+                day.date,
+                day.sourceLabel,
+                day.serviceRevenue,
+                day.cash,
+                day.transfer,
+                day.prepaidOut,
+                day.prepaidIn,
+                day.expenses,
+                day.netProfit,
+                day.serviceOrdersCount,
+                day.topupCount,
+                day.completedAt ? this.formatDateTime(day.completedAt) : '',
+                day.note || ''
+              ])
+            },
+            {
+              title: '儲值期間對帳總表',
+              headers: ['項目', '金額或數量'],
+              rows: [
+                ['期初儲值餘額(NT$)', p.openingBalance],
+                ['本期儲值進帳(NT$)', p.topupIn],
+                ['本期儲值扣款(NT$)', p.debitOut],
+                ['調整/沖銷(NT$)', p.adjustments],
+                ['期末儲值餘額(NT$)', p.closingBalance],
+                ['對帳公式', `${p.openingBalance} + ${p.topupIn} - ${p.debitOut} + ${p.adjustments} = ${p.closingBalance}`],
+                ['對帳狀態', p.balanced ? '平衡' : '需檢查'],
+                ['進帳筆數', p.topupCount],
+                ['扣款筆數', p.debitCount],
+                ['調整/沖銷筆數', p.adjustmentCount]
+              ]
+            },
+            {
+              title: '儲值顧客明細',
+              headers: ['顧客ID', '顧客姓名', '期初(NT$)', '本期進帳(NT$)', '本期扣款(NT$)', '調整/沖銷(NT$)', '期末(NT$)'],
+              rows: p.customerRows.map(row => [
+                row.customerId,
+                row.customerName,
+                row.openingBalance,
+                row.topupIn,
+                row.debitOut,
+                row.adjustments,
+                row.closingBalance
+              ])
+            },
+            {
+              title: '完整業績明細',
+              headers: ['日期', '顧客姓名', '服務項目', '服務分類', '金額(NT$)', '付款方式', '儲值收款方式', '現金金額(NT$)', '儲值扣款(NT$)', '列入營業額', '預估分鐘', '實際分鐘', '實際每小時產值'],
+              rows: this.settlementOrders.map(order => {
+                const amount = Number(order.amount) || 0;
+                const actualMinutes = this.getOrderActualMinutes(order);
+                return [
+                  order.date,
+                  order.customerName,
+                  order.serviceName,
+                  order.category || this.classifyCategory(order.serviceName),
+                  amount,
+                  order.paymentMethod,
+                  order.paymentMethod === '儲值進帳' ? this.getTopupChannel(order) : '',
+                  order.paymentMethod === '現金＋儲值扣款' ? this.getMixedCashAmount(order) : (order.paymentMethod === '現金' ? amount : 0),
+                  order.paymentMethod === '現金＋儲值扣款' ? this.getMixedPrepaidAmount(order) : (order.paymentMethod === '儲值扣款' ? amount : 0),
+                  order.paymentMethod !== '儲值進帳' ? '是' : '否',
+                  this.getServiceMinutes(order.serviceName) || '',
+                  actualMinutes || '',
+                  actualMinutes ? Math.round(amount / (actualMinutes / 60)) : ''
+                ];
+              })
+            },
+            {
+              title: '支出明細',
+              headers: ['日期', '支出分類', '金額(NT$)', '備註'],
+              rows: this.settlementExpenses.map(expense => [expense.date, expense.category, expense.amount, expense.notes || ''])
+            },
+            {
+              title: '時間產值分析',
+              headers: ['服務項目', '筆數', '總額(NT$)', '實際工時(hr)', '標準工時(hr)', '實際每小時(NT$)', '標準每小時(NT$)', '覆蓋率'],
+              rows: this.settlementServiceYieldRows.map(row => [
+                row.serviceName,
+                row.count,
+                row.totalAmount,
+                this.formatHours(row.actualHours),
+                this.formatHours(row.totalHours),
+                row.actualYieldPerHour || '',
+                row.standardYieldPerHour || '',
+                `${row.actualCoverage}%`
+              ])
+            }
+          ];
+          this.downloadSectionedCSV(`MOMO正式月結_${s.year}-${s.month}.csv`, sections);
+          this.showToast(`${s.label} 正式月結 CSV 已匯出`);
         },
         exportAnnualReport() {
           const headers = ['月份', '收入(NT$)', '支出(NT$)', '淨利(NT$)', '淨利率', '服務人次'];
@@ -10043,6 +10650,7 @@
             momo_crmFormulas: this.crmFormulas,
             momo_closeoutRecords: this.closeoutRecords,
             momo_servicesConfig: this.servicesConfig,
+            momo_servicesConfigUpdatedAt: localStorage.getItem('momo_servicesConfigUpdatedAt') || null,
             momo_operationLogs: this.operationLogs
           };
         },
@@ -10238,6 +10846,7 @@
                 this.recordOperation('backup_import', '匯入備份還原', `訂單 ${this.orders.length} 筆、顧客 ${this.customers.length} 位`);
                 if (data.momo_servicesConfig) {
                   this.servicesConfig = data.momo_servicesConfig;
+                  localStorage.setItem('momo_servicesConfigUpdatedAt', data.momo_servicesConfigUpdatedAt || data.createdAt || new Date().toISOString());
                   this.saveToLocalStorage();
                   this.showToast('備份還原成功，系統已更新資料');
                 } else {
@@ -10257,21 +10866,28 @@
           event.target.value = '';
         },
         exportCSV() {
-          const headers = ['日期', '顧客姓名', '性別', '服務項目', '服務分類', '金額(NT$)', '付款方式', '儲值收款方式', '現金金額(NT$)', '儲值扣款(NT$)', '預估分鐘', '每小時產值'];
-          const rows = this.filteredOrders.map(o => [
-            o.date,
-            o.customerName,
-            o.gender,
-            o.serviceName,
-            o.category || this.classifyCategory(o.serviceName),
-            o.amount,
-            o.paymentMethod,
-            o.paymentMethod === '儲值進帳' ? this.getTopupChannel(o) : '',
-            o.paymentMethod === '現金＋儲值扣款' ? this.getMixedCashAmount(o) : (o.paymentMethod === '現金' ? Number(o.amount) || 0 : 0),
-            o.paymentMethod === '現金＋儲值扣款' ? this.getMixedPrepaidAmount(o) : (o.paymentMethod === '儲值扣款' ? Number(o.amount) || 0 : 0),
-            this.getServiceMinutes(o.serviceName) || '',
-            this.getServiceMinutes(o.serviceName) ? Math.round((Number(o.amount) || 0) / (this.getServiceMinutes(o.serviceName) / 60)) : ''
-          ]);
+          const headers = ['日期', '顧客姓名', '性別', '服務項目', '服務分類', '金額(NT$)', '付款方式', '儲值收款方式', '現金金額(NT$)', '儲值扣款(NT$)', '預估分鐘', '預估每小時產值', '實際分鐘', '實際每小時產值'];
+          const rows = this.filteredOrders.map(o => {
+            const standardMinutes = this.getServiceMinutes(o.serviceName);
+            const actualMinutes = this.getOrderActualMinutes(o);
+            const amount = Number(o.amount) || 0;
+            return [
+              o.date,
+              o.customerName,
+              o.gender,
+              o.serviceName,
+              o.category || this.classifyCategory(o.serviceName),
+              o.amount,
+              o.paymentMethod,
+              o.paymentMethod === '儲值進帳' ? this.getTopupChannel(o) : '',
+              o.paymentMethod === '現金＋儲值扣款' ? this.getMixedCashAmount(o) : (o.paymentMethod === '現金' ? amount : 0),
+              o.paymentMethod === '現金＋儲值扣款' ? this.getMixedPrepaidAmount(o) : (o.paymentMethod === '儲值扣款' ? amount : 0),
+              standardMinutes || '',
+              standardMinutes ? Math.round(amount / (standardMinutes / 60)) : '',
+              actualMinutes || '',
+              actualMinutes ? Math.round(amount / (actualMinutes / 60)) : ''
+            ];
+          });
           const dateStr = this.selectedMonth === 'All'
             ? `${this.selectedYear}-全年度`
             : `${this.selectedYear}-${this.selectedMonth}`;
@@ -10299,6 +10915,24 @@
         downloadCSV(filename, headers, rows) {
           const escape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
           const csvContent = '\uFEFF' + [headers, ...rows].map(row => row.map(escape).join(',')).join('\r\n');
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 0);
+        },
+        downloadSectionedCSV(filename, sections) {
+          const escape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+          const lines = [];
+          (sections || []).forEach((section, index) => {
+            if (index > 0) lines.push([]);
+            lines.push([section.title || '']);
+            if (section.headers?.length) lines.push(section.headers);
+            (section.rows || []).forEach(row => lines.push(row));
+          });
+          const csvContent = '\uFEFF' + lines.map(row => row.map(escape).join(',')).join('\r\n');
           const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');

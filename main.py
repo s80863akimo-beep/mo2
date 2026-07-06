@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 from collections import defaultdict
 
 import httpx
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from googleapiclient.discovery import build
@@ -34,6 +34,10 @@ REQUIRE_AUTH = False
 
 def supabase_auth_configured() -> bool:
     return bool(SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY)
+
+
+def calendar_sync_configured() -> bool:
+    return bool(os.getenv("GOOGLE_API_KEY") and os.getenv("CALENDAR_ID"))
 
 
 async def get_current_user(
@@ -276,6 +280,81 @@ def calc_amount(service_text: str) -> int:
     return total
 
 
+def normalize_service_key(value: str) -> str:
+    cleaned = str(value or "")
+    cleaned = re.sub(r"\[.*?\]", " ", cleaned)
+    cleaned = re.sub(r"（.*?）", " ", cleaned)
+    cleaned = re.sub(r"\(.*?\)", " ", cleaned)
+    cleaned = re.sub(r"\s*\+\s*", "+", cleaned)
+    cleaned = re.sub(r"\s+", "", cleaned)
+    return cleaned.strip().lower()
+
+
+def build_service_price_lookup(service_configs: list[dict] | None) -> dict[str, int]:
+    lookup: dict[str, int] = {}
+    if not isinstance(service_configs, list):
+        return lookup
+    for item in service_configs:
+        if not isinstance(item, dict):
+            continue
+        key = normalize_service_key(item.get("name", ""))
+        if not key:
+            continue
+        try:
+            price = int(float(item.get("price") or 0))
+        except (TypeError, ValueError):
+            price = 0
+        if price > 0:
+            lookup[key] = price
+    return lookup
+
+
+def calc_amount_with_service_config(
+    service_text: str,
+    lookup: dict[str, int],
+    allow_backend_fallback: bool = True,
+) -> dict:
+    if not lookup:
+        if not allow_backend_fallback:
+            return {
+                "amount": 0,
+                "source": "unmatched_service_config",
+                "unmatched": [str(service_text or "").strip()] if service_text else [],
+            }
+        amount = calc_amount(service_text)
+        return {
+            "amount": amount,
+            "source": "backend_price_table" if amount > 0 else "unmatched_backend_price_table",
+            "unmatched": [] if amount > 0 else [str(service_text or "").strip()],
+        }
+
+    normalized_full = normalize_service_key(service_text)
+    if not normalized_full:
+        return {"amount": 0, "source": "unmatched_service_config", "unmatched": []}
+    if normalized_full in lookup:
+        return {"amount": lookup[normalized_full], "source": "service_config", "unmatched": []}
+
+    remaining = normalized_full
+    total = 0
+    matched_count = 0
+    for key in sorted(lookup.keys(), key=len, reverse=True):
+        if key in remaining:
+            total += lookup[key]
+            matched_count += 1
+            remaining = remaining.replace(key, "", 1)
+    leftover = re.sub(r"(?:\+|＋|/|、|，|,|;|；|\s)+", "", remaining)
+    if matched_count and not leftover:
+        return {
+            "amount": total,
+            "source": "service_config_combo" if matched_count > 1 else "service_config",
+            "unmatched": [],
+        }
+    if matched_count and leftover:
+        return {"amount": 0, "source": "unmatched_service_config", "unmatched": [leftover]}
+
+    return {"amount": 0, "source": "unmatched_service_config", "unmatched": [str(service_text or "").strip()]}
+
+
 def get_event_date(event: dict) -> str | None:
     """
     取得事件的台灣本地日期字串（YYYY-MM-DD）。
@@ -289,6 +368,27 @@ def get_event_date(event: dict) -> str | None:
     elif "date" in start:
         return start["date"]
     return None
+
+
+def get_event_time_info(event: dict) -> dict:
+    """取得 Google Calendar 實際開始、結束與占用分鐘數。"""
+    start = event.get("start", {})
+    end = event.get("end", {})
+    if "dateTime" not in start or "dateTime" not in end:
+        return {
+            "calendarStart": None,
+            "calendarEnd": None,
+            "calendarDurationMinutes": None,
+        }
+
+    start_dt = datetime.fromisoformat(start["dateTime"].replace("Z", "+00:00"))
+    end_dt = datetime.fromisoformat(end["dateTime"].replace("Z", "+00:00"))
+    duration_minutes = max(0, round((end_dt - start_dt).total_seconds() / 60))
+    return {
+        "calendarStart": start_dt.astimezone(TW).isoformat(),
+        "calendarEnd": end_dt.astimezone(TW).isoformat(),
+        "calendarDurationMinutes": duration_minutes or None,
+    }
 
 
 def get_calendar_service():
@@ -348,11 +448,13 @@ def public_config():
         "supabase_publishable_key": SUPABASE_PUBLISHABLE_KEY if supabase_auth_configured() else "",
         "auth_configured": supabase_auth_configured(),
         "auth_required": REQUIRE_AUTH,
+        "calendar_configured": calendar_sync_configured(),
     }
 
 @app.get("/api/sync")
 @app.post("/api/sync")
 def sync_calendar(
+    payload: dict | None = Body(default=None),
     year: int | None = Query(default=None, ge=2020, le=2100),
     month: int | None = Query(default=None, ge=1, le=12),
     _current_user: dict | None = Depends(get_current_user),
@@ -408,6 +510,12 @@ def sync_calendar(
     y = year  or now.year
     m = month or now.month
     today_str = now.strftime("%Y-%m-%d")
+    service_configs = payload.get("serviceConfigs") if isinstance(payload, dict) else None
+    service_price_lookup = build_service_price_lookup(service_configs if isinstance(service_configs, list) else None)
+    use_service_config_pricing = isinstance(service_configs, list)
+    service_config_updated_at = (
+        payload.get("serviceConfigUpdatedAt") if isinstance(payload, dict) else None
+    )
 
     # 計算同步範圍：包含指定月份與前一個月（共兩個月，利於跨月對帳）
     if m == 1:
@@ -453,6 +561,8 @@ def sync_calendar(
         "missing_date": 0,
         "zero_amount": 0,
         "invalid_mixed_payment": 0,
+        "service_price_items": len(service_price_lookup),
+        "unmatched_price_table": 0,
     }
 
     # 每日統計用的資料結構
@@ -494,7 +604,21 @@ def sync_calendar(
 
         service_text = parse_service_text(desc)
         explicit_amount = parse_explicit_amount(desc)
-        amount = explicit_amount if explicit_amount is not None else calc_amount(service_text)
+        if explicit_amount is not None:
+            amount = explicit_amount
+            pricing_source = "calendar_explicit_amount"
+            pricing_unmatched_services: list[str] = []
+        else:
+            pricing_result = calc_amount_with_service_config(
+                service_text,
+                service_price_lookup,
+                allow_backend_fallback=not use_service_config_pricing,
+            )
+            amount = pricing_result["amount"]
+            pricing_source = pricing_result["source"]
+            pricing_unmatched_services = pricing_result["unmatched"]
+            if pricing_unmatched_services:
+                diagnostics["unmatched_price_table"] += 1
         payment_method = parse_payment_method(desc, service_text)
         topup_channel = parse_topup_channel(desc, payment_method)
         parsed_cash_amount = parse_cash_amount(desc) if payment_method == "現金＋儲值扣款" else None
@@ -511,6 +635,7 @@ def sync_calendar(
             continue
         if amount <= 0:
             diagnostics["zero_amount"] += 1
+        time_info = get_event_time_info(event)
 
         # 從事件標題（summary）提取姓名並清理
         summary = event.get("summary", "") or ""
@@ -550,6 +675,13 @@ def sync_calendar(
             "paymentMethod": payment_method,
             "cashAmount":    cash_amount if payment_method == "現金＋儲值扣款" else None,
             "topupChannel":  topup_channel,
+            "calendarStart":  time_info["calendarStart"],
+            "calendarEnd":    time_info["calendarEnd"],
+            "calendarDurationMinutes": time_info["calendarDurationMinutes"],
+            "actualDurationMinutes":   time_info["calendarDurationMinutes"],
+            "pricingSource": pricing_source,
+            "pricingUnmatchedServices": pricing_unmatched_services,
+            "serviceConfigUpdatedAt": service_config_updated_at,
         })
         diagnostics["orders_parsed"] += 1
 
@@ -629,7 +761,7 @@ def health_check():
         "status": "ok",
         "service": "momohair-calendar-sync",
         "timezone": str(TW),
-        "configured": bool(os.getenv("GOOGLE_API_KEY") and os.getenv("CALENDAR_ID")),
+        "configured": calendar_sync_configured(),
         "auth_configured": supabase_auth_configured(),
         "auth_required": REQUIRE_AUTH,
         "time": datetime.now(tz=TW).isoformat(),
