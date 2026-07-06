@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-    <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.06-monthly-closeout-snapshots">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.06-sync-issue-workbench">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -1374,9 +1374,9 @@
         <button v-if="pendingActionSummary.total" @click="activeTab = 'dashboard'" class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
           待處理 {{ pendingActionSummary.total }}
         </button>
-        <span v-if="syncReport" class="px-2 py-0.5 rounded-full" :class="syncReport.warnings || syncReport.skipped ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-600'">
-          {{ syncReport.warnings || syncReport.skipped ? `同步異常 ${(syncReport.warnings || 0) + (syncReport.skipped || 0)}` : '同步正常' }}
-        </span>
+        <button v-if="syncReport" @click="openSyncIssueModal('all')" class="px-2 py-0.5 rounded-full" :class="syncIssueSummary.total ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-600'">
+          {{ syncIssueSummary.total ? `同步異常 ${syncIssueSummary.total}` : '同步正常' }}
+        </button>
         <span v-if="authUser" class="px-2 py-0.5 rounded-full" :class="cloudStatus === 'error' ? 'bg-rose-50 text-rose-600' : cloudStatus === 'conflict' ? 'bg-amber-50 text-amber-700' : cloudMigrationNeeded ? 'bg-amber-50 text-amber-700' : 'bg-violet-50 text-violet-600'">
           {{ cloudStatus === 'syncing' ? '雲端同步中' : cloudStatus === 'conflict' ? '等待處理衝突' : cloudMigrationNeeded ? '待首次搬移' : cloudReady ? '雲端已連接' : '雲端準備中' }}
         </span>
@@ -1460,6 +1460,10 @@
                   <span class="text-xs font-black text-orange-700">服務定價</span>
                   <span class="text-orange-300">›</span>
                 </button>
+                <button v-if="syncReport" @click="showMobileTools = false; openSyncIssueModal(priceMatchWorkbenchRows.length ? 'pricing' : 'all')" class="min-h-[50px] px-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-between text-left">
+                  <span class="text-xs font-black text-amber-700">同步檢查</span>
+                  <span class="text-amber-300">›</span>
+                </button>
                 <button v-if="authConfig.configured" @click="showMobileTools = false; authUser ? signOutSupabase() : (showAuthSheet = true)" class="min-h-[50px] px-4 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-between text-left">
                   <span class="text-xs font-black text-violet-700">{{ authUser ? '登出雲端' : '登入設定' }}</span>
                   <span class="text-violet-300">›</span>
@@ -1542,6 +1546,88 @@
               </div>
               <div class="text-[10px] font-bold text-slate-400 whitespace-nowrap">{{ formatDateTime(log.at) }}</div>
             </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Sync Issue Inspection Modal -->
+    <transition name="fade">
+      <div v-if="showSyncIssueModal" class="fixed inset-0 z-[86] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click="showSyncIssueModal = false">
+        <div class="ios-sheet w-full sm:max-w-3xl max-h-[86vh] bg-white rounded-t-3xl sm:rounded-3xl macaron-shadow-lg border border-amber-100 overflow-hidden flex flex-col" @click.stop>
+          <div class="ios-sheet-handle sm:hidden"></div>
+          <div class="px-5 py-4 border-b border-amber-100 bg-amber-50/40 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <h3 class="text-base font-black text-slate-800">同步異常檢查</h3>
+              <p class="text-[10px] font-bold text-slate-500 mt-0.5">
+                {{ syncReport?.period || '尚未同步' }} · 異常 {{ syncIssueSummary.total }} 筆 · 價目未匹配 {{ priceMatchWorkbenchRows.length }} 項
+              </p>
+            </div>
+            <button @click="showSyncIssueModal = false" class="w-10 h-10 rounded-full bg-white text-slate-500 font-black" aria-label="關閉">✕</button>
+          </div>
+
+          <div class="px-5 py-3 border-b border-amber-100 bg-white flex gap-2 overflow-x-auto">
+            <button v-for="filter in syncIssueFilters()" :key="'sync-filter-' + filter.key"
+                    @click="syncIssueFilter = filter.key"
+                    class="shrink-0 min-h-[34px] px-3 rounded-xl border text-[11px] font-black"
+                    :class="syncIssueFilter === filter.key ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200'">
+              {{ filter.label }} {{ filter.count }}
+            </button>
+          </div>
+
+          <div class="overflow-y-auto flex-1">
+            <div v-if="syncIssueFilter === 'pricing' && priceMatchWorkbenchRows.length" class="p-4 border-b border-orange-100 bg-orange-50/50">
+              <div class="flex items-center justify-between gap-3 mb-2">
+                <div>
+                  <div class="text-xs font-black text-orange-700">價目表未匹配工作台</div>
+                  <div class="text-[10px] font-bold text-orange-600 mt-0.5">加入後請補定價與標準時長，再重新同步確認。</div>
+                </div>
+                <button @click="openServiceConfigModal()" class="min-h-[34px] px-3 rounded-xl bg-white border border-orange-100 text-orange-700 text-[11px] font-black">打開價目表</button>
+              </div>
+              <div class="space-y-2">
+                <div v-for="row in priceMatchWorkbenchRows" :key="'modal-price-' + row.key" class="rounded-2xl bg-white border border-orange-100 px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <div class="text-xs font-black text-slate-800 truncate">{{ row.serviceName }}</div>
+                    <div class="text-[10px] font-bold text-slate-400 mt-0.5">{{ row.count }} 筆 · 最近 {{ row.latestDate || '未記錄日期' }}</div>
+                  </div>
+                  <button @click="addUnmatchedServiceToConfig(row)" class="min-h-[34px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black shrink-0">加入價目表</button>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="!filteredSyncIssueItems.length" class="p-8 text-center text-sm font-bold text-slate-400">
+              {{ syncIssueItems.length ? '此分類目前沒有異常。' : '最近一次同步沒有逐筆異常。' }}
+            </div>
+            <div v-else class="divide-y divide-slate-100">
+              <div v-for="issue in filteredSyncIssueItems" :key="issue.id" class="px-5 py-3">
+                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="syncIssueSeverityClass(issue.severity)">
+                        {{ issue.severity === 'error' ? '錯誤' : '提醒' }}
+                      </span>
+                      <span class="text-[10px] font-black text-slate-400">{{ syncIssueTypeLabel(issue.type) }}</span>
+                      <span v-if="issue.date" class="text-[10px] font-bold text-slate-400">{{ issue.date }}</span>
+                    </div>
+                    <div class="mt-1 text-sm font-black text-slate-800">{{ issue.message }}</div>
+                    <div class="mt-1 text-[10px] font-bold text-slate-400 leading-relaxed">
+                      <span v-if="issue.customerName">顧客：{{ issue.customerName }}</span>
+                      <span v-if="issue.customerName && issue.serviceName"> · </span>
+                      <span v-if="issue.serviceName">服務：{{ issue.serviceName }}</span>
+                      <span v-if="issue.amount !== undefined"> · 金額 NT$ {{ formatNumber(issue.amount) }}</span>
+                    </div>
+                    <div v-if="issue.unmatchedServices?.length" class="mt-1 text-[10px] font-bold text-amber-600">未匹配片段：{{ issue.unmatchedServices.join('、') }}</div>
+                  </div>
+                  <button v-if="issue.type === 'unmatched_service_config'" @click="addUnmatchedServiceToConfig(issue)" class="min-h-[36px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black shrink-0">加入價目表</button>
+                  <button v-else-if="issue.orderId" @click="openOrderFromSyncIssue(issue)" class="min-h-[36px] px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-black shrink-0">查看訂單</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 border-t border-amber-100 bg-white">
+            <button @click="retryCalendarSync" :disabled="syncing" class="min-h-[52px] text-amber-700 text-xs font-black border-r border-amber-100 disabled:opacity-50">{{ syncing ? '同步中…' : '重新同步' }}</button>
+            <button @click="showSyncIssueModal = false" class="min-h-[52px] text-slate-600 text-xs font-black">完成</button>
           </div>
         </div>
       </div>
@@ -1728,19 +1814,6 @@
             <button @click="retryCalendarSync" :disabled="syncing" class="min-h-[38px] px-4 rounded-xl bg-rose-500 text-white text-xs font-black disabled:opacity-50 whitespace-nowrap">
               {{ syncing ? '重新同步中…' : '重新同步' }}
             </button>
-          </section>
-
-          <section v-if="syncReport" class="rounded-2xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-                   :class="syncReport.warnings || syncReport.skipped ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'">
-            <div>
-              <div class="text-xs font-black text-slate-700">最近同步資料檢查 · {{ syncReport.period }}</div>
-              <div class="text-[10px] text-slate-500 font-semibold mt-0.5">
-                收到 {{ syncReport.received || 0 }} 筆 · 新增 {{ syncReport.merged || 0 }} · 更新 {{ syncReport.updated || 0 }} · 取消 {{ syncReport.cancelled || 0 }} · 未變更 {{ syncReport.unchanged ?? syncReport.duplicates ?? 0 }}
-              </div>
-            </div>
-            <div class="text-[10px] font-black" :class="syncReport.warnings || syncReport.skipped ? 'text-amber-700' : 'text-emerald-700'">
-              {{ syncReport.warnings || syncReport.skipped ? `需確認 ${syncReport.warnings + syncReport.skipped} 筆異常` : '資料格式正常' }}
-            </div>
           </section>
 
           <!-- Daily Closeout Reconciliation -->
@@ -2196,6 +2269,47 @@
               <div class="text-[10px] text-slate-500 font-semibold line-clamp-2">{{ syncError.message }}</div>
             </div>
             <button @click="retryCalendarSync" :disabled="syncing" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black disabled:opacity-50 whitespace-nowrap">重試</button>
+          </section>
+
+          <section v-if="syncReport" class="momo-home-card border rounded-2xl px-4 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3"
+                   :class="syncIssueSummary.total ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'">
+            <div class="min-w-0">
+              <div class="text-xs font-black text-slate-800">同步異常檢查 · {{ syncReport.period }}</div>
+              <div class="text-[10px] text-slate-500 font-semibold mt-0.5">
+                收到 {{ syncReport.received || 0 }} 筆 · 新增 {{ syncReport.merged || 0 }} · 更新 {{ syncReport.updated || 0 }} · 取消 {{ syncReport.cancelled || 0 }}
+              </div>
+              <div class="mt-2 flex flex-wrap gap-1.5">
+                <span class="px-2 py-0.5 rounded-full bg-white/80 border text-[9px] font-black" :class="syncIssueSummary.total ? 'border-amber-200 text-amber-700' : 'border-emerald-200 text-emerald-700'">
+                  {{ syncIssueSummary.total ? `需確認 ${syncIssueSummary.total} 筆` : '資料格式正常' }}
+                </span>
+                <span v-if="priceMatchWorkbenchRows.length" class="px-2 py-0.5 rounded-full bg-white/80 border border-orange-200 text-orange-700 text-[9px] font-black">價目未匹配 {{ priceMatchWorkbenchRows.length }} 項</span>
+                <span v-if="syncIssueSummary.money" class="px-2 py-0.5 rounded-full bg-white/80 border border-rose-200 text-rose-600 text-[9px] font-black">金額/付款 {{ syncIssueSummary.money }} 筆</span>
+                <span v-if="syncIssueSummary.locked" class="px-2 py-0.5 rounded-full bg-white/80 border border-sky-200 text-sky-700 text-[9px] font-black">鎖帳 {{ syncIssueSummary.locked }} 筆</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 sm:flex gap-2">
+              <button @click="openSyncIssueModal('all')" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl bg-white border border-amber-100 text-amber-700 text-[11px] font-black">查看異常</button>
+              <button @click="openSyncIssueModal('pricing')" :disabled="!priceMatchWorkbenchRows.length" class="min-h-[38px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black disabled:opacity-30">價目表工作台</button>
+            </div>
+          </section>
+
+          <section v-if="priceMatchWorkbenchRows.length" class="momo-home-card bg-white border border-orange-100 rounded-2xl overflow-hidden shadow-sm">
+            <div class="px-4 py-3 border-b border-orange-100 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h2 class="text-sm font-black text-slate-800">價目表未匹配工作台</h2>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">行事曆服務名稱對不到價目表時，先集中處理。</p>
+              </div>
+              <button @click="openSyncIssueModal('pricing')" class="min-h-[34px] px-3 rounded-xl bg-orange-50 border border-orange-100 text-orange-700 text-[11px] font-black shrink-0">全部</button>
+            </div>
+            <div class="divide-y divide-orange-50">
+              <div v-for="row in priceMatchWorkbenchRows.slice(0, 4)" :key="'daily-price-workbench-' + row.key" class="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="text-sm font-black text-slate-800 truncate">{{ row.serviceName }}</div>
+                  <div class="mt-0.5 text-[10px] font-bold text-slate-400">{{ row.count }} 筆 · 最近 {{ row.latestDate || '未記錄日期' }}</div>
+                </div>
+                <button @click="addUnmatchedServiceToConfig(row)" class="min-h-[36px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black shrink-0">加入價目表</button>
+              </div>
+            </div>
           </section>
 
           <!-- Show only when action is needed -->
@@ -4424,7 +4538,7 @@
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.06-unified-service-pricing';
+    const APP_VERSION = '2026.07.06-sync-issue-workbench';
 
     // 空白初始資料；正式資料由行事曆同步或手動建立
     const defaultOrders = [];
@@ -4566,6 +4680,8 @@
           lastSyncTime: localStorage.getItem('momo_last_sync_time') || null,
           syncReport: safeParse(localStorage.getItem('momo_sync_report'), null),
           syncError: safeParse(localStorage.getItem('momo_sync_error'), null),
+          showSyncIssueModal: false,
+          syncIssueFilter: 'all',
           calendarAutoSyncState: safeParse(localStorage.getItem('momo_calendar_auto_sync_state'), {}),
           calendarSyncConfigured: null,
           calendarAutoSyncTimer: null,
@@ -4764,6 +4880,115 @@
           if (this.calendarAutoSyncMessage) return this.calendarAutoSyncMessage;
           if (this.lastSyncTime) return `最後同步：${this.lastSyncTime}`;
           return '尚未同步行事曆';
+        },
+        syncIssueItems() {
+          const issues = Array.isArray(this.syncReport?.issues) ? [...this.syncReport.issues] : [];
+          const diagnostics = this.syncReport?.diagnostics || {};
+          const syncedAt = this.syncReport?.syncedAt || '';
+          const addDiagnosticIssue = (key, type, message, severity = 'warning') => {
+            const count = Number(diagnostics[key]) || 0;
+            if (count <= 0) return;
+            issues.push({
+              id: `diagnostic-${key}-${syncedAt}`,
+              type,
+              severity,
+              message: `${message}：${count} 筆`,
+              count,
+              at: syncedAt
+            });
+          };
+          addDiagnosticIssue('missing_description', 'missing_description', '行事曆事件缺少描述，未轉成業績');
+          addDiagnosticIssue('missing_order_id', 'missing_order_id', '行事曆描述缺少 Order ID，已用 Event ID 去重');
+          addDiagnosticIssue('duplicates', 'duplicate_event', '同步期間偵測到重複事件並略過');
+          return issues;
+        },
+        filteredSyncIssueItems() {
+          const filter = this.syncIssueFilter || 'all';
+          if (filter === 'all') return this.syncIssueItems;
+          if (filter === 'pricing') return this.syncIssueItems.filter(issue => issue.type === 'unmatched_service_config');
+          if (filter === 'money') return this.syncIssueItems.filter(issue => ['zero_amount', 'invalid_mixed_payment', 'invalid_payment'].includes(issue.type));
+          if (filter === 'locked') return this.syncIssueItems.filter(issue => ['date_locked', 'cancelled_locked'].includes(issue.type));
+          return this.syncIssueItems.filter(issue => issue.type === filter);
+        },
+        syncIssueSummary() {
+          const issues = this.syncIssueItems;
+          const diagnostics = this.syncReport?.diagnostics || {};
+          const countType = type => issues.filter(issue => issue.type === type).length;
+          return {
+            total: issues.length,
+            errors: issues.filter(issue => issue.severity === 'error').length,
+            warnings: issues.filter(issue => issue.severity !== 'error').length,
+            pricing: countType('unmatched_service_config'),
+            money: issues.filter(issue => ['zero_amount', 'invalid_mixed_payment', 'invalid_payment'].includes(issue.type)).length,
+            locked: issues.filter(issue => ['date_locked', 'cancelled_locked'].includes(issue.type)).length,
+            missingEventId: countType('missing_event_id'),
+            backendMissingDescription: Number(diagnostics.missing_description) || 0,
+            backendMissingOrderId: Number(diagnostics.missing_order_id) || 0,
+            backendDuplicates: Number(diagnostics.duplicates) || 0,
+            backendCancelled: Number(diagnostics.cancelled) || 0
+          };
+        },
+        priceMatchWorkbenchRows() {
+          const configured = new Set((this.servicesConfig || [])
+            .map(service => this.normalizeSyncServiceKey(service?.name))
+            .filter(Boolean));
+          const rows = new Map();
+          const addRow = (serviceName, payload = {}) => {
+            const name = String(serviceName || '').trim();
+            const key = this.normalizeSyncServiceKey(name);
+            if (!key || configured.has(key)) return;
+            const existing = rows.get(key) || {
+              key,
+              serviceName: name,
+              count: 0,
+              latestDate: '',
+              customers: new Set(),
+              examples: [],
+              unmatchedServices: new Set()
+            };
+            existing.count += Number(payload.count) || 1;
+            if (payload.date && payload.date > existing.latestDate) existing.latestDate = payload.date;
+            if (payload.customerName) existing.customers.add(payload.customerName);
+            if (payload.unmatchedServices) {
+              payload.unmatchedServices.forEach(item => existing.unmatchedServices.add(item));
+            }
+            if (payload.example && existing.examples.length < 3) existing.examples.push(payload.example);
+            rows.set(key, existing);
+          };
+
+          (this.syncReport?.unmatchedServices || []).forEach(row => {
+            addRow(row.serviceName || row.name, {
+              count: row.count,
+              date: row.latestDate,
+              customerName: row.customerName,
+              unmatchedServices: row.unmatchedServices || [],
+              example: row.example
+            });
+          });
+          this.syncIssueItems
+            .filter(issue => issue.type === 'unmatched_service_config')
+            .forEach(issue => addRow(issue.serviceName || issue.message, {
+              date: issue.date,
+              customerName: issue.customerName,
+              unmatchedServices: issue.unmatchedServices || [],
+              example: issue
+            }));
+          (this.orders || [])
+            .filter(order => this.isOrderActive(order) && (order.pricingSource === 'unmatched_service_config' || (order.pricingUnmatchedServices || []).length))
+            .forEach(order => addRow(order.serviceName, {
+              date: order.date,
+              customerName: order.customerName,
+              unmatchedServices: order.pricingUnmatchedServices || [],
+              example: order
+            }));
+
+          return Array.from(rows.values())
+            .map(row => ({
+              ...row,
+              customers: Array.from(row.customers).slice(0, 4),
+              unmatchedServices: Array.from(row.unmatchedServices).filter(Boolean)
+            }))
+            .sort((a, b) => b.count - a.count || String(b.latestDate).localeCompare(String(a.latestDate)));
         },
         localDataCount() {
           return (this.orders?.length || 0)
@@ -7899,6 +8124,80 @@
           localStorage.setItem('momo_ios_guide_dismissed', '1');
         },
 
+        normalizeSyncServiceKey(value) {
+          return String(value || '')
+            .replace(/\[.*?\]/g, ' ')
+            .replace(/（.*?）/g, ' ')
+            .replace(/\(.*?\)/g, ' ')
+            .replace(/\s*\+\s*/g, '+')
+            .replace(/\s+/g, '')
+            .trim()
+            .toLowerCase();
+        },
+        syncIssueFilters() {
+          return [
+            { key: 'all', label: '全部', count: this.syncIssueSummary.total },
+            { key: 'pricing', label: '價目表', count: this.syncIssueSummary.pricing },
+            { key: 'money', label: '金額付款', count: this.syncIssueSummary.money },
+            { key: 'locked', label: '鎖帳', count: this.syncIssueSummary.locked },
+            { key: 'missing_event_id', label: '事件ID', count: this.syncIssueSummary.missingEventId }
+          ].filter(filter => filter.key === 'all' || filter.count > 0);
+        },
+        syncIssueTypeLabel(type) {
+          return ({
+            unmatched_service_config: '價目表未匹配',
+            zero_amount: '金額為 0',
+            invalid_payment: '付款方式異常',
+            invalid_mixed_payment: '混合付款異常',
+            date_locked: '已鎖帳跳過',
+            cancelled_locked: '取消事件已鎖帳',
+            missing_event_id: '缺少 Event ID',
+            invalid_required_fields: '必要欄位缺失',
+            customer_create_failed: '顧客建立失敗',
+            blocked_slot: '封鎖時段',
+            missing_description: '缺少描述',
+            missing_order_id: '缺少 Order ID',
+            duplicate_event: '重複事件'
+          })[type] || type || '同步提醒';
+        },
+        syncIssueSeverityClass(severity) {
+          return severity === 'error'
+            ? 'bg-rose-50 text-rose-600 border border-rose-100'
+            : 'bg-amber-50 text-amber-700 border border-amber-100';
+        },
+        openSyncIssueModal(filter = 'all') {
+          this.syncIssueFilter = filter || 'all';
+          this.showSyncIssueModal = true;
+        },
+        addUnmatchedServiceToConfig(row = {}) {
+          const serviceName = String(row.serviceName || row.name || row.message || '').trim();
+          if (!serviceName) {
+            this.showToast('找不到可加入的服務名稱', 'error');
+            return;
+          }
+          this.tempServicesConfig = JSON.parse(JSON.stringify(this.servicesConfig || []));
+          const key = this.normalizeSyncServiceKey(serviceName);
+          const exists = this.tempServicesConfig.some(service => this.normalizeSyncServiceKey(service.name) === key);
+          if (!exists) {
+            this.tempServicesConfig.push({
+              name: serviceName,
+              duration: Number(row.duration) || 60,
+              price: Number(row.price) || 0
+            });
+          }
+          this.showServiceConfigModal = true;
+          this.showSyncIssueModal = false;
+          this.showToast(exists ? '此服務已在價目表中' : '已加入價目表，請補上定價與時長');
+        },
+        openOrderFromSyncIssue(issue = {}) {
+          this.showSyncIssueModal = false;
+          this.activeTab = 'orders';
+          this.ordersFilterCategory = 'All';
+          this.ordersFilterPayment = 'All';
+          this.ordersSearchQuery = issue.customerName || issue.serviceName || '';
+          this.expandedOrderId = issue.orderId || null;
+          this.scrollToTopForNavigation();
+        },
         normalizeMinutes(value) {
           const minutes = Math.round(Number(value) || 0);
           return minutes > 0 ? minutes : null;
@@ -9674,7 +9973,12 @@
               const report = this.washAndMergeOrders(orders, cancelledEventIds, { silent });
               this.lastSyncTime = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
               localStorage.setItem('momo_last_sync_time', this.lastSyncTime);
-              this.syncReport = { ...report, syncedAt: new Date().toISOString(), period: `${this.selectedYear}-${this.selectedMonth}` };
+              this.syncReport = {
+                ...report,
+                diagnostics: resData.diagnostics || (resData.data && resData.data.diagnostics) || {},
+                syncedAt: new Date().toISOString(),
+                period: `${this.selectedYear}-${this.selectedMonth}`
+              };
               localStorage.setItem('momo_sync_report', JSON.stringify(this.syncReport));
               this.clearCalendarSyncError();
               this.markCalendarSyncSuccess(syncOptions);
@@ -9706,6 +10010,44 @@
           let cancelledCount = 0;
           let skippedCount = 0;
           let warningCount = 0;
+          const issues = [];
+          const unmatchedServices = new Map();
+          let issueSeq = 0;
+          const syncRunAt = new Date().toISOString();
+          const addIssue = (type, severity, message, context = {}) => {
+            const issue = {
+              id: `${syncRunAt}-${++issueSeq}`,
+              type,
+              severity,
+              message,
+              at: syncRunAt,
+              ...context
+            };
+            issues.push(issue);
+            return issue;
+          };
+          const addUnmatchedService = (serviceName, context = {}) => {
+            const name = String(serviceName || '').trim();
+            const key = this.normalizeSyncServiceKey(name);
+            if (!key) return;
+            const row = unmatchedServices.get(key) || {
+              key,
+              serviceName: name,
+              count: 0,
+              latestDate: '',
+              customers: [],
+              unmatchedServices: [],
+              example: null
+            };
+            row.count += 1;
+            if (context.date && context.date > row.latestDate) row.latestDate = context.date;
+            if (context.customerName && !row.customers.includes(context.customerName)) row.customers.push(context.customerName);
+            (context.unmatchedServices || []).forEach(item => {
+              if (item && !row.unmatchedServices.includes(item)) row.unmatchedServices.push(item);
+            });
+            if (!row.example) row.example = { ...context, serviceName: name };
+            unmatchedServices.set(key, row);
+          };
           const bySourceEventId = new Map(
             this.orders
               .filter(order => order.sourceEventId)
@@ -9720,6 +10062,7 @@
 
             if (this.isBlockedSlot(customerName)) {
               skippedCount++;
+              addIssue('blocked_slot', 'warning', `封鎖時段已跳過：${customerName}`, { customerName, rawName });
               return; // Skip sync for block slots
             }
 
@@ -9762,20 +10105,95 @@
 
             if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !customerName.trim() || !serviceName.trim()) {
               skippedCount++;
+              addIssue('invalid_required_fields', 'error', '行事曆資料缺少日期、顧客或服務名稱，已跳過。', {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                rawService
+              });
               return;
             }
             if (this.isDateLocked(date)) {
               skippedCount++;
               warningCount++;
+              addIssue('date_locked', 'warning', `${date} 已打烊鎖帳，同步資料已跳過。`, {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                amount
+              });
               return;
             }
-            if (!sourceEventId) warningCount++;
-            if (amount <= 0 || !['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'].includes(paymentMethod)) warningCount++;
-            if (pricingSource === 'unmatched_service_config' || pricingUnmatchedServices.length) warningCount++;
-            if (paymentMethod === '現金＋儲值扣款' && (cashAmount <= 0 || cashAmount >= amount)) warningCount++;
+            if (!sourceEventId) {
+              warningCount++;
+              addIssue('missing_event_id', 'warning', '行事曆事件沒有 Event ID，已用舊版去重規則處理。', {
+                date,
+                customerName,
+                serviceName,
+                amount
+              });
+            }
+            if (amount <= 0) {
+              warningCount++;
+              addIssue('zero_amount', 'warning', `服務「${serviceName}」金額為 0，請確認價目表或行事曆金額。`, {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                amount,
+                pricingSource,
+                unmatchedServices: pricingUnmatchedServices
+              });
+            }
+            if (!['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'].includes(paymentMethod)) {
+              warningCount++;
+              addIssue('invalid_payment', 'warning', `付款方式「${paymentMethod}」不是系統支援項目。`, {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                amount,
+                paymentMethod
+              });
+            }
+            if (pricingSource === 'unmatched_service_config' || pricingUnmatchedServices.length) {
+              warningCount++;
+              const unmatched = pricingUnmatchedServices.length ? pricingUnmatchedServices : [serviceName];
+              addUnmatchedService(serviceName, { date, customerName, unmatchedServices: unmatched, sourceEventId, amount });
+              addIssue('unmatched_service_config', 'warning', `服務「${serviceName}」找不到系統價目表，請補定價。`, {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                amount,
+                pricingSource,
+                unmatchedServices: unmatched
+              });
+            }
+            if (paymentMethod === '現金＋儲值扣款' && (cashAmount <= 0 || cashAmount >= amount)) {
+              warningCount++;
+              addIssue('invalid_mixed_payment', 'warning', '混合付款的現金金額需大於 0 且小於消費總額。', {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                amount,
+                cashAmount,
+                paymentMethod
+              });
+            }
             const syncedCustomer = this.findOrCreateCustomer(customerName, gender);
             if (!syncedCustomer) {
               skippedCount++;
+              addIssue('customer_create_failed', 'error', `顧客「${customerName}」建立失敗，該筆同步已跳過。`, {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                amount
+              });
               return;
             }
             const customerId = syncedCustomer.id;
@@ -9892,6 +10310,14 @@
               if (this.isDateLocked(order.date)) {
                 skippedCount++;
                 warningCount++;
+                addIssue('cancelled_locked', 'warning', `${order.date} 已打烊鎖帳，行事曆取消事件未套用到帳本。`, {
+                  date: order.date,
+                  customerName: order.customerName,
+                  serviceName: order.serviceName,
+                  sourceEventId: order.sourceEventId,
+                  orderId: order.id,
+                  amount: Number(order.amount) || 0
+                });
                 return;
               }
               if (order.syncStatus !== 'cancelled') cancelledCount++;
@@ -9915,7 +10341,9 @@
             unchanged: unchangedCount,
             cancelled: cancelledCount,
             skipped: skippedCount,
-            warnings: warningCount
+            warnings: warningCount,
+            issues,
+            unmatchedServices: Array.from(unmatchedServices.values())
           };
         },
 
@@ -9995,8 +10423,21 @@
         },
 
         // Dictionary Modal Methods
-        openServiceConfigModal() {
+        openServiceConfigModal(seedService = null) {
           this.tempServicesConfig = JSON.parse(JSON.stringify(this.servicesConfig));
+          const serviceName = String(seedService?.serviceName || seedService?.name || '').trim();
+          if (serviceName) {
+            const key = this.normalizeSyncServiceKey(serviceName);
+            const exists = this.tempServicesConfig.some(service => this.normalizeSyncServiceKey(service.name) === key);
+            if (!exists) {
+              this.tempServicesConfig.push({
+                name: serviceName,
+                duration: Number(seedService.duration) || 60,
+                price: Number(seedService.price) || 0
+              });
+            }
+          }
+          this.showSyncIssueModal = false;
           this.showServiceConfigModal = true;
         },
         closeServiceConfigModal() {
