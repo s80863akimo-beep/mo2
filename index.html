@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.06-sync-issue-workbench">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.07-data-safety-workbench">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -1316,10 +1316,13 @@
                         <div class="mt-0.5 text-[10px] font-black text-slate-700 truncate">{{ item.value }}</div>
                       </div>
                     </div>
-                    <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="momo-system-action mt-2 w-full min-h-[34px] rounded-xl border text-[10px] font-black disabled:opacity-50">
-                      {{ safetyChecking || pwaCheckingUpdate ? '檢查中…' : '立即安全檢查' }}
-                    </button>
-                  </div>
+                  <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="momo-system-action mt-2 w-full min-h-[34px] rounded-xl border text-[10px] font-black disabled:opacity-50">
+                    {{ safetyChecking || pwaCheckingUpdate ? '檢查中…' : '立即安全檢查' }}
+                  </button>
+                </div>
+                  <button @click="activeTab = 'safety'; showDataTools = false; runSystemStatusCheck(false)" class="text-left w-full px-4 py-2.5 text-sm font-black rounded-2xl hover:bg-sky-50 text-sky-700 flex items-center gap-2">
+                    開啟資料安全頁
+                  </button>
                   <button @click="exportBackup" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-slate-700 flex items-center gap-2 transition-colors">
                     匯出備份 (JSON)
                   </button>
@@ -1463,6 +1466,10 @@
                 <button v-if="syncReport" @click="showMobileTools = false; openSyncIssueModal(priceMatchWorkbenchRows.length ? 'pricing' : 'all')" class="min-h-[50px] px-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-between text-left">
                   <span class="text-xs font-black text-amber-700">同步檢查</span>
                   <span class="text-amber-300">›</span>
+                </button>
+                <button @click="showMobileTools = false; activeTab = 'safety'; runSystemStatusCheck(false)" class="min-h-[50px] px-4 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-between text-left">
+                  <span class="text-xs font-black text-sky-700">資料安全</span>
+                  <span class="text-sky-300">›</span>
                 </button>
                 <button v-if="authConfig.configured" @click="showMobileTools = false; authUser ? signOutSupabase() : (showAuthSheet = true)" class="min-h-[50px] px-4 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-between text-left">
                   <span class="text-xs font-black text-violet-700">{{ authUser ? '登出雲端' : '登入設定' }}</span>
@@ -4339,12 +4346,172 @@
           </section>
         </div>
 
+        <!-- Tab 7: Data Safety -->
+        <div v-else-if="activeTab === 'safety'" key="safety" class="momo-list-page space-y-6">
+          <section class="bg-white rounded-3xl sm:rounded-4xl border border-slate-200 macaron-shadow overflow-hidden">
+            <div class="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h2 class="text-lg sm:text-xl font-black text-slate-800">資料安全中心</h2>
+                <p class="text-[11px] font-bold text-slate-400 mt-0.5">備份快照、健康檢查、雲端狀態與還原入口集中管理</p>
+              </div>
+              <span class="shrink-0 px-3 py-1 rounded-full border text-[11px] font-black" :class="statusToneClasses(healthIssueSummary.status === 'ok' ? 'ok' : healthIssueSummary.status === 'error' ? 'error' : 'warn')">
+                {{ healthIssueSummary.title }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+              <div v-for="card in dataSafetyCards" :key="'safety-card-' + card.key" class="p-4 sm:p-5">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="text-[10px] font-black text-slate-400">{{ card.label }}</div>
+                  <span class="w-2 h-2 rounded-full" :class="statusToneClasses(card.tone, 'dot')"></span>
+                </div>
+                <div class="mt-1 text-lg sm:text-xl font-black text-slate-800 truncate">{{ card.value }}</div>
+                <div class="mt-1 text-[10px] font-bold text-slate-400 line-clamp-2">{{ card.detail }}</div>
+              </div>
+            </div>
+
+            <div class="px-4 sm:px-6 pb-5">
+              <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div class="h-full rounded-full" :class="localStorageUsagePercent >= 80 ? 'bg-rose-500' : localStorageUsagePercent >= 60 ? 'bg-amber-500' : 'bg-emerald-500'" :style="{ width: localStorageUsagePercent + '%' }"></div>
+              </div>
+              <div class="mt-2 flex justify-between text-[10px] font-bold text-slate-400">
+                <span>本機儲存空間 {{ localStorageUsageText }}</span>
+                <span>{{ localStorageUsagePercent }}%</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="grid grid-cols-2 lg:grid-cols-5 gap-2.5">
+            <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="min-h-[52px] rounded-2xl bg-slate-900 text-white text-xs font-black disabled:opacity-50">
+              {{ safetyChecking || pwaCheckingUpdate ? '檢查中…' : '重新健康檢查' }}
+            </button>
+            <button @click="createLocalBackupSnapshot('manual', { silent: false, force: true })" class="min-h-[52px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black">
+              建立本機快照
+            </button>
+            <button v-if="cloudReady" @click="createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="min-h-[52px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black disabled:opacity-50">
+              {{ backupStatus === 'saving' ? '雲端備份中…' : '建立雲端備份' }}
+            </button>
+            <button v-else @click="exportBackup" class="min-h-[52px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">
+              下載 JSON 備份
+            </button>
+            <button @click="showOperationLogModal = true" class="min-h-[52px] rounded-2xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">
+              操作紀錄
+            </button>
+            <button @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" class="min-h-[52px] rounded-2xl bg-white border border-slate-200 text-slate-600 text-xs font-black disabled:opacity-50">
+              {{ pwaClearingCache ? '清理中…' : '清舊快取' }}
+            </button>
+          </section>
+
+          <section class="bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h3 class="text-base font-black text-slate-800">健康檢查結果</h3>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">
+                  {{ safetyReport?.checkedAt ? `最後檢查 ${formatDateTime(safetyReport.checkedAt)}` : '尚未完成安全檢查' }}
+                </p>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-black" :class="healthIssueSummary.status === 'ok' ? 'bg-emerald-50 text-emerald-700' : healthIssueSummary.status === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'">
+                {{ healthIssueSummary.total ? `${healthIssueSummary.errorCount} 錯誤 · ${healthIssueSummary.warningCount} 提醒` : '正常' }}
+              </span>
+            </div>
+
+            <div v-if="!healthIssueRows.length" class="p-8 text-center">
+              <div class="text-sm font-black text-emerald-700">目前沒有資料健康問題</div>
+              <p class="mt-1 text-xs font-bold text-slate-400">月結、儲值、CRM、支出、庫存與同步狀態目前可正常使用。</p>
+            </div>
+            <div v-else class="divide-y divide-slate-100">
+              <div v-for="issue in healthIssueRows.slice(0, 50)" :key="'health-' + issue.source + '-' + issue.code + '-' + issue.message" class="px-4 py-3 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="issue.severity === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'">
+                      {{ issue.severity === 'error' ? '錯誤' : '提醒' }}
+                    </span>
+                    <span class="text-[10px] font-black text-slate-400">{{ issue.sourceLabel }}</span>
+                    <span v-if="issue.code" class="text-[10px] font-bold text-slate-300">{{ issue.code }}</span>
+                  </div>
+                  <div class="mt-1 text-sm font-black text-slate-800 leading-relaxed">{{ issue.message }}</div>
+                  <div v-if="issue.serviceName" class="mt-0.5 text-[10px] font-bold text-slate-400">服務：{{ issue.serviceName }}</div>
+                </div>
+                <button @click="handleHealthIssue(issue)" class="min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black shrink-0">
+                  {{ issue.actionLabel }}
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h3 class="text-base font-black text-slate-800">本機備份快照</h3>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ backupSnapshotSummary.detail }}</p>
+              </div>
+              <div class="flex gap-2">
+                <button @click="createLocalBackupSnapshot('manual', { silent: false, force: true })" class="min-h-[36px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black">新增</button>
+                <button @click="exportBackup" class="min-h-[36px] px-3 rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black">下載 JSON</button>
+              </div>
+            </div>
+
+            <div v-if="!backupSnapshotRows.length" class="p-8 text-center">
+              <div class="text-sm font-black text-slate-700">尚無本機快照</div>
+              <p class="mt-1 text-xs font-bold text-slate-400">完成打烊、更正單、儲值沖銷或月結匯出後會自動留下快照。</p>
+            </div>
+            <div v-else class="divide-y divide-slate-100">
+              <div v-for="snapshot in backupSnapshotRows" :key="snapshot.id" class="px-4 py-3 sm:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-black text-slate-800">{{ snapshot.reasonLabel }}</span>
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="statusToneClasses(snapshot.tone)">
+                      {{ snapshot.integrityStatus === 'ok' ? '檢查正常' : snapshot.errorCount ? `${snapshot.errorCount} 錯誤` : `${snapshot.warningCount || 0} 提醒` }}
+                    </span>
+                  </div>
+                  <div class="mt-1 text-[10px] font-bold text-slate-400">
+                    {{ formatDateTime(snapshot.createdAt) }} · {{ snapshot.totalRecords }} 筆 · {{ snapshot.sizeText }} · v{{ snapshot.appVersion }}
+                  </div>
+                  <div class="mt-1 flex flex-wrap gap-1.5 text-[9px] font-black text-slate-400">
+                    <span>顧客 {{ snapshot.counts.customers || 0 }}</span>
+                    <span>業績 {{ snapshot.counts.orders || 0 }}</span>
+                    <span>儲值 {{ snapshot.counts.prepaidLedger || 0 }}</span>
+                    <span>支出 {{ snapshot.counts.expenses || 0 }}</span>
+                    <span>庫存 {{ snapshot.counts.inventory || 0 }}</span>
+                  </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 lg:w-[240px]">
+                  <button @click="downloadBackupSnapshot(snapshot)" class="min-h-[38px] rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black">下載</button>
+                  <button @click="restoreBackupSnapshot(snapshot)" class="min-h-[38px] rounded-xl bg-sky-50 border border-sky-100 text-sky-700 text-[11px] font-black">還原</button>
+                  <button @click="deleteBackupSnapshot(snapshot.id)" class="min-h-[38px] rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-[11px] font-black">刪除</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <div class="px-4 py-4 sm:px-6 border-b border-slate-100">
+              <h3 class="text-base font-black text-slate-800">備份策略</h3>
+              <p class="text-[10px] font-bold text-slate-400 mt-0.5">系統自動保留最近 10 份本機快照；雲端備份仍保留最近 30 天。</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+              <div class="p-4">
+                <div class="text-xs font-black text-slate-700">自動快照時機</div>
+                <p class="mt-1 text-[11px] font-bold text-slate-400 leading-relaxed">打烊、鎖帳更正單、儲值沖銷、月結匯出、價目表更新與匯入還原。</p>
+              </div>
+              <div class="p-4">
+                <div class="text-xs font-black text-slate-700">還原保護</div>
+                <p class="mt-1 text-[11px] font-bold text-slate-400 leading-relaxed">每次還原前會先建立保護快照，保留目前狀態。</p>
+              </div>
+              <div class="p-4">
+                <div class="text-xs font-black text-slate-700">容量控管</div>
+                <p class="mt-1 text-[11px] font-bold text-slate-400 leading-relaxed">若本機容量過高，請下載 JSON 備份後刪除舊快照或清除 App 舊快取。</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
       </transition>
 
     </main>
 
     <!-- Bottom Tab Floating Navigation Bar -->
-    <nav class="glass-panel fixed floating-nav z-40 grid grid-cols-6 gap-1 py-2 px-2">
+    <nav class="glass-panel fixed floating-nav z-40 grid gap-1 py-2 px-2" :style="{ gridTemplateColumns: `repeat(${navTabs.length}, minmax(0, 1fr))` }">
       <button v-for="tab in navTabs" :key="tab.id" @click="activeTab = tab.id"
               class="relative h-9 min-h-9 rounded-full px-0 text-[11px] font-black transition-all"
               :class="activeTab === tab.id ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'">
@@ -4354,6 +4521,10 @@
         <span v-if="tab.id === 'inventory' && lowStockItems.length > 0"
               class="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
           {{ lowStockItems.length }}
+        </span>
+        <span v-if="tab.id === 'safety' && healthIssueSummary.total > 0"
+              class="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-amber-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+          {{ healthIssueSummary.total > 9 ? '9+' : healthIssueSummary.total }}
         </span>
       </button>
     </nav>
@@ -4546,12 +4717,12 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.06-core-maintainability"></script>
+  <script src="/assets/momo-core.js?v=2026.07.07-data-safety-workbench"></script>
 
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.06-core-maintainability';
+    const APP_VERSION = '2026.07.07-data-safety-workbench';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -4643,7 +4814,8 @@
             { id: 'expenses', label: '支出' },
             { id: 'inventory', label: '庫存' },
             { id: 'crm', label: '顧客' },
-            { id: 'report', label: '報表' }
+            { id: 'report', label: '報表' },
+            { id: 'safety', label: '安全' }
           ],
           orders: [],
           expenses: [],
@@ -4705,6 +4877,7 @@
           calendarAutoSyncMessage: '',
           backupStatus: 'idle',
           lastBackupAt: localStorage.getItem('momo_last_backup_at') || null,
+          backupSnapshots: safeParse(localStorage.getItem('momo_backup_snapshots'), []),
           integrityReport: safeParse(localStorage.getItem('momo_integrity_report'), null),
           safetyReport: safeParse(localStorage.getItem('momo_safety_report'), null),
           safetyChecking: false,
@@ -5080,6 +5253,131 @@
               value: this.safetySummaryText,
               detail: this.safetyReport?.checkedAt ? `最後檢查 ${this.formatDateTime(this.safetyReport.checkedAt)}` : `本機資料 ${this.localDataCount} 筆`,
               tone: safetyTone
+            }
+          ];
+        },
+        backupSnapshotRows() {
+          return (Array.isArray(this.backupSnapshots) ? this.backupSnapshots : [])
+            .filter(snapshot => snapshot?.id && snapshot?.createdAt)
+            .map(snapshot => {
+              const counts = snapshot.counts || {};
+              let sizeBytes = 0;
+              try { sizeBytes = new Blob([JSON.stringify(snapshot.payload || {})]).size; }
+              catch (error) { sizeBytes = 0; }
+              return {
+                ...snapshot,
+                reasonLabel: this.backupReasonLabel(snapshot.reason),
+                totalRecords: Object.values(counts).reduce((sum, value) => sum + (Number(value) || 0), 0),
+                counts,
+                sizeBytes,
+                sizeText: this.formatBytes(sizeBytes),
+                tone: snapshot.integrityStatus === 'error' ? 'error' : snapshot.integrityStatus === 'warning' ? 'warn' : 'ok'
+              };
+            })
+            .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+        },
+        backupSnapshotSummary() {
+          const latest = this.backupSnapshotRows[0] || null;
+          return {
+            count: this.backupSnapshotRows.length,
+            latest,
+            title: latest ? `${this.backupSnapshotRows.length} 份本機快照` : '尚無本機快照',
+            detail: latest ? `最近 ${this.formatDateTime(latest.createdAt)} · ${latest.reasonLabel}` : '建立快照後，可從此頁下載或還原。'
+          };
+        },
+        localStorageUsageBytes() {
+          try { return new Blob(Object.values(localStorage)).size; }
+          catch (error) { return 0; }
+        },
+        localStorageUsagePercent() {
+          return Math.min(100, Math.round(this.localStorageUsageBytes / (5 * 1024 * 1024) * 100));
+        },
+        localStorageUsageText() {
+          return this.formatBytes(this.localStorageUsageBytes);
+        },
+        healthIssueRows() {
+          const rows = [];
+          const seen = new Set();
+          const add = (source, issue = {}) => {
+            const message = String(issue.message || '').trim();
+            if (!message) return;
+            const severity = issue.severity === 'error' ? 'error' : 'warning';
+            const key = `${source}:${issue.code || ''}:${message}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            rows.push({
+              ...issue,
+              source,
+              severity,
+              tone: severity === 'error' ? 'error' : 'warn',
+              sourceLabel: source === 'integrity' ? '完整性' : source === 'safety' ? '安全' : source === 'sync' ? '同步' : '營運',
+              actionLabel: issue.tab ? '前往處理' : issue.code === 'backup_due' || issue.code === 'backup_error' ? '建立備份' : issue.code === 'pwa_update_available' ? '套用新版' : '查看'
+            });
+          };
+
+          (this.safetyReport?.issues || [])
+            .filter(issue => !['integrity_warning', 'integrity_error'].includes(issue.code))
+            .forEach(issue => add('safety', issue));
+          (this.integrityReport?.issues || []).forEach(issue => add('integrity', issue));
+          (this.pendingActionSummary?.anomalyItems || []).forEach(issue => add('operation', issue));
+          (this.syncIssueItems || []).slice(0, 20).forEach(issue => {
+            if (issue.severity === 'error' || ['unmatched_service_config', 'zero_amount', 'invalid_mixed_payment', 'date_locked'].includes(issue.type)) {
+              add('sync', {
+                severity: issue.severity === 'error' ? 'error' : 'warning',
+                code: issue.type,
+                message: issue.message,
+                tab: issue.orderId ? 'orders' : '',
+                orderId: issue.orderId,
+                customerId: issue.customerId,
+                serviceName: issue.serviceName
+              });
+            }
+          });
+
+          const order = { error: 0, warning: 1 };
+          return rows.sort((a, b) => (order[a.severity] ?? 9) - (order[b.severity] ?? 9));
+        },
+        healthIssueSummary() {
+          const errorCount = this.healthIssueRows.filter(issue => issue.severity === 'error').length;
+          const warningCount = this.healthIssueRows.filter(issue => issue.severity !== 'error').length;
+          return {
+            total: this.healthIssueRows.length,
+            errorCount,
+            warningCount,
+            status: errorCount ? 'error' : warningCount ? 'warning' : 'ok',
+            title: errorCount ? `${errorCount} 個錯誤需要修正` : warningCount ? `${warningCount} 個提醒需要確認` : '資料健康正常',
+            detail: errorCount || warningCount ? '先處理紅色錯誤，再看黃色提醒。' : '目前沒有阻擋營運的資料問題。'
+          };
+        },
+        dataSafetyCards() {
+          return [
+            {
+              key: 'health',
+              label: '健康狀態',
+              value: this.healthIssueSummary.status === 'ok' ? '正常' : `${this.healthIssueSummary.errorCount} 錯誤`,
+              detail: this.healthIssueSummary.status === 'ok' ? this.healthIssueSummary.detail : `${this.healthIssueSummary.warningCount} 提醒 · ${this.integritySummaryText}`,
+              tone: this.healthIssueSummary.status === 'error' ? 'error' : this.healthIssueSummary.status === 'warning' ? 'warn' : 'ok'
+            },
+            {
+              key: 'snapshot',
+              label: '本機快照',
+              value: `${this.backupSnapshotSummary.count} 份`,
+              detail: this.backupSnapshotSummary.detail,
+              tone: this.backupSnapshotSummary.count ? 'ok' : 'warn'
+            },
+            {
+              key: 'cloud',
+              label: '雲端狀態',
+              value: this.cloudReady ? '已連接' : this.cloudMigrationNeeded ? '待搬移' : this.authConfig.configured ? '待登入' : '本機',
+              detail: this.cloudMessage || '目前以本機資料為主',
+              tone: this.cloudStatus === 'error' || this.cloudStatus === 'conflict' ? 'error' : this.cloudMigrationNeeded || this.cloudSyncPending ? 'warn' : this.cloudReady ? 'ok' : 'neutral'
+            },
+            {
+              key: 'storage',
+              label: '本機容量',
+              value: this.localStorageUsageText,
+              detail: `約使用 ${this.localStorageUsagePercent}% · ${this.localDataCount} 筆業務資料`,
+              tone: this.localStorageUsagePercent >= 80 ? 'error' : this.localStorageUsagePercent >= 60 ? 'warn' : 'ok'
             }
           ];
         },
@@ -6651,7 +6949,116 @@
           };
           this.operationLogs = [log, ...(Array.isArray(this.operationLogs) ? this.operationLogs : [])].slice(0, 300);
           localStorage.setItem('momo_operation_logs', JSON.stringify(this.operationLogs));
+          this.maybeCreateAutoSnapshotForOperation(log);
           return log;
+        },
+        backupReasonLabel(reason = 'manual') {
+          const labels = {
+            manual: '手動快照',
+            closeout: '打烊後快照',
+            locked_correction: '鎖帳更正單',
+            locked_delete_correction: '鎖帳刪除沖銷',
+            prepaid_reversal: '儲值沖銷',
+            monthly_settlement: '月結匯出',
+            backup_import: '匯入還原',
+            pre_restore: '還原前保護',
+            service_config: '價目表更新'
+          };
+          return labels[reason] || reason || '系統快照';
+        },
+        maybeCreateAutoSnapshotForOperation(log = {}) {
+          const reasonByAction = {
+            closeout_save: 'closeout',
+            locked_order_correction_slip: 'locked_correction',
+            locked_order_delete_correction_slip: 'locked_delete_correction',
+            prepaid_ledger_reversal: 'prepaid_reversal',
+            monthly_settlement_export: 'monthly_settlement',
+            backup_import: 'backup_import',
+            service_config_update: 'service_config'
+          };
+          const reason = reasonByAction[log.action];
+          if (!reason) return null;
+          return this.createLocalBackupSnapshot(reason, { silent: true, force: true, sourceLogId: log.id });
+        },
+        persistBackupSnapshots(snapshots = []) {
+          const normalized = snapshots
+            .filter(snapshot => snapshot?.id && snapshot?.createdAt && snapshot?.payload)
+            .slice(0, 10);
+          localStorage.setItem('momo_backup_snapshots', JSON.stringify(normalized));
+          this.backupSnapshots = normalized;
+          return normalized;
+        },
+        createLocalBackupSnapshot(reason = 'manual', { silent = false, force = true, sourceLogId = null } = {}) {
+          if (!force && this.backupSnapshotRows[0]?.createdDate === new Date().toLocaleDateString('sv-SE')) return this.backupSnapshotRows[0];
+          const createdAt = new Date().toISOString();
+          const payload = this.buildBackupData();
+          const integrity = this.runIntegrityCheck(false);
+          const snapshot = {
+            id: this.generateStableId('snap'),
+            createdAt,
+            createdDate: createdAt.slice(0, 10),
+            appVersion: this.appVersion,
+            schemaVersion: this.dataSchemaVersion,
+            reason,
+            sourceLogId,
+            counts: integrity.counts,
+            integrityStatus: integrity.status,
+            errorCount: integrity.errorCount,
+            warningCount: integrity.warningCount,
+            payload
+          };
+          const previous = Array.isArray(this.backupSnapshots) ? [...this.backupSnapshots] : [];
+          try {
+            this.persistBackupSnapshots([snapshot, ...previous]);
+            this.lastBackupAt = createdAt;
+            localStorage.setItem('momo_last_backup_at', createdAt);
+            this.backupStatus = 'ready';
+            this.runDataSafetyCheck(false);
+            if (!silent) this.showToast(`${this.backupReasonLabel(reason)}已建立`);
+            return snapshot;
+          } catch (error) {
+            console.warn('Local snapshot failed:', error);
+            this.backupSnapshots = previous;
+            this.backupStatus = 'error';
+            if (!silent) this.showToast('本機快照建立失敗，請先下載 JSON 備份或清理舊快照', 'error', 7000);
+            return null;
+          }
+        },
+        downloadBackupSnapshot(snapshot) {
+          if (!snapshot?.payload) {
+            this.showToast('找不到快照內容', 'error');
+            return;
+          }
+          const blob = new Blob([JSON.stringify(snapshot.payload, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `MOMO本機快照_${snapshot.createdDate || new Date().toLocaleDateString('sv-SE')}_${snapshot.reason || 'snapshot'}.json`;
+          link.click();
+          URL.revokeObjectURL(url);
+          this.showToast('快照 JSON 已下載');
+        },
+        restoreBackupSnapshot(snapshot) {
+          if (!snapshot?.payload) {
+            this.showToast('找不到快照內容', 'error');
+            return;
+          }
+          this.showConfirm(`確定還原這份本機快照嗎？\n\n${this.formatDateTime(snapshot.createdAt)} · ${this.backupReasonLabel(snapshot.reason)}\n\n系統會先建立一份還原前保護快照，再覆蓋目前業績、CRM、儲值帳本、支出、庫存、打烊與價目表資料。`, () => {
+            this.createLocalBackupSnapshot('pre_restore', { silent: true, force: true });
+            const servicesIncluded = this.applyBackupData(snapshot.payload);
+            this.recordOperation('backup_snapshot_restore', '還原本機快照', `${this.formatDateTime(snapshot.createdAt)} · ${this.backupReasonLabel(snapshot.reason)}`, { snapshotId: snapshot.id, servicesIncluded });
+            this.activeTab = 'safety';
+            this.showToast(servicesIncluded ? '本機快照已還原' : '本機快照已還原，但原快照不含價目表', servicesIncluded ? 'success' : 'error', 7000);
+          });
+        },
+        deleteBackupSnapshot(snapshotId) {
+          if (!snapshotId) return;
+          const snapshot = this.backupSnapshots.find(item => item.id === snapshotId);
+          this.showConfirm(`確定刪除這份本機快照嗎？\n\n${snapshot ? `${this.formatDateTime(snapshot.createdAt)} · ${this.backupReasonLabel(snapshot.reason)}` : snapshotId}`, () => {
+            this.persistBackupSnapshots(this.backupSnapshots.filter(item => item.id !== snapshotId));
+            this.runDataSafetyCheck(false);
+            this.showToast('本機快照已刪除');
+          });
         },
         exportOperationLogCSV() {
           const headers = ['時間', '動作', '摘要', '細節'];
@@ -8108,6 +8515,22 @@
           this.activeTab = 'dashboard';
           this.scrollToTopForNavigation();
           this.showToast('已回到今日總覽');
+        },
+        handleHealthIssue(issue) {
+          if (!issue) return;
+          if (issue.code === 'backup_due' || issue.code === 'backup_error') {
+            this.handleBackupReminderAction();
+            return;
+          }
+          if (issue.code === 'pwa_update_available') {
+            this.applyPwaUpdate();
+            return;
+          }
+          if (issue.source === 'sync') {
+            this.openSyncIssueModal(issue.code === 'unmatched_service_config' ? 'pricing' : 'all');
+            return;
+          }
+          this.goToAnomaly(issue);
         },
         expenseWarnings(expense, periodTotal = this.expensesSummary?.total || 0) {
           const amount = Number(expense?.amount) || 0;
@@ -10724,6 +11147,7 @@
           localStorage.setItem('momo_servicesConfig', JSON.stringify(this.servicesConfig));
           localStorage.setItem('momo_servicesConfigUpdatedAt', new Date().toISOString());
           this.queueCloudSync();
+          this.recordOperation('service_config_update', '更新服務定價', `服務項目 ${this.servicesConfig.length} 項`);
           this.showToast('🍬 服務定價對照設定已更新！');
           this.showServiceConfigModal = false;
         },
@@ -10868,6 +11292,7 @@
             }
           ];
           this.downloadSectionedCSV(`MOMO正式月結_${s.year}-${s.month}.csv`, sections);
+          this.recordOperation('monthly_settlement_export', '匯出正式月結', `${s.label} · 營業額 NT$ ${this.formatNumber(s.serviceRevenue)} · 淨利 NT$ ${this.formatNumber(s.netProfit)}`, { year: s.year, month: s.month });
           this.showToast(`${s.label} 正式月結 CSV 已匯出`);
         },
         exportAnnualReport() {
@@ -11362,6 +11787,31 @@
             momo_operationLogs: this.operationLogs
           };
         },
+        applyBackupData(data) {
+          if (!data || !data.momo_orders || !data.momo_expenses || !data.momo_inventory || !data.momo_crmNotes) {
+            throw new Error('JSON 欄位不完整');
+          }
+          this.orders = Array.isArray(data.momo_orders) ? data.momo_orders : [];
+          this.expenses = Array.isArray(data.momo_expenses) ? data.momo_expenses : [];
+          this.inventory = Array.isArray(data.momo_inventory) ? data.momo_inventory : [];
+          this.customers = Array.isArray(data.momo_customers) ? data.momo_customers : [];
+          this.prepaidLedger = Array.isArray(data.momo_prepaidLedger) ? data.momo_prepaidLedger : [];
+          this.crmNotes = data.momo_crmNotes || {};
+          this.crmFormulas = data.momo_crmFormulas || {};
+          this.closeoutRecords = data.momo_closeoutRecords || {};
+          this.operationLogs = Array.isArray(data.momo_operationLogs) ? data.momo_operationLogs : [];
+          this.migrateCustomerIdentity();
+          this.reconcilePrepaidLedger();
+          const servicesIncluded = Array.isArray(data.momo_servicesConfig);
+          if (servicesIncluded) {
+            this.servicesConfig = data.momo_servicesConfig;
+            localStorage.setItem('momo_servicesConfigUpdatedAt', data.momo_servicesConfigUpdatedAt || data.createdAt || new Date().toISOString());
+          }
+          this.saveToLocalStorage();
+          this.runIntegrityCheck(false);
+          this.runDataSafetyCheck(false);
+          return servicesIncluded;
+        },
         runIntegrityCheck(showResult = true) {
           const issues = [];
           const addIssue = (severity, code, message, extra = {}) => {
@@ -11543,31 +11993,14 @@
           reader.onload = (e) => {
             try {
               const data = JSON.parse(e.target.result);
-              if (data.momo_orders && data.momo_expenses && data.momo_inventory && data.momo_crmNotes) {
-                this.orders = data.momo_orders;
-                this.expenses = data.momo_expenses;
-                this.inventory = data.momo_inventory;
-                this.customers = Array.isArray(data.momo_customers) ? data.momo_customers : [];
-                this.prepaidLedger = Array.isArray(data.momo_prepaidLedger) ? data.momo_prepaidLedger : [];
-                this.crmNotes = data.momo_crmNotes;
-                this.crmFormulas = data.momo_crmFormulas || {};
-                this.closeoutRecords = data.momo_closeoutRecords || {};
-                this.operationLogs = Array.isArray(data.momo_operationLogs) ? data.momo_operationLogs : [];
-                this.migrateCustomerIdentity();
-                this.reconcilePrepaidLedger();
-                this.recordOperation('backup_import', '匯入備份還原', `訂單 ${this.orders.length} 筆、顧客 ${this.customers.length} 位`);
-                if (data.momo_servicesConfig) {
-                  this.servicesConfig = data.momo_servicesConfig;
-                  localStorage.setItem('momo_servicesConfigUpdatedAt', data.momo_servicesConfigUpdatedAt || data.createdAt || new Date().toISOString());
-                  this.saveToLocalStorage();
-                  this.showToast('備份還原成功，系統已更新資料');
-                } else {
-                  this.saveToLocalStorage();
-                  this.showToast('備份還原完成，但此備份不含服務定價設定，已保留現有定價', 'error', 6000);
-                }
-              } else {
-                throw new Error('JSON 欄位不完整');
-              }
+              this.createLocalBackupSnapshot('pre_restore', { silent: true, force: true });
+              const servicesIncluded = this.applyBackupData(data);
+              this.recordOperation('backup_import', '匯入備份還原', `訂單 ${this.orders.length} 筆、顧客 ${this.customers.length} 位`);
+              this.showToast(
+                servicesIncluded ? '備份還原成功，系統已更新資料' : '備份還原完成，但此備份不含服務定價設定，已保留現有定價',
+                servicesIncluded ? 'success' : 'error',
+                servicesIncluded ? 3000 : 6000
+              );
             } catch (err) {
               this.showToast('備份還原失敗，請上傳正確的 MOMO 備份 JSON 檔案', 'error');
             }
@@ -11657,6 +12090,12 @@
         // Helper presentation functions
         formatNumber(val) {
           return Math.round(Number(val) || 0).toLocaleString();
+        },
+        formatBytes(bytes) {
+          const value = Number(bytes) || 0;
+          if (value >= 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
+          if (value >= 1024) return `${Math.round(value / 1024)} KB`;
+          return `${Math.round(value)} B`;
         },
         isOrderActive(order) {
           return MomoCore.isOrderActive(order);
