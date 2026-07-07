@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v59-data-safety-workbench';
-const APP_VERSION = '2026.07.07-data-safety-workbench';
+const CACHE_NAME = 'momohair-shell-v60-cloud-backup-workbench';
+const APP_VERSION = '2026.07.07-cloud-backup-workbench';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,

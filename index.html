@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.07-data-safety-workbench">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.07-cloud-backup-workbench">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -4403,6 +4403,107 @@
           </section>
 
           <section class="bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-base font-black text-slate-800">雲端備份工作台</h3>
+                  <span class="px-2 py-0.5 rounded-full border text-[9px] font-black" :class="statusToneClasses(cloudBackupSummary.status)">
+                    {{ cloudBackupSummary.title }}
+                  </span>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">
+                  {{ cloudBackupSummary.detail }}
+                  <span v-if="cloudBackupsLoadedAt"> · 最後刷新 {{ formatDateTime(cloudBackupsLoadedAt) }}</span>
+                </p>
+              </div>
+              <div class="grid grid-cols-2 gap-2 lg:w-[260px]">
+                <button @click="fetchCloudBackupList({ silent: false })"
+                        :disabled="!authUser || !authSession?.access_token || cloudBackupStatus === 'loading' || cloudBackupStatus === 'restoring'"
+                        class="min-h-[38px] rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black disabled:opacity-40">
+                  {{ cloudBackupStatus === 'loading' ? '讀取中…' : '刷新清單' }}
+                </button>
+                <button v-if="cloudReady"
+                        @click="createAutomaticBackup({ force: true, silent: false })"
+                        :disabled="backupStatus === 'saving' || cloudBackupStatus === 'restoring'"
+                        class="min-h-[38px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-black disabled:opacity-40">
+                  {{ backupStatus === 'saving' ? '建立中…' : '建立雲端' }}
+                </button>
+                <button v-else-if="cloudMigrationNeeded"
+                        @click="migrateLocalDataToSupabase"
+                        :disabled="cloudStatus === 'syncing'"
+                        class="min-h-[38px] rounded-xl bg-violet-50 border border-violet-100 text-violet-700 text-[11px] font-black disabled:opacity-40">
+                  首次搬移
+                </button>
+                <button v-else
+                        @click="showAuthSheet = true"
+                        :disabled="!authConfig.configured"
+                        class="min-h-[38px] rounded-xl bg-sky-50 border border-sky-100 text-sky-700 text-[11px] font-black disabled:opacity-40">
+                  登入雲端
+                </button>
+              </div>
+            </div>
+
+            <div v-if="!authConfig.configured" class="p-8 text-center">
+              <div class="text-sm font-black text-slate-700">尚未啟用 Supabase 雲端備份</div>
+              <p class="mt-1 text-xs font-bold text-slate-400">目前仍可使用本機快照與 JSON 備份。</p>
+            </div>
+            <div v-else-if="!authUser || !authSession?.access_token" class="p-8 text-center">
+              <div class="text-sm font-black text-slate-700">登入後可讀取雲端備份</div>
+              <p class="mt-1 text-xs font-bold text-slate-400">雲端備份依 Supabase 帳號隔離，只會顯示自己的資料。</p>
+            </div>
+            <div v-else-if="cloudMigrationNeeded" class="p-8 text-center">
+              <div class="text-sm font-black text-violet-700">需先完成首次搬移</div>
+              <p class="mt-1 text-xs font-bold text-slate-400">完成本機資料搬移後，才能建立正式雲端備份。</p>
+            </div>
+            <div v-else-if="cloudBackupStatus === 'loading'" class="p-8 text-center">
+              <div class="text-sm font-black text-slate-700">正在讀取雲端備份清單</div>
+              <p class="mt-1 text-xs font-bold text-slate-400">請稍候，資料表較大時會需要幾秒。</p>
+            </div>
+            <div v-else-if="cloudBackupStatus === 'error'" class="p-8 text-center">
+              <div class="text-sm font-black text-rose-700">雲端備份讀取失敗</div>
+              <p class="mt-1 text-xs font-bold text-slate-400">{{ cloudBackupError || '請稍後重新刷新清單。' }}</p>
+            </div>
+            <div v-else-if="!cloudBackupRows.length" class="p-8 text-center">
+              <div class="text-sm font-black text-slate-700">尚無雲端備份</div>
+              <p class="mt-1 text-xs font-bold text-slate-400">按「建立雲端」後，系統會保存今日正式備份。</p>
+            </div>
+            <div v-else class="divide-y divide-slate-100">
+              <div v-for="backup in cloudBackupRows" :key="'cloud-backup-' + backup.id + '-' + backup.backupDate" class="px-4 py-3 sm:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-black text-slate-800">正式雲端備份 · {{ backup.backupDate }}</span>
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="statusToneClasses(backup.tone)">
+                      {{ backup.integrityStatus === 'ok' ? '檢查正常' : backup.errorCount ? `${backup.errorCount} 錯誤` : `${backup.warningCount || 0} 提醒` }}
+                    </span>
+                  </div>
+                  <div class="mt-1 text-[10px] font-bold text-slate-400">
+                    {{ formatDateTime(backup.createdAt) }} · {{ backup.totalRecords }} 筆 · schema v{{ backup.schemaVersion }}
+                  </div>
+                  <div class="mt-1 flex flex-wrap gap-1.5 text-[9px] font-black text-slate-400">
+                    <span>顧客 {{ backup.counts.customers || 0 }}</span>
+                    <span>業績 {{ backup.counts.orders || 0 }}</span>
+                    <span>儲值 {{ backup.counts.prepaidLedger || 0 }}</span>
+                    <span>支出 {{ backup.counts.expenses || 0 }}</span>
+                    <span>庫存 {{ backup.counts.inventory || 0 }}</span>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 lg:w-[170px]">
+                  <button @click="downloadCloudBackupSnapshot(backup)"
+                          :disabled="cloudBackupStatus === 'restoring'"
+                          class="min-h-[38px] rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black disabled:opacity-40">
+                    下載
+                  </button>
+                  <button @click="restoreCloudBackupSnapshot(backup)"
+                          :disabled="cloudBackupStatus === 'restoring'"
+                          class="min-h-[38px] rounded-xl bg-sky-50 border border-sky-100 text-sky-700 text-[11px] font-black disabled:opacity-40">
+                    {{ cloudBackupRestoringId === backup.id ? '還原中…' : '還原' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
             <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex items-center justify-between gap-3">
               <div class="min-w-0">
                 <h3 class="text-base font-black text-slate-800">健康檢查結果</h3>
@@ -4717,12 +4818,12 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.07-data-safety-workbench"></script>
+  <script src="/assets/momo-core.js?v=2026.07.07-cloud-backup-workbench"></script>
 
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.07-data-safety-workbench';
+    const APP_VERSION = '2026.07.07-cloud-backup-workbench';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -4877,7 +4978,13 @@
           calendarAutoSyncMessage: '',
           backupStatus: 'idle',
           lastBackupAt: localStorage.getItem('momo_last_backup_at') || null,
+          lastCloudBackupAt: localStorage.getItem('momo_last_cloud_backup_at') || null,
           backupSnapshots: safeParse(localStorage.getItem('momo_backup_snapshots'), []),
+          cloudBackups: safeParse(localStorage.getItem('momo_cloud_backups'), []),
+          cloudBackupStatus: 'idle',
+          cloudBackupError: '',
+          cloudBackupsLoadedAt: localStorage.getItem('momo_cloud_backups_loaded_at') || null,
+          cloudBackupRestoringId: null,
           integrityReport: safeParse(localStorage.getItem('momo_integrity_report'), null),
           safetyReport: safeParse(localStorage.getItem('momo_safety_report'), null),
           safetyChecking: false,
@@ -5023,12 +5130,14 @@
         backupSummaryText() {
           if (this.backupStatus === 'saving') return '雲端備份中';
           if (this.backupStatus === 'error') return '雲端備份失敗';
+          if (this.lastCloudBackupAt) return `最近雲端備份 ${this.formatDateTime(this.lastCloudBackupAt)}`;
           if (!this.lastBackupAt) return '尚無正式備份';
           return `最近備份 ${this.formatDateTime(this.lastBackupAt)}`;
         },
         backupReminder() {
           const now = new Date();
-          const last = this.lastBackupAt ? new Date(this.lastBackupAt) : null;
+          const lastBackup = this.lastCloudBackupAt || this.lastBackupAt;
+          const last = lastBackup ? new Date(lastBackup) : null;
           const validLast = last && !Number.isNaN(last.getTime()) ? last : null;
           const days = validLast ? Math.floor((now - validLast) / 86400000) : null;
           const due = this.backupStatus === 'error' || days === null || days >= 7;
@@ -5285,6 +5394,49 @@
             detail: latest ? `最近 ${this.formatDateTime(latest.createdAt)} · ${latest.reasonLabel}` : '建立快照後，可從此頁下載或還原。'
           };
         },
+        cloudBackupRows() {
+          return (Array.isArray(this.cloudBackups) ? this.cloudBackups : [])
+            .map(row => this.normalizeCloudBackupRow(row))
+            .filter(row => row.backupDate || row.createdAt)
+            .sort((a, b) => String(b.backupDate || b.createdAt).localeCompare(String(a.backupDate || a.createdAt))
+              || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+        },
+        cloudBackupSummary() {
+          if (!this.authConfig.configured) {
+            return { count: 0, latest: null, status: 'neutral', title: '未啟用雲端', detail: '目前只使用本機快照與 JSON 備份。' };
+          }
+          if (!this.authUser || !this.authSession?.access_token) {
+            return { count: 0, latest: null, status: 'warn', title: '尚未登入', detail: '登入 Supabase 後可查看雲端備份清單。' };
+          }
+          if (!this.cloudReady) {
+            return {
+              count: 0,
+              latest: null,
+              status: this.cloudMigrationNeeded ? 'warn' : 'neutral',
+              title: this.cloudMigrationNeeded ? '待首次搬移' : '雲端待確認',
+              detail: this.cloudMessage || '完成雲端初始化後可建立正式備份。'
+            };
+          }
+          if (this.cloudBackupStatus === 'loading') {
+            return { count: this.cloudBackupRows.length, latest: this.cloudBackupRows[0] || null, status: 'warn', title: '讀取中', detail: '正在載入 Supabase 備份清單。' };
+          }
+          if (this.cloudBackupStatus === 'restoring') {
+            return { count: this.cloudBackupRows.length, latest: this.cloudBackupRows[0] || null, status: 'warn', title: '還原中', detail: '正在讀取雲端備份並套用到目前裝置。' };
+          }
+          if (this.cloudBackupStatus === 'error') {
+            return { count: this.cloudBackupRows.length, latest: this.cloudBackupRows[0] || null, status: 'error', title: '雲端備份異常', detail: this.cloudBackupError || '備份清單讀取失敗。' };
+          }
+          const latest = this.cloudBackupRows[0] || null;
+          return {
+            count: this.cloudBackupRows.length,
+            latest,
+            status: latest ? 'ok' : 'warn',
+            title: latest ? `${this.cloudBackupRows.length} 份雲端備份` : '尚無雲端備份',
+            detail: latest
+              ? `最近 ${latest.backupDate || this.formatDateTime(latest.createdAt)} · ${latest.totalRecords} 筆`
+              : '建立雲端備份後，可從此頁下載或還原。'
+          };
+        },
         localStorageUsageBytes() {
           try { return new Blob(Object.values(localStorage)).size; }
           catch (error) { return 0; }
@@ -5311,7 +5463,15 @@
               severity,
               tone: severity === 'error' ? 'error' : 'warn',
               sourceLabel: source === 'integrity' ? '完整性' : source === 'safety' ? '安全' : source === 'sync' ? '同步' : '營運',
-              actionLabel: issue.tab ? '前往處理' : issue.code === 'backup_due' || issue.code === 'backup_error' ? '建立備份' : issue.code === 'pwa_update_available' ? '套用新版' : '查看'
+              actionLabel: issue.tab
+                ? '前往處理'
+                : issue.code === 'backup_due' || issue.code === 'backup_error' || issue.code === 'cloud_backup_empty'
+                  ? '建立備份'
+                  : issue.code === 'cloud_backup_error'
+                    ? '刷新清單'
+                    : issue.code === 'pwa_update_available'
+                      ? '套用新版'
+                      : '查看'
             });
           };
 
@@ -5369,8 +5529,14 @@
               key: 'cloud',
               label: '雲端狀態',
               value: this.cloudReady ? '已連接' : this.cloudMigrationNeeded ? '待搬移' : this.authConfig.configured ? '待登入' : '本機',
-              detail: this.cloudMessage || '目前以本機資料為主',
-              tone: this.cloudStatus === 'error' || this.cloudStatus === 'conflict' ? 'error' : this.cloudMigrationNeeded || this.cloudSyncPending ? 'warn' : this.cloudReady ? 'ok' : 'neutral'
+              detail: this.cloudReady ? this.cloudBackupSummary.detail : (this.cloudMessage || '目前以本機資料為主'),
+              tone: this.cloudStatus === 'error' || this.cloudStatus === 'conflict' || this.cloudBackupSummary.status === 'error'
+                ? 'error'
+                : this.cloudMigrationNeeded || this.cloudSyncPending || this.cloudBackupSummary.status === 'warn'
+                  ? 'warn'
+                  : this.cloudReady
+                    ? 'ok'
+                    : 'neutral'
             },
             {
               key: 'storage',
@@ -6726,6 +6892,11 @@
         }
       },
       watch: {
+        activeTab(newVal) {
+          if (newVal === 'safety' && this.cloudReady && this.authUser && this.cloudBackupStatus === 'idle') {
+            this.fetchCloudBackupList({ silent: true });
+          }
+        },
         'newOrder.customerName'(newVal) {
           if (!this.newOrder.customerId) return;
           const selected = this.customerMap[this.newOrder.customerId];
@@ -6950,6 +7121,7 @@
           this.operationLogs = [log, ...(Array.isArray(this.operationLogs) ? this.operationLogs : [])].slice(0, 300);
           localStorage.setItem('momo_operation_logs', JSON.stringify(this.operationLogs));
           this.maybeCreateAutoSnapshotForOperation(log);
+          this.maybeCreateCloudBackupForOperation(log);
           return log;
         },
         backupReasonLabel(reason = 'manual') {
@@ -6962,7 +7134,8 @@
             monthly_settlement: '月結匯出',
             backup_import: '匯入還原',
             pre_restore: '還原前保護',
-            service_config: '價目表更新'
+            service_config: '價目表更新',
+            cloud_restore: '雲端備份還原'
           };
           return labels[reason] || reason || '系統快照';
         },
@@ -6979,6 +7152,23 @@
           const reason = reasonByAction[log.action];
           if (!reason) return null;
           return this.createLocalBackupSnapshot(reason, { silent: true, force: true, sourceLogId: log.id });
+        },
+        maybeCreateCloudBackupForOperation(log = {}) {
+          const criticalActions = new Set([
+            'closeout_save',
+            'locked_order_correction_slip',
+            'locked_order_delete_correction_slip',
+            'prepaid_ledger_reversal',
+            'monthly_settlement_export',
+            'service_config_update',
+            'backup_import',
+            'backup_snapshot_restore',
+            'cloud_backup_restore'
+          ]);
+          if (!criticalActions.has(log.action)) return false;
+          if (!this.cloudReady || !this.authUser || !this.authSession?.access_token || this.backupStatus === 'saving') return false;
+          setTimeout(() => this.createAutomaticBackup({ force: true, silent: true }), 500);
+          return true;
         },
         persistBackupSnapshots(snapshots = []) {
           const normalized = snapshots
@@ -7058,6 +7248,155 @@
             this.persistBackupSnapshots(this.backupSnapshots.filter(item => item.id !== snapshotId));
             this.runDataSafetyCheck(false);
             this.showToast('本機快照已刪除');
+          });
+        },
+        normalizeCloudBackupRow(row = {}) {
+          const counts = row.record_counts || row.counts || {};
+          const integrity = row.integrity || {};
+          const createdAt = row.created_at || row.createdAt || row.backup_date || row.backupDate || '';
+          const backupDate = row.backup_date || row.backupDate || String(createdAt).slice(0, 10);
+          const errorCount = Number(integrity.errorCount ?? integrity.error_count ?? row.errorCount ?? 0) || 0;
+          const warningCount = Number(integrity.warningCount ?? integrity.warning_count ?? row.warningCount ?? 0) || 0;
+          const integrityStatus = integrity.status || row.integrityStatus || (errorCount ? 'error' : warningCount ? 'warning' : 'ok');
+          let sizeBytes = 0;
+          try { if (row.payload) sizeBytes = new Blob([JSON.stringify(row.payload)]).size; }
+          catch (error) { sizeBytes = 0; }
+          return {
+            id: row.id,
+            backupDate,
+            createdAt,
+            schemaVersion: Number(row.schema_version ?? row.schemaVersion ?? this.dataSchemaVersion) || this.dataSchemaVersion,
+            counts,
+            integrity,
+            integrityStatus,
+            errorCount,
+            warningCount,
+            payload: row.payload || null,
+            totalRecords: Object.values(counts).reduce((sum, value) => sum + (Number(value) || 0), 0),
+            sizeBytes,
+            sizeText: sizeBytes ? this.formatBytes(sizeBytes) : '雲端保存',
+            tone: integrityStatus === 'error' ? 'error' : integrityStatus === 'warning' ? 'warn' : 'ok'
+          };
+        },
+        persistCloudBackups(rows = []) {
+          const metadata = (Array.isArray(rows) ? rows : []).map(row => {
+            const copy = { ...row };
+            delete copy.payload;
+            return copy;
+          }).slice(0, 30);
+          this.cloudBackups = metadata;
+          localStorage.setItem('momo_cloud_backups', JSON.stringify(metadata));
+          this.cloudBackupsLoadedAt = new Date().toISOString();
+          localStorage.setItem('momo_cloud_backups_loaded_at', this.cloudBackupsLoadedAt);
+          const latest = metadata
+            .map(row => row.created_at || row.createdAt)
+            .filter(Boolean)
+            .sort()
+            .pop();
+          if (latest) {
+            this.lastCloudBackupAt = latest;
+            localStorage.setItem('momo_last_cloud_backup_at', latest);
+          }
+          return metadata;
+        },
+        async fetchCloudBackupList({ silent = true } = {}) {
+          if (!this.authUser || !this.authSession?.access_token) {
+            this.cloudBackups = [];
+            this.cloudBackupStatus = 'idle';
+            if (!silent) this.showToast('請先登入雲端帳號', 'error');
+            return [];
+          }
+          if (this.cloudBackupStatus === 'loading') return this.cloudBackupRows;
+          this.cloudBackupStatus = 'loading';
+          this.cloudBackupError = '';
+          try {
+            const rows = await this.cloudRequest('data_backups', {
+              query: [
+                'select=id,backup_date,schema_version,record_counts,integrity,created_at',
+                `owner_id=eq.${encodeURIComponent(this.authUser.id)}`,
+                'order=backup_date.desc,created_at.desc',
+                'limit=30'
+              ].join('&')
+            });
+            this.persistCloudBackups(Array.isArray(rows) ? rows : []);
+            this.cloudBackupStatus = 'ready';
+            this.runDataSafetyCheck(false);
+            if (!silent) {
+              this.showToast(this.cloudBackups.length ? `已載入 ${this.cloudBackups.length} 份雲端備份` : '雲端目前沒有備份');
+            }
+            return this.cloudBackupRows;
+          } catch (error) {
+            console.error('Cloud backup list failed:', error);
+            this.cloudBackupStatus = 'error';
+            this.cloudBackupError = error.message || '雲端備份清單讀取失敗';
+            this.runDataSafetyCheck(false);
+            if (!silent) this.showToast(`雲端備份讀取失敗：${this.cloudBackupError}`, 'error', 8000);
+            return [];
+          }
+        },
+        async fetchCloudBackupPayload(backup) {
+          const row = this.normalizeCloudBackupRow(backup);
+          if (row.payload) return row;
+          if (!row.id && !row.backupDate) throw new Error('找不到雲端備份索引');
+          const filters = [
+            'select=id,backup_date,schema_version,payload,record_counts,integrity,created_at',
+            `owner_id=eq.${encodeURIComponent(this.authUser.id)}`
+          ];
+          if (row.id) filters.push(`id=eq.${encodeURIComponent(row.id)}`);
+          else filters.push(`backup_date=eq.${encodeURIComponent(row.backupDate)}`);
+          filters.push('limit=1');
+          const rows = await this.cloudRequest('data_backups', { query: filters.join('&') });
+          const found = Array.isArray(rows) ? rows[0] : null;
+          if (!found?.payload) throw new Error('雲端備份內容不存在');
+          return this.normalizeCloudBackupRow(found);
+        },
+        async downloadCloudBackupSnapshot(backup) {
+          if (!this.authUser || !this.authSession?.access_token) {
+            this.showToast('請先登入雲端帳號', 'error');
+            return;
+          }
+          try {
+            const full = await this.fetchCloudBackupPayload(backup);
+            const blob = new Blob([JSON.stringify(full.payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `MOMO雲端備份_${full.backupDate || new Date().toLocaleDateString('sv-SE')}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            this.showToast('雲端備份 JSON 已下載');
+          } catch (error) {
+            this.showToast(`雲端備份下載失敗：${error.message}`, 'error', 8000);
+          }
+        },
+        restoreCloudBackupSnapshot(backup) {
+          const row = this.normalizeCloudBackupRow(backup);
+          if (!row.id && !row.backupDate) {
+            this.showToast('找不到雲端備份資料', 'error');
+            return;
+          }
+          this.showConfirm(`確定還原這份雲端備份嗎？\n\n${row.backupDate} · ${row.totalRecords} 筆\n\n系統會先建立一份本機保護快照，再把此備份套用到目前裝置。儲值帳本維持流水式保存，不會刪除遠端舊流水。`, async () => {
+            this.cloudBackupStatus = 'restoring';
+            this.cloudBackupRestoringId = row.id;
+            this.cloudBackupError = '';
+            try {
+              const full = await this.fetchCloudBackupPayload(row);
+              this.createLocalBackupSnapshot('pre_restore', { silent: true, force: true });
+              const servicesIncluded = this.applyBackupData(full.payload);
+              this.recordOperation('cloud_backup_restore', '還原雲端備份', `${full.backupDate} · ${full.totalRecords} 筆`, { backupId: full.id, backupDate: full.backupDate, servicesIncluded });
+              this.activeTab = 'safety';
+              this.cloudBackupStatus = 'ready';
+              this.runDataSafetyCheck(false);
+              this.showToast(servicesIncluded ? '雲端備份已還原到目前裝置' : '雲端備份已還原，但原備份不含價目表', servicesIncluded ? 'success' : 'error', 8000);
+            } catch (error) {
+              console.error('Cloud backup restore failed:', error);
+              this.cloudBackupStatus = 'error';
+              this.cloudBackupError = error.message || '雲端備份還原失敗';
+              this.runDataSafetyCheck(false);
+              this.showToast(`雲端備份還原失敗：${this.cloudBackupError}`, 'error', 9000);
+            } finally {
+              this.cloudBackupRestoringId = null;
+            }
           });
         },
         exportOperationLogCSV() {
@@ -8518,8 +8857,13 @@
         },
         handleHealthIssue(issue) {
           if (!issue) return;
-          if (issue.code === 'backup_due' || issue.code === 'backup_error') {
+          if (issue.code === 'backup_due' || issue.code === 'backup_error' || issue.code === 'cloud_backup_empty') {
             this.handleBackupReminderAction();
+            return;
+          }
+          if (issue.code === 'cloud_backup_error') {
+            this.activeTab = 'safety';
+            this.fetchCloudBackupList({ silent: false });
             return;
           }
           if (issue.code === 'pwa_update_available') {
@@ -9444,6 +9788,15 @@
           this.cloudMessage = '尚未連接雲端資料';
           this.cloudBaseline = {};
           this.cloudConflict = null;
+          this.cloudBackups = [];
+          this.cloudBackupStatus = 'idle';
+          this.cloudBackupError = '';
+          this.cloudBackupsLoadedAt = null;
+          this.cloudBackupRestoringId = null;
+          this.lastCloudBackupAt = null;
+          localStorage.removeItem('momo_cloud_backups');
+          localStorage.removeItem('momo_cloud_backups_loaded_at');
+          localStorage.removeItem('momo_last_cloud_backup_at');
           this.showAuthSheet = this.authConfig.required;
           this.showToast('已登出雲端帳號');
         },
@@ -11702,6 +12055,8 @@
           if (integrity.status === 'warning') addIssue('warning', 'integrity_warning', `完整性檢查有 ${integrity.warningCount} 個提醒。`);
           if (this.backupStatus === 'error') addIssue('error', 'backup_error', '最近一次雲端備份失敗，請重新建立備份。');
           else if (this.backupReminder.due) addIssue('warning', 'backup_due', this.backupReminder.message);
+          if (this.cloudReady && this.cloudBackupStatus === 'error') addIssue('error', 'cloud_backup_error', this.cloudBackupError || '雲端備份清單讀取失敗。');
+          if (this.cloudReady && this.cloudBackupStatus === 'ready' && !this.cloudBackupRows.length) addIssue('warning', 'cloud_backup_empty', '雲端目前沒有可還原的正式備份。');
           if (this.cloudStatus === 'conflict' || this.cloudConflict) addIssue('error', 'cloud_conflict', '雲端有版本衝突，請先選擇保留雲端或保留本機。');
           if (this.cloudStatus === 'error') addIssue('error', 'cloud_error', this.cloudMessage || '雲端同步狀態異常。');
           if (this.cloudMigrationNeeded) addIssue('warning', 'cloud_migration', '本機資料尚未完成首次搬移到 Supabase。');
@@ -11915,8 +12270,11 @@
         async createAutomaticBackup({ force = false, silent = true } = {}) {
           if (!this.cloudReady || !this.authUser || !this.authSession?.access_token) return false;
           const today = new Date().toLocaleDateString('sv-SE');
-          const previousDate = this.lastBackupAt ? new Date(this.lastBackupAt).toLocaleDateString('sv-SE') : '';
-          if (!force && previousDate === today) return true;
+          const previousDate = this.lastCloudBackupAt ? new Date(this.lastCloudBackupAt).toLocaleDateString('sv-SE') : '';
+          if (!force && previousDate === today) {
+            if (this.cloudBackupStatus === 'idle') this.fetchCloudBackupList({ silent: true });
+            return true;
+          }
 
           this.backupStatus = 'saving';
           try {
@@ -11945,9 +12303,16 @@
               prefer: 'return=minimal'
             });
             this.lastBackupAt = createdAt;
+            this.lastCloudBackupAt = createdAt;
             localStorage.setItem('momo_last_backup_at', createdAt);
+            localStorage.setItem('momo_last_cloud_backup_at', createdAt);
             this.backupStatus = 'ready';
             this.runDataSafetyCheck(false);
+            try {
+              await this.fetchCloudBackupList({ silent: true });
+            } catch (error) {
+              console.warn('Cloud backup list refresh skipped:', error);
+            }
             if (!silent) this.showToast('雲端備份已建立，並保留最近 30 天');
             return true;
           } catch (error) {
