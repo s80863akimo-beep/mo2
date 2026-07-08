@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.08-cloud-backup-health">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.08-cloud-restore-guard">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -4498,9 +4498,9 @@
                     下載
                   </button>
                   <button @click="restoreCloudBackupSnapshot(backup)"
-                          :disabled="cloudBackupStatus === 'restoring'"
+                          :disabled="cloudBackupStatus === 'restoring' || cloudRestorePreviewLoading"
                           class="min-h-[38px] rounded-xl bg-sky-50 border border-sky-100 text-sky-700 text-[11px] font-black disabled:opacity-40">
-                    {{ cloudBackupRestoringId === backup.id ? '還原中…' : '還原' }}
+                    {{ cloudBackupRestoringId === backup.id ? (cloudRestorePreviewLoading ? '預覽中…' : '還原中…') : '還原' }}
                   </button>
                 </div>
               </div>
@@ -4690,6 +4690,91 @@
       </div>
     </transition>
 
+    <!-- Cloud backup restore guard modal -->
+    <transition name="fade">
+      <div v-if="showCloudRestoreModal"
+           class="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-3 sm:p-4 bg-slate-900/45 backdrop-blur-sm"
+           @click="closeCloudRestoreModal">
+        <div class="ios-sheet bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-2xl macaron-shadow-lg border border-sky-100 overflow-hidden"
+             @click.stop>
+          <div class="ios-sheet-handle sm:hidden"></div>
+          <div class="p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="text-base sm:text-lg font-black text-slate-800">還原雲端備份</h3>
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-black"
+                      :class="cloudRestoreDraft?.preview?.riskTone === 'error' ? 'bg-rose-50 text-rose-700' : cloudRestoreDraft?.preview?.riskTone === 'warn' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'">
+                  {{ cloudRestoreDraft?.preview?.riskLabel || '差異預覽' }}
+                </span>
+              </div>
+              <p class="mt-1 text-[11px] font-bold text-slate-400">
+                {{ cloudRestoreDraft?.backup?.backupDate || '讀取中' }} · schema v{{ cloudRestoreDraft?.backup?.schemaVersion || dataSchemaVersion }} · {{ cloudRestoreDraft?.backup?.totalRecords || 0 }} 筆
+              </p>
+            </div>
+            <button @click="closeCloudRestoreModal" :disabled="cloudBackupStatus === 'restoring'" class="w-9 h-9 rounded-full bg-slate-50 text-slate-500 font-black disabled:opacity-30" aria-label="關閉">✕</button>
+          </div>
+
+          <div class="max-h-[70vh] overflow-y-auto p-4 sm:p-5 space-y-4">
+            <div class="rounded-2xl bg-sky-50 border border-sky-100 px-3 py-3">
+              <div class="text-xs font-black text-sky-800">還原前保護</div>
+              <p class="mt-1 text-[11px] font-bold text-sky-700 leading-relaxed">
+                系統會先建立本機保護快照，再覆蓋目前裝置上的業績、CRM、儲值帳本、支出、庫存、打烊與價目表資料。
+              </p>
+            </div>
+
+            <div v-if="cloudRestoreDraft?.preview?.warnings?.length" class="space-y-2">
+              <div v-for="warning in cloudRestoreDraft.preview.warnings" :key="'restore-warning-' + warning.code + '-' + warning.message"
+                   class="rounded-2xl px-3 py-2 border"
+                   :class="warning.severity === 'error' ? 'bg-rose-50 border-rose-100 text-rose-700' : 'bg-amber-50 border-amber-100 text-amber-700'">
+                <div class="text-[10px] font-black">{{ warning.severity === 'error' ? '高風險' : '提醒' }}</div>
+                <div class="mt-0.5 text-xs font-bold leading-relaxed">{{ warning.message }}</div>
+              </div>
+            </div>
+
+            <div class="border border-slate-200 rounded-2xl overflow-hidden">
+              <div class="grid grid-cols-4 bg-slate-50 text-[10px] font-black text-slate-400">
+                <div class="px-3 py-2">資料</div>
+                <div class="px-3 py-2 text-right">目前</div>
+                <div class="px-3 py-2 text-right">備份</div>
+                <div class="px-3 py-2 text-right">差異</div>
+              </div>
+              <div v-for="row in cloudRestoreDraft?.preview?.rows || []" :key="'restore-diff-' + row.key" class="grid grid-cols-4 border-t border-slate-100 text-xs">
+                <div class="px-3 py-2 font-black text-slate-700">{{ row.label }}</div>
+                <div class="px-3 py-2 text-right font-bold text-slate-500">{{ formatNumber(row.local) }}</div>
+                <div class="px-3 py-2 text-right font-bold text-slate-700">{{ formatNumber(row.backup) }}</div>
+                <div class="px-3 py-2 text-right font-black" :class="row.delta < 0 ? 'text-rose-600' : row.delta > 0 ? 'text-emerald-600' : 'text-slate-400'">
+                  {{ restoreDiffText(row.delta) }}
+                </div>
+              </div>
+            </div>
+
+            <label class="block">
+              <span class="block text-[10px] font-black text-slate-400 mb-1">輸入備份日期才可還原</span>
+              <input v-model.trim="cloudRestoreConfirmText"
+                     :placeholder="cloudRestoreDraft?.backup?.backupDate || 'YYYY-MM-DD'"
+                     class="jelly-input w-full min-h-[48px] rounded-2xl border border-slate-200 px-4 text-sm font-black text-slate-800"
+                     autocomplete="off">
+              <span class="block mt-1 text-[10px] font-bold text-slate-400">請輸入：{{ cloudRestoreDraft?.backup?.backupDate || '備份日期' }}</span>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-2 border-t border-slate-100 bg-white">
+            <button @click="closeCloudRestoreModal"
+                    :disabled="cloudBackupStatus === 'restoring'"
+                    class="min-h-[54px] text-slate-500 text-sm font-black border-r border-slate-100 disabled:opacity-40">
+              取消
+            </button>
+            <button @click="confirmCloudBackupRestore"
+                    :disabled="!cloudRestoreReadyToConfirm || cloudBackupStatus === 'restoring'"
+                    class="min-h-[54px] text-sm font-black disabled:opacity-30"
+                    :class="cloudRestoreDraft?.preview?.riskTone === 'error' ? 'text-rose-600 bg-rose-50' : 'text-sky-700 bg-sky-50'">
+              {{ cloudBackupStatus === 'restoring' ? '還原中…' : '確認還原' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- 自訂確認對話框 Modal（取代瀏覽器原生 confirm，風格一致） -->
     <transition name="fade">
       <div v-if="confirmModal.show"
@@ -4822,12 +4907,12 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.08-cloud-backup-health"></script>
+  <script src="/assets/momo-core.js?v=2026.07.08-cloud-restore-guard"></script>
 
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.08-cloud-backup-health';
+    const APP_VERSION = '2026.07.08-cloud-restore-guard';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -4904,7 +4989,7 @@
       catch (error) { return fallback; }
     };
 
-    createApp({
+    const momoApp = createApp({
       data() {
         // Init filters
         const todayStr = new Date().toLocaleDateString('sv-SE');
@@ -4990,6 +5075,10 @@
           cloudBackupRetentionMessage: '',
           cloudBackupsLoadedAt: localStorage.getItem('momo_cloud_backups_loaded_at') || null,
           cloudBackupRestoringId: null,
+          showCloudRestoreModal: false,
+          cloudRestoreDraft: null,
+          cloudRestoreConfirmText: '',
+          cloudRestorePreviewLoading: false,
           integrityReport: safeParse(localStorage.getItem('momo_integrity_report'), null),
           safetyReport: safeParse(localStorage.getItem('momo_safety_report'), null),
           safetyChecking: false,
@@ -5428,6 +5517,12 @@
             title: latest ? `${this.backupSnapshotRows.length} 份本機快照` : '尚無本機快照',
             detail: latest ? `最近 ${this.formatDateTime(latest.createdAt)} · ${latest.reasonLabel}` : '建立快照後，可從此頁下載或還原。'
           };
+        },
+        cloudRestoreReadyToConfirm() {
+          const expected = String(this.cloudRestoreDraft?.backup?.backupDate || '').trim();
+          return Boolean(expected
+            && String(this.cloudRestoreConfirmText || '').trim() === expected
+            && this.cloudRestoreDraft?.preview?.riskTone !== 'error');
         },
         cloudBackupRows() {
           return (Array.isArray(this.cloudBackups) ? this.cloudBackups : [])
@@ -7541,35 +7636,198 @@
             this.showToast(`雲端備份下載失敗：${error.message}`, 'error', 8000);
           }
         },
-        restoreCloudBackupSnapshot(backup) {
+        backupRestoreCountLabels() {
+          return [
+            { key: 'customers', label: '顧客' },
+            { key: 'orders', label: '業績' },
+            { key: 'prepaidLedger', label: '儲值帳本' },
+            { key: 'expenses', label: '支出' },
+            { key: 'inventory', label: '庫存' },
+            { key: 'closeouts', label: '打烊紀錄' },
+            { key: 'serviceConfigs', label: '價目表' },
+            { key: 'operationLogs', label: '操作紀錄' }
+          ];
+        },
+        backupComparableCounts(data = null) {
+          const source = data || this.buildBackupData();
+          return {
+            customers: Array.isArray(source.momo_customers) ? source.momo_customers.length : 0,
+            orders: Array.isArray(source.momo_orders) ? source.momo_orders.length : 0,
+            prepaidLedger: Array.isArray(source.momo_prepaidLedger) ? source.momo_prepaidLedger.length : 0,
+            expenses: Array.isArray(source.momo_expenses) ? source.momo_expenses.length : 0,
+            inventory: Array.isArray(source.momo_inventory) ? source.momo_inventory.length : 0,
+            closeouts: source.momo_closeoutRecords ? Object.keys(source.momo_closeoutRecords || {}).length : 0,
+            serviceConfigs: Array.isArray(source.momo_servicesConfig) ? source.momo_servicesConfig.length : 0,
+            operationLogs: Array.isArray(source.momo_operationLogs) ? source.momo_operationLogs.length : 0
+          };
+        },
+        businessRestoreTotal(counts = {}) {
+          return ['customers', 'orders', 'prepaidLedger', 'expenses', 'inventory']
+            .reduce((sum, key) => sum + (Number(counts[key]) || 0), 0);
+        },
+        buildCloudRestorePreview(full = {}) {
+          const localCounts = this.backupComparableCounts();
+          const backupCounts = this.backupComparableCounts(full.payload || {});
+          const labels = this.backupRestoreCountLabels();
+          const rows = labels.map(item => {
+            const local = Number(localCounts[item.key]) || 0;
+            const backup = Number(backupCounts[item.key]) || 0;
+            return {
+              ...item,
+              local,
+              backup,
+              delta: backup - local
+            };
+          });
+          const warnings = [];
+          const addWarning = (severity, code, message) => warnings.push({ severity, code, message });
+          const localTotal = this.businessRestoreTotal(localCounts);
+          const backupTotal = this.businessRestoreTotal(backupCounts);
+
+          if ((Number(full.schemaVersion) || 1) < this.dataSchemaVersion) {
+            addWarning('warning', 'schema_old', `這份備份 schema v${full.schemaVersion || 1} 低於目前 v${this.dataSchemaVersion}，還原後會用相容模式載入。`);
+          }
+          if (!Array.isArray(full.payload?.momo_servicesConfig)) {
+            addWarning('warning', 'service_config_missing', '這份備份不含價目表；還原後會保留目前價目表。');
+          }
+          if (localTotal >= 20 && backupTotal > 0 && backupTotal < Math.floor(localTotal * 0.9)) {
+            addWarning('warning', 'business_total_drop', `備份業務資料 ${backupTotal} 筆，低於目前 ${localTotal} 筆，請確認是否要回到較舊狀態。`);
+          }
+          rows
+            .filter(row => ['customers', 'orders', 'prepaidLedger', 'expenses'].includes(row.key))
+            .forEach(row => {
+              if (row.local >= 20 && row.backup <= row.local - 5 && row.backup < Math.floor(row.local * 0.85)) {
+                addWarning('warning', `${row.key}_drop`, `${row.label}將從 ${row.local} 筆變成 ${row.backup} 筆。`);
+              }
+            });
+          if (!full.payload?.momo_orders || !full.payload?.momo_customers) {
+            addWarning('error', 'required_payload_missing', '備份內容缺少業績或顧客資料，不建議還原。');
+          }
+
+          const errorCount = warnings.filter(item => item.severity === 'error').length;
+          const warningCount = warnings.length - errorCount;
+          return {
+            localCounts,
+            backupCounts,
+            rows,
+            warnings,
+            riskTone: errorCount ? 'error' : warningCount ? 'warn' : 'ok',
+            riskLabel: errorCount ? `${errorCount} 個高風險` : warningCount ? `${warningCount} 個提醒` : '差異正常',
+            localTotal,
+            backupTotal
+          };
+        },
+        restoreDiffText(delta) {
+          const value = Number(delta) || 0;
+          if (!value) return '0';
+          return `${value > 0 ? '+' : ''}${this.formatNumber(value)}`;
+        },
+        restoreCountSummary(counts = {}) {
+          return `顧客 ${this.formatNumber(counts.customers)}、業績 ${this.formatNumber(counts.orders)}、儲值 ${this.formatNumber(counts.prepaidLedger)}、支出 ${this.formatNumber(counts.expenses)}、庫存 ${this.formatNumber(counts.inventory)}`;
+        },
+        closeCloudRestoreModal() {
+          if (this.cloudBackupStatus === 'restoring') return;
+          this.showCloudRestoreModal = false;
+          this.cloudRestoreDraft = null;
+          this.cloudRestoreConfirmText = '';
+          this.cloudRestorePreviewLoading = false;
+        },
+        async restoreCloudBackupSnapshot(backup) {
           const row = this.normalizeCloudBackupRow(backup);
           if (!row.id && !row.backupDate) {
             this.showToast('找不到雲端備份資料', 'error');
             return;
           }
-          this.showConfirm(`確定還原這份雲端備份嗎？\n\n${row.backupDate} · ${row.totalRecords} 筆\n\n系統會先建立一份本機保護快照，再把此備份套用到目前裝置。儲值帳本維持流水式保存，不會刪除遠端舊流水。`, async () => {
-            this.cloudBackupStatus = 'restoring';
-            this.cloudBackupRestoringId = row.id;
-            this.cloudBackupError = '';
+          if (!this.authUser || !this.authSession?.access_token) {
+            this.showToast('請先登入雲端帳號', 'error');
+            return;
+          }
+          this.cloudRestorePreviewLoading = true;
+          this.cloudBackupRestoringId = row.id;
+          this.cloudBackupError = '';
+          try {
+            const full = await this.fetchCloudBackupPayload(row);
+            this.cloudRestoreDraft = {
+              backup: full,
+              preview: this.buildCloudRestorePreview(full)
+            };
+            this.cloudRestoreConfirmText = '';
+            this.showCloudRestoreModal = true;
+          } catch (error) {
+            console.error('Cloud backup preview failed:', error);
+            this.cloudBackupError = error.message || '雲端備份差異預覽失敗';
+            this.runDataSafetyCheck(false);
+            this.showToast(`雲端備份差異預覽失敗：${this.cloudBackupError}`, 'error', 9000);
+          } finally {
+            this.cloudRestorePreviewLoading = false;
+            this.cloudBackupRestoringId = null;
+          }
+        },
+        async confirmCloudBackupRestore() {
+          const full = this.cloudRestoreDraft?.backup;
+          const preview = this.cloudRestoreDraft?.preview;
+          if (!full?.payload) {
+            this.showToast('找不到可還原的雲端備份內容', 'error');
+            return;
+          }
+          if (!this.cloudRestoreReadyToConfirm) {
+            this.showToast(`請輸入備份日期 ${full.backupDate} 才能還原`, 'error', 6000);
+            return;
+          }
+          this.cloudBackupStatus = 'restoring';
+          this.cloudBackupRestoringId = full.id;
+          this.cloudBackupError = '';
+          try {
+            const beforeCounts = this.backupComparableCounts();
+            this.createLocalBackupSnapshot('pre_restore', { silent: true, force: true });
+            const servicesIncluded = this.applyBackupData(full.payload);
+            const afterCounts = this.backupComparableCounts();
+            const integrity = this.runIntegrityCheck(false);
+            const safety = this.runDataSafetyCheck(false);
+            this.recordOperation(
+              'cloud_backup_restore',
+              '還原雲端備份',
+              `${full.backupDate} · 還原後 ${this.restoreCountSummary(afterCounts)} · ${integrity.status === 'ok' ? '檢查正常' : `${integrity.errorCount} 錯誤、${integrity.warningCount} 提醒`}`,
+              {
+                backupId: full.id,
+                backupDate: full.backupDate,
+                schemaVersion: full.schemaVersion,
+                servicesIncluded,
+                beforeCounts,
+                backupCounts: preview?.backupCounts || this.backupComparableCounts(full.payload),
+                afterCounts,
+                warnings: preview?.warnings || [],
+                integrityStatus: integrity.status,
+                safetyStatus: safety.status
+              }
+            );
+            this.activeTab = 'safety';
+            this.showCloudRestoreModal = false;
+            this.cloudRestoreDraft = null;
+            this.cloudRestoreConfirmText = '';
+            this.cloudBackupStatus = 'ready';
+            this.runDataSafetyCheck(false);
+            this.showToast(
+              servicesIncluded
+                ? (integrity.status === 'ok' ? '雲端備份已還原，健康檢查正常' : '雲端備份已還原，請查看健康檢查提醒')
+                : '雲端備份已還原，但原備份不含價目表',
+              integrity.status === 'ok' && servicesIncluded ? 'success' : 'error',
+              9000
+            );
             try {
-              const full = await this.fetchCloudBackupPayload(row);
-              this.createLocalBackupSnapshot('pre_restore', { silent: true, force: true });
-              const servicesIncluded = this.applyBackupData(full.payload);
-              this.recordOperation('cloud_backup_restore', '還原雲端備份', `${full.backupDate} · ${full.totalRecords} 筆`, { backupId: full.id, backupDate: full.backupDate, servicesIncluded });
-              this.activeTab = 'safety';
-              this.cloudBackupStatus = 'ready';
-              this.runDataSafetyCheck(false);
-              this.showToast(servicesIncluded ? '雲端備份已還原到目前裝置' : '雲端備份已還原，但原備份不含價目表', servicesIncluded ? 'success' : 'error', 8000);
+              await this.fetchCloudBackupList({ silent: true });
             } catch (error) {
-              console.error('Cloud backup restore failed:', error);
-              this.cloudBackupStatus = 'error';
-              this.cloudBackupError = error.message || '雲端備份還原失敗';
-              this.runDataSafetyCheck(false);
-              this.showToast(`雲端備份還原失敗：${this.cloudBackupError}`, 'error', 9000);
-            } finally {
-              this.cloudBackupRestoringId = null;
+              console.warn('Post-restore backup list refresh skipped:', error);
             }
-          });
+          } catch (error) {
+            console.error('Cloud backup restore failed:', error);
+            this.cloudBackupStatus = 'error';
+            this.cloudBackupError = error.message || '雲端備份還原失敗';
+            this.runDataSafetyCheck(false);
+            this.showToast(`雲端備份還原失敗：${this.cloudBackupError}`, 'error', 9000);
+          } finally {
+            this.cloudBackupRestoringId = null;
+          }
         },
         exportOperationLogCSV() {
           const headers = ['時間', '動作', '摘要', '細節'];
@@ -12800,7 +13058,11 @@
           }
         }
       }
-    }).mount('#app');
+    });
+    const momoVm = momoApp.mount('#app');
+    if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+      window.__MOMO_QA_APP__ = momoVm;
+    }
   </script>
 </body>
 </html>
