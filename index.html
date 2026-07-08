@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.08-crm-return-analysis">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.08-customer-profile-2">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -3531,6 +3531,99 @@
                     </div>
                   </div>
 
+                  <details open class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+                    <summary class="min-h-[44px] cursor-pointer px-3 flex items-center justify-between text-xs font-black text-slate-700">
+                      <span>顧客詳細檔案 2.0</span><span class="text-[10px] text-slate-400">{{ cust.workTimeBasis }}</span>
+                    </summary>
+                    <div class="p-3 pt-1 space-y-3">
+                      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">累計消費</div><div class="text-xs font-black text-slate-800">NT$ {{ formatNumber(cust.totalSpent) }}</div></div>
+                        <div class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">平均客單</div><div class="text-xs font-black text-slate-800">NT$ {{ formatNumber(cust.avgTicket) }}</div></div>
+                        <div class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">工時產值</div><div class="text-xs font-black text-slate-800">{{ cust.workHourYield ? 'NT$ ' + formatNumber(cust.workHourYield) + '/hr' : '尚無' }}</div></div>
+                        <div class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">工時覆蓋</div><div class="text-xs font-black text-slate-800">{{ cust.actualTimeCoverage }}% · {{ cust.workTimeLabel }}</div></div>
+                      </div>
+
+                      <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                        <section class="rounded-2xl border border-orange-100 bg-orange-50/25 overflow-hidden">
+                          <div class="px-3 py-2 flex items-center justify-between gap-2 border-b border-orange-100 bg-white/70">
+                            <div class="text-xs font-black text-slate-700">消費時間線</div>
+                            <button @click="openCustomerOrders(cust.id)" class="min-h-[30px] px-2.5 rounded-lg bg-white border border-orange-100 text-macaron-peach-500 text-[9px] font-black">完整客史</button>
+                          </div>
+                          <div v-if="!cust.orderTimeline.length" class="px-3 py-4 text-xs font-bold text-slate-400">尚無服務紀錄</div>
+                          <div v-else class="divide-y divide-orange-100/70">
+                            <div v-for="order in cust.orderTimeline" :key="'customer-timeline-' + order.id" class="px-3 py-2.5 flex justify-between gap-3">
+                              <div class="min-w-0">
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                  <span v-if="order.correctionSlip" class="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 text-[8px] font-black shrink-0">更正</span>
+                                  <div class="text-xs font-black text-slate-700 truncate">{{ order.serviceName }}</div>
+                                </div>
+                                <div class="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] font-bold text-slate-400">
+                                  <span>{{ order.date }}</span><span>{{ order.paymentMethod }}</span><span>{{ order.timeLabel }}</span>
+                                </div>
+                              </div>
+                              <div class="text-right shrink-0">
+                                <div class="text-xs font-black text-slate-800">NT$ {{ formatNumber(order.amount) }}</div>
+                                <div class="text-[9px] font-bold text-slate-400">{{ order.yieldPerHour ? formatNumber(order.yieldPerHour) + '/hr' : '無產值' }}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </section>
+
+                        <section class="rounded-2xl border border-emerald-100 bg-emerald-50/25 overflow-hidden">
+                          <div class="px-3 py-2 flex items-center justify-between gap-2 border-b border-emerald-100 bg-white/70">
+                            <div class="text-xs font-black text-slate-700">儲值歷程</div>
+                            <div class="text-[9px] font-black text-emerald-700">餘額 NT$ {{ formatNumber(cust.prepaidBalance) }}</div>
+                          </div>
+                          <div v-if="!cust.prepaidTimeline.length" class="px-3 py-4 text-xs font-bold text-slate-400">尚無儲值異動</div>
+                          <div v-else class="divide-y divide-emerald-100/70">
+                            <div v-for="entry in cust.prepaidTimeline" :key="'customer-prepaid-' + entry.id" class="px-3 py-2.5 flex justify-between gap-3">
+                              <div class="min-w-0">
+                                <div class="text-xs font-black text-slate-700 truncate">{{ entry.note }}</div>
+                                <div class="mt-0.5 text-[9px] font-bold text-slate-400">{{ entry.date }} · 異動後 NT$ {{ formatNumber(entry.balanceAfter) }}</div>
+                              </div>
+                              <div class="text-xs font-black shrink-0" :class="entry.type === 'in' ? 'text-emerald-700' : 'text-sky-700'">{{ entry.type === 'in' ? '+' : '-' }} NT$ {{ formatNumber(entry.amount) }}</div>
+                            </div>
+                          </div>
+                        </section>
+                      </div>
+
+                      <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                        <section class="rounded-2xl border border-sky-100 bg-sky-50/25 overflow-hidden">
+                          <div class="px-3 py-2 border-b border-sky-100 bg-white/70 text-xs font-black text-slate-700">服務偏好排行</div>
+                          <div v-if="!cust.servicePreferenceRows.length" class="px-3 py-4 text-xs font-bold text-slate-400">尚無可分析服務</div>
+                          <div v-else class="divide-y divide-sky-100/70">
+                            <div v-for="row in cust.servicePreferenceRows" :key="'customer-service-pref-' + row.serviceName" class="px-3 py-2.5">
+                              <div class="flex items-center justify-between gap-3">
+                                <div class="min-w-0">
+                                  <div class="text-xs font-black text-slate-700 truncate">{{ row.serviceName }}</div>
+                                  <div class="mt-0.5 text-[9px] font-bold text-slate-400">{{ row.count }} 次 · {{ row.basisLabel }} {{ row.timeLabel }}</div>
+                                </div>
+                                <div class="text-right shrink-0">
+                                  <div class="text-xs font-black text-slate-800">NT$ {{ formatNumber(row.totalAmount) }}</div>
+                                  <div class="text-[9px] font-bold text-slate-400">{{ row.yieldPerHour ? formatNumber(row.yieldPerHour) + '/hr' : '無產值' }}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </section>
+
+                        <section class="rounded-2xl border border-violet-100 bg-violet-50/25 overflow-hidden">
+                          <div class="px-3 py-2 border-b border-violet-100 bg-white/70 text-xs font-black text-slate-700">配方紀錄時間線</div>
+                          <div v-if="!cust.formulaTimeline.length" class="px-3 py-4 text-xs font-bold text-slate-400">尚無配方或染燙護服務紀錄</div>
+                          <div v-else class="divide-y divide-violet-100/70">
+                            <div v-for="item in cust.formulaTimeline" :key="'customer-formula-' + item.id" class="px-3 py-2.5">
+                              <div class="flex items-center justify-between gap-2">
+                                <div class="text-xs font-black text-slate-700 truncate">{{ item.title }}</div>
+                                <div class="text-[9px] font-bold text-slate-400 shrink-0">{{ item.date || '未填日期' }}</div>
+                              </div>
+                              <div class="mt-0.5 text-[10px] font-bold text-slate-500 leading-relaxed">{{ item.detail }}</div>
+                            </div>
+                          </div>
+                        </section>
+                      </div>
+                    </div>
+                  </details>
+
                   <details open class="rounded-2xl border border-orange-100 bg-white overflow-hidden">
                     <summary class="min-h-[44px] cursor-pointer px-3 flex items-center justify-between text-xs font-black text-slate-600">
                       <span>基本資料</span><span class="text-[10px] text-macaron-peach-500">{{ crmDraftHasChanges(cust) ? '尚未儲存' : '草稿編輯' }}</span>
@@ -3574,20 +3667,6 @@
                     <div class="h-1.5 rounded-full bg-white overflow-hidden mt-2"><div class="h-full rounded-full bg-emerald-400" :style="{ width: cust.prepaidUsedPercent + '%' }"></div></div>
                     <div class="flex justify-between mt-2 text-[9px] font-bold text-slate-400"><span>已扣 {{ formatNumber(cust.prepaidOut) }}</span><span>總儲值 {{ formatNumber(cust.prepaidIn) }}</span></div>
                   </div>
-
-                  <details class="rounded-2xl border border-orange-100 bg-white overflow-hidden">
-                    <summary class="min-h-[42px] cursor-pointer px-3 flex items-center justify-between text-xs font-black text-slate-600">
-                      <span>消費紀錄</span><span class="text-[10px] text-macaron-peach-500">可展開查看</span>
-                    </summary>
-                    <div v-if="!cust.recentOrders.length" class="px-3 py-3 text-xs font-bold text-slate-400">尚無服務紀錄</div>
-                    <div v-else class="divide-y divide-orange-50">
-                      <div v-for="order in cust.recentOrders" :key="order.id" class="px-3 py-2.5 flex justify-between gap-3">
-                        <div class="min-w-0"><div class="text-xs font-black text-slate-700 truncate">{{ order.serviceName }}</div><div class="text-[9px] font-bold text-slate-400">{{ order.date }} · {{ order.paymentMethod }}</div></div>
-                        <div class="text-xs font-black text-slate-700 shrink-0">NT$ {{ formatNumber(order.amount) }}</div>
-                      </div>
-                    </div>
-                    <div class="px-3 py-2 bg-orange-50/40"><button @click="openCustomerOrders(cust.id)" class="w-full min-h-[36px] rounded-xl bg-white border border-orange-100 text-macaron-peach-500 text-[10px] font-black">查看完整客史</button></div>
-                  </details>
 
                   <details class="rounded-2xl border border-orange-100 bg-white overflow-hidden">
                     <summary class="min-h-[44px] cursor-pointer px-3 flex items-center justify-between text-xs font-black text-slate-600">
@@ -5059,12 +5138,12 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.08-crm-return-analysis"></script>
+  <script src="/assets/momo-core.js?v=2026.07.08-customer-profile-2"></script>
 
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.08-crm-return-analysis';
+    const APP_VERSION = '2026.07.08-customer-profile-2';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -6845,6 +6924,13 @@
               lastDate: '',
               firstDate: '',
               serviceMap: {},
+              serviceAmountMap: {},
+              serviceActualMinutesMap: {},
+              serviceStandardMinutesMap: {},
+              actualMinutesTotal: 0,
+              actualMinutesCount: 0,
+              standardMinutesTotal: 0,
+              standardMinutesCount: 0,
               recentOrders: []
             };
           });
@@ -6864,6 +6950,13 @@
                 lastDate: '',
                 firstDate: '',
                 serviceMap: {},
+                serviceAmountMap: {},
+                serviceActualMinutesMap: {},
+                serviceStandardMinutesMap: {},
+                actualMinutesTotal: 0,
+                actualMinutesCount: 0,
+                standardMinutesTotal: 0,
+                standardMinutesCount: 0,
                 recentOrders: []
               };
             }
@@ -6876,17 +6969,37 @@
             if (o.paymentMethod !== '儲值進帳') {
               const amount = Number(o.amount) || 0;
               const serviceName = o.serviceName || '未填服務';
+              const standardMinutes = this.getServiceMinutes(serviceName);
+              const actualMinutes = this.getOrderActualMinutes(o);
+              const basisMinutes = actualMinutes || standardMinutes || 0;
+              const correctionSlip = this.isCorrectionSlip(o);
               record.totalSpent += amount;
-              if (!this.isCorrectionSlip(o)) {
+              if (!correctionSlip) {
                 record.count += 1;
                 record.serviceMap[serviceName] = (record.serviceMap[serviceName] || 0) + 1;
+                record.serviceAmountMap[serviceName] = (record.serviceAmountMap[serviceName] || 0) + amount;
+                if (standardMinutes) {
+                  record.standardMinutesTotal += standardMinutes;
+                  record.standardMinutesCount += 1;
+                  record.serviceStandardMinutesMap[serviceName] = (record.serviceStandardMinutesMap[serviceName] || 0) + standardMinutes;
+                }
+                if (actualMinutes) {
+                  record.actualMinutesTotal += actualMinutes;
+                  record.actualMinutesCount += 1;
+                  record.serviceActualMinutesMap[serviceName] = (record.serviceActualMinutesMap[serviceName] || 0) + actualMinutes;
+                }
               }
               record.recentOrders.push({
                 id: o.id,
                 date: o.date,
                 serviceName,
                 amount,
-                paymentMethod: o.paymentMethod
+                paymentMethod: o.paymentMethod,
+                standardMinutes,
+                actualMinutes,
+                basisMinutes,
+                yieldPerHour: basisMinutes ? Math.round(amount / (basisMinutes / 60)) : 0,
+                correctionSlip
               });
             }
           });
@@ -6920,6 +7033,51 @@
             const formulaSummary = this.compactFormulaSummary(formula, this.crmNotes[cust.id]);
             const valueTier = (cust.totalSpent >= 8000 || cust.count >= 5 || avgTicket >= 2500) ? 'high' : cust.count >= 3 ? 'regular' : 'light';
             const valueTierLabel = valueTier === 'high' ? '高價值' : valueTier === 'regular' ? '固定觀察' : '低頻';
+            const actualTimeCoverage = cust.count > 0 ? Math.round((cust.actualMinutesCount / cust.count) * 100) : 0;
+            const workMinutes = cust.actualMinutesTotal || cust.standardMinutesTotal;
+            const workHourYield = workMinutes ? Math.round(cust.totalSpent / (workMinutes / 60)) : 0;
+            const workTimeLabel = workMinutes ? this.formatMinutesCompact(workMinutes) : '未設定';
+            const workTimeBasis = cust.actualMinutesTotal ? '實際工時' : cust.standardMinutesTotal ? '標準工時' : '無工時';
+            const servicePreferenceRows = Object.keys(cust.serviceMap)
+              .map(serviceName => {
+                const count = cust.serviceMap[serviceName] || 0;
+                const totalAmount = cust.serviceAmountMap[serviceName] || 0;
+                const actualMinutes = cust.serviceActualMinutesMap[serviceName] || 0;
+                const standardMinutes = cust.serviceStandardMinutesMap[serviceName] || 0;
+                const minutes = actualMinutes || standardMinutes || 0;
+                return {
+                  serviceName,
+                  count,
+                  totalAmount,
+                  avgAmount: count ? Math.round(totalAmount / count) : 0,
+                  minutes,
+                  timeLabel: minutes ? this.formatMinutesCompact(minutes) : '未設定',
+                  basisLabel: actualMinutes ? '實際' : standardMinutes ? '標準' : '無工時',
+                  yieldPerHour: minutes ? Math.round(totalAmount / (minutes / 60)) : 0
+                };
+              })
+              .sort((a, b) => b.count - a.count || b.totalAmount - a.totalAmount)
+              .slice(0, 4);
+            const orderTimeline = recentOrders.slice(0, 8).map(order => ({
+              ...order,
+              timeLabel: order.basisMinutes
+                ? `${order.actualMinutes ? '實際' : '標準'} ${this.formatMinutesCompact(order.basisMinutes)}`
+                : '工時未設定'
+            }));
+            const prepaidTimeline = this.prepaidLedgerEntries
+              .filter(entry => entry.customerId === cust.id)
+              .slice(0, 6)
+              .map(entry => ({
+                id: entry.id,
+                date: entry.date,
+                signedAmount: Number(entry.signedAmount) || 0,
+                amount: Math.abs(Number(entry.signedAmount) || 0),
+                type: Number(entry.signedAmount) >= 0 ? 'in' : 'out',
+                bucket: entry.bucket,
+                note: entry.note || entry.serviceName || (entry.bucket === 'topup' ? '儲值進帳' : '儲值扣款'),
+                balanceAfter: entry.balanceAfter
+              }));
+            const formulaTimeline = this.buildCustomerFormulaTimeline(cust, formula, recentOrders);
             const returnStatus = this.getCustomerReturnStatus({
               count: cust.count,
               daysSinceLastVisit,
@@ -6968,6 +7126,15 @@
               prepaidLow,
               prepaidDormant,
               formulaSummary,
+              actualTimeCoverage,
+              workMinutes,
+              workTimeLabel,
+              workTimeBasis,
+              workHourYield,
+              servicePreferenceRows,
+              orderTimeline,
+              prepaidTimeline,
+              formulaTimeline,
               recentOrders: recentOrders.slice(0, 3),
               statusLabel,
               statusClass
@@ -10036,10 +10203,13 @@
           return cleanNote ? cleanNote.slice(0, 28) : '尚未建立配方';
         },
         copyCustomerBrief(cust) {
+          const prepaidStatus = cust.prepaidDormant ? '儲值久未來' : cust.prepaidLow ? '餘額偏低' : '正常';
           const lines = [
-            `${cust.name}｜${cust.gender || '未填性別'}｜${cust.count} 次消費`,
+            `${cust.name}｜${cust.gender || '未填性別'}｜${cust.count} 次消費｜${cust.valueTierLabel}｜${cust.returnLabel}`,
             `最近：${cust.lastDate || '未填'} ${cust.lastService || '未填服務'}`,
-            `儲值：NT$ ${this.formatNumber(cust.prepaidBalance)}${cust.prepaidLow ? '（建議提醒）' : ''}`,
+            `週期：${cust.revisitDays} 天｜預估回流日：${cust.returnDueDate || '尚無'}`,
+            `工時產值：${cust.workHourYield ? `NT$ ${this.formatNumber(cust.workHourYield)}/hr` : '尚無'}（${cust.workTimeBasis}）`,
+            `儲值：NT$ ${this.formatNumber(cust.prepaidBalance)}（${prepaidStatus}）`,
             `配方：${cust.formulaSummary || '尚未建立配方'}`
           ];
           if (cust.contact) lines.push(`聯絡：${cust.contact}`);
@@ -10193,6 +10363,14 @@
         formatHours(value) {
           const hours = Math.round((Number(value) || 0) * 10) / 10;
           return Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
+        },
+        formatMinutesCompact(value) {
+          const minutes = Math.round(Number(value) || 0);
+          if (minutes <= 0) return '未設定';
+          const hours = Math.floor(minutes / 60);
+          const rest = minutes % 60;
+          if (!hours) return `${rest}分`;
+          return rest ? `${hours}小時${rest}分` : `${hours}小時`;
         },
         formatMinuteDelta(value) {
           if (value === null || value === undefined || value === '') return '無對照';
@@ -10427,6 +10605,32 @@
             serviceConfigs,
             serviceConfigUpdatedAt: localStorage.getItem('momo_servicesConfigUpdatedAt') || null
           };
+        },
+        buildCustomerFormulaTimeline(cust = {}, formula = {}, recentOrders = []) {
+          const items = [];
+          const summary = this.compactFormulaSummary(formula, this.crmNotes[cust.id]);
+          if (summary && summary !== '尚未建立配方') {
+            items.push({
+              id: `${cust.id || 'customer'}-formula-current`,
+              date: formula.updatedAt || cust.lastDate || '',
+              title: '目前配方',
+              detail: summary,
+              type: 'formula'
+            });
+          }
+          (recentOrders || [])
+            .filter(order => /染|漂|燙|護|頭皮|縮毛|離子/.test(order.serviceName || ''))
+            .slice(0, 3)
+            .forEach(order => {
+              items.push({
+                id: `${order.id || order.date}-formula-order`,
+                date: order.date,
+                title: order.serviceName || '相關服務',
+                detail: `${order.paymentMethod || '未填付款'} · NT$ ${this.formatNumber(order.amount)}`,
+                type: 'order'
+              });
+            });
+          return items.slice(0, 4);
         },
 
         // E: 取得日期所在週的週一（YYYY-MM-DD）
