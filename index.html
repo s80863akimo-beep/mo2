@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.08-customer-profile-2">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.09-monthly-health-check">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -4199,6 +4199,104 @@
             </div>
           </section>
 
+          <!-- Monthly business health -->
+          <section class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="text-base sm:text-lg font-black text-slate-800">月度營運健檢 · {{ monthlySettlementSummary.label }}</h2>
+                  <span class="min-h-[26px] inline-flex items-center px-2.5 rounded-lg border text-[10px] font-black" :class="monthlyBusinessHealth.status.className">{{ monthlyBusinessHealth.status.label }}</span>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">用月結、工時、儲值、顧客與同步健康度，整理本月老闆摘要。</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button @click="copyMonthlyBusinessHealthSummary" class="min-h-[40px] px-3 rounded-xl bg-slate-900 text-white text-xs font-black">複製健檢</button>
+                <button v-if="monthlyBusinessHealth.dataIssues.unclosed" @click="openCloseoutSheet(monthlySettlementSummary.unclosedDates[0])" class="min-h-[40px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">補打烊</button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-[0.82fr_1.18fr] gap-0">
+              <div class="p-4 sm:p-6 border-b xl:border-b-0 xl:border-r border-slate-100">
+                <div class="flex items-center justify-between gap-4">
+                  <div>
+                    <div class="text-[10px] font-black text-slate-400">健檢分數</div>
+                    <div class="mt-1 text-5xl font-black tabular-nums" :class="monthlyBusinessHealth.score >= 85 ? 'text-emerald-600' : monthlyBusinessHealth.score >= 70 ? 'text-sky-600' : monthlyBusinessHealth.score >= 50 ? 'text-amber-600' : 'text-rose-600'">{{ monthlyBusinessHealth.score }}</div>
+                  </div>
+                  <div class="flex-1">
+                    <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div class="h-full rounded-full transition-all"
+                           :class="monthlyBusinessHealth.score >= 85 ? 'bg-emerald-500' : monthlyBusinessHealth.score >= 70 ? 'bg-sky-500' : monthlyBusinessHealth.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'"
+                           :style="{ width: monthlyBusinessHealth.score + '%' }"></div>
+                    </div>
+                    <div class="mt-2 text-xs font-black text-slate-700 leading-relaxed">{{ monthlyBusinessHealth.headline }}</div>
+                  </div>
+                </div>
+                <div class="mt-4 space-y-2">
+                  <div v-for="line in monthlyBusinessHealth.summary" :key="'health-summary-' + line" class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 text-[11px] font-bold text-slate-600 leading-relaxed">{{ line }}</div>
+                </div>
+              </div>
+
+              <div class="p-4 sm:p-6 space-y-4">
+                <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                  <div v-for="card in monthlyBusinessHealth.metricCards" :key="'health-card-' + card.label"
+                       class="rounded-xl border px-3 py-3"
+                       :class="card.tone === 'good' ? 'bg-emerald-50 border-emerald-100' : card.tone === 'risk' ? 'bg-rose-50 border-rose-100' : card.tone === 'warn' ? 'bg-amber-50 border-amber-100' : card.tone === 'info' ? 'bg-slate-50 border-slate-100' : 'bg-white border-slate-200'">
+                    <div class="text-[9px] font-black text-slate-400">{{ card.label }}</div>
+                    <div class="mt-1 text-sm font-black text-slate-800 truncate">{{ card.value }}</div>
+                    <div class="mt-0.5 text-[9px] font-bold text-slate-400 leading-relaxed">{{ card.detail }}</div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  <section class="rounded-2xl border border-slate-200 overflow-hidden">
+                    <div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-2">
+                      <div class="text-xs font-black text-slate-700">優先處理</div>
+                      <div class="text-[9px] font-bold text-slate-400">按影響報表可信度排序</div>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                      <div v-for="item in monthlyBusinessHealth.actions" :key="'health-action-' + item.title" class="px-3 py-2.5 flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <div class="text-xs font-black" :class="item.tone === 'risk' ? 'text-rose-600' : item.tone === 'warn' ? 'text-amber-700' : item.tone === 'good' ? 'text-emerald-700' : 'text-slate-700'">{{ item.title }}</div>
+                          <div class="mt-0.5 text-[10px] font-bold text-slate-400 leading-relaxed">{{ item.detail }}</div>
+                        </div>
+                        <button v-if="item.cta" @click="handleMonthlyBusinessHealthAction(item)" class="min-h-[32px] px-2.5 rounded-lg bg-white border border-slate-200 text-[10px] font-black text-slate-600 shrink-0">{{ item.cta }}</button>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="rounded-2xl border border-slate-200 overflow-hidden">
+                    <div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-2">
+                      <div class="text-xs font-black text-slate-700">服務時間產值快照</div>
+                      <div class="text-[9px] font-bold text-slate-400">{{ settlementYieldSummary.actualAverage ? '實際工時' : '預估工時' }}</div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+                      <div class="p-3">
+                        <div class="text-[10px] font-black text-emerald-700 mb-2">高產值</div>
+                        <div v-if="!monthlyBusinessHealth.highYieldRows.length" class="text-[10px] font-bold text-slate-400">尚無工時產值資料</div>
+                        <div v-for="row in monthlyBusinessHealth.highYieldRows" :key="'health-high-yield-' + row.serviceName" class="mb-2 last:mb-0">
+                          <div class="text-xs font-black text-slate-700 truncate">{{ row.serviceName }}</div>
+                          <div class="text-[9px] font-bold text-slate-400">NT$ {{ formatNumber(row.yieldPerHour) }}/hr · {{ row.count }} 筆</div>
+                        </div>
+                      </div>
+                      <div class="p-3">
+                        <div class="text-[10px] font-black text-amber-700 mb-2">需留意</div>
+                        <div v-if="!monthlyBusinessHealth.lowYieldRows.length" class="text-[10px] font-bold text-slate-400">沒有明顯低產值服務</div>
+                        <div v-for="row in monthlyBusinessHealth.lowYieldRows" :key="'health-low-yield-' + row.serviceName" class="mb-2 last:mb-0">
+                          <div class="text-xs font-black text-slate-700 truncate">{{ row.serviceName }}</div>
+                          <div class="text-[9px] font-bold text-slate-400">NT$ {{ formatNumber(row.yieldPerHour) }}/hr · {{ row.timeBasisLabel }}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-if="monthlyBusinessHealth.highValueAtRisk.length" class="px-3 py-2 border-t border-slate-100 bg-violet-50/60">
+                      <div class="text-[10px] font-black text-violet-700">高價值回流觀察</div>
+                      <div class="mt-0.5 text-[10px] font-bold text-violet-600 truncate">{{ monthlyBusinessHealth.highValueAtRisk.map(c => c.name).join('、') }}</div>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <!-- Monthly settlement summary -->
           <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
             <div class="px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
@@ -5138,12 +5236,12 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.08-customer-profile-2"></script>
+  <script src="/assets/momo-core.js?v=2026.07.09-monthly-health-check"></script>
 
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.08-customer-profile-2';
+    const APP_VERSION = '2026.07.09-monthly-health-check';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -7513,6 +7611,143 @@
               ? `已打烊 ${closedDays} 天使用固定快照${liveDays ? `，另有 ${liveDays} 天仍為明細暫算` : ''}`
               : `尚無打烊快照，${liveDays} 天皆為明細暫算`,
             ready: unclosedDates.length === 0
+          };
+        },
+        monthlyBusinessHealth() {
+          const s = this.monthlySettlementSummary;
+          const p = this.monthlyPrepaidReconciliation;
+          const y = this.settlementYieldSummary;
+          const serviceRows = this.settlementServiceYieldRows || [];
+          const serviceRevenue = Number(s.serviceRevenue) || 0;
+          const netProfit = Number(s.netProfit) || 0;
+          const profitMargin = Number(s.profitMargin) || 0;
+          const monthIndex = Math.max(1, Number(s.month) || 1) - 1;
+          const previousMonth = monthIndex > 0
+            ? this.annualMonthlyData[monthIndex - 1]
+            : this.lastYearMonthlyData[11];
+          const percentChange = (current, previous) => previous ? Math.round((current - previous) / previous * 100) : null;
+          const revenueChange = percentChange(serviceRevenue, previousMonth?.revenue || 0);
+          const orderChange = percentChange(s.ordersCount, previousMonth?.count || 0);
+          const prepaidLiability = Math.max(0, Number(p.closingBalance) || 0);
+          const prepaidChange = prepaidLiability - Math.max(0, Number(p.openingBalance) || 0);
+          const prepaidPressureRatio = serviceRevenue > 0 ? Math.round(prepaidLiability / serviceRevenue * 100) : 0;
+          const lowYieldRows = serviceRows
+            .filter(row => row.yieldPerHour > 0 && row.yieldPerHour < 1000)
+            .sort((a, b) => a.yieldPerHour - b.yieldPerHour || b.count - a.count)
+            .slice(0, 3);
+          const highYieldRows = serviceRows
+            .filter(row => row.yieldPerHour > 0)
+            .sort((a, b) => b.yieldPerHour - a.yieldPerHour || b.totalAmount - a.totalAmount)
+            .slice(0, 3);
+          const highValueAtRisk = this.crmList.filter(c => c.valueTier === 'high' && ['overdue', 'inactive', 'dormant', 'prepaidDormant'].includes(c.returnGroup));
+          const dataIssues = {
+            unclosed: s.unclosedDates.length,
+            sync: this.syncIssueSummary.total || 0,
+            pricing: (this.priceMatchWorkbenchRows || []).length,
+            pricingFromSync: this.syncIssueSummary.pricing || 0,
+            money: this.syncIssueSummary.money || 0,
+            locked: this.syncIssueSummary.locked || 0,
+            yieldMissing: (y.unmatched?.length || 0) + (y.actualMissing?.length || 0)
+          };
+          const combinedDataIssues = dataIssues.sync + Math.max(0, dataIssues.pricing - dataIssues.pricingFromSync);
+
+          const actions = [];
+          if (!serviceRevenue && !s.expenses) {
+            actions.push({ title: '本月尚無可判斷資料', detail: '同步行事曆或新增業績後，健檢會開始產生結論。', tone: 'info' });
+          }
+          if (dataIssues.unclosed) {
+            actions.push({ title: '先補齊打烊快照', detail: `${dataIssues.unclosed} 天未打烊，正式月結仍含明細暫算。`, tone: 'warn', cta: '補打烊', action: 'closeout' });
+          }
+          if (dataIssues.money || dataIssues.locked) {
+            actions.push({ title: '同步資料需確認', detail: `金額/付款 ${dataIssues.money} 筆，鎖帳異常 ${dataIssues.locked} 筆。`, tone: dataIssues.money ? 'risk' : 'warn', cta: '安全頁', action: 'safety', filter: dataIssues.money ? 'money' : 'locked' });
+          }
+          if (dataIssues.pricing) {
+            actions.push({ title: '價目表仍有未匹配', detail: `${dataIssues.pricing} 個服務名稱未匹配，會影響自動計價與工時口徑。`, tone: 'warn', cta: '處理價目', action: 'pricing' });
+          }
+          if (!p.balanced) {
+            actions.push({ title: '儲值帳本需對帳', detail: '期初 + 進帳 - 扣款 + 調整 與期末不一致。', tone: 'risk' });
+          }
+          if (serviceRevenue && y.actualCoverage < 70) {
+            actions.push({ title: '實際工時覆蓋偏低', detail: `目前 ${y.actualCoverage}%，會降低時間產值判斷可信度。`, tone: 'warn' });
+          }
+          if (lowYieldRows.length) {
+            actions.push({ title: '有低時間產值服務', detail: `${lowYieldRows[0].serviceName} 約 NT$ ${this.formatNumber(lowYieldRows[0].yieldPerHour)}/hr，可檢查排程或定價。`, tone: 'warn' });
+          }
+          if (highValueAtRisk.length) {
+            actions.push({ title: '高價值顧客回流變慢', detail: `${highValueAtRisk.length} 位高價值顧客目前在超週期或久未回狀態。`, tone: 'info' });
+          }
+          if (!actions.length) {
+            actions.push({ title: '本月主要指標穩定', detail: '月結、儲值、工時與同步資料目前沒有重大待處理項目。', tone: 'good' });
+          }
+
+          let score = serviceRevenue || s.expenses ? 100 : 0;
+          if (serviceRevenue || s.expenses) {
+            if (profitMargin < 0) score -= 30;
+            else if (profitMargin < 10) score -= 18;
+            else if (profitMargin < 20) score -= 8;
+            if (netProfit < 0) score -= 10;
+            if (dataIssues.unclosed) score -= Math.min(18, 6 + dataIssues.unclosed * 2);
+            if (!p.balanced) score -= 12;
+            if (dataIssues.money) score -= 14;
+            if (dataIssues.locked) score -= 8;
+            if (dataIssues.pricing) score -= Math.min(10, dataIssues.pricing * 2);
+            if (serviceRevenue && y.actualCoverage < 70) score -= 8;
+            if (dataIssues.yieldMissing) score -= Math.min(8, dataIssues.yieldMissing);
+            if (prepaidPressureRatio >= 80) score -= 6;
+            if (lowYieldRows.length) score -= 5;
+            if (highValueAtRisk.length) score -= Math.min(6, highValueAtRisk.length * 2);
+          }
+          score = Math.max(0, Math.min(100, score));
+          const status = !serviceRevenue && !s.expenses
+            ? { label: '尚無資料', tone: 'info', className: 'bg-slate-50 text-slate-600 border-slate-200' }
+            : score >= 85
+              ? { label: '成長中', tone: 'good', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
+              : score >= 70
+                ? { label: '穩定', tone: 'ok', className: 'bg-sky-50 text-sky-700 border-sky-200' }
+                : score >= 50
+                  ? { label: '需檢查', tone: 'warn', className: 'bg-amber-50 text-amber-700 border-amber-200' }
+                  : { label: '偏弱', tone: 'risk', className: 'bg-rose-50 text-rose-600 border-rose-200' };
+          const trustScore = Math.max(0, 100
+            - (dataIssues.unclosed ? Math.min(30, dataIssues.unclosed * 5) : 0)
+            - (dataIssues.money ? 25 : 0)
+            - (dataIssues.locked ? 15 : 0)
+            - (dataIssues.pricing ? Math.min(20, dataIssues.pricing * 4) : 0)
+            - (!p.balanced ? 15 : 0));
+          const trustLabel = trustScore >= 85 ? '可信' : trustScore >= 65 ? '可用需留意' : '先檢查';
+          const headline = !serviceRevenue && !s.expenses
+            ? '本月還沒有足夠資料可判斷。'
+            : `${s.label} ${status.label}：營業額 NT$ ${this.formatNumber(serviceRevenue)}，淨利率 ${profitMargin}%，${trustLabel}。`;
+          const summary = [
+            revenueChange !== null ? `營業額較上月${revenueChange >= 0 ? '增加' : '減少'} ${Math.abs(revenueChange)}%` : '尚無上月營收可比',
+            `客單 NT$ ${this.formatNumber(s.avgTicket)}、${s.ordersCount} 筆服務`,
+            y.average ? `時間產值 NT$ ${this.formatNumber(y.average)}/hr，實際工時覆蓋 ${y.actualCoverage}%` : '時間產值尚無可用工時',
+            prepaidLiability ? `期末儲值負債 NT$ ${this.formatNumber(prepaidLiability)}${prepaidChange ? `（${prepaidChange > 0 ? '+' : ''}${this.formatNumber(prepaidChange)}）` : ''}` : '本月底無儲值負債'
+          ];
+          const metricCards = [
+            { label: '月營業額', value: `NT$ ${this.formatNumber(serviceRevenue)}`, detail: revenueChange === null ? '無上月比較' : `${revenueChange >= 0 ? '↑' : '↓'} ${Math.abs(revenueChange)}% vs 上月`, tone: revenueChange === null || revenueChange >= 0 ? 'good' : 'warn' },
+            { label: '淨利 / 淨利率', value: `NT$ ${this.formatNumber(netProfit)}`, detail: `${profitMargin}% · ${profitMargin >= 20 ? '健康' : profitMargin >= 0 ? '待拉高' : '赤字'}`, tone: profitMargin >= 20 ? 'good' : profitMargin >= 0 ? 'warn' : 'risk' },
+            { label: '客單 / 服務筆數', value: `NT$ ${this.formatNumber(s.avgTicket)}`, detail: `${s.ordersCount} 筆${orderChange === null ? '' : ` · ${orderChange >= 0 ? '↑' : '↓'} ${Math.abs(orderChange)}%`}`, tone: 'neutral' },
+            { label: '時間產值', value: y.average ? `NT$ ${this.formatNumber(y.average)}/hr` : '尚無', detail: `${y.actualAverage ? '實際' : '預估'} · 覆蓋 ${y.actualCoverage}%`, tone: y.average >= 1600 ? 'good' : y.average >= 1000 ? 'neutral' : y.average ? 'warn' : 'info' },
+            { label: '儲值負債', value: `NT$ ${this.formatNumber(prepaidLiability)}`, detail: `${p.balanced ? '帳面平衡' : '需對帳'} · ${prepaidPressureRatio}% 營收比`, tone: p.balanced && prepaidPressureRatio < 80 ? 'neutral' : 'warn' },
+            { label: '報表可信度', value: trustLabel, detail: `快照 ${s.snapshotDays} 天 · 異常 ${combinedDataIssues} 項`, tone: trustScore >= 85 ? 'good' : trustScore >= 65 ? 'warn' : 'risk' }
+          ];
+          return {
+            score,
+            status,
+            headline,
+            summary,
+            actions: actions.slice(0, 5),
+            metricCards,
+            highYieldRows,
+            lowYieldRows,
+            highValueAtRisk: highValueAtRisk.slice(0, 4),
+            trustScore,
+            trustLabel,
+            revenueChange,
+            prepaidLiability,
+            prepaidChange,
+            prepaidPressureRatio,
+            dataIssues: { ...dataIssues, combined: combinedDataIssues }
           };
         },
         reportComparisons() {
@@ -10102,6 +10337,22 @@
           if (s.unclosedDates.length) lines.push(`未打烊日期：${s.unclosedDates.join('、')}`);
           this.copyTextToClipboard(lines.join('\n'), '月結摘要已複製');
         },
+        copyMonthlyBusinessHealthSummary() {
+          const s = this.monthlySettlementSummary;
+          const h = this.monthlyBusinessHealth;
+          const lines = [
+            `摸摸頭 momohair 月度營運健檢 ${s.label}`,
+            `狀態：${h.status.label}（${h.score} 分）`,
+            h.headline,
+            `營業額：NT$ ${this.formatNumber(s.serviceRevenue)}｜淨利：NT$ ${this.formatNumber(s.netProfit)}｜淨利率：${s.profitMargin}%`,
+            `服務：${s.ordersCount} 筆｜客單：NT$ ${this.formatNumber(s.avgTicket)}｜時間產值：${this.settlementYieldSummary.average ? `NT$ ${this.formatNumber(this.settlementYieldSummary.average)}/hr` : '尚無'}`,
+            `儲值：期末負債 NT$ ${this.formatNumber(h.prepaidLiability)}｜${this.monthlyPrepaidReconciliation.balanced ? '帳面平衡' : '需對帳'}`,
+            `報表可信度：${h.trustLabel}（快照 ${s.snapshotDays} 天、暫算 ${s.liveDays} 天、同步/價目異常 ${h.dataIssues.combined} 項）`,
+            '優先處理：',
+            ...h.actions.map((item, index) => `${index + 1}. ${item.title}：${item.detail}`)
+          ];
+          this.copyTextToClipboard(lines.join('\n'), '月度健檢已複製');
+        },
         addDaysToDate(date, days) {
           if (!date) return '';
           const parsed = new Date(`${date}T00:00:00`);
@@ -10291,6 +10542,19 @@
           this.syncIssueFilter = filter || 'all';
           this.showMobileTools = false;
           this.scrollToTopForNavigation();
+        },
+        handleMonthlyBusinessHealthAction(item = {}) {
+          if (item.action === 'closeout') {
+            this.openCloseoutSheet(this.monthlySettlementSummary.unclosedDates[0] || new Date().toLocaleDateString('sv-SE'));
+            return;
+          }
+          if (item.action === 'pricing') {
+            this.goToSafetySync('pricing');
+            return;
+          }
+          if (item.action === 'safety') {
+            this.goToSafetySync(item.filter || 'all');
+          }
         },
         async handleHomeAttentionItem(item = {}) {
           if (item.action === 'closeout') {
@@ -12759,7 +13023,27 @@
         exportMonthlySettlementReport() {
           const s = this.monthlySettlementSummary;
           const p = this.monthlyPrepaidReconciliation;
+          const h = this.monthlyBusinessHealth;
           const sections = [
+            {
+              title: `月度營運健檢 ${s.label}`,
+              headers: ['項目', '數值'],
+              rows: [
+                ['健檢狀態', h.status.label],
+                ['健檢分數', h.score],
+                ['老闆摘要', h.headline],
+                ['報表可信度', h.trustLabel],
+                ['時間產值(NT$/hr)', this.settlementYieldSummary.average || ''],
+                ['實際工時覆蓋率', `${this.settlementYieldSummary.actualCoverage}%`],
+                ['期末儲值負債(NT$)', h.prepaidLiability],
+                ['儲值負債/營業額', `${h.prepaidPressureRatio}%`],
+                ['未打烊天數', h.dataIssues.unclosed],
+                ['同步異常', h.dataIssues.sync],
+                ['價目未匹配', h.dataIssues.pricing],
+                ['高價值回流觀察', h.highValueAtRisk.map(c => c.name).join('、')],
+                ['優先處理', h.actions.map(item => `${item.title}：${item.detail}`).join('｜')]
+              ]
+            },
             {
               title: `正式月結摘要 ${s.label}`,
               headers: ['項目', '數值'],
