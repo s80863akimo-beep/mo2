@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.08-home-safety-focus">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.08-service-yield-ranking">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -4149,59 +4149,110 @@
             </div>
           </section>
 
-          <!-- Time value analysis -->
+          <!-- Service time productivity ranking -->
           <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
-              <div>
-                <h2 class="text-base sm:text-lg font-black text-slate-800">時間價值分析 · {{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }}</h2>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">公式：服務收入 ÷ 實際或標準工時；排除儲值進帳，不受業績頁搜尋篩選影響</p>
+            <div class="px-4 py-4 sm:px-6 flex flex-col xl:flex-row xl:items-center justify-between gap-3 border-b border-slate-100">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="text-base sm:text-lg font-black text-slate-800">服務時間產值排行 · {{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }}</h2>
+                  <span class="px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 text-[9px] font-black">{{ reportYieldViewSummary.sortLabel }}</span>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">公式：服務收入 ÷ 實際工時；沒有實際工時時依序使用行事曆時間與價目表標準時長。排除儲值進帳與更正單。</p>
               </div>
-              <button v-if="yieldSummary.unmatched.length" @click="openServiceConfigModal" class="min-h-[40px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">補齊 {{ yieldSummary.unmatched.length }} 項時長</button>
+              <div class="grid grid-cols-2 sm:flex gap-2">
+                <select v-model="reportYieldSort" class="min-h-[40px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-black">
+                  <option v-for="option in reportYieldSortOptions" :key="'yield-sort-' + option.value" :value="option.value">{{ option.label }}</option>
+                </select>
+                <select v-model.number="reportYieldMinCount" class="min-h-[40px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-black">
+                  <option v-for="option in reportYieldMinCountOptions" :key="'yield-min-' + option.value" :value="option.value">{{ option.label }}</option>
+                </select>
+                <button @click="exportServiceYieldCSV" :disabled="!serviceYieldRows.length" class="min-h-[40px] px-3 rounded-xl bg-slate-900 text-white text-xs font-black disabled:opacity-30">匯出排行</button>
+                <button v-if="yieldSummary.unmatched.length" @click="openServiceConfigModal" class="min-h-[40px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">補齊 {{ yieldSummary.unmatched.length }} 項時長</button>
+              </div>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100">
+            <div class="grid grid-cols-2 lg:grid-cols-5 divide-x divide-y lg:divide-y-0 divide-slate-100">
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">{{ yieldSummary.actualAverage ? '本期實際每小時' : '本期預估每小時' }}</div>
                 <div class="text-xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(yieldSummary.average) }}</div>
+                <div class="text-[9px] font-bold text-slate-400 mt-1">全服務平均</div>
               </div>
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">納入服務收入</div>
                 <div class="text-xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(yieldSummary.totalAmount) }}</div>
+                <div class="text-[9px] font-bold text-slate-400 mt-1">{{ yieldSummary.serviceCount }} 個服務項目</div>
               </div>
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">實際 / 預估工時</div>
                 <div class="text-xl font-black text-sky-600 mt-1">{{ formatHours(yieldSummary.actualHours) }} / {{ formatHours(yieldSummary.totalHours) }} hr</div>
+                <div class="text-[9px] font-bold text-slate-400 mt-1">本期服務時間</div>
               </div>
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">實際工時覆蓋</div>
                 <div class="text-xl font-black text-emerald-600 mt-1">{{ yieldSummary.actualCoverage }}%</div>
+                <div class="text-[9px] font-bold text-slate-400 mt-1">{{ reportYieldViewSummary.lowConfidence }} 項需補工時</div>
               </div>
+              <div class="p-4 col-span-2 lg:col-span-1">
+                <div class="text-[10px] font-black text-slate-400">目前顯示</div>
+                <div class="text-xl font-black text-slate-800 mt-1">{{ reportYieldViewSummary.visible }} 項</div>
+                <div class="text-[9px] font-bold text-slate-400 mt-1">隱藏低樣本 {{ reportYieldViewSummary.hidden }} 項</div>
+              </div>
+            </div>
+
+            <div v-if="reportYieldViewSummary.top" class="px-4 py-3 sm:px-6 border-t border-emerald-100 bg-emerald-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="min-w-0">
+                <div class="text-xs font-black text-emerald-700">目前排行第一：{{ reportYieldViewSummary.top.serviceName }}</div>
+                <div class="mt-0.5 text-[10px] font-bold text-emerald-600">NT$ {{ formatNumber(reportYieldViewSummary.top.yieldPerHour) }}/hr · {{ reportYieldViewSummary.top.count }} 筆 · {{ reportYieldViewSummary.top.timeBasisLabel }}</div>
+              </div>
+              <span class="shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black"
+                    :class="reportYieldViewSummary.top.confidenceTone === 'ok' ? 'bg-emerald-100 text-emerald-700' : reportYieldViewSummary.top.confidenceTone === 'warn' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'">
+                {{ reportYieldViewSummary.top.confidenceLabel }} · 覆蓋 {{ reportYieldViewSummary.top.actualCoverage }}%
+              </span>
             </div>
 
             <div class="p-4 sm:p-6 border-t border-slate-100">
               <div v-if="serviceYieldRows.length === 0" class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-8 text-center text-xs font-bold text-slate-400">
                 此期間沒有可分析的服務時長資料
               </div>
+              <div v-else-if="reportServiceYieldRows.length === 0" class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-8 text-center text-xs font-bold text-slate-400">
+                沒有符合目前最低筆數的服務，請降低樣本門檻。
+              </div>
               <div v-else class="space-y-2.5">
-                <div v-for="item in serviceYieldRows" :key="'report-yield-' + item.serviceName" class="rounded-2xl border border-orange-100/70 bg-orange-50/20 px-3 py-3">
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                      <div class="text-sm font-black text-slate-800 truncate">{{ item.serviceName }}</div>
-                      <div class="text-[10px] font-bold text-slate-400 mt-1">
-                        {{ item.count }} 筆 · 總額 NT$ {{ formatNumber(item.totalAmount) }} · 實際 {{ formatHours(item.actualHours) }} hr · 預估 {{ formatHours(item.totalHours) }} hr
+                <div v-for="(item, idx) in reportServiceYieldRows" :key="'report-yield-' + item.serviceName" class="rounded-2xl border border-orange-100/70 bg-white px-3 py-3">
+                  <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-3">
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="w-7 h-7 rounded-xl bg-slate-900 text-white text-xs font-black inline-flex items-center justify-center">{{ idx + 1 }}</span>
+                        <div class="text-sm font-black text-slate-800 truncate">{{ item.serviceName }}</div>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black"
+                              :class="item.confidenceTone === 'ok' ? 'bg-emerald-50 text-emerald-700' : item.confidenceTone === 'warn' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-500'">
+                          {{ item.confidenceLabel }}
+                        </span>
+                      </div>
+                      <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-bold text-slate-500">
+                        <div><span class="text-slate-400">筆數</span> {{ item.count }}</div>
+                        <div><span class="text-slate-400">總營收</span> NT$ {{ formatNumber(item.totalAmount) }}</div>
+                        <div><span class="text-slate-400">平均客單</span> NT$ {{ formatNumber(item.averageAmount) }}</div>
+                        <div><span class="text-slate-400">平均工時</span> {{ item.averageMinutes || 0 }} 分</div>
+                      </div>
+                      <div class="mt-1 grid grid-cols-1 sm:grid-cols-3 gap-1 text-[10px] font-bold text-slate-400">
+                        <div>實際 {{ formatHours(item.actualHours) }} hr · 標準 {{ formatHours(item.totalHours) }} hr</div>
+                        <div>標準差異 {{ formatMinuteDelta(item.durationDeltaMinutes) }}<span v-if="item.durationDeltaPercent !== null"> · {{ item.durationDeltaPercent > 0 ? '+' : '' }}{{ item.durationDeltaPercent }}%</span></div>
+                        <div>{{ item.timeBasisLabel }} · 覆蓋 {{ item.actualCoverage }}%</div>
                       </div>
                     </div>
-                    <span class="shrink-0 text-[11px] font-black px-2 py-0.5 rounded-full"
-                          :class="item.level === '高效' ? 'text-emerald-700 bg-emerald-50' : item.level === '穩定' ? 'text-sky-700 bg-sky-50' : 'text-amber-700 bg-amber-50'">
-                      {{ item.level }} · NT$ {{ formatNumber(item.yieldPerHour) }}/hr
-                    </span>
+                    <div class="lg:w-[190px] shrink-0 lg:text-right">
+                      <div class="text-2xl font-black text-slate-800">NT$ {{ formatNumber(item.yieldPerHour) }}</div>
+                      <div class="text-[10px] font-black text-slate-400">每小時產值</div>
+                      <span class="mt-1 inline-flex px-2 py-0.5 rounded-full text-[10px] font-black"
+                            :class="item.level === '高效' ? 'text-emerald-700 bg-emerald-50' : item.level === '穩定' ? 'text-sky-700 bg-sky-50' : 'text-amber-700 bg-amber-50'">
+                        {{ item.level }}
+                      </span>
+                    </div>
                   </div>
-                  <div class="mt-1 text-[10px] font-bold text-slate-400">
-                    實際 NT$ {{ formatNumber(item.actualYieldPerHour) }}/hr · 標準 NT$ {{ formatNumber(item.standardYieldPerHour) }}/hr · 覆蓋 {{ item.actualCoverage }}%
-                  </div>
-                  <div class="h-1.5 rounded-full bg-white overflow-hidden mt-2">
+                  <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden mt-3">
                     <div class="h-full rounded-full bg-gradient-to-r from-macaron-peach-300 to-macaron-rose"
-                         :style="{ width: Math.min(100, (item.yieldPerHour / 2000) * 100) + '%' }"></div>
+                         :style="{ width: Math.min(100, (item.yieldPerHour / Math.max(1, reportServiceYieldRows[0]?.yieldPerHour || 2000)) * 100) + '%' }"></div>
                   </div>
                 </div>
               </div>
@@ -4944,12 +4995,12 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.08-home-safety-focus"></script>
+  <script src="/assets/momo-core.js?v=2026.07.08-service-yield-ranking"></script>
 
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.08-home-safety-focus';
+    const APP_VERSION = '2026.07.08-service-yield-ranking';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -5143,6 +5194,8 @@
           hoveredReportBar: null,
           hideEmptyMonths: false,
           reportBreakdownTab: 'income',
+          reportYieldSort: 'yield_desc',
+          reportYieldMinCount: 1,
           appVersion: APP_VERSION,
           updateAvailable: false,
           pendingServiceWorker: null,
@@ -6568,6 +6621,48 @@
         yieldSummary() {
           const serviceOrders = this.periodOrders.filter(o => o.paymentMethod !== '儲值進帳' && !this.isCorrectionSlip(o));
           return this.buildYieldSummary(this.serviceYieldRows, serviceOrders);
+        },
+        reportYieldSortOptions() {
+          return [
+            { value: 'yield_desc', label: '產值高到低' },
+            { value: 'amount_desc', label: '總營收高到低' },
+            { value: 'count_desc', label: '筆數高到低' },
+            { value: 'duration_desc', label: '平均工時長' },
+            { value: 'coverage_desc', label: '工時覆蓋高到低' }
+          ];
+        },
+        reportYieldMinCountOptions() {
+          return [
+            { value: 1, label: '全部服務' },
+            { value: 2, label: '至少 2 筆' },
+            { value: 3, label: '至少 3 筆' },
+            { value: 5, label: '至少 5 筆' }
+          ];
+        },
+        reportServiceYieldRows() {
+          const minCount = Math.max(1, Number(this.reportYieldMinCount) || 1);
+          const rows = this.serviceYieldRows
+            .filter(item => (Number(item.count) || 0) >= minCount)
+            .map(item => ({ ...item }));
+          const sorters = {
+            yield_desc: (a, b) => b.yieldPerHour - a.yieldPerHour || b.totalAmount - a.totalAmount,
+            amount_desc: (a, b) => b.totalAmount - a.totalAmount || b.yieldPerHour - a.yieldPerHour,
+            count_desc: (a, b) => b.count - a.count || b.totalAmount - a.totalAmount,
+            duration_desc: (a, b) => b.averageMinutes - a.averageMinutes || b.totalAmount - a.totalAmount,
+            coverage_desc: (a, b) => b.actualCoverage - a.actualCoverage || b.count - a.count
+          };
+          return rows.sort(sorters[this.reportYieldSort] || sorters.yield_desc);
+        },
+        reportYieldViewSummary() {
+          const hidden = Math.max(0, this.serviceYieldRows.length - this.reportServiceYieldRows.length);
+          const lowConfidence = this.reportServiceYieldRows.filter(row => row.confidenceTone !== 'ok').length;
+          return {
+            visible: this.reportServiceYieldRows.length,
+            hidden,
+            lowConfidence,
+            top: this.reportServiceYieldRows[0] || null,
+            sortLabel: this.reportYieldSortOptions.find(option => option.value === this.reportYieldSort)?.label || '產值高到低'
+          };
         },
 
         crmFilters() {
@@ -9884,6 +9979,12 @@
           const hours = Math.round((Number(value) || 0) * 10) / 10;
           return Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
         },
+        formatMinuteDelta(value) {
+          if (value === null || value === undefined || value === '') return '無對照';
+          const minutes = Math.round(Number(value) || 0);
+          if (minutes === 0) return '等同標準';
+          return `${minutes > 0 ? '+' : ''}${minutes} 分`;
+        },
         serviceYieldLevel(value) {
           const yieldPerHour = Number(value) || 0;
           return yieldPerHour >= 1600 ? '高效' : yieldPerHour >= 1000 ? '穩定' : '待優化';
@@ -9939,17 +10040,46 @@
               const actualMinutesPerService = item.actualMatchedCount
                 ? Math.round(item.actualMinutesTotal / item.actualMatchedCount)
                 : 0;
+              const averageMinutes = actualMinutesPerService || minutesPerService || 0;
+              const averageAmount = item.count ? Math.round(item.totalAmount / item.count) : 0;
+              const actualCoverage = item.count ? Math.round(item.actualMatchedCount / item.count * 100) : 0;
+              const standardCoverage = item.count ? Math.round(item.standardMatchedCount / item.count * 100) : 0;
+              const durationDeltaMinutes = actualMinutesPerService && minutesPerService
+                ? actualMinutesPerService - minutesPerService
+                : null;
+              const durationDeltaPercent = durationDeltaMinutes !== null && minutesPerService
+                ? Math.round(durationDeltaMinutes / minutesPerService * 100)
+                : null;
+              const confidenceTone = actualCoverage >= 80 ? 'ok' : actualCoverage > 0 ? 'warn' : 'low';
+              const confidenceLabel = actualCoverage >= 80
+                ? '高可信'
+                : actualCoverage > 0
+                  ? '部分實際'
+                  : '標準估算';
+              const timeBasisLabel = actualCoverage >= 80
+                ? '實際工時'
+                : actualCoverage > 0
+                  ? '混合工時'
+                  : '標準時長';
               return {
                 ...item,
+                averageAmount,
                 minutesPerService,
                 actualMinutesPerService,
+                averageMinutes,
                 totalHours: standardHours,
                 actualHours,
                 standardYieldPerHour,
                 actualYieldPerHour,
                 yieldPerHour,
                 level: this.serviceYieldLevel(yieldPerHour),
-                actualCoverage: item.count ? Math.round(item.actualMatchedCount / item.count * 100) : 0
+                actualCoverage,
+                standardCoverage,
+                durationDeltaMinutes,
+                durationDeltaPercent,
+                confidenceTone,
+                confidenceLabel,
+                timeBasisLabel
               };
             })
             .sort((a, b) => b.yieldPerHour - a.yieldPerHour);
@@ -12318,16 +12448,21 @@
             },
             {
               title: '時間產值分析',
-              headers: ['服務項目', '筆數', '總額(NT$)', '實際工時(hr)', '標準工時(hr)', '實際每小時(NT$)', '標準每小時(NT$)', '覆蓋率'],
+              headers: ['服務項目', '筆數', '總額(NT$)', '平均客單(NT$)', '平均工時(分)', '實際工時(hr)', '標準工時(hr)', '每小時產值(NT$)', '實際每小時(NT$)', '標準每小時(NT$)', '標準差異(分)', '覆蓋率', '資料口徑'],
               rows: this.settlementServiceYieldRows.map(row => [
                 row.serviceName,
                 row.count,
                 row.totalAmount,
+                row.averageAmount,
+                row.averageMinutes,
                 this.formatHours(row.actualHours),
                 this.formatHours(row.totalHours),
+                row.yieldPerHour || '',
                 row.actualYieldPerHour || '',
                 row.standardYieldPerHour || '',
-                `${row.actualCoverage}%`
+                row.durationDeltaMinutes === null ? '' : row.durationDeltaMinutes,
+                `${row.actualCoverage}%`,
+                row.timeBasisLabel
               ])
             }
           ];
@@ -12367,6 +12502,48 @@
         },
         exportAnnualReportCSV() {
           return this.exportAnnualReport();
+        },
+        exportServiceYieldCSV() {
+          const headers = [
+            '排行',
+            '服務項目',
+            '筆數',
+            '總營收(NT$)',
+            '平均客單(NT$)',
+            '平均工時(分)',
+            '每小時產值(NT$)',
+            '實際每小時(NT$)',
+            '標準每小時(NT$)',
+            '實際工時(hr)',
+            '標準工時(hr)',
+            '實際工時覆蓋率',
+            '標準差異(分)',
+            '標準差異%',
+            '效率等級',
+            '資料可信度',
+            '資料口徑'
+          ];
+          const rows = this.reportServiceYieldRows.map((row, index) => [
+            index + 1,
+            row.serviceName,
+            row.count,
+            row.totalAmount,
+            row.averageAmount,
+            row.averageMinutes,
+            row.yieldPerHour,
+            row.actualYieldPerHour || '',
+            row.standardYieldPerHour || '',
+            this.formatHours(row.actualHours),
+            this.formatHours(row.totalHours),
+            `${row.actualCoverage}%`,
+            row.durationDeltaMinutes === null ? '' : row.durationDeltaMinutes,
+            row.durationDeltaPercent === null ? '' : `${row.durationDeltaPercent}%`,
+            row.level,
+            row.confidenceLabel,
+            row.timeBasisLabel
+          ]);
+          this.downloadCSV(`MOMO服務時間產值排行_${this.selectedYear}-${this.selectedMonth}.csv`, headers, rows);
+          this.showToast('服務時間產值排行 CSV 已匯出');
         },
 
         // --- 薪水匯入 ---

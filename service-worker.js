@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v63-home-safety-focus';
-const APP_VERSION = '2026.07.08-home-safety-focus';
+const CACHE_NAME = 'momohair-shell-v64-service-yield-ranking';
+const APP_VERSION = '2026.07.08-service-yield-ranking';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
