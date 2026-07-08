@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v62-cloud-restore-guard';
-const APP_VERSION = '2026.07.08-cloud-restore-guard';
+const CACHE_NAME = 'momohair-shell-v63-home-safety-focus';
+const APP_VERSION = '2026.07.08-home-safety-focus';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,

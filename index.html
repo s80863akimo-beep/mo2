@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.08-cloud-restore-guard">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.08-home-safety-focus">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -1190,9 +1190,9 @@
               <div class="flex items-center gap-1.5 min-w-0">
                 <h1 class="text-sm font-black text-slate-800 tracking-tight truncate">摸摸頭</h1>
                 <span class="w-2 h-2 rounded-full ring-2 shrink-0" :class="online ? 'bg-emerald-500 ring-emerald-50' : 'bg-rose-500 ring-rose-50'" :aria-label="online ? '已連線' : '離線模式'" :title="online ? '已連線' : '離線模式'"></span>
-                <span v-if="pendingActionSummary.total" class="h-4 min-w-4 px-1 rounded-full bg-amber-50 border border-amber-100 text-amber-700 text-[9px] font-black flex items-center justify-center">{{ pendingActionSummary.total }}</span>
+                <span v-if="homeAttentionSummary.total" class="h-4 min-w-4 px-1 rounded-full bg-amber-50 border border-amber-100 text-amber-700 text-[9px] font-black flex items-center justify-center">{{ homeAttentionSummary.total }}</span>
               </div>
-              <p class="text-[8px] leading-tight font-black text-slate-400 truncate">{{ pendingActionSummary.total ? pendingActionSummary.total + ' 待處理' : '狀態正常' }}</p>
+              <p class="text-[8px] leading-tight font-black text-slate-400 truncate">{{ homeAttentionSummary.total ? homeAttentionSummary.total + ' 待處理' : '狀態正常' }}</p>
             </div>
           </div>
         </div>
@@ -1227,7 +1227,7 @@
             <h1 class="text-lg sm:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-1">
               摸摸頭
             </h1>
-            <p class="text-[10px] sm:text-xs font-semibold text-macaron-peach-500 tracking-wide">今日總覽 · {{ pendingActionSummary.total ? pendingActionSummary.total + ' 筆待處理' : '營運狀態正常' }}</p>
+            <p class="text-[10px] sm:text-xs font-semibold text-macaron-peach-500 tracking-wide">今日總覽 · {{ homeAttentionSummary.total ? homeAttentionSummary.total + ' 筆待處理' : '營運狀態正常' }}</p>
           </div>
         </div>
 
@@ -1374,11 +1374,11 @@
         <span class="px-2 py-0.5 rounded-full" :class="online ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'">
           {{ online ? '● 已連線' : '● 離線模式' }}
         </span>
-        <button v-if="pendingActionSummary.total" @click="activeTab = 'dashboard'" class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
-          待處理 {{ pendingActionSummary.total }}
+        <button v-if="homeAttentionSummary.total" @click="activeTab = 'dashboard'" class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+          待處理 {{ homeAttentionSummary.total }}
         </button>
-        <button v-if="syncReport || syncIssueSummary.total" @click="openSyncIssueModal('all')" class="px-2 py-0.5 rounded-full" :class="syncIssueSummary.total ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-600'">
-          {{ syncIssueSummary.total ? `同步異常 ${syncIssueSummary.total}` : '同步正常' }}
+        <button v-if="syncReport || syncIssueSummary.total || priceMatchWorkbenchRows.length" @click="goToSafetySync('all')" class="px-2 py-0.5 rounded-full" :class="syncIssueSummary.total || priceMatchWorkbenchRows.length ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-600'">
+          {{ priceMatchWorkbenchRows.length ? `價目未匹配 ${priceMatchWorkbenchRows.length}` : syncIssueSummary.total ? `同步異常 ${syncIssueSummary.total}` : '同步正常' }}
         </button>
         <span v-if="authUser" class="px-2 py-0.5 rounded-full" :class="cloudStatus === 'error' ? 'bg-rose-50 text-rose-600' : cloudStatus === 'conflict' ? 'bg-amber-50 text-amber-700' : cloudMigrationNeeded ? 'bg-amber-50 text-amber-700' : 'bg-violet-50 text-violet-600'">
           {{ cloudStatus === 'syncing' ? '雲端同步中' : cloudStatus === 'conflict' ? '等待處理衝突' : cloudMigrationNeeded ? '待首次搬移' : cloudReady ? '雲端已連接' : '雲端準備中' }}
@@ -1463,7 +1463,7 @@
                   <span class="text-xs font-black text-orange-700">服務定價</span>
                   <span class="text-orange-300">›</span>
                 </button>
-                <button v-if="syncReport || syncIssueSummary.total" @click="showMobileTools = false; openSyncIssueModal(priceMatchWorkbenchRows.length ? 'pricing' : syncIssueSummary.backup ? 'backup' : 'all')" class="min-h-[50px] px-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-between text-left">
+                <button v-if="syncReport || syncIssueSummary.total || priceMatchWorkbenchRows.length" @click="showMobileTools = false; goToSafetySync(priceMatchWorkbenchRows.length ? 'pricing' : syncIssueSummary.backup ? 'backup' : 'all')" class="min-h-[50px] px-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-between text-left">
                   <span class="text-xs font-black text-amber-700">同步檢查</span>
                   <span class="text-amber-300">›</span>
                 </button>
@@ -2271,107 +2271,45 @@
             <button @click="copyCloseoutSummary(todayCloseoutRecord)" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-[11px] font-black text-slate-700 whitespace-nowrap">複製</button>
           </section>
 
-          <section v-if="syncError" class="momo-home-alert momo-home-alert--error border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
-            <div class="min-w-0">
-              <div class="text-xs font-black text-slate-800">{{ syncError.title }}</div>
-              <div class="text-[10px] text-slate-500 font-semibold line-clamp-2">{{ syncError.message }}</div>
-            </div>
-            <button @click="retryCalendarSync" :disabled="syncing" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black disabled:opacity-50 whitespace-nowrap">重試</button>
-          </section>
-
-          <section v-if="syncReport || syncIssueSummary.total" class="momo-home-card border rounded-2xl px-4 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3"
-                   :class="syncIssueSummary.total ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'">
-            <div class="min-w-0">
-              <div class="text-xs font-black text-slate-800">同步異常檢查 · {{ syncReport?.period || '備份健康' }}</div>
-              <div class="text-[10px] text-slate-500 font-semibold mt-0.5">
-                <span v-if="syncReport">收到 {{ syncReport.received || 0 }} 筆 · 新增 {{ syncReport.merged || 0 }} · 更新 {{ syncReport.updated || 0 }} · 取消 {{ syncReport.cancelled || 0 }}</span>
-                <span v-else>{{ cloudBackupHealth.detail }}</span>
-              </div>
-              <div class="mt-2 flex flex-wrap gap-1.5">
-                <span class="px-2 py-0.5 rounded-full bg-white/80 border text-[9px] font-black" :class="syncIssueSummary.total ? 'border-amber-200 text-amber-700' : 'border-emerald-200 text-emerald-700'">
-                  {{ syncIssueSummary.total ? `需確認 ${syncIssueSummary.total} 筆` : '資料格式正常' }}
-                </span>
-                <span v-if="priceMatchWorkbenchRows.length" class="px-2 py-0.5 rounded-full bg-white/80 border border-orange-200 text-orange-700 text-[9px] font-black">價目未匹配 {{ priceMatchWorkbenchRows.length }} 項</span>
-                <span v-if="syncIssueSummary.money" class="px-2 py-0.5 rounded-full bg-white/80 border border-rose-200 text-rose-600 text-[9px] font-black">金額/付款 {{ syncIssueSummary.money }} 筆</span>
-                <span v-if="syncIssueSummary.locked" class="px-2 py-0.5 rounded-full bg-white/80 border border-sky-200 text-sky-700 text-[9px] font-black">鎖帳 {{ syncIssueSummary.locked }} 筆</span>
-                <span v-if="syncIssueSummary.backup" class="px-2 py-0.5 rounded-full bg-white/80 border border-emerald-200 text-emerald-700 text-[9px] font-black">備份 {{ syncIssueSummary.backup }} 筆</span>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 sm:flex gap-2">
-              <button @click="openSyncIssueModal('all')" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl bg-white border border-amber-100 text-amber-700 text-[11px] font-black">查看異常</button>
-              <button @click="openSyncIssueModal('pricing')" :disabled="!priceMatchWorkbenchRows.length" class="min-h-[38px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black disabled:opacity-30">價目表工作台</button>
-            </div>
-          </section>
-
-          <section v-if="priceMatchWorkbenchRows.length" class="momo-home-card bg-white border border-orange-100 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-3 border-b border-orange-100 flex items-center justify-between gap-3">
-              <div class="min-w-0">
-                <h2 class="text-sm font-black text-slate-800">價目表未匹配工作台</h2>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">行事曆服務名稱對不到價目表時，先集中處理。</p>
-              </div>
-              <button @click="openSyncIssueModal('pricing')" class="min-h-[34px] px-3 rounded-xl bg-orange-50 border border-orange-100 text-orange-700 text-[11px] font-black shrink-0">全部</button>
-            </div>
-            <div class="divide-y divide-orange-50">
-              <div v-for="row in priceMatchWorkbenchRows.slice(0, 4)" :key="'daily-price-workbench-' + row.key" class="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div class="min-w-0">
-                  <div class="text-sm font-black text-slate-800 truncate">{{ row.serviceName }}</div>
-                  <div class="mt-0.5 text-[10px] font-bold text-slate-400">{{ row.count }} 筆 · 最近 {{ row.latestDate || '未記錄日期' }}</div>
-                </div>
-                <button @click="addUnmatchedServiceToConfig(row)" class="min-h-[36px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black shrink-0">加入價目表</button>
-              </div>
-            </div>
-          </section>
-
           <!-- Show only when action is needed -->
-          <section v-if="pendingActionSummary.total" class="momo-home-card bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-            <div class="momo-home-card-header px-4 py-4 sm:px-6 border-b border-slate-100 flex items-center justify-between gap-3">
+          <section v-if="homeAttentionSummary.total" class="momo-home-card bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+            <div class="momo-home-card-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div class="min-w-0">
-                <h2 class="text-base sm:text-lg font-black text-slate-800">需要處理</h2>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ pendingActionSummary.total }} 筆 · 只在有未打烊或異常時出現</p>
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="text-base sm:text-lg font-black text-slate-800">需要處理</h2>
+                  <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="homeAttentionSummary.errors ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'">
+                    {{ homeAttentionSummary.title }}
+                  </span>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">首頁只顯示最重要提醒；同步異常與價目表工作台已集中到安全頁。</p>
               </div>
-              <button @click="runIntegrityCheck(true)" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl text-[11px] font-black text-slate-700 border border-slate-200 bg-white whitespace-nowrap">重新檢查</button>
+              <div class="grid grid-cols-2 gap-2 lg:w-[240px]">
+                <button @click="goToSafetySync('all')" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl text-[11px] font-black text-slate-700 border border-slate-200 bg-white whitespace-nowrap">安全頁處理</button>
+                <button @click="runIntegrityCheck(true); runSystemStatusCheck(false)" class="min-h-[38px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black whitespace-nowrap">重新檢查</button>
+              </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 p-4 sm:p-6">
-              <div v-if="unclosedCloseoutDates.length" class="space-y-2">
-                <div class="flex items-center justify-between">
-                  <h3 class="text-xs font-black text-slate-700">未打烊</h3>
-                  <span class="text-[10px] font-bold text-slate-400">顯示最近 3 天</span>
-                </div>
-                <button v-for="item in unclosedCloseoutDates.slice(0, 3)" :key="item.date"
-                        @click="openCloseoutSheet(item.date)"
-                        class="momo-home-list-item w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-left transition-colors">
-                  <div class="flex items-center justify-between gap-3">
-                    <div class="min-w-0">
-                      <div class="text-sm font-black text-slate-800">{{ item.label }}</div>
-                      <div class="text-[10px] font-bold text-slate-500 mt-0.5">{{ item.ordersCount }} 筆 · 支出 NT$ {{ formatNumber(item.expenses) }}</div>
-                    </div>
-                    <div class="text-right shrink-0">
-                      <div class="text-[10px] font-black text-slate-400">應有現金</div>
-                      <div class="text-sm font-black text-slate-800">NT$ {{ formatNumber(item.actualCashIn) }}</div>
-                    </div>
+            <div class="divide-y divide-slate-100">
+              <button v-for="item in homeAttentionRows.slice(0, 4)" :key="'home-attention-' + item.key"
+                      @click="handleHomeAttentionItem(item)"
+                      class="momo-home-list-item w-full px-4 py-3 sm:px-6 text-left flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
+                      :class="item.severity === 'error' ? 'momo-home-list-item--error' : ''">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="item.severity === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'">
+                      {{ item.severity === 'error' ? '需修正' : '需確認' }}
+                    </span>
+                    <span class="text-sm font-black text-slate-800 truncate">{{ item.title }}</span>
                   </div>
-                </button>
-              </div>
+                  <div class="mt-1 text-[10px] font-bold text-slate-500 leading-relaxed line-clamp-2">{{ item.message }}</div>
+                </div>
+                <span class="shrink-0 text-[10px] font-black text-macaron-peach-500">{{ item.actionLabel || '處理' }} ›</span>
+              </button>
+            </div>
 
-              <div v-if="pendingActionSummary.anomalyItems.length" class="space-y-2">
-                <div class="flex items-center justify-between">
-                  <h3 class="text-xs font-black text-slate-700">帳務異常</h3>
-                  <span class="text-[10px] font-bold text-slate-400">點擊可前往</span>
-                </div>
-                <button v-for="item in pendingActionSummary.anomalyItems.slice(0, 3)" :key="item.code + item.message"
-                        @click="goToAnomaly(item)"
-                        class="momo-home-list-item w-full text-left rounded-xl bg-white border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-600 transition-colors"
-                        :class="item.severity === 'error' ? 'momo-home-list-item--error' : ''">
-                  <div class="flex items-center justify-between gap-2">
-                    <div class="min-w-0 truncate">
-                      <span class="font-black" :class="item.severity === 'error' ? 'text-rose-600' : 'text-amber-600'">{{ item.severity === 'error' ? '需修正' : '需確認' }}</span>
-                      <span class="ml-1">{{ item.message }}</span>
-                    </div>
-                    <span class="text-[10px] font-black text-macaron-peach-500 shrink-0">前往 ›</span>
-                  </div>
-                </button>
-              </div>
+            <div v-if="homeAttentionSummary.remaining > 0" class="px-4 py-3 sm:px-6 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between gap-3">
+              <span class="text-[10px] font-bold text-slate-400">另有 {{ homeAttentionSummary.remaining }} 項在安全頁與健康檢查結果中。</span>
+              <button @click="goToSafetySync('all')" class="min-h-[32px] px-3 rounded-xl bg-white border border-slate-200 text-slate-600 text-[10px] font-black">查看全部</button>
             </div>
           </section>
 
@@ -4409,6 +4347,105 @@
             <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-base font-black text-slate-800">同步與價目檢查</h3>
+                  <span class="px-2 py-0.5 rounded-full border text-[9px] font-black"
+                        :class="syncError || syncIssueSummary.errors ? 'border-rose-100 bg-rose-50 text-rose-700' : syncIssueSummary.total || priceMatchWorkbenchRows.length ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700'">
+                    {{ syncError ? '同步失敗' : syncIssueSummary.total || priceMatchWorkbenchRows.length ? '需確認' : '同步正常' }}
+                  </span>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">
+                  {{ syncReport?.period || '尚未同步' }} · 異常 {{ syncIssueSummary.total }} 筆 · 價目未匹配 {{ priceMatchWorkbenchRows.length }} 項
+                  <span v-if="syncReport?.syncedAt"> · 最後同步 {{ formatDateTime(syncReport.syncedAt) }}</span>
+                </p>
+              </div>
+              <div class="grid grid-cols-3 gap-2 lg:w-[360px]">
+                <button @click="openSyncIssueModal(priceMatchWorkbenchRows.length ? 'pricing' : 'all')"
+                        class="min-h-[38px] rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black">
+                  查看異常
+                </button>
+                <button @click="retryCalendarSync" :disabled="syncing"
+                        class="min-h-[38px] rounded-xl bg-slate-900 text-white text-[11px] font-black disabled:opacity-50">
+                  {{ syncing ? '同步中…' : '重新同步' }}
+                </button>
+                <button @click="openServiceConfigModal"
+                        class="min-h-[38px] rounded-xl bg-orange-50 border border-orange-100 text-orange-700 text-[11px] font-black">
+                  價目表
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">同步結果</div>
+                <div class="mt-1 text-lg font-black text-slate-800">{{ syncReport ? (syncReport.received || 0) + ' 筆' : '未同步' }}</div>
+                <div class="mt-1 text-[10px] font-bold text-slate-400">新增 {{ syncReport?.merged || 0 }} · 更新 {{ syncReport?.updated || 0 }} · 取消 {{ syncReport?.cancelled || 0 }}</div>
+              </div>
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">金額付款</div>
+                <div class="mt-1 text-lg font-black" :class="syncIssueSummary.money ? 'text-rose-600' : 'text-slate-800'">{{ syncIssueSummary.money }} 筆</div>
+                <div class="mt-1 text-[10px] font-bold text-slate-400">金額 0、付款格式、混合付款</div>
+              </div>
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">鎖帳衝突</div>
+                <div class="mt-1 text-lg font-black" :class="syncIssueSummary.locked ? 'text-amber-600' : 'text-slate-800'">{{ syncIssueSummary.locked }} 筆</div>
+                <div class="mt-1 text-[10px] font-bold text-slate-400">月結鎖帳後的取消或改動</div>
+              </div>
+              <div class="p-4">
+                <div class="text-[10px] font-black text-slate-400">價目未匹配</div>
+                <div class="mt-1 text-lg font-black" :class="priceMatchWorkbenchRows.length ? 'text-orange-600' : 'text-slate-800'">{{ priceMatchWorkbenchRows.length }} 項</div>
+                <div class="mt-1 text-[10px] font-bold text-slate-400">行事曆服務名稱未進價目表</div>
+              </div>
+            </div>
+
+            <div v-if="syncError" class="px-4 py-3 sm:px-6 border-t border-rose-100 bg-rose-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-xs font-black text-rose-700">{{ syncError.title }}</div>
+                <div class="mt-0.5 text-[10px] font-bold text-rose-500 line-clamp-2">{{ syncError.message }}</div>
+              </div>
+              <button @click="retryCalendarSync" :disabled="syncing" class="min-h-[36px] px-3 rounded-xl bg-white border border-rose-100 text-rose-700 text-[11px] font-black disabled:opacity-50">重試同步</button>
+            </div>
+
+            <div v-if="syncIssueSummary.total" class="px-4 py-3 sm:px-6 border-t border-slate-100 flex flex-wrap gap-2">
+              <button v-for="filter in syncIssueFilters().filter(item => item.count)"
+                      :key="'safety-sync-filter-' + filter.key"
+                      @click="openSyncIssueModal(filter.key)"
+                      class="min-h-[32px] px-3 rounded-xl border bg-white text-[10px] font-black"
+                      :class="filter.key === 'pricing' ? 'border-orange-100 text-orange-700' : filter.key === 'money' ? 'border-rose-100 text-rose-700' : 'border-amber-100 text-amber-700'">
+                {{ filter.label }} {{ filter.count }}
+              </button>
+            </div>
+
+            <div v-if="priceMatchWorkbenchRows.length" class="border-t border-orange-100">
+              <div class="px-4 py-3 sm:px-6 bg-orange-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="text-sm font-black text-orange-800">價目表未匹配工作台</div>
+                  <p class="mt-0.5 text-[10px] font-bold text-orange-500">把行事曆服務名稱加入價目表後，後續同步計價會使用同一份設定。</p>
+                </div>
+                <button @click="openSyncIssueModal('pricing')" class="min-h-[34px] px-3 rounded-xl bg-white border border-orange-100 text-orange-700 text-[11px] font-black">全部明細</button>
+              </div>
+              <div class="divide-y divide-orange-50">
+                <div v-for="row in priceMatchWorkbenchRows.slice(0, 8)" :key="'safety-price-workbench-' + row.key" class="px-4 py-3 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <div class="text-sm font-black text-slate-800 truncate">{{ row.serviceName }}</div>
+                    <div class="mt-0.5 text-[10px] font-bold text-slate-400">
+                      {{ row.count }} 筆 · 最近 {{ row.latestDate || '未記錄日期' }}
+                      <span v-if="row.customers?.length"> · {{ row.customers.join('、') }}</span>
+                    </div>
+                  </div>
+                  <button @click="addUnmatchedServiceToConfig(row)" class="min-h-[36px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black shrink-0">加入價目表</button>
+                </div>
+              </div>
+            </div>
+            <div v-else-if="!syncIssueSummary.total && !syncError" class="p-8 text-center border-t border-slate-100">
+              <div class="text-sm font-black text-emerald-700">目前沒有同步或價目表問題</div>
+              <p class="mt-1 text-xs font-bold text-slate-400">行事曆服務名稱、金額付款、鎖帳衝突與備份狀態目前正常。</p>
+            </div>
+          </section>
+
+          <section class="bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
                   <h3 class="text-base font-black text-slate-800">雲端備份工作台</h3>
                   <span class="px-2 py-0.5 rounded-full border text-[9px] font-black" :class="statusToneClasses(cloudBackupSummary.status)">
                     {{ cloudBackupSummary.title }}
@@ -4907,12 +4944,12 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.08-cloud-restore-guard"></script>
+  <script src="/assets/momo-core.js?v=2026.07.08-home-safety-focus"></script>
 
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.08-cloud-restore-guard';
+    const APP_VERSION = '2026.07.08-home-safety-focus';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -6160,6 +6197,168 @@
             unclosedCount: unclosedItems.length,
             anomalyCount: anomalyItems.length,
             anomalyItems: anomalyItems.slice(0, 8)
+          };
+        },
+        homeAttentionRows() {
+          const rows = [];
+          const seen = new Set();
+          const add = (item = {}) => {
+            const title = String(item.title || item.message || '').trim();
+            const message = String(item.message || title || '').trim();
+            if (!title && !message) return;
+            const key = item.key || item.code || `${title}:${message}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            rows.push({
+              ...item,
+              severity: item.severity === 'error' ? 'error' : 'warning',
+              priority: Number(item.priority) || 0,
+              key,
+              title,
+              message,
+              action: item.action || 'anomaly',
+              actionLabel: item.actionLabel || '處理'
+            });
+          };
+
+          this.unclosedCloseoutDates.forEach(item => {
+            add({
+              key: `closeout:${item.date}`,
+              severity: 'warning',
+              priority: 70,
+              title: `${item.label} 尚未打烊`,
+              message: `${item.ordersCount || 0} 筆業績 · 應有現金 NT$ ${this.formatNumber(item.actualCashIn)} · 支出 NT$ ${this.formatNumber(item.expenses)}`,
+              action: 'closeout',
+              actionLabel: '打烊',
+              date: item.date
+            });
+          });
+
+          if (this.syncError) {
+            add({
+              key: `sync-error:${this.syncError.at || this.syncError.title}`,
+              severity: 'error',
+              priority: 95,
+              title: this.syncError.title || '同步失敗',
+              message: this.syncError.message || 'Google Calendar 同步失敗，本機資料未受影響。',
+              action: 'retry_sync',
+              actionLabel: '重試'
+            });
+          }
+
+          if (this.cloudStatus === 'error' || this.cloudStatus === 'conflict') {
+            add({
+              key: `cloud-status:${this.cloudStatus}`,
+              severity: this.cloudStatus === 'error' ? 'error' : 'warning',
+              priority: 90,
+              title: this.cloudStatus === 'error' ? '雲端同步失敗' : '雲端資料衝突',
+              message: this.cloudMessage || '請到資料安全中心確認雲端狀態。',
+              action: 'safety',
+              actionLabel: '安全頁'
+            });
+          }
+
+          if (this.backupStatus === 'error') {
+            add({
+              key: 'backup-status:error',
+              severity: 'error',
+              priority: 88,
+              title: '雲端備份失敗',
+              message: '最近一次雲端備份沒有完成，建議重新建立正式備份。',
+              action: 'backup',
+              actionLabel: '備份'
+            });
+          }
+
+          if (['error', 'warning'].includes(this.cloudBackupHealth.status)) {
+            add({
+              key: `cloud-backup-health:${this.cloudBackupHealth.status}`,
+              severity: this.cloudBackupHealth.status === 'error' ? 'error' : 'warning',
+              priority: this.cloudBackupHealth.status === 'error' ? 84 : 64,
+              title: this.cloudBackupHealth.title,
+              message: this.cloudBackupHealth.detail,
+              action: 'backup',
+              actionLabel: '備份'
+            });
+          }
+
+          if (this.syncIssueSummary.money) {
+            add({
+              key: 'sync-money',
+              severity: this.syncIssueSummary.errors ? 'error' : 'warning',
+              priority: 82,
+              title: '金額與付款需確認',
+              message: `${this.syncIssueSummary.money} 筆同步資料有金額 0、付款格式或混合付款問題。`,
+              action: 'sync',
+              actionLabel: '查看',
+              filter: 'money'
+            });
+          }
+
+          if (this.syncIssueSummary.locked) {
+            add({
+              key: 'sync-locked',
+              severity: 'warning',
+              priority: 78,
+              title: '鎖帳後同步變動',
+              message: `${this.syncIssueSummary.locked} 筆行事曆變動碰到已鎖帳月份，需用更正單或沖銷處理。`,
+              action: 'sync',
+              actionLabel: '查看',
+              filter: 'locked'
+            });
+          }
+
+          if (this.priceMatchWorkbenchRows.length) {
+            add({
+              key: 'price-match-workbench',
+              severity: 'warning',
+              priority: 76,
+              title: '價目表未匹配',
+              message: `${this.priceMatchWorkbenchRows.length} 個行事曆服務名稱尚未加入價目表，會影響同步計價與時間產值。`,
+              action: 'pricing',
+              actionLabel: '處理',
+              filter: 'pricing'
+            });
+          }
+
+          if (this.syncIssueSummary.backup) {
+            add({
+              key: 'sync-backup',
+              severity: this.cloudBackupHealth.status === 'error' ? 'error' : 'warning',
+              priority: 74,
+              title: '備份狀態需確認',
+              message: `${this.syncIssueSummary.backup} 筆備份健康提醒，請到安全頁確認正式備份。`,
+              action: 'backup',
+              actionLabel: '備份'
+            });
+          }
+
+          this.pendingActionSummary.anomalyItems.forEach(item => {
+            add({
+              ...item,
+              key: `operation:${item.code || item.message}`,
+              title: item.severity === 'error' ? '帳務資料需修正' : '帳務資料需確認',
+              message: item.message,
+              priority: item.severity === 'error' ? 72 : 52,
+              action: 'anomaly',
+              actionLabel: '前往',
+              issue: item
+            });
+          });
+
+          const order = { error: 0, warning: 1 };
+          return rows.sort((a, b) => (order[a.severity] ?? 9) - (order[b.severity] ?? 9) || b.priority - a.priority);
+        },
+        homeAttentionSummary() {
+          const total = this.homeAttentionRows.length;
+          const errors = this.homeAttentionRows.filter(item => item.severity === 'error').length;
+          const warnings = total - errors;
+          return {
+            total,
+            errors,
+            warnings,
+            remaining: Math.max(0, total - 4),
+            title: errors ? `${errors} 個錯誤` : `${warnings} 個提醒`
           };
         },
 
@@ -9606,6 +9805,42 @@
         openSyncIssueModal(filter = 'all') {
           this.syncIssueFilter = filter || 'all';
           this.showSyncIssueModal = true;
+        },
+        goToSafetySync(filter = 'all') {
+          this.activeTab = 'safety';
+          this.syncIssueFilter = filter || 'all';
+          this.showMobileTools = false;
+          this.scrollToTopForNavigation();
+        },
+        async handleHomeAttentionItem(item = {}) {
+          if (item.action === 'closeout') {
+            this.openCloseoutSheet(item.date || new Date().toLocaleDateString('sv-SE'));
+            return;
+          }
+          if (item.action === 'retry_sync') {
+            await this.retryCalendarSync();
+            return;
+          }
+          if (item.action === 'backup') {
+            this.goToSafetySync('backup');
+            await this.handleBackupReminderAction();
+            return;
+          }
+          if (item.action === 'safety') {
+            this.goToSafetySync('all');
+            this.runSystemStatusCheck(false);
+            return;
+          }
+          if (item.action === 'sync') {
+            this.goToSafetySync(item.filter || 'all');
+            this.openSyncIssueModal(item.filter || 'all');
+            return;
+          }
+          if (item.action === 'pricing') {
+            this.goToSafetySync('pricing');
+            return;
+          }
+          this.goToAnomaly(item.issue || item);
         },
         addUnmatchedServiceToConfig(row = {}) {
           const serviceName = String(row.serviceName || row.name || row.message || '').trim();
