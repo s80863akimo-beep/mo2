@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v64-service-yield-ranking';
-const APP_VERSION = '2026.07.08-service-yield-ranking';
+const CACHE_NAME = 'momohair-shell-v65-crm-return-analysis';
+const APP_VERSION = '2026.07.08-crm-return-analysis';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,

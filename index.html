@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.08-service-yield-ranking">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.08-crm-return-analysis">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -3356,7 +3356,7 @@
                   <div class="text-lg font-black text-violet-700">{{ crmStats.formulaCount }}</div>
                 </div>
                 <div class="rounded-2xl bg-amber-50/70 px-3 py-3">
-                  <div class="text-[9px] font-black text-slate-400">需儲值</div>
+                  <div class="text-[9px] font-black text-slate-400">餘額偏低</div>
                   <div class="text-lg font-black text-amber-700">{{ crmStats.lowPrepaidCustomers }}</div>
                 </div>
                 <div class="rounded-2xl bg-emerald-50/70 px-3 py-3">
@@ -3376,6 +3376,64 @@
           </section>
 
           <template v-if="crmViewMode === 'customers'">
+            <section class="bg-white rounded-3xl border border-slate-200 macaron-shadow overflow-hidden">
+              <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-800">顧客回流分析</h3>
+                    <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[9px] font-black">觀察用，不進首頁待辦</span>
+                  </div>
+                  <p class="text-[10px] font-bold text-slate-400 mt-0.5">依最後消費日、常做服務週期、累計價值與儲值狀態分群，只用來看客人狀態。</p>
+                </div>
+                <button @click="crmFilterMode = 'all'; crmSearchQuery = ''" class="min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black">看全部顧客</button>
+              </div>
+
+              <div class="grid grid-cols-2 lg:grid-cols-6 divide-x divide-y lg:divide-y-0 divide-slate-100">
+                <button v-for="segment in crmReturnSegments" :key="'return-segment-' + segment.key"
+                        @click="crmFilterMode = segment.filter"
+                        class="p-4 text-left transition-colors"
+                        :class="crmFilterMode === segment.filter ? 'bg-slate-900 text-white' : 'bg-white hover:bg-slate-50'">
+                  <div class="text-[10px] font-black" :class="crmFilterMode === segment.filter ? 'text-white/70' : 'text-slate-400'">{{ segment.label }}</div>
+                  <div class="mt-1 text-2xl font-black" :class="crmFilterMode === segment.filter ? 'text-white' : segment.tone === 'ok' ? 'text-emerald-700' : segment.tone === 'info' ? 'text-sky-700' : segment.tone === 'risk' ? 'text-rose-600' : 'text-amber-700'">{{ segment.count }}</div>
+                  <div class="mt-1 text-[9px] font-bold leading-relaxed" :class="crmFilterMode === segment.filter ? 'text-white/60' : 'text-slate-400'">{{ segment.detail }}</div>
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-0 border-t border-slate-100">
+                <div class="p-4 sm:p-6 border-b lg:border-b-0 lg:border-r border-slate-100">
+                  <div class="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                      <h4 class="text-sm font-black text-slate-800">顧客價值 × 回流狀態</h4>
+                      <p class="text-[10px] font-bold text-slate-400 mt-0.5">高價值客是否仍穩定，比單看幾天沒來更有判斷力。</p>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button v-for="cell in crmReturnMatrix" :key="'return-matrix-' + cell.key"
+                            @click="crmFilterMode = cell.filter"
+                            class="rounded-2xl border px-3 py-3 text-left transition-colors"
+                            :class="crmFilterMode === cell.filter ? 'bg-slate-900 text-white border-slate-900' : cell.tone === 'ok' ? 'bg-emerald-50 border-emerald-100' : cell.tone === 'risk' ? 'bg-rose-50 border-rose-100' : cell.tone === 'info' ? 'bg-sky-50 border-sky-100' : 'bg-slate-50 border-slate-100'">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-black" :class="crmFilterMode === cell.filter ? 'text-white' : 'text-slate-700'">{{ cell.label }}</span>
+                        <span class="text-lg font-black" :class="crmFilterMode === cell.filter ? 'text-white' : cell.tone === 'ok' ? 'text-emerald-700' : cell.tone === 'risk' ? 'text-rose-600' : cell.tone === 'info' ? 'text-sky-700' : 'text-slate-600'">{{ cell.count }}</span>
+                      </div>
+                      <div class="mt-1 text-[9px] font-bold leading-relaxed" :class="crmFilterMode === cell.filter ? 'text-white/60' : 'text-slate-400'">{{ cell.detail }}</div>
+                      <div v-if="cell.topNames.length" class="mt-2 text-[9px] font-black truncate" :class="crmFilterMode === cell.filter ? 'text-white/70' : 'text-slate-500'">{{ cell.topNames.join('、') }}</div>
+                    </button>
+                  </div>
+                </div>
+                <div class="p-4 sm:p-6">
+                  <h4 class="text-sm font-black text-slate-800">服務週期口徑</h4>
+                  <p class="text-[10px] font-bold text-slate-400 mt-0.5">系統用常做服務推估，不代表一定要主動聯絡。</p>
+                  <div class="mt-3 flex flex-wrap gap-2">
+                    <span v-for="cycle in crmReturnCycleCards" :key="'cycle-' + cycle.label" class="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[10px] font-black text-slate-600">{{ cycle.label }} · {{ cycle.days }} 天</span>
+                  </div>
+                  <div class="mt-3 rounded-2xl bg-orange-50/60 border border-orange-100 px-3 py-2 text-[10px] font-bold text-orange-700 leading-relaxed">
+                    「儲值久未來」會另外標出，因為那代表帳上仍有負債，但客人已一段時間沒有回來。
+                  </div>
+                </div>
+              </div>
+            </section>
+
             <section class="bg-white rounded-3xl border border-orange-50 macaron-shadow p-3 sm:p-4 space-y-3">
               <div class="flex flex-col sm:flex-row gap-2">
                 <div class="relative flex-1">
@@ -3428,7 +3486,7 @@
                           <h4 class="font-black text-slate-800 truncate">{{ cust.name }}</h4>
                           <span class="text-[9px] px-1.5 py-0.5 rounded-md font-black" :class="cust.gender === '男' ? 'bg-sky-50 text-sky-600' : 'bg-rose-50 text-rose-600'">{{ cust.gender }}</span>
                         </div>
-                        <p class="mt-1 text-[11px] text-slate-400 font-bold">ID {{ shortCustomerId(cust.id) }} · {{ cust.count }} 次消費 · 最近 {{ cust.daysSinceLastVisit }} 天前</p>
+                        <p class="mt-1 text-[11px] text-slate-400 font-bold">ID {{ shortCustomerId(cust.id) }} · {{ cust.count }} 次消費 · 最近 {{ cust.daysSinceLastVisit }} 天前 · 週期 {{ cust.revisitDays }} 天</p>
                         <div v-if="cust.tags.length" class="mt-1 flex flex-wrap gap-1">
                           <span v-for="tag in cust.tags.slice(0, 3)" :key="tag" class="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600">{{ tag }}</span>
                         </div>
@@ -3440,6 +3498,9 @@
                     <div><div class="text-[9px] font-black text-slate-400">累計消費</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(cust.totalSpent) }}</div></div>
                     <div><div class="text-[9px] font-black text-slate-400">儲值餘額</div><div class="text-xs font-black" :class="cust.prepaidBalance > 0 ? 'text-emerald-700' : cust.prepaidBalance < 0 ? 'text-rose-600' : 'text-slate-500'">NT$ {{ formatNumber(cust.prepaidBalance) }}</div></div>
                     <div class="text-right"><div class="text-[9px] font-black text-slate-400">偏好服務</div><div class="text-xs font-black text-slate-700 truncate">{{ cust.primaryService }}</div></div>
+                  </div>
+                  <div class="mt-2 rounded-xl bg-slate-50/80 border border-slate-100 px-3 py-2 text-[10px] font-bold text-slate-500 leading-relaxed">
+                    {{ cust.returnReason }}<span v-if="cust.returnDueDate"> · 預估回流日 {{ cust.returnDueDate }}</span>
                   </div>
                 </button>
 
@@ -3465,7 +3526,7 @@
                     <div class="grid grid-cols-2 gap-2">
                       <div class="rounded-xl bg-slate-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">來訪次數</div><div class="text-xs font-black text-slate-700">{{ cust.count }} 次</div></div>
                       <div class="rounded-xl bg-slate-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">上次日期</div><div class="text-xs font-black text-slate-700">{{ cust.lastDate || '尚無' }}</div></div>
-                      <div class="rounded-xl bg-emerald-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值狀態</div><div class="text-xs font-black" :class="cust.prepaidLow ? 'text-amber-700' : 'text-emerald-700'">{{ cust.prepaidLow ? '建議提醒' : '正常' }} · NT$ {{ formatNumber(cust.prepaidBalance) }}</div></div>
+                      <div class="rounded-xl bg-emerald-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值狀態</div><div class="text-xs font-black" :class="cust.prepaidDormant ? 'text-violet-700' : cust.prepaidLow ? 'text-amber-700' : 'text-emerald-700'">{{ cust.prepaidDormant ? '儲值久未來' : cust.prepaidLow ? '餘額偏低' : '正常' }} · NT$ {{ formatNumber(cust.prepaidBalance) }}</div></div>
                       <div class="rounded-xl bg-violet-50 px-3 py-2"><div class="text-[9px] font-black text-slate-400">配方狀態</div><div class="text-xs font-black text-violet-700 truncate">{{ cust.formulaSummary }}</div></div>
                     </div>
                   </div>
@@ -3486,20 +3547,24 @@
 
                   <details open class="rounded-2xl border border-violet-100 bg-white overflow-hidden">
                     <summary class="min-h-[44px] cursor-pointer px-3 flex items-center justify-between text-xs font-black text-slate-600">
-                      <span>儲值與回訪</span><span class="text-[10px] text-violet-500">{{ cust.followupDue ? '待回訪' : cust.prepaidBalance > 0 ? '有儲值' : '正常' }}</span>
+                      <span>儲值與回流觀察</span><span class="text-[10px] text-violet-500">{{ cust.returnLabel }}</span>
                     </summary>
                     <div class="p-3 pt-1 space-y-3">
                       <div class="grid grid-cols-3 gap-2">
                         <div class="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值餘額</div><div class="text-xs font-black text-emerald-700">NT$ {{ formatNumber(cust.prepaidBalance) }}</div></div>
-                        <div class="rounded-xl bg-white border border-violet-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">來訪次數</div><div class="text-xs font-black text-slate-700">{{ cust.count }} 次</div></div>
+                        <div class="rounded-xl bg-white border border-violet-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">價值分群</div><div class="text-xs font-black text-slate-700">{{ cust.valueTierLabel }}</div></div>
                         <div class="rounded-xl bg-white border border-violet-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">距上次</div><div class="text-xs font-black text-slate-700">{{ cust.daysSinceLastVisit }} 天</div></div>
+                      </div>
+                      <div class="grid grid-cols-2 gap-2">
+                        <div class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">預估週期</div><div class="text-xs font-black text-slate-700">{{ cust.revisitDays }} 天</div></div>
+                        <div class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">預估回流日</div><div class="text-xs font-black text-slate-700">{{ cust.returnDueDate || '尚無' }}</div></div>
                       </div>
                       <div class="flex flex-wrap gap-1.5">
                         <button v-for="tag in crmTagPresets" :key="tag" type="button" @click="toggleCustomerDraftTag(cust, tag)" class="min-h-[32px] px-2.5 rounded-xl border text-[10px] font-black" :class="crmDraftFormula(cust).tags.includes(tag) ? 'bg-violet-600 text-white border-violet-600' : 'bg-violet-50 text-violet-600 border-violet-100'">{{ tag }}</button>
                       </div>
-                      <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">自訂回訪天數</span><input type="number" min="1" v-model.number="crmDraftFormula(cust).followupDays" :placeholder="`自動建議 ${cust.autoRevisitDays} 天`" class="w-full min-h-[42px] rounded-xl border border-violet-100 bg-white px-3 text-xs font-semibold"></label>
-                      <div class="rounded-xl px-3 py-2 text-[11px] font-black" :class="cust.followupDue ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-700'">
-                        {{ cust.followupDue ? `已 ${cust.daysSinceLastVisit} 天未回訪，建議聯絡` : `距離建議回訪還有 ${Math.max(0, cust.revisitDays - cust.daysSinceLastVisit)} 天` }}
+                      <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">自訂回流週期天數</span><input type="number" min="1" v-model.number="crmDraftFormula(cust).followupDays" :placeholder="`自動建議 ${cust.autoRevisitDays} 天`" class="w-full min-h-[42px] rounded-xl border border-violet-100 bg-white px-3 text-xs font-semibold"></label>
+                      <div class="rounded-xl px-3 py-2 text-[11px] font-black" :class="['overdue', 'inactive', 'dormant', 'prepaidDormant'].includes(cust.returnGroup) ? 'bg-orange-50 text-orange-700' : 'bg-emerald-50 text-emerald-700'">
+                        {{ cust.returnReason }}
                       </div>
                     </div>
                   </details>
@@ -3560,7 +3625,6 @@
                       <button @click="mergeCustomerInto(cust.id, mergeTargetByCustomer[cust.id])" class="w-full min-h-[40px] rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">確認合併</button>
                     </div>
                   </details>
-                  <button v-if="cust.followupDue" @click="copyFollowupMessage(cust)" class="w-full min-h-[42px] rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-black">複製回訪提醒 · 已 {{ cust.daysSinceLastVisit }} 天</button>
                   <div class="flex items-center gap-2 rounded-2xl bg-white/70 px-3 py-3 border border-orange-50">
                     <span class="crm-end-marker h-px flex-1"></span>
                     <span class="text-[10px] font-black text-slate-400 shrink-0">顧客資料底部</span>
@@ -4995,12 +5059,12 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.08-service-yield-ranking"></script>
+  <script src="/assets/momo-core.js?v=2026.07.08-crm-return-analysis"></script>
 
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.08-service-yield-ranking';
+    const APP_VERSION = '2026.07.08-crm-return-analysis';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -5295,7 +5359,7 @@
             { label: '清潔用品', category: '其他', amount: null, notes: '清潔用品', hint: '日常採買', reuseLastAmount: false },
             { label: '臨時雜支', category: '其他', amount: null, notes: '臨時支出', hint: '手動補充', reuseLastAmount: false }
           ],
-          crmTagPresets: ['VIP', '固定染髮', '固定燙髮', '儲值客', '頭皮敏感', '怕推銷', '喜歡安靜', '久未回訪'],
+          crmTagPresets: ['VIP', '固定染髮', '固定燙髮', '儲值客', '頭皮敏感', '怕推銷', '喜歡安靜', '久未回流'],
           formulaFields: [
             { key: 'color', label: '染髮配方 / 色號', placeholder: '例：8N + 8A，1:1' },
             { key: 'perm', label: '燙髮藥水 / 軟化', placeholder: '例：品牌、藥水、軟化時間' },
@@ -6668,11 +6732,15 @@
         crmFilters() {
           return [
             { value: 'all', label: '全部顧客' },
-            { value: 'followup', label: '需要回訪' },
+            { value: 'stable', label: '穩定回流' },
+            { value: 'upcoming', label: '快到週期' },
+            { value: 'overdue', label: '超過週期' },
+            { value: 'inactive', label: '90天未回' },
+            { value: 'dormant', label: '180天沉睡' },
+            { value: 'prepaidDormant', label: '儲值久未來' },
             { value: 'vip', label: '高價值/VIP' },
             { value: 'prepaid', label: '有儲值餘額' },
-            { value: 'needsTopup', label: '需提醒儲值' },
-            { value: 'inactive', label: '90天未回訪' },
+            { value: 'needsTopup', label: '餘額偏低' },
             { value: 'noFormula', label: '未建配方' }
           ];
         },
@@ -6685,25 +6753,74 @@
             totalSpent: list.reduce((sum, c) => sum + c.totalSpent, 0),
             prepaidLiability: list.reduce((sum, c) => sum + Math.max(0, c.prepaidBalance), 0),
             inactiveCustomers: list.filter(c => c.daysSinceLastVisit >= 90).length,
-            followupCustomers: list.filter(c => c.followupDue).length,
             lowPrepaidCustomers: list.filter(c => c.prepaidLow).length,
             formulaCount: list.filter(c => c.hasFormula || c.hasStructuredFormula).length,
             negativeBalanceCount: list.filter(c => c.prepaidBalance < 0).length
           };
         },
-
-        crmActionFollowups() {
-          return this.crmList
-            .filter(c => c.followupDue)
-            .sort((a, b) => b.daysSinceLastVisit - a.daysSinceLastVisit)
-            .slice(0, 3);
+        crmReturnSegments() {
+          const list = this.crmList;
+          const count = key => list.filter(c => c.returnGroup === key).length;
+          return [
+            { key: 'stable', filter: 'stable', label: '穩定回流', count: count('stable'), tone: 'ok', detail: '仍在常見週期內' },
+            { key: 'upcoming', filter: 'upcoming', label: '快到週期', count: count('upcoming'), tone: 'info', detail: '接近常見整理週期' },
+            { key: 'overdue', filter: 'overdue', label: '超過週期', count: count('overdue'), tone: 'warn', detail: '已超過服務週期' },
+            { key: 'inactive', filter: 'inactive', label: '90天未回', count: count('inactive'), tone: 'warn', detail: '觀察回流變慢' },
+            { key: 'dormant', filter: 'dormant', label: '180天沉睡', count: count('dormant'), tone: 'risk', detail: '長期未再消費' },
+            { key: 'prepaidDormant', filter: 'prepaidDormant', label: '儲值久未來', count: list.filter(c => c.prepaidDormant).length, tone: 'risk', detail: '仍有餘額但久未來' }
+          ];
         },
-
-        crmActionTopups() {
-          return this.crmList
-            .filter(c => c.prepaidLow)
-            .sort((a, b) => a.prepaidBalance - b.prepaidBalance)
-            .slice(0, 3);
+        crmReturnMatrix() {
+          const list = this.crmList.filter(c => c.count > 0);
+          const active = customer => !['overdue', 'inactive', 'dormant', 'prepaidDormant'].includes(customer.returnGroup);
+          const matrix = [
+            {
+              key: 'core',
+              label: '核心穩定客',
+              detail: '高價值且仍穩定回流',
+              filter: 'coreStable',
+              tone: 'ok',
+              customers: list.filter(c => c.valueTier === 'high' && active(c))
+            },
+            {
+              key: 'attention',
+              label: '高價值久未來',
+              detail: '值得留意的高價值顧客',
+              filter: 'highValueAtRisk',
+              tone: 'risk',
+              customers: list.filter(c => c.valueTier === 'high' && !active(c))
+            },
+            {
+              key: 'regular',
+              label: '一般固定客',
+              detail: '穩定但消費規模較小',
+              filter: 'regularStable',
+              tone: 'info',
+              customers: list.filter(c => c.valueTier !== 'high' && active(c))
+            },
+            {
+              key: 'natural',
+              label: '自然流失觀察',
+              detail: '低頻或低消費且久未來',
+              filter: 'naturalChurn',
+              tone: 'neutral',
+              customers: list.filter(c => c.valueTier !== 'high' && !active(c))
+            }
+          ];
+          return matrix.map(item => ({
+            ...item,
+            count: item.customers.length,
+            topNames: item.customers.slice(0, 3).map(c => c.name)
+          }));
+        },
+        crmReturnCycleCards() {
+          return [
+            { label: '剪髮', days: 45 },
+            { label: '染髮', days: 60 },
+            { label: '護髮/頭皮', days: 45 },
+            { label: '燙髮', days: 120 },
+            { label: '未分類', days: 60 }
+          ];
         },
 
         crmActionRecent() {
@@ -6789,9 +6906,9 @@
             const formula = this.crmFormulas[cust.id] || {};
             const hasStructuredFormula = ['color', 'perm', 'hair', 'preference', 'caution']
               .some(key => typeof formula[key] === 'string' && formula[key].trim());
-            const autoRevisitDays = /染|燙|特殊色/.test(primaryService) ? 70 : /剪/.test(primaryService) ? 45 : 60;
+            const autoRevisitDays = this.getCustomerReturnCycleDays(primaryService || lastService);
             const revisitDays = Math.max(1, Number(formula.followupDays) || autoRevisitDays);
-            const followupDue = daysSinceLastVisit >= revisitDays;
+            const returnDueDate = cust.lastDate ? this.addDaysToDate(cust.lastDate, revisitDays) : '';
             const tags = Array.isArray(formula.tags) ? formula.tags.filter(Boolean) : [];
             const contact = formula.contact || '';
             const prepaidUsedPercent = prepaidTotals.prepaidIn > 0
@@ -6799,25 +6916,27 @@
               : 0;
             const lowPrepaidThreshold = Math.max(500, Math.round((avgTicket || 0) * 0.5));
             const prepaidLow = prepaidTotals.prepaidIn > 0 && prepaidBalance <= lowPrepaidThreshold;
+            const prepaidDormant = prepaidBalance > 0 && daysSinceLastVisit >= 90;
             const formulaSummary = this.compactFormulaSummary(formula, this.crmNotes[cust.id]);
+            const valueTier = (cust.totalSpent >= 8000 || cust.count >= 5 || avgTicket >= 2500) ? 'high' : cust.count >= 3 ? 'regular' : 'light';
+            const valueTierLabel = valueTier === 'high' ? '高價值' : valueTier === 'regular' ? '固定觀察' : '低頻';
+            const returnStatus = this.getCustomerReturnStatus({
+              count: cust.count,
+              daysSinceLastVisit,
+              revisitDays,
+              prepaidDormant,
+              prepaidBalance,
+              valueTier
+            });
 
-            let statusLabel = '新客';
-            let statusClass = 'bg-slate-50 text-slate-600 border-slate-200';
+            let statusLabel = returnStatus.label;
+            let statusClass = returnStatus.className;
             if (prepaidBalance < 0) {
               statusLabel = '儲值超扣';
               statusClass = 'bg-rose-50 text-rose-600 border-rose-200';
-            } else if (prepaidLow) {
-              statusLabel = '需儲值';
+            } else if (prepaidLow && returnStatus.group === 'stable') {
+              statusLabel = '餘額偏低';
               statusClass = 'bg-amber-50 text-amber-700 border-amber-200';
-            } else if (daysSinceLastVisit >= 90) {
-              statusLabel = '沉睡顧客';
-              statusClass = 'bg-rose-50 text-rose-600 border-rose-200';
-            } else if (cust.totalSpent >= 8000 || cust.count >= 5) {
-              statusLabel = 'VIP熟客';
-              statusClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-            } else if (cust.count >= 3) {
-              statusLabel = '穩定回訪';
-              statusClass = 'bg-sky-50 text-sky-700 border-sky-200';
             }
 
             return {
@@ -6834,12 +6953,20 @@
               hasStructuredFormula,
               revisitDays,
               autoRevisitDays,
-              followupDue,
+              returnDueDate,
+              returnGroup: returnStatus.group,
+              returnLabel: returnStatus.label,
+              returnReason: returnStatus.reason,
+              returnProgress: returnStatus.progress,
+              returnUrgency: returnStatus.urgency,
+              valueTier,
+              valueTierLabel,
               tags,
               contact,
               prepaidUsedPercent,
               lowPrepaidThreshold,
               prepaidLow,
+              prepaidDormant,
               formulaSummary,
               recentOrders: recentOrders.slice(0, 3),
               statusLabel,
@@ -6860,10 +6987,18 @@
 
             let filterMatch = true;
             if (this.crmFilterMode === 'vip') filterMatch = c.totalSpent >= 8000 || c.count >= 5;
-            if (this.crmFilterMode === 'followup') filterMatch = c.followupDue;
+            if (this.crmFilterMode === 'stable') filterMatch = c.returnGroup === 'stable';
+            if (this.crmFilterMode === 'upcoming') filterMatch = c.returnGroup === 'upcoming';
+            if (this.crmFilterMode === 'overdue') filterMatch = c.returnGroup === 'overdue';
+            if (this.crmFilterMode === 'dormant') filterMatch = c.returnGroup === 'dormant';
+            if (this.crmFilterMode === 'prepaidDormant') filterMatch = c.prepaidDormant;
+            if (this.crmFilterMode === 'coreStable') filterMatch = c.valueTier === 'high' && ['stable', 'upcoming'].includes(c.returnGroup);
+            if (this.crmFilterMode === 'highValueAtRisk') filterMatch = c.valueTier === 'high' && ['overdue', 'inactive', 'dormant', 'prepaidDormant'].includes(c.returnGroup);
+            if (this.crmFilterMode === 'regularStable') filterMatch = c.valueTier !== 'high' && ['stable', 'upcoming'].includes(c.returnGroup);
+            if (this.crmFilterMode === 'naturalChurn') filterMatch = c.valueTier !== 'high' && ['overdue', 'inactive', 'dormant', 'prepaidDormant'].includes(c.returnGroup);
             if (this.crmFilterMode === 'prepaid') filterMatch = c.prepaidBalance > 0;
             if (this.crmFilterMode === 'needsTopup') filterMatch = c.prepaidLow;
-            if (this.crmFilterMode === 'inactive') filterMatch = c.daysSinceLastVisit >= 90;
+            if (this.crmFilterMode === 'inactive') filterMatch = c.returnGroup === 'inactive';
             if (this.crmFilterMode === 'noFormula') filterMatch = !c.hasFormula && !c.hasStructuredFormula;
 
             return queryMatch && filterMatch;
@@ -9800,6 +9935,94 @@
           if (s.unclosedDates.length) lines.push(`未打烊日期：${s.unclosedDates.join('、')}`);
           this.copyTextToClipboard(lines.join('\n'), '月結摘要已複製');
         },
+        addDaysToDate(date, days) {
+          if (!date) return '';
+          const parsed = new Date(`${date}T00:00:00`);
+          if (Number.isNaN(parsed.getTime())) return '';
+          parsed.setDate(parsed.getDate() + (Number(days) || 0));
+          return parsed.toLocaleDateString('sv-SE');
+        },
+        getCustomerReturnCycleDays(serviceName = '') {
+          const text = String(serviceName || '');
+          if (/燙|縮毛|離子|溫塑/.test(text)) return 120;
+          if (/染|特殊色|補染|漂/.test(text)) return 60;
+          if (/護|保養|修護|頭皮|養護|療程/.test(text)) return 45;
+          if (/剪|瀏海/.test(text)) return 45;
+          return 60;
+        },
+        getCustomerReturnStatus({ count = 0, daysSinceLastVisit = 0, revisitDays = 60, prepaidDormant = false } = {}) {
+          const days = Math.max(0, Number(daysSinceLastVisit) || 0);
+          const cycle = Math.max(1, Number(revisitDays) || 60);
+          const progress = Math.min(200, Math.round(days / cycle * 100));
+          if (!count) {
+            return {
+              group: 'new',
+              label: '尚無消費',
+              reason: '已建顧客資料，但還沒有服務紀錄。',
+              className: 'bg-slate-50 text-slate-600 border-slate-200',
+              progress,
+              urgency: 0
+            };
+          }
+          if (prepaidDormant) {
+            return {
+              group: 'prepaidDormant',
+              label: '儲值久未來',
+              reason: `仍有儲值餘額，且已 ${days} 天未消費。`,
+              className: 'bg-violet-50 text-violet-700 border-violet-200',
+              progress,
+              urgency: 5
+            };
+          }
+          if (days >= 180) {
+            return {
+              group: 'dormant',
+              label: '180天沉睡',
+              reason: `距上次消費 ${days} 天，屬長期未回流。`,
+              className: 'bg-rose-50 text-rose-600 border-rose-200',
+              progress,
+              urgency: 4
+            };
+          }
+          if (days >= 90) {
+            return {
+              group: 'inactive',
+              label: '90天未回',
+              reason: `距上次消費 ${days} 天，回流節奏明顯變慢。`,
+              className: 'bg-amber-50 text-amber-700 border-amber-200',
+              progress,
+              urgency: 3
+            };
+          }
+          if (days > cycle) {
+            return {
+              group: 'overdue',
+              label: '超過週期',
+              reason: `已超過常見 ${cycle} 天整理週期 ${days - cycle} 天。`,
+              className: 'bg-orange-50 text-orange-700 border-orange-200',
+              progress,
+              urgency: 2
+            };
+          }
+          if (days >= Math.round(cycle * 0.8)) {
+            return {
+              group: 'upcoming',
+              label: '快到週期',
+              reason: `距常見 ${cycle} 天週期還有 ${Math.max(0, cycle - days)} 天。`,
+              className: 'bg-sky-50 text-sky-700 border-sky-200',
+              progress,
+              urgency: 1
+            };
+          }
+          return {
+            group: 'stable',
+            label: '穩定回流',
+            reason: `仍在常見 ${cycle} 天週期內。`,
+            className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            progress,
+            urgency: 0
+          };
+        },
         compactFormulaSummary(formula = {}, note = '') {
           const chunks = [
             formula.color ? `染：${formula.color}` : '',
@@ -9811,14 +10034,6 @@
           if (chunks.length) return chunks.slice(0, 3).join('｜');
           const cleanNote = String(note || '').replace(/\s+/g, ' ').trim();
           return cleanNote ? cleanNote.slice(0, 28) : '尚未建立配方';
-        },
-        copyFollowupMessage(cust) {
-          const text = `${cust.name}你好，我是摸摸頭 momohair。距離上次${cust.lastService || '整理頭髮'}已經一段時間，想提醒你可以安排下一次整理，有需要再告訴我適合的時間。`;
-          this.copyTextToClipboard(text, '回訪訊息已複製');
-        },
-        copyTopupMessage(cust) {
-          const text = `${cust.name}你好，我是摸摸頭 momohair。你目前儲值餘額約 NT$ ${this.formatNumber(cust.prepaidBalance)}，下次整理如果要繼續用儲值扣款，可以順便補儲值；需要我幫你先記著也可以。`;
-          this.copyTextToClipboard(text, '儲值提醒已複製');
         },
         copyCustomerBrief(cust) {
           const lines = [
@@ -13364,10 +13579,10 @@
           this.showDataTools = false;
         },
         exportCrmCSV() {
-          const headers = ['顧客ID', '顧客姓名', '性別', '來訪次數', '累計消費', '平均客單', '最後來訪', '距今天數', '偏好服務', '儲值餘額', '回訪狀態', '染髮配方', '燙髮藥水', '髮況', '喜好', '注意事項'];
+          const headers = ['顧客ID', '顧客姓名', '性別', '來訪次數', '累計消費', '平均客單', '最後來訪', '距今天數', '偏好服務', '儲值餘額', '回流狀態', '價值分群', '建議週期(天)', '預估回流日', '觀察原因', '染髮配方', '燙髮藥水', '髮況', '喜好', '注意事項'];
           const rows = this.crmList.map(c => {
             const f = this.crmFormulas[c.id] || {};
-            return [c.id, c.name, c.gender, c.count, c.totalSpent, c.avgTicket, c.lastDate, c.daysSinceLastVisit, c.primaryService, c.prepaidBalance, c.followupDue ? '需要回訪' : '正常', f.color || '', f.perm || '', f.hair || '', f.preference || '', f.caution || ''];
+            return [c.id, c.name, c.gender, c.count, c.totalSpent, c.avgTicket, c.lastDate, c.daysSinceLastVisit, c.primaryService, c.prepaidBalance, c.returnLabel, c.valueTierLabel, c.revisitDays, c.returnDueDate, c.returnReason, f.color || '', f.perm || '', f.hair || '', f.preference || '', f.caution || ''];
           });
           this.downloadCSV(`MOMO顧客CRM_${new Date().toLocaleDateString('sv-SE')}.csv`, headers, rows);
           this.showToast('CRM 顧客 CSV 已匯出');
