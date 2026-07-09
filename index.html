@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.09-monthly-health-check">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.10-visual-crm-panel">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -470,6 +470,18 @@
       color: #334155 !important;
     }
 
+    body.momo-polish .momo-home-check-button {
+      background: rgba(248, 250, 252, 0.98) !important;
+      border-color: rgba(203, 213, 225, 0.92) !important;
+      color: #475569 !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 8px 20px -18px rgba(15, 23, 42, 0.34) !important;
+    }
+
+    body.momo-polish .momo-home-check-button:active {
+      background: rgba(241, 245, 249, 0.98) !important;
+      transform: scale(0.98);
+    }
+
     /* iOS performance mode: keep the same layout, reduce expensive blur/shadow/repaint work in PWA. */
     body.momo-ios-perf {
       background-attachment: scroll !important;
@@ -541,9 +553,9 @@
 
     /* 3) Bottom tab bar refinement */
     body.momo-polish .floating-nav {
-      background: rgba(255, 255, 255, 0.72) !important;
-      border-color: rgba(226, 232, 240, 0.84) !important;
-      box-shadow: 0 12px 28px -20px rgba(15, 23, 42, 0.35) !important;
+      background: rgba(255, 255, 255, 0.96) !important;
+      border-color: rgba(203, 213, 225, 0.92) !important;
+      box-shadow: 0 18px 38px -24px rgba(15, 23, 42, 0.42), 0 1px 0 rgba(255, 255, 255, 0.86) inset !important;
     }
 
     body.momo-polish .floating-nav button {
@@ -551,16 +563,17 @@
     }
 
     body.momo-polish .floating-nav button.text-slate-900 {
-      background: rgba(15, 23, 42, 0.06) !important;
+      background: rgba(248, 250, 252, 0.98) !important;
       color: #0f172a !important;
+      box-shadow: inset 0 0 0 1px rgba(226, 232, 240, 0.9);
     }
 
     body.momo-polish .floating-nav button.text-slate-400 {
-      color: #94a3b8 !important;
+      color: #64748b !important;
     }
 
     body.momo-polish .floating-nav .tab-active-indicator {
-      background: #0f172a !important;
+      background: #fb7185 !important;
       opacity: 0.88;
     }
 
@@ -718,6 +731,48 @@
 
     .crm-customer-card {
       scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px));
+    }
+
+    .crm-customer-card--expanded {
+      scroll-margin-top: calc(5.75rem + env(safe-area-inset-top, 0px));
+      box-shadow: 0 22px 55px -34px rgba(15, 23, 42, 0.48) !important;
+    }
+
+    .crm-profile-panel {
+      background:
+        linear-gradient(180deg, rgba(255, 247, 237, 0.62), rgba(255, 255, 255, 0.94) 34%),
+        #fff;
+    }
+
+    .crm-profile-panel-header {
+      position: sticky;
+      top: calc(4.25rem + env(safe-area-inset-top, 0px));
+      z-index: 22;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .crm-profile-map {
+      scrollbar-width: none;
+    }
+
+    .crm-profile-map::-webkit-scrollbar {
+      display: none;
+    }
+
+    .crm-profile-map span {
+      white-space: nowrap;
+    }
+
+    .crm-profile-finish {
+      background:
+        radial-gradient(circle at top, rgba(255, 164, 117, 0.16), transparent 54%),
+        rgba(255, 255, 255, 0.94);
+    }
+
+    body.momo-ios-perf .crm-customer-card--expanded {
+      content-visibility: visible;
+      contain-intrinsic-size: auto;
     }
 
     /* Prevent iOS auto-zoom on form inputs by ensuring font-size is at least 16px on mobile, and increase tap height */
@@ -946,9 +1001,9 @@
         min-height: 2.65rem !important;
         bottom: calc(9px + env(safe-area-inset-bottom)) !important;
         padding: 0.24rem 0.32rem !important;
-        background: rgba(255, 255, 255, 0.64) !important;
-        border-color: rgba(226, 232, 240, 0.7) !important;
-        box-shadow: 0 8px 18px -12px rgba(15, 23, 42, 0.24) !important;
+        background: rgba(255, 255, 255, 0.96) !important;
+        border-color: rgba(203, 213, 225, 0.92) !important;
+        box-shadow: 0 16px 34px -22px rgba(15, 23, 42, 0.42) !important;
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
       }
@@ -1038,6 +1093,10 @@
       .crm-save-bar {
         top: calc(3.25rem + env(safe-area-inset-top, 0px));
       }
+
+      .crm-profile-panel-header {
+        top: calc(3.25rem + env(safe-area-inset-top, 0px));
+      }
     }
 
     /* Global Touch Action Optimization */
@@ -1096,9 +1155,9 @@
       max-width: 480px !important;
       bottom: calc(12px + env(safe-area-inset-bottom)) !important;
       border-radius: 9999px !important;
-      background: rgba(255, 255, 255, 0.76) !important;
-      border: 1px solid rgba(226, 232, 240, 0.85) !important;
-      box-shadow: 0 8px 18px -12px rgba(15, 23, 42, 0.25) !important;
+      background: rgba(255, 255, 255, 0.94) !important;
+      border: 1px solid rgba(203, 213, 225, 0.9) !important;
+      box-shadow: 0 16px 34px -24px rgba(15, 23, 42, 0.36) !important;
       padding-left: 0.55rem !important;
       padding-right: 0.55rem !important;
       transition: opacity 0.25s ease, transform 0.25s ease !important;
@@ -2285,7 +2344,11 @@
               </div>
               <div class="grid grid-cols-2 gap-2 lg:w-[240px]">
                 <button @click="goToSafetySync('all')" class="momo-home-soft-button min-h-[38px] px-3 rounded-xl text-[11px] font-black text-slate-700 border border-slate-200 bg-white whitespace-nowrap">安全頁處理</button>
-                <button @click="runIntegrityCheck(true); runSystemStatusCheck(false)" class="min-h-[38px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black whitespace-nowrap">重新檢查</button>
+                <button type="button" @click="runIntegrityCheck(true); runSystemStatusCheck(false)" :disabled="safetyChecking || pwaCheckingUpdate"
+                        class="momo-home-check-button min-h-[38px] px-3 rounded-xl border text-[11px] font-black whitespace-nowrap inline-flex items-center justify-center gap-1.5 disabled:opacity-60">
+                  <svg :class="{ 'animate-spin': safetyChecking || pwaCheckingUpdate }" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992M2.985 19.644v-4.992h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182V4.356"/></svg>
+                  <span>{{ safetyChecking || pwaCheckingUpdate ? '檢查中' : '重新檢查' }}</span>
+                </button>
               </div>
             </div>
 
@@ -3471,8 +3534,8 @@
             <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <article v-for="cust in filteredCrmList" :key="cust.id" :id="'crm-card-' + cust.id"
                        class="crm-customer-card bg-white rounded-3xl border macaron-shadow overflow-hidden transition-all"
-                       :class="expandedCrmCustomerName === cust.id ? 'border-macaron-peach-200' : 'border-orange-50'">
-                <button type="button" @click="toggleCrmCustomer(cust.id)" class="w-full p-4 text-left">
+                       :class="expandedCrmCustomerName === cust.id ? 'crm-customer-card--expanded border-macaron-peach-200 lg:col-span-2' : 'border-orange-50'">
+                <button type="button" @click="toggleCrmCustomer(cust.id)" :aria-expanded="expandedCrmCustomerName === cust.id" class="w-full p-4 text-left">
                   <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
                       <div class="w-11 h-11 rounded-2xl bg-white border border-orange-100 shadow-sm flex items-center justify-center shrink-0">
@@ -3502,16 +3565,43 @@
                   <div class="mt-2 rounded-xl bg-slate-50/80 border border-slate-100 px-3 py-2 text-[10px] font-bold text-slate-500 leading-relaxed">
                     {{ cust.returnReason }}<span v-if="cust.returnDueDate"> · 預估回流日 {{ cust.returnDueDate }}</span>
                   </div>
+                  <div v-if="expandedCrmCustomerName === cust.id" class="mt-2 rounded-xl bg-orange-50 border border-orange-100 px-3 py-2 flex items-center justify-between gap-2">
+                    <span class="text-[10px] font-black text-orange-700">顧客檔案已展開</span>
+                    <span class="text-[10px] font-black text-slate-400">下方有完整結尾與收合按鈕</span>
+                  </div>
                 </button>
 
-                <div v-if="expandedCrmCustomerName === cust.id" class="border-t border-orange-100 bg-orange-50/20 p-4 space-y-3">
-                  <div class="crm-save-bar rounded-2xl border border-slate-200 bg-white/90 p-1.5 sm:p-2 shadow-lg shadow-orange-100/60">
-                    <div class="flex items-center gap-2">
+                <div v-if="expandedCrmCustomerName === cust.id" class="crm-profile-panel border-t border-orange-100 p-3 sm:p-4 space-y-3">
+                  <div class="crm-save-bar crm-profile-panel-header rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg shadow-orange-100/60">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="min-w-0">
+                        <div class="text-[9px] font-black tracking-[0.18em] text-slate-400 uppercase">Customer File</div>
+                        <div class="mt-0.5 flex flex-wrap items-center gap-2">
+                          <h3 class="text-base font-black text-slate-900 truncate">{{ cust.name }}</h3>
+                          <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="cust.statusClass">{{ cust.statusLabel }}</span>
+                          <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="crmDraftHasChanges(cust) ? 'bg-amber-50 text-amber-700' : 'bg-slate-50 text-slate-500'">
+                            {{ crmDraftHasChanges(cust) ? '尚未儲存' : '已同步草稿' }}
+                          </span>
+                        </div>
+                        <div class="mt-1 text-[10px] font-bold text-slate-400 truncate">完整檔案面板 · {{ cust.count }} 次消費 · 餘額 NT$ {{ formatNumber(cust.prepaidBalance) }}</div>
+                      </div>
+                      <button @click.stop="toggleCrmCustomer(cust.id)" class="min-h-[36px] px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-black shrink-0">收合</button>
+                    </div>
+
+                    <div class="crm-profile-map mt-3 flex gap-1.5 overflow-x-auto pb-1">
+                      <span class="px-2.5 py-1.5 rounded-full bg-slate-900 text-white text-[9px] font-black">1 快照</span>
+                      <span class="px-2.5 py-1.5 rounded-full bg-orange-50 text-orange-700 border border-orange-100 text-[9px] font-black">2 客史</span>
+                      <span class="px-2.5 py-1.5 rounded-full bg-violet-50 text-violet-700 border border-violet-100 text-[9px] font-black">3 回流/儲值</span>
+                      <span class="px-2.5 py-1.5 rounded-full bg-slate-50 text-slate-600 border border-slate-100 text-[9px] font-black">4 配方/備註</span>
+                      <span class="px-2.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-[9px] font-black">5 底部完成</span>
+                    </div>
+
+                    <div class="mt-3 flex items-center gap-2">
                       <div class="min-w-0 flex-1">
                         <div class="text-[11px] font-black" :class="crmDraftHasChanges(cust) ? 'text-amber-700' : 'text-slate-700'">
-                          {{ crmDraftHasChanges(cust) ? '有修改尚未儲存' : '編輯完成按右側儲存' }}
+                          {{ crmDraftHasChanges(cust) ? '有修改尚未儲存' : '編輯完成可直接往下看完整檔案' }}
                         </div>
-                        <div class="hidden sm:block text-[9px] font-bold text-slate-400 truncate">這裡會固定跟著畫面，避免滑動時找不到儲存</div>
+                        <div class="hidden sm:block text-[9px] font-bold text-slate-400 truncate">這列會固定跟著畫面，滑到很下面也知道正在看哪位顧客。</div>
                       </div>
                       <button @click.stop="cancelCrmDraft(cust)" class="min-h-[34px] px-3 rounded-xl bg-white border border-slate-200 text-slate-500 text-[11px] font-black shrink-0">還原</button>
                       <button @click.stop="saveCrmDraft(cust)" :disabled="!crmDraftHasChanges(cust)" class="min-h-[34px] px-3 sm:px-4 rounded-xl text-[11px] font-black shrink-0 disabled:opacity-45" :class="crmDraftHasChanges(cust) ? 'bg-slate-900 text-white shadow-md shadow-slate-200' : 'bg-slate-100 text-slate-400'">儲存顧客資料</button>
@@ -3704,10 +3794,15 @@
                       <button @click="mergeCustomerInto(cust.id, mergeTargetByCustomer[cust.id])" class="w-full min-h-[40px] rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">確認合併</button>
                     </div>
                   </details>
-                  <div class="flex items-center gap-2 rounded-2xl bg-white/70 px-3 py-3 border border-orange-50">
-                    <span class="crm-end-marker h-px flex-1"></span>
-                    <span class="text-[10px] font-black text-slate-400 shrink-0">顧客資料底部</span>
-                    <span class="crm-end-marker h-px flex-1"></span>
+                  <div class="crm-profile-finish rounded-2xl bg-white/90 px-4 py-4 border border-orange-100 text-center">
+                    <div class="flex items-center gap-2">
+                      <span class="crm-end-marker h-px flex-1"></span>
+                      <span class="text-[10px] font-black text-orange-500 shrink-0">顧客檔案到底</span>
+                      <span class="crm-end-marker h-px flex-1"></span>
+                    </div>
+                    <div class="mt-2 text-sm font-black text-slate-800">{{ cust.name }} 的完整檔案已看完</div>
+                    <div class="mt-1 text-[10px] font-bold text-slate-400">上方已包含快照、客史、儲值、回流、配方、備註與合併工具。</div>
+                    <button @click.stop="toggleCrmCustomer(cust.id)" class="mt-3 min-h-[40px] w-full sm:w-auto px-5 rounded-xl bg-slate-900 text-white text-[11px] font-black">收合檔案</button>
                   </div>
                 </div>
               </article>
@@ -5236,12 +5331,12 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.09-monthly-health-check"></script>
+  <script src="/assets/momo-core.js?v=2026.07.10-visual-crm-panel"></script>
 
   <!-- Vue Logic Scripts -->
   <script>
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.09-monthly-health-check';
+    const APP_VERSION = '2026.07.10-visual-crm-panel';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
