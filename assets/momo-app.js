@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.10-maintainable-ui';
+    const APP_VERSION = '2026.07.10-home-orders-visual';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -5671,12 +5671,11 @@
           return `${mon.getMonth()+1}/${mon.getDate()} ～ ${sun.getMonth()+1}/${sun.getDate()}`;
         },
 
-        // 日業績熱力背景色（業績愈高顏色愈深）
+        // 日業績熱度改以左側色條呈現，保留強弱但不干擾帳本閱讀。
         getDayHeatStyle(dayTotal) {
           const ratio = this.maxDayTotal > 0 ? Math.max(0, dayTotal) / this.maxDayTotal : 0;
-          const opacity = 0.06 + ratio * 0.38;
           return {
-            background: `linear-gradient(to right, rgba(255,170,166,${opacity.toFixed(2)}), rgba(255,235,225,${(opacity * 0.5).toFixed(2)}))`
+            '--orders-day-strength': (0.4 + ratio * 0.6).toFixed(2)
           };
         },
         // 取得訂單的類別顯示資訊（色標、簡稱）

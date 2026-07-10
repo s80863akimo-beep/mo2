@@ -26,21 +26,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.10-maintainable-ui">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.10-home-orders-visual">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.10-maintainable-ui">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.10-home-orders-visual">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
-  <!-- Glowing Background Blobs (Hidden on mobile to save CPU/GPU scroll rendering lag) -->
-  <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none hidden md:block">
-    <div class="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-tr from-macaron-rose/15 to-macaron-yellow/15 blur-[80px] animate-float-slow"></div>
-    <div class="absolute -bottom-[10%] -right-[10%] w-[45vw] h-[45vw] rounded-full bg-gradient-to-tr from-macaron-sky/15 to-macaron-lavender/15 blur-[80px] animate-float-delayed"></div>
-  </div>
-
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
 
     <!-- Supabase owner login (only enforced after Render enables REQUIRE_AUTH) -->
@@ -1082,8 +1076,8 @@
           </template>
 
           <!-- Daily-use only home workspace -->
-          <section class="momo-today-overview momo-daily-home bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-            <div class="momo-today-overview-header px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-100 flex items-center justify-between gap-3">
+          <section class="momo-surface momo-today-overview momo-daily-home bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+            <div class="momo-section-header momo-today-overview-header px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-100 flex items-center justify-between gap-3">
               <div class="min-w-0">
                 <h2 class="text-lg sm:text-xl font-black text-slate-800">今日總覽</h2>
                 <p class="text-[11px] font-bold text-slate-400 mt-0.5 truncate">{{ todayDateLabel }} · 只保留記帳、對帳、打烊</p>
@@ -1095,31 +1089,31 @@
             </div>
 
             <div class="p-4 sm:p-6 space-y-4">
-              <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div class="today-metric-card rounded-2xl bg-white border border-slate-200 p-3">
+              <div class="momo-metric-grid grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="momo-metric-cell today-metric-card rounded-2xl bg-white border border-slate-200 p-3">
                   <div class="text-[10px] font-black text-slate-400">今日營收</div>
                   <div class="today-metric-value text-xl sm:text-2xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.serviceRevenue) }}</div>
                   <div class="text-[10px] font-bold text-slate-400 mt-1">{{ todayOrders.length }} 筆已記帳</div>
                 </div>
-                <div class="today-metric-card today-metric-card--cash rounded-2xl bg-white border border-slate-200 p-3">
+                <div class="momo-metric-cell today-metric-card today-metric-card--cash rounded-2xl bg-white border border-slate-200 p-3">
                   <div class="text-[10px] font-black text-slate-400">應有現金</div>
                   <div class="today-metric-value text-xl sm:text-2xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div>
                   <div class="text-[10px] font-bold text-slate-400 mt-1">現金 + 現金儲值</div>
                 </div>
-                <div class="today-metric-card today-metric-card--expense rounded-2xl bg-white border border-slate-200 p-3">
+                <div class="momo-metric-cell today-metric-card today-metric-card--expense rounded-2xl bg-white border border-slate-200 p-3">
                   <div class="text-[10px] font-black text-slate-400">今日支出</div>
                   <div class="today-metric-value text-xl sm:text-2xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.expenses) }}</div>
                   <div class="text-[10px] font-bold text-slate-400 mt-1">{{ todayCloseout.expenses ? '已扣淨收' : '尚無支出' }}</div>
                 </div>
-                <div class="today-metric-card rounded-2xl border p-3" :class="todayCloseout.netProfit >= 0 ? 'today-metric-card--closed bg-white border-slate-200' : 'today-metric-card--open bg-white border-slate-200'">
+                <div class="momo-metric-cell today-metric-card rounded-2xl border p-3" :class="todayCloseout.netProfit >= 0 ? 'today-metric-card--closed bg-white border-slate-200' : 'today-metric-card--open bg-white border-slate-200'">
                   <div class="text-[10px] font-black text-slate-400">今日淨收</div>
                   <div class="today-metric-value text-xl sm:text-2xl font-black mt-1 text-slate-800">NT$ {{ formatNumber(todayCloseout.netProfit) }}</div>
                   <div class="text-[10px] font-bold text-slate-400 mt-1">營收 - 支出</div>
                 </div>
               </div>
 
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                <div class="daily-cash-panel rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+              <div class="momo-home-operations grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <div class="momo-payment-panel daily-cash-panel rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
                   <div class="flex items-center justify-between gap-3 mb-2">
                     <div class="text-xs font-black text-slate-700">今日金流拆分</div>
                     <div class="text-[10px] font-bold text-slate-400">打烊核對用</div>
@@ -1132,7 +1126,7 @@
                   </div>
                 </div>
 
-                <div class="daily-primary-actions grid grid-cols-3 gap-2">
+                <div class="momo-primary-actions daily-primary-actions grid grid-cols-3 gap-2">
                   <button @click="activeTab = 'orders'; showMobileAddOrderForm = true"
                           class="daily-action-button min-h-[58px] sm:min-h-[68px] rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-black flex flex-col items-center justify-center gap-1">
                     <span class="text-lg leading-none">＋</span><span>新增業績</span>
@@ -1161,8 +1155,8 @@
           </section>
 
           <!-- Show only when action is needed -->
-          <section v-if="homeAttentionSummary.total" class="momo-home-card bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-            <div class="momo-home-card-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <section v-if="homeAttentionSummary.total" class="momo-surface momo-home-card bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+            <div class="momo-section-header momo-home-card-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <h2 class="text-base sm:text-lg font-black text-slate-800">需要處理</h2>
@@ -1266,33 +1260,33 @@
         </div>
 
         <!-- Tab 2: Orders -->
-        <div v-else-if="activeTab === 'orders'" key="orders" class="momo-list-page space-y-6">
+        <div v-else-if="activeTab === 'orders'" key="orders" class="momo-orders-page momo-list-page space-y-6">
 
           <!-- A. 當期業績摘要 -->
-          <div class="bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
-            <div class="px-5 py-3 border-b border-orange-50 flex items-center justify-between">
+          <div class="momo-surface orders-summary-panel bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
+            <div class="momo-section-header orders-summary-header px-5 py-3 border-b border-orange-50 flex items-center justify-between">
               <h3 class="font-black text-slate-700 text-sm">
                 {{ ordersCustomerHistoryId ? '顧客完整客史（全部年份）' : selectedYear + ' 年 ' + (selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月') + ' 業績摘要' }}
               </h3>
             </div>
-            <div class="grid grid-cols-3 divide-x divide-orange-50">
-              <div class="px-3 sm:px-5 py-4 space-y-1 min-w-0">
+            <div class="orders-summary-grid grid grid-cols-3 divide-x divide-orange-50">
+              <div class="orders-summary-metric orders-summary-metric--primary px-3 sm:px-5 py-4 space-y-1 min-w-0">
                 <div class="text-[10px] font-black text-slate-400 uppercase tracking-wider">當期總額</div>
                 <div class="text-base sm:text-xl font-black text-slate-800 tracking-tight whitespace-nowrap">NT$ {{ formatNumber(ordersSummary.total) }}</div>
                 <div class="text-[9px] text-slate-300 font-bold">排除儲值進帳</div>
               </div>
-              <div class="px-3 sm:px-5 py-4 space-y-1 min-w-0">
+              <div class="orders-summary-metric px-3 sm:px-5 py-4 space-y-1 min-w-0">
                 <div class="text-[10px] font-black text-slate-400 uppercase tracking-wider">服務筆數</div>
                 <div class="text-base sm:text-xl font-black text-slate-800 tracking-tight">{{ ordersSummary.count }} <span class="text-xs font-semibold text-slate-400">筆</span></div>
                 <div class="text-[9px] text-slate-300 font-bold">當期來客總次數</div>
               </div>
-              <div class="px-3 sm:px-5 py-4 space-y-1 min-w-0">
+              <div class="orders-summary-metric px-3 sm:px-5 py-4 space-y-1 min-w-0">
                 <div class="text-[10px] font-black text-slate-400 uppercase tracking-wider">平均客單價</div>
                 <div class="text-base sm:text-xl font-black text-slate-800 tracking-tight whitespace-nowrap">NT$ {{ formatNumber(ordersSummary.avg) }}</div>
                 <div class="text-[9px] text-slate-300 font-bold">每位客人均消金額</div>
               </div>
             </div>
-            <div v-if="ordersSummary.bestDayTotal" class="px-5 py-2.5 border-t border-orange-50 text-[10px] font-bold text-slate-400 flex items-center justify-end gap-1.5">
+            <div v-if="ordersSummary.bestDayTotal" class="orders-summary-footer px-5 py-2.5 border-t border-orange-50 text-[10px] font-bold text-slate-400 flex items-center justify-end gap-1.5">
               <span>最高單日 {{ ordersSummary.bestDayDate }}</span>
               <span class="font-black text-macaron-peach-500">NT$ {{ formatNumber(ordersSummary.bestDayTotal) }}</span>
             </div>
@@ -1420,8 +1414,8 @@
             </transition>
 
             <!-- Orders Interactive Table - Daily Grouped Reconciliation -->
-            <div class="bg-white/95 p-3.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50/70 macaron-shadow space-y-3.5">
-              <div class="space-y-2.5 pb-3 border-b border-slate-100">
+            <div class="orders-ledger bg-white/95 p-3.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50/70 macaron-shadow space-y-3.5">
+              <div class="orders-ledger-toolbar space-y-2.5 pb-3 border-b border-slate-100">
                 <!-- 第一列：標題、搜尋與新增 -->
                 <div class="flex items-start sm:items-center justify-between gap-3">
                   <div class="min-w-0">
@@ -1432,12 +1426,12 @@
                     <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredOrders.length }} 筆 · NT$ {{ formatNumber(filteredOrdersTotal) }}</p>
                   </div>
                   <button @click="showMobileAddOrderForm = true; $nextTick(() => { if ($refs.customerNameInput) $refs.customerNameInput.focus(); })"
-                          class="jelly-btn min-h-[34px] shrink-0 bg-slate-900 border border-slate-900 text-white text-[11px] font-black px-3.5 rounded-full shadow-sm">
+                          class="orders-add-button jelly-btn min-h-[34px] shrink-0 bg-slate-900 border border-slate-900 text-white text-[11px] font-black px-3.5 rounded-full shadow-sm">
                     ＋ 新增
                   </button>
                 </div>
                 <div class="flex items-center gap-2 w-full">
-                    <div class="relative flex-1 sm:w-56">
+                    <div class="orders-search-shell relative flex-1 sm:w-56">
                       <input type="text" v-model="ordersSearchQuery" placeholder="搜尋顧客 / 服務"
                              autocorrect="off" autocapitalize="words" autocomplete="off"
                              class="orders-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-9 pr-9 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
@@ -1447,7 +1441,7 @@
                     </div>
                 </div>
                 <!-- 第二列：進階篩選預設收合，手機記帳少一排干擾 -->
-                <details class="rounded-2xl bg-slate-50/45 border border-slate-100 px-3 py-2" :open="ordersFilterCategory !== 'All' || ordersFilterPayment !== 'All'">
+                <details class="orders-filter-panel rounded-2xl bg-slate-50/45 border border-slate-100 px-3 py-2" :open="ordersFilterCategory !== 'All' || ordersFilterPayment !== 'All'">
                   <summary class="cursor-pointer list-none text-[10px] font-black text-slate-400 flex items-center justify-between">
                     <span>{{ (ordersFilterCategory !== 'All' || ordersFilterPayment !== 'All') ? '篩選中' : '進階篩選' }}</span>
                     <span class="text-slate-300">{{ (ordersFilterCategory !== 'All' || ordersFilterPayment !== 'All') ? '收合' : '展開' }}</span>
@@ -1480,7 +1474,7 @@
                     </button>
                   </div>
                 </details>
-                <div class="flex items-center justify-between gap-3 text-[11px] font-bold">
+                <div class="orders-filter-status flex items-center justify-between gap-3 text-[11px] font-bold">
                   <div class="flex flex-wrap items-center gap-1.5">
                     <span v-if="ordersSearchQuery" class="bg-orange-50 text-macaron-peach-500 px-2 py-1 rounded-lg">顧客：{{ ordersSearchQuery }}</span>
                     <span v-if="ordersFilterCategory !== 'All'" class="bg-sky-50 text-sky-700 px-2 py-1 rounded-lg">{{ ordersFilterCategory }}</span>
@@ -1495,7 +1489,7 @@
               </div>
 
               <!-- Empty State -->
-              <div v-if="filteredOrders.length === 0" class="text-center py-16 text-slate-400 font-medium bg-orange-50/10 rounded-3xl">
+              <div v-if="filteredOrders.length === 0" class="orders-empty-state text-center py-16 text-slate-400 font-medium bg-orange-50/10 rounded-3xl">
                 <div class="flex flex-col items-center justify-center gap-2 select-none">
                   <span class="w-10 h-1.5 rounded-full bg-orange-100"></span>
                   <span class="text-sm font-bold text-slate-400">目前沒有業績紀錄</span>
@@ -1504,11 +1498,11 @@
               </div>
 
               <!-- Daily / Weekly Grouped Orders -->
-              <div v-for="(group, idx) in groupedOrders" :key="group.date" class="space-y-2">
+              <div v-for="(group, idx) in groupedOrders" :key="group.date" class="orders-day-group space-y-2">
 
                 <!-- Day Header -->
                 <button type="button" @click="toggleOrderDate(group.date)"
-                     class="w-full flex items-center justify-between rounded-2xl px-3 sm:px-4 py-2.5 border border-orange-100/35 transition-all text-left"
+                     class="orders-day-header w-full flex items-center justify-between rounded-2xl px-3 sm:px-4 py-2.5 border border-orange-100/35 transition-all text-left"
                      :style="getDayHeatStyle(group.dayTotal)">
                   <div class="flex items-center gap-2 min-w-0">
                     <span class="text-slate-400 font-black transition-transform" :class="{ '-rotate-90': collapsedOrderDates[group.date] }">⌄</span>
@@ -1529,8 +1523,8 @@
 
                 <!-- Day's Orders (Desktop: Table, Mobile: Card List) -->
                 <!-- Desktop Table (Visible on lg screens) -->
-                <div v-show="!collapsedOrderDates[group.date]" class="hidden lg:block overflow-x-auto rounded-2xl border border-orange-100/30">
-                  <table class="w-full min-w-[600px] border-collapse text-left">
+                <div v-show="!collapsedOrderDates[group.date]" class="orders-table-shell hidden lg:block overflow-x-auto rounded-2xl border border-orange-100/30">
+                  <table class="orders-ledger-table w-full min-w-[600px] border-collapse text-left">
                     <thead>
                       <tr class="bg-orange-50/30 text-slate-400 text-[10px] font-black border-b border-orange-100/50">
                         <th class="py-2 px-3 w-[110px]">顧客</th>
@@ -1543,7 +1537,7 @@
                     </thead>
                     <tbody class="divide-y divide-orange-50/50 text-sm font-semibold text-slate-700">
                       <template v-for="order in group.orders" :key="order.id">
-                        <tr @click="toggleOrderEditor(order.id)" class="hover:bg-orange-50/30 cursor-pointer transition-colors">
+                        <tr @click="toggleOrderEditor(order.id)" class="orders-table-row hover:bg-orange-50/30 cursor-pointer transition-colors">
                           <td class="py-3 px-3 font-extrabold">{{ order.customerName }}</td>
                           <td class="py-3 px-2 text-xs text-slate-400">{{ order.gender }}</td>
                           <td class="py-3 px-3">
@@ -1563,7 +1557,7 @@
                             <svg class="w-4 h-4 mx-auto transition-transform" :class="{ 'rotate-180': expandedOrderId === order.id }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                           </td>
                         </tr>
-                        <tr v-if="expandedOrderId === order.id" class="bg-orange-50/30">
+                        <tr v-if="expandedOrderId === order.id" class="orders-editor-row bg-orange-50/30">
                           <td colspan="6" class="p-4">
                             <div class="grid grid-cols-6 gap-3 items-end">
                               <div class="col-span-6 rounded-xl px-3 py-2 text-[11px] font-black" :class="orderDraftHasChanges(order) ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'">
@@ -1597,9 +1591,9 @@
                 </div>
 
                 <!-- Mobile Card List (Visible on mobile/tablet) -->
-                <div v-show="!collapsedOrderDates[group.date]" class="lg:hidden space-y-1.5">
-                  <div v-for="order in group.orders" :key="order.id" class="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-[0_1px_0_rgba(15,23,42,0.03)]">
-                    <button type="button" @click="toggleOrderEditor(order.id)" class="w-full px-3 py-2.5 text-left">
+                <div v-show="!collapsedOrderDates[group.date]" class="orders-mobile-list lg:hidden space-y-1.5">
+                  <div v-for="order in group.orders" :key="order.id" class="orders-mobile-card bg-white rounded-xl border border-slate-100 overflow-hidden shadow-[0_1px_0_rgba(15,23,42,0.03)]">
+                    <button type="button" @click="toggleOrderEditor(order.id)" class="orders-mobile-button w-full px-3 py-2.5 text-left">
                       <div class="flex items-center justify-between gap-3">
                         <div class="min-w-0">
                           <div class="flex items-center gap-1.5 min-w-0">
@@ -1617,7 +1611,7 @@
                       <div v-if="order.paymentMethod === '儲值進帳'" class="mt-1.5 text-[9px] font-black text-purple-600">不列入營業額</div>
                       <div v-if="order.paymentMethod === '現金＋儲值扣款'" class="mt-1.5 text-[10px] font-black text-amber-700">現金 NT$ {{ formatNumber(getMixedCashAmount(order)) }} · 儲值扣款 NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div>
                     </button>
-                    <div v-if="expandedOrderId === order.id" class="p-3.5 pt-0 border-t border-slate-100 bg-slate-50/60 space-y-3">
+                    <div v-if="expandedOrderId === order.id" class="orders-mobile-editor p-3.5 pt-0 border-t border-slate-100 bg-slate-50/60 space-y-3">
                       <div class="grid grid-cols-3 gap-2 pt-3">
                         <div class="col-span-3 rounded-xl px-3 py-2 text-[11px] font-black" :class="orderDraftHasChanges(order) ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'">
                           {{ orderDraftNotice(order) }}
@@ -4161,9 +4155,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.10-maintainable-ui"></script>
+  <script src="/assets/momo-core.js?v=2026.07.10-home-orders-visual"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.10-maintainable-ui"></script>
+  <script src="/assets/momo-app.js?v=2026.07.10-home-orders-visual"></script>
 </body>
 </html>

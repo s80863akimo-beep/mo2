@@ -1,6 +1,6 @@
     body {
       font-family: 'Nunito', 'Noto Sans TC', sans-serif;
-      background: linear-gradient(135deg, #FFF9F6 0%, #FFEBE1 100%);
+      background: #F4F6F7;
       min-height: 100vh;
       min-height: 100dvh; /* iOS Safari 動態視窗高度，URL 列顯示/隱藏時不跳動 */
       -webkit-tap-highlight-color: transparent;
@@ -1164,6 +1164,490 @@
     }
     .animate-pulse-subtle {
       animation: pulseSubtle 4s infinite ease-in-out;
+    }
+
+    /* 2026 visual system: quiet salon operations workspace */
+    :root {
+      --momo-canvas: #F4F6F7;
+      --momo-surface: #FFFFFF;
+      --momo-surface-muted: #F8FAFB;
+      --momo-ink: #172033;
+      --momo-muted: #697586;
+      --momo-line: #E1E6EB;
+      --momo-line-strong: #D3DAE2;
+      --momo-brand: #D95F54;
+      --momo-brand-hover: #C95148;
+      --momo-brand-soft: #FFF1EF;
+      --momo-success: #16805D;
+      --momo-info: #287FA3;
+      --momo-warning: #A76412;
+      --momo-danger: #C34D62;
+      --momo-panel-shadow: 0 12px 30px -26px rgba(15, 23, 42, 0.42);
+    }
+
+    body.momo-polish {
+      background: var(--momo-canvas) !important;
+      color: var(--momo-ink);
+    }
+
+    body.momo-polish,
+    body.momo-polish * {
+      letter-spacing: 0 !important;
+    }
+
+    body.momo-polish .momo-app-header {
+      background: rgba(255, 255, 255, 0.97) !important;
+      border-bottom-color: var(--momo-line) !important;
+      box-shadow: 0 8px 22px -20px rgba(15, 23, 42, 0.38) !important;
+    }
+
+    body.momo-polish .momo-app-header::after {
+      display: none;
+    }
+
+    body.momo-polish .momo-surface {
+      background: var(--momo-surface) !important;
+      border: 1px solid var(--momo-line) !important;
+      border-radius: 8px !important;
+      box-shadow: var(--momo-panel-shadow) !important;
+    }
+
+    body.momo-polish .momo-section-header {
+      background: var(--momo-surface) !important;
+      border-bottom: 1px solid var(--momo-line) !important;
+    }
+
+    body.momo-polish .floating-nav button:focus,
+    body.momo-polish .floating-nav button:focus-visible {
+      outline: none !important;
+    }
+
+    body.momo-polish .floating-nav button.text-slate-900 {
+      background: var(--momo-brand-soft) !important;
+      color: var(--momo-brand) !important;
+      box-shadow: inset 0 0 0 1px rgba(217, 95, 84, 0.22) !important;
+    }
+
+    body.momo-polish .floating-nav .tab-active-indicator {
+      background: var(--momo-brand) !important;
+    }
+
+    /* Home: one operational surface with data-grid rhythm */
+    body.momo-polish .momo-today-overview,
+    body.momo-polish .momo-home-card {
+      border-radius: 8px !important;
+    }
+
+    body.momo-polish .momo-today-overview-header h2,
+    body.momo-polish .momo-home-card-header h2 {
+      color: var(--momo-ink) !important;
+    }
+
+    body.momo-polish .today-status-pill {
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted) !important;
+      color: #4B5563 !important;
+    }
+
+    body.momo-polish .momo-metric-grid {
+      gap: 1px !important;
+      overflow: hidden;
+      border: 1px solid var(--momo-line);
+      border-radius: 8px;
+      background: var(--momo-line);
+    }
+
+    body.momo-polish .momo-metric-cell {
+      min-height: 106px;
+      padding: 1rem !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: var(--momo-surface) !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .momo-metric-cell::before {
+      left: 1rem;
+      right: 1rem;
+      top: auto;
+      bottom: 0;
+      width: auto;
+      height: 3px;
+      border-radius: 3px 3px 0 0;
+      background: #AEB8C4;
+    }
+
+    body.momo-polish .momo-metric-cell.today-metric-card--cash::before { background: var(--momo-brand); }
+    body.momo-polish .momo-metric-cell.today-metric-card--expense::before { background: var(--momo-danger); }
+    body.momo-polish .momo-metric-cell.today-metric-card--closed::before { background: var(--momo-success); }
+    body.momo-polish .momo-metric-cell.today-metric-card--open::before { background: #D38A2C; }
+
+    body.momo-polish .momo-metric-cell .today-metric-value {
+      color: var(--momo-ink) !important;
+      font-variant-numeric: tabular-nums;
+    }
+
+    body.momo-polish .momo-home-operations {
+      align-items: stretch;
+    }
+
+    body.momo-polish .momo-payment-panel {
+      border: 1px solid var(--momo-line) !important;
+      border-radius: 8px !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .momo-payment-panel .today-payment-chip {
+      border-color: var(--momo-line) !important;
+      border-radius: 6px !important;
+      background: var(--momo-surface) !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .momo-primary-actions .daily-action-button {
+      min-height: 68px;
+      border-color: var(--momo-line) !important;
+      border-radius: 8px !important;
+      background: var(--momo-surface) !important;
+      box-shadow: none !important;
+      color: #374151 !important;
+    }
+
+    body.momo-polish .momo-primary-actions .daily-action-button:hover {
+      border-color: var(--momo-line-strong) !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .momo-primary-actions .daily-action-button--primary {
+      border-color: var(--momo-brand) !important;
+      background: var(--momo-brand) !important;
+      color: #FFFFFF !important;
+    }
+
+    body.momo-polish .momo-primary-actions .daily-action-button--primary:hover {
+      border-color: var(--momo-brand-hover) !important;
+      background: var(--momo-brand-hover) !important;
+    }
+
+    body.momo-polish .momo-home-list-item {
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface) !important;
+    }
+
+    body.momo-polish .momo-home-card-footer,
+    body.momo-polish .momo-home-card > div:last-child {
+      background: var(--momo-surface-muted) !important;
+    }
+
+    /* Orders: summary, tools and daily ledger use the same visual language as Home. */
+    body.momo-polish .momo-orders-page {
+      color: var(--momo-ink);
+    }
+
+    body.momo-polish .orders-summary-panel {
+      border-radius: 8px !important;
+    }
+
+    body.momo-polish .orders-summary-header {
+      position: relative;
+      min-height: 52px;
+      padding: 0.875rem 1rem !important;
+    }
+
+    body.momo-polish .orders-summary-header::after {
+      content: "";
+      position: absolute;
+      left: 1rem;
+      bottom: -1px;
+      width: 44px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--momo-brand);
+    }
+
+    body.momo-polish .orders-summary-header h3 {
+      color: var(--momo-ink) !important;
+    }
+
+    body.momo-polish .orders-summary-grid {
+      gap: 1px;
+      background: var(--momo-line);
+    }
+
+    body.momo-polish .orders-summary-metric {
+      min-height: 112px;
+      padding: 1.1rem 1rem !important;
+      border: 0 !important;
+      background: var(--momo-surface) !important;
+    }
+
+    body.momo-polish .orders-summary-metric--primary {
+      box-shadow: none;
+    }
+
+    body.momo-polish .orders-summary-metric > div:nth-child(2) {
+      color: var(--momo-ink) !important;
+      font-variant-numeric: tabular-nums;
+    }
+
+    body.momo-polish .orders-summary-footer {
+      min-height: 38px;
+      border-top-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted);
+    }
+
+    body.momo-polish .orders-summary-footer::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--momo-brand);
+    }
+
+    body.momo-polish .orders-ledger {
+      padding: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .orders-ledger-toolbar {
+      padding: 1rem !important;
+      border: 1px solid var(--momo-line) !important;
+      border-radius: 8px;
+      background: var(--momo-surface);
+      box-shadow: var(--momo-panel-shadow);
+    }
+
+    body.momo-polish .orders-add-button {
+      min-height: 40px !important;
+      padding: 0 1rem !important;
+      border-color: var(--momo-brand) !important;
+      border-radius: 8px !important;
+      background: var(--momo-brand) !important;
+      color: #FFFFFF !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .orders-add-button:hover {
+      border-color: var(--momo-brand-hover) !important;
+      background: var(--momo-brand-hover) !important;
+    }
+
+    body.momo-polish .orders-search-shell input.orders-search-input {
+      min-height: 42px !important;
+      height: 42px !important;
+      border-color: var(--momo-line) !important;
+      border-radius: 8px !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .orders-search-shell input.orders-search-input:focus {
+      border-color: rgba(217, 95, 84, 0.55) !important;
+      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.12) !important;
+    }
+
+    body.momo-polish .orders-filter-panel {
+      border-color: var(--momo-line) !important;
+      border-radius: 8px !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .orders-filter-panel select {
+      border-color: var(--momo-line) !important;
+      border-radius: 6px !important;
+      background-color: var(--momo-surface) !important;
+    }
+
+    body.momo-polish .orders-filter-status {
+      min-height: 28px;
+      padding: 0 0.125rem;
+    }
+
+    body.momo-polish .orders-empty-state {
+      border: 1px dashed var(--momo-line-strong);
+      border-radius: 8px !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .orders-day-group {
+      margin-top: 1rem !important;
+    }
+
+    body.momo-polish .orders-day-header {
+      position: relative;
+      min-height: 52px;
+      overflow: hidden;
+      padding-left: 1rem !important;
+      border: 1px solid var(--momo-line) !important;
+      border-radius: 8px !important;
+      background: var(--momo-surface) !important;
+      box-shadow: 0 8px 22px -22px rgba(15, 23, 42, 0.48);
+    }
+
+    body.momo-polish .orders-day-header::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 4px;
+      background: var(--momo-brand);
+      opacity: var(--orders-day-strength, 0.55);
+    }
+
+    body.momo-polish .orders-day-header:hover {
+      border-color: var(--momo-line-strong) !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .orders-table-shell {
+      border-color: var(--momo-line) !important;
+      border-radius: 8px !important;
+      background: var(--momo-surface);
+      box-shadow: var(--momo-panel-shadow);
+    }
+
+    body.momo-polish .orders-ledger-table thead tr {
+      border-bottom-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted) !important;
+      color: var(--momo-muted) !important;
+    }
+
+    body.momo-polish .orders-ledger-table tbody {
+      border-color: var(--momo-line) !important;
+    }
+
+    body.momo-polish .orders-ledger-table .orders-table-row:hover {
+      background: #FAFBFC !important;
+    }
+
+    body.momo-polish .orders-ledger-table .orders-editor-row {
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .orders-mobile-list {
+      overflow: hidden;
+      gap: 0 !important;
+      border: 1px solid var(--momo-line);
+      border-radius: 8px;
+      background: var(--momo-surface);
+      box-shadow: var(--momo-panel-shadow);
+    }
+
+    body.momo-polish .orders-mobile-card {
+      border: 0 !important;
+      border-bottom: 1px solid var(--momo-line) !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .orders-mobile-card:last-child {
+      border-bottom: 0 !important;
+    }
+
+    body.momo-polish .orders-mobile-button {
+      min-height: 64px;
+      padding: 0.75rem 0.875rem !important;
+      background: var(--momo-surface);
+    }
+
+    body.momo-polish .orders-mobile-button:active {
+      background: var(--momo-surface-muted);
+    }
+
+    body.momo-polish .orders-mobile-editor {
+      border-top-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    @media (max-width: 640px) {
+      body.momo-polish {
+        background: #F2F4F6 !important;
+      }
+
+      body.momo-polish main {
+        padding-top: 0.75rem !important;
+      }
+
+      body.momo-polish .momo-dashboard-page,
+      body.momo-polish .momo-orders-page {
+        row-gap: 0.875rem;
+      }
+
+      body.momo-polish .momo-section-header {
+        padding: 0.875rem !important;
+      }
+
+      body.momo-polish .momo-daily-home > .p-4,
+      body.momo-polish .momo-daily-home > .sm\:p-6 {
+        padding: 0.875rem !important;
+      }
+
+      body.momo-polish .momo-metric-cell {
+        min-height: 102px;
+        padding: 0.875rem !important;
+      }
+
+      body.momo-polish .momo-metric-cell .today-metric-value {
+        font-size: 1.35rem !important;
+        line-height: 1.2;
+      }
+
+      body.momo-polish .momo-payment-panel {
+        padding: 0.75rem !important;
+      }
+
+      body.momo-polish .momo-primary-actions .daily-action-button {
+        min-height: 60px !important;
+      }
+
+      body.momo-polish .orders-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+
+      body.momo-polish .orders-summary-metric {
+        min-height: 94px;
+        padding: 0.875rem !important;
+      }
+
+      body.momo-polish .orders-summary-metric--primary {
+        grid-column: 1 / -1;
+        min-height: 104px;
+      }
+
+      body.momo-polish .orders-summary-metric > div:nth-child(2) {
+        font-size: 1.25rem !important;
+      }
+
+      body.momo-polish .orders-summary-footer {
+        justify-content: flex-start !important;
+        padding: 0.625rem 0.875rem !important;
+      }
+
+      body.momo-polish .orders-ledger-toolbar {
+        padding: 0.875rem !important;
+      }
+
+      body.momo-polish .orders-search-shell input.orders-search-input {
+        min-height: 44px !important;
+        height: 44px !important;
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+      }
+
+      body.momo-polish .orders-day-group {
+        margin-top: 0.875rem !important;
+      }
+
+      body.momo-polish .orders-day-header {
+        min-height: 50px !important;
+        padding: 0.625rem 0.75rem 0.625rem 0.875rem !important;
+      }
+
+      body.momo-polish .orders-mobile-button {
+        min-height: 66px !important;
+        padding: 0.75rem !important;
+      }
     }
 
     /* 防止 Vue 載入前顯示原始模板語法 */
