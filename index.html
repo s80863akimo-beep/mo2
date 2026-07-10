@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.10-expenses-workspace">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.10-report-workspace">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.10-expenses-workspace">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.10-report-workspace">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -2684,7 +2684,7 @@
         </div>
 
         <!-- Tab 6: 損益報表 -->
-        <div v-else-if="activeTab === 'report'" key="report" class="momo-report-page space-y-6">
+        <div v-else-if="activeTab === 'report'" key="report" class="momo-report-page momo-finance-report">
           <template v-if="false">
 
           <!-- 年份快速切換列 -->
@@ -3077,50 +3077,50 @@
           </template>
 
           <!-- Report header -->
-          <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-4 sm:px-6 flex items-center justify-between gap-3 border-b border-slate-100">
+          <section class="report-panel report-overview-panel momo-surface bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
+            <div class="report-panel-header report-overview-header momo-section-header px-4 py-4 sm:px-6 flex items-center justify-between gap-3 border-b border-slate-100">
               <div>
-                <h2 class="text-lg sm:text-xl font-black text-slate-800">損益報表</h2>
-                <p class="text-[10px] sm:text-xs font-bold text-slate-400 mt-0.5">服務營業額不含儲值進帳</p>
+                <h2 class="text-lg sm:text-xl font-black text-slate-800">年度損益</h2>
+                <p class="text-[10px] sm:text-xs font-bold text-slate-400 mt-0.5">年度分析 · 服務營業額不含儲值進帳</p>
               </div>
-              <button @click="exportAnnualReport" class="min-h-[42px] px-3 sm:px-4 rounded-xl border border-macaron-peach-200 bg-white text-macaron-peach-500 text-xs font-black">匯出 CSV</button>
+              <button @click="exportAnnualReport" class="report-secondary-button min-h-[42px] px-3 sm:px-4 rounded-xl border border-macaron-peach-200 bg-white text-macaron-peach-500 text-xs font-black">匯出 CSV</button>
             </div>
-            <div class="grid grid-cols-[44px_1fr_44px] items-center border-b border-slate-100">
+            <div class="report-year-switcher grid grid-cols-[44px_1fr_44px] items-center border-b border-slate-100">
               <button @click="prevReportYear" class="min-h-[52px] text-xl font-black text-slate-500 border-r border-slate-100" aria-label="上一年">‹</button>
               <div class="text-center text-base font-black text-slate-800">{{ selectedYear }} 年</div>
               <button @click="nextReportYear" class="min-h-[52px] text-xl font-black text-slate-500 border-l border-slate-100" aria-label="下一年">›</button>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100">
-              <div class="p-4">
+            <div class="report-overview-grid grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100">
+              <div class="report-overview-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">營業額</div>
                 <div class="text-xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(annualSummary.totalRevenue) }}</div>
                 <div class="text-[9px] font-bold mt-1" :class="reportComparisons.revenue >= 0 ? 'text-emerald-600' : 'text-rose-500'">{{ reportComparisons.revenue >= 0 ? '↑' : '↓' }} {{ Math.abs(reportComparisons.revenue) }}% vs 去年</div>
               </div>
-              <div class="p-4">
+              <div class="report-overview-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">總支出</div>
                 <div class="text-xl font-black text-sky-600 mt-1">NT$ {{ formatNumber(annualSummary.totalExpenses) }}</div>
                 <div class="text-[9px] font-bold mt-1" :class="reportComparisons.expenses <= 0 ? 'text-emerald-600' : 'text-rose-500'">{{ reportComparisons.expenses >= 0 ? '↑' : '↓' }} {{ Math.abs(reportComparisons.expenses) }}% vs 去年</div>
               </div>
-              <div class="p-4">
+              <div class="report-overview-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">淨利</div>
                 <div class="text-xl font-black mt-1" :class="annualSummary.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'">NT$ {{ formatNumber(annualSummary.netProfit) }}</div>
                 <div class="text-[9px] font-bold mt-1 text-slate-400">營業額－全部支出</div>
               </div>
-              <div class="p-4">
+              <div class="report-overview-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">淨利率</div>
                 <div class="text-xl font-black mt-1" :class="annualSummary.profitMargin >= 20 ? 'text-emerald-600' : annualSummary.profitMargin >= 0 ? 'text-amber-600' : 'text-rose-600'">{{ annualSummary.profitMargin }}%</div>
                 <div class="text-[9px] font-bold mt-1 text-slate-400">目標建議 ≥ 20%</div>
               </div>
             </div>
-            <div class="grid grid-cols-2 divide-x divide-slate-100 bg-slate-50/70">
+            <div class="report-overview-footer grid grid-cols-2 divide-x divide-slate-100 bg-slate-50/70">
               <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">實收現金</div><div class="text-sm font-black text-slate-700">NT$ {{ formatNumber(annualCashPosition.cashIn) }}</div></div>
               <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">儲值負債</div><div class="text-sm font-black text-slate-700">NT$ {{ formatNumber(crmStats.prepaidLiability) }}</div></div>
             </div>
           </section>
 
           <!-- Monthly business health -->
-          <section class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+          <section class="report-panel report-health-panel momo-surface bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <div class="report-panel-header report-health-header momo-section-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <h2 class="text-base sm:text-lg font-black text-slate-800">月度營運健檢 · {{ monthlySettlementSummary.label }}</h2>
@@ -3128,14 +3128,14 @@
                 </div>
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">用月結、工時、儲值、顧客與同步健康度，整理本月老闆摘要。</p>
               </div>
-              <div class="flex flex-wrap gap-2">
-                <button @click="copyMonthlyBusinessHealthSummary" class="min-h-[40px] px-3 rounded-xl bg-slate-900 text-white text-xs font-black">複製健檢</button>
-                <button v-if="monthlyBusinessHealth.dataIssues.unclosed" @click="openCloseoutSheet(monthlySettlementSummary.unclosedDates[0])" class="min-h-[40px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">補打烊</button>
+              <div class="report-actions flex flex-wrap gap-2">
+                <button @click="copyMonthlyBusinessHealthSummary" class="report-dark-button min-h-[40px] px-3 rounded-xl bg-slate-900 text-white text-xs font-black">複製健檢</button>
+                <button v-if="monthlyBusinessHealth.dataIssues.unclosed" @click="openCloseoutSheet(monthlySettlementSummary.unclosedDates[0])" class="report-warning-button min-h-[40px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">補打烊</button>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-[0.82fr_1.18fr] gap-0">
-              <div class="p-4 sm:p-6 border-b xl:border-b-0 xl:border-r border-slate-100">
+            <div class="report-health-layout grid grid-cols-1 xl:grid-cols-[0.82fr_1.18fr] gap-0">
+              <div class="report-health-score p-4 sm:p-6 border-b xl:border-b-0 xl:border-r border-slate-100">
                 <div class="flex items-center justify-between gap-4">
                   <div>
                     <div class="text-[10px] font-black text-slate-400">健檢分數</div>
@@ -3150,15 +3150,15 @@
                     <div class="mt-2 text-xs font-black text-slate-700 leading-relaxed">{{ monthlyBusinessHealth.headline }}</div>
                   </div>
                 </div>
-                <div class="mt-4 space-y-2">
+                <div class="report-health-summary mt-4 space-y-2">
                   <div v-for="line in monthlyBusinessHealth.summary" :key="'health-summary-' + line" class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 text-[11px] font-bold text-slate-600 leading-relaxed">{{ line }}</div>
                 </div>
               </div>
 
-              <div class="p-4 sm:p-6 space-y-4">
-                <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+              <div class="report-health-content p-4 sm:p-6 space-y-4">
+                <div class="report-health-metrics grid grid-cols-2 lg:grid-cols-3 gap-2">
                   <div v-for="card in monthlyBusinessHealth.metricCards" :key="'health-card-' + card.label"
-                       class="rounded-xl border px-3 py-3"
+                       class="report-health-metric rounded-xl border px-3 py-3"
                        :class="card.tone === 'good' ? 'bg-emerald-50 border-emerald-100' : card.tone === 'risk' ? 'bg-rose-50 border-rose-100' : card.tone === 'warn' ? 'bg-amber-50 border-amber-100' : card.tone === 'info' ? 'bg-slate-50 border-slate-100' : 'bg-white border-slate-200'">
                     <div class="text-[9px] font-black text-slate-400">{{ card.label }}</div>
                     <div class="mt-1 text-sm font-black text-slate-800 truncate">{{ card.value }}</div>
@@ -3166,8 +3166,8 @@
                   </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                  <section class="rounded-2xl border border-slate-200 overflow-hidden">
+                <div class="report-health-detail-grid grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  <section class="report-health-subpanel rounded-2xl border border-slate-200 overflow-hidden">
                     <div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-2">
                       <div class="text-xs font-black text-slate-700">優先處理</div>
                       <div class="text-[9px] font-bold text-slate-400">按影響報表可信度排序</div>
@@ -3183,7 +3183,7 @@
                     </div>
                   </section>
 
-                  <section class="rounded-2xl border border-slate-200 overflow-hidden">
+                  <section class="report-health-subpanel rounded-2xl border border-slate-200 overflow-hidden">
                     <div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-2">
                       <div class="text-xs font-black text-slate-700">服務時間產值快照</div>
                       <div class="text-[9px] font-bold text-slate-400">{{ settlementYieldSummary.actualAverage ? '實際工時' : '預估工時' }}</div>
@@ -3217,39 +3217,42 @@
           </section>
 
           <!-- Monthly settlement summary -->
-          <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
+          <section class="report-panel report-settlement-panel momo-surface bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
+            <div class="report-panel-header report-settlement-header momo-section-header px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
               <div>
-                <h2 class="text-base sm:text-lg font-black text-slate-800">月結摘要 · {{ monthlySettlementSummary.label }}</h2>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">正式口徑：已打烊日期用固定快照，未打烊日期才暫用明細計算</p>
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="text-base sm:text-lg font-black text-slate-800">正式月結 · {{ monthlySettlementSummary.label }}</h2>
+                  <span class="report-settlement-status min-h-[26px] inline-flex items-center px-2.5 rounded-lg text-[10px] font-black" :class="monthlySettlementSummary.ready ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">{{ monthlySettlementSummary.ready ? '可封存' : '尚未完成' }}</span>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">已打烊日期使用固定快照；未打烊日期暫算，不受畫面篩選影響</p>
               </div>
-              <div class="flex items-center gap-2">
-                <button @click="exportMonthlySettlementReport" class="min-h-[40px] px-3 rounded-xl bg-slate-900 text-white text-xs font-black">匯出正式月結</button>
-                <button @click="copyMonthlySettlementSummary" class="min-h-[40px] px-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">複製月結</button>
-                <button v-if="monthlySettlementSummary.unclosedDates.length" @click="openCloseoutSheet(monthlySettlementSummary.unclosedDates[0])" class="min-h-[40px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">補打烊</button>
+              <div class="report-actions report-settlement-actions flex items-center gap-2">
+                <button @click="exportMonthlySettlementReport" class="report-primary-button min-h-[40px] px-3 rounded-xl bg-slate-900 text-white text-xs font-black">匯出正式月結</button>
+                <button @click="copyMonthlySettlementSummary" class="report-secondary-button min-h-[40px] px-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">複製月結</button>
+                <button v-if="monthlySettlementSummary.unclosedDates.length" @click="openCloseoutSheet(monthlySettlementSummary.unclosedDates[0])" class="report-warning-button min-h-[40px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">補打烊</button>
               </div>
             </div>
-            <div class="px-4 pt-4 sm:px-6 grid grid-cols-6 gap-1.5">
+            <div class="report-month-strip px-4 pt-4 sm:px-6 grid grid-cols-6 gap-1.5">
               <button v-for="m in monthOptions" :key="'settle-' + m" @click="selectedMonth = m"
-                      class="min-h-[34px] rounded-xl text-[11px] font-black border transition-colors"
+                      class="report-month-button min-h-[34px] rounded-xl text-[11px] font-black border transition-colors"
                       :class="reportSettlementMonth === m ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200'">
                 {{ Number(m) }}月
               </button>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100 mt-4 border-t border-slate-100">
+            <div class="report-settlement-grid grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100 mt-4 border-t border-slate-100">
               <div class="p-4"><div class="text-[10px] font-black text-slate-400">營業額</div><div class="text-xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(monthlySettlementSummary.serviceRevenue) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlySettlementSummary.ordersCount }} 筆 · 客單 NT$ {{ formatNumber(monthlySettlementSummary.avgTicket) }}</div></div>
               <div class="p-4"><div class="text-[10px] font-black text-slate-400">支出</div><div class="text-xl font-black text-sky-600 mt-1">NT$ {{ formatNumber(monthlySettlementSummary.expenses) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlySettlementSummary.businessDays }} 個有資料日期</div></div>
               <div class="p-4"><div class="text-[10px] font-black text-slate-400">淨利</div><div class="text-xl font-black mt-1" :class="monthlySettlementSummary.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'">NT$ {{ formatNumber(monthlySettlementSummary.netProfit) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">營業額－支出</div></div>
               <div class="p-4"><div class="text-[10px] font-black text-slate-400">淨利率</div><div class="text-xl font-black mt-1" :class="monthlySettlementSummary.profitMargin >= 20 ? 'text-emerald-600' : monthlySettlementSummary.profitMargin >= 0 ? 'text-amber-600' : 'text-rose-600'">{{ monthlySettlementSummary.profitMargin }}%</div><div class="text-[9px] font-bold text-slate-400 mt-1">月結健康度</div></div>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-slate-100 bg-slate-50/70">
+            <div class="report-cashflow-grid grid grid-cols-2 sm:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-slate-100 bg-slate-50/70">
               <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">現金入帳</div><div class="text-sm font-black text-slate-700">NT$ {{ formatNumber(monthlySettlementSummary.cashIn) }}</div></div>
               <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">轉帳入帳</div><div class="text-sm font-black text-indigo-700">NT$ {{ formatNumber(monthlySettlementSummary.transferIn) }}</div></div>
               <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">儲值扣款</div><div class="text-sm font-black text-sky-700">NT$ {{ formatNumber(monthlySettlementSummary.prepaidOut) }}</div></div>
               <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">儲值進帳</div><div class="text-sm font-black text-emerald-700">NT$ {{ formatNumber(monthlySettlementSummary.prepaidIn) }}</div></div>
               <div class="px-4 py-3 col-span-2 sm:col-span-1"><div class="text-[9px] font-black text-slate-400">打烊狀態</div><div class="text-sm font-black" :class="monthlySettlementSummary.ready ? 'text-emerald-700' : 'text-amber-700'">{{ monthlySettlementSummary.ready ? '已完整' : `未打烊 ${monthlySettlementSummary.unclosedDates.length} 天` }}</div></div>
             </div>
-            <div class="px-4 py-3 sm:px-6 border-t border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="report-basis-row px-4 py-3 sm:px-6 border-t border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <div class="text-[10px] font-black text-slate-500">月結口徑</div>
                 <div class="mt-0.5 text-[11px] font-bold text-slate-400">{{ monthlySettlementSummary.settlementBasis }}</div>
@@ -3259,7 +3262,7 @@
                 <span class="min-h-[28px] inline-flex items-center px-2.5 rounded-lg bg-amber-50 text-amber-700 text-[10px] font-black">暫算 {{ monthlySettlementSummary.liveDays }} 天</span>
               </div>
             </div>
-            <div v-if="monthlySettlementSummary.unclosedDates.length" class="px-4 py-3 sm:px-6 border-t border-amber-100 bg-amber-50/70">
+            <div v-if="monthlySettlementSummary.unclosedDates.length" class="report-unclosed-strip px-4 py-3 sm:px-6 border-t border-amber-100 bg-amber-50/70">
               <div class="text-[10px] font-black text-amber-700 mb-2">未打烊日期</div>
               <div class="flex flex-wrap gap-1.5">
                 <button v-for="date in monthlySettlementSummary.unclosedDates.slice(0, 8)" :key="'settle-unclosed-' + date" @click="openCloseoutSheet(date)" class="min-h-[30px] px-2.5 rounded-lg bg-white border border-amber-100 text-[10px] font-black text-amber-700">{{ date }}</button>
@@ -3269,8 +3272,8 @@
           </section>
 
           <!-- Prepaid period reconciliation -->
-          <section class="bg-white border border-emerald-100/80 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
+          <section class="report-panel report-prepaid-panel momo-surface bg-white border border-emerald-100/80 rounded-2xl overflow-hidden shadow-sm">
+            <div class="report-panel-header momo-section-header px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
               <div>
                 <h2 class="text-base sm:text-lg font-black text-slate-800">儲值期間對帳 · {{ monthlySettlementSummary.label }}</h2>
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">期初儲值餘額 + 本期進帳 - 本期扣款 + 調整 = 期末儲值餘額</p>
@@ -3279,15 +3282,15 @@
                 {{ monthlyPrepaidReconciliation.balanced ? '帳面平衡' : '需檢查' }}
               </span>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-slate-100">
+            <div class="report-prepaid-grid grid grid-cols-2 sm:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-slate-100">
               <div class="p-4"><div class="text-[10px] font-black text-slate-400">期初餘額</div><div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(monthlyPrepaidReconciliation.openingBalance) }}</div></div>
               <div class="p-4"><div class="text-[10px] font-black text-emerald-600">本期進帳</div><div class="text-lg font-black text-emerald-700 mt-1">NT$ {{ formatNumber(monthlyPrepaidReconciliation.topupIn) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlyPrepaidReconciliation.topupCount }} 筆</div></div>
               <div class="p-4"><div class="text-[10px] font-black text-sky-600">本期扣款</div><div class="text-lg font-black text-sky-700 mt-1">NT$ {{ formatNumber(monthlyPrepaidReconciliation.debitOut) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlyPrepaidReconciliation.debitCount }} 筆</div></div>
               <div class="p-4"><div class="text-[10px] font-black text-amber-600">調整 / 沖銷</div><div class="text-lg font-black" :class="monthlyPrepaidReconciliation.adjustments >= 0 ? 'text-amber-700' : 'text-rose-600'">NT$ {{ formatNumber(monthlyPrepaidReconciliation.adjustments) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlyPrepaidReconciliation.adjustmentCount }} 筆</div></div>
               <div class="p-4 col-span-2 sm:col-span-1"><div class="text-[10px] font-black text-slate-400">期末餘額</div><div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(monthlyPrepaidReconciliation.closingBalance) }}</div></div>
             </div>
-            <div class="border-t border-slate-100 overflow-x-auto">
-              <table class="w-full min-w-[680px] text-left">
+            <div class="report-table-scroll report-prepaid-table-scroll border-t border-slate-100 overflow-x-auto">
+              <table class="report-data-table report-prepaid-table w-full min-w-[680px] text-left">
                 <thead class="bg-emerald-50/50 text-[10px] font-black text-slate-400">
                   <tr><th class="px-4 py-3">顧客</th><th class="px-4 py-3 text-right">期初</th><th class="px-4 py-3 text-right">進帳</th><th class="px-4 py-3 text-right">扣款</th><th class="px-4 py-3 text-right">調整</th><th class="px-4 py-3 text-right">期末</th></tr>
                 </thead>
@@ -3310,8 +3313,8 @@
           </section>
 
           <!-- Service time productivity ranking -->
-          <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-4 sm:px-6 flex flex-col xl:flex-row xl:items-center justify-between gap-3 border-b border-slate-100">
+          <section class="report-panel report-yield-panel momo-surface bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
+            <div class="report-panel-header report-yield-header momo-section-header px-4 py-4 sm:px-6 flex flex-col xl:flex-row xl:items-center justify-between gap-3 border-b border-slate-100">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <h2 class="text-base sm:text-lg font-black text-slate-800">服務時間產值排行 · {{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }}</h2>
@@ -3319,7 +3322,7 @@
                 </div>
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">公式：服務收入 ÷ 實際工時；沒有實際工時時依序使用行事曆時間與價目表標準時長。排除儲值進帳與更正單。</p>
               </div>
-              <div class="grid grid-cols-2 sm:flex gap-2">
+              <div class="report-yield-controls grid grid-cols-2 sm:flex gap-2">
                 <select v-model="reportYieldSort" class="min-h-[40px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-black">
                   <option v-for="option in reportYieldSortOptions" :key="'yield-sort-' + option.value" :value="option.value">{{ option.label }}</option>
                 </select>
@@ -3331,7 +3334,7 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-2 lg:grid-cols-5 divide-x divide-y lg:divide-y-0 divide-slate-100">
+            <div class="report-yield-summary-grid grid grid-cols-2 lg:grid-cols-5 divide-x divide-y lg:divide-y-0 divide-slate-100">
               <div class="p-4">
                 <div class="text-[10px] font-black text-slate-400">{{ yieldSummary.actualAverage ? '本期實際每小時' : '本期預估每小時' }}</div>
                 <div class="text-xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(yieldSummary.average) }}</div>
@@ -3359,7 +3362,7 @@
               </div>
             </div>
 
-            <div v-if="reportYieldViewSummary.top" class="px-4 py-3 sm:px-6 border-t border-emerald-100 bg-emerald-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div v-if="reportYieldViewSummary.top" class="report-yield-leader px-4 py-3 sm:px-6 border-t border-emerald-100 bg-emerald-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div class="min-w-0">
                 <div class="text-xs font-black text-emerald-700">目前排行第一：{{ reportYieldViewSummary.top.serviceName }}</div>
                 <div class="mt-0.5 text-[10px] font-bold text-emerald-600">NT$ {{ formatNumber(reportYieldViewSummary.top.yieldPerHour) }}/hr · {{ reportYieldViewSummary.top.count }} 筆 · {{ reportYieldViewSummary.top.timeBasisLabel }}</div>
@@ -3370,19 +3373,19 @@
               </span>
             </div>
 
-            <div class="p-4 sm:p-6 border-t border-slate-100">
+            <div class="report-yield-body p-4 sm:p-6 border-t border-slate-100">
               <div v-if="serviceYieldRows.length === 0" class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-8 text-center text-xs font-bold text-slate-400">
                 此期間沒有可分析的服務時長資料
               </div>
               <div v-else-if="reportServiceYieldRows.length === 0" class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-8 text-center text-xs font-bold text-slate-400">
                 沒有符合目前最低筆數的服務，請降低樣本門檻。
               </div>
-              <div v-else class="space-y-2.5">
-                <div v-for="(item, idx) in reportServiceYieldRows" :key="'report-yield-' + item.serviceName" class="rounded-2xl border border-orange-100/70 bg-white px-3 py-3">
+              <div v-else class="report-yield-list space-y-2.5">
+                <div v-for="(item, idx) in reportServiceYieldRows" :key="'report-yield-' + item.serviceName" class="report-yield-row rounded-2xl border border-orange-100/70 bg-white px-3 py-3">
                   <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-3">
                     <div class="min-w-0 flex-1">
                       <div class="flex flex-wrap items-center gap-2">
-                        <span class="w-7 h-7 rounded-xl bg-slate-900 text-white text-xs font-black inline-flex items-center justify-center">{{ idx + 1 }}</span>
+                        <span class="report-yield-rank w-7 h-7 rounded-xl bg-slate-900 text-white text-xs font-black inline-flex items-center justify-center">{{ idx + 1 }}</span>
                         <div class="text-sm font-black text-slate-800 truncate">{{ item.serviceName }}</div>
                         <span class="px-2 py-0.5 rounded-full text-[9px] font-black"
                               :class="item.confidenceTone === 'ok' ? 'bg-emerald-50 text-emerald-700' : item.confidenceTone === 'warn' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-500'">
@@ -3401,7 +3404,7 @@
                         <div>{{ item.timeBasisLabel }} · 覆蓋 {{ item.actualCoverage }}%</div>
                       </div>
                     </div>
-                    <div class="lg:w-[190px] shrink-0 lg:text-right">
+                    <div class="report-yield-value lg:w-[190px] shrink-0 lg:text-right">
                       <div class="text-2xl font-black text-slate-800">NT$ {{ formatNumber(item.yieldPerHour) }}</div>
                       <div class="text-[10px] font-black text-slate-400">每小時產值</div>
                       <span class="mt-1 inline-flex px-2 py-0.5 rounded-full text-[10px] font-black"
@@ -3410,7 +3413,7 @@
                       </span>
                     </div>
                   </div>
-                  <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden mt-3">
+                  <div class="report-yield-bar h-1.5 rounded-full bg-slate-100 overflow-hidden mt-3">
                     <div class="h-full rounded-full bg-gradient-to-r from-macaron-peach-300 to-macaron-rose"
                          :style="{ width: Math.min(100, (item.yieldPerHour / Math.max(1, reportServiceYieldRows[0]?.yieldPerHour || 2000)) * 100) + '%' }"></div>
                   </div>
@@ -3426,12 +3429,12 @@
           </section>
 
           <!-- One monthly trend chart -->
-          <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-4 sm:px-6 flex items-center justify-between border-b border-slate-100">
+          <section class="report-panel report-trend-panel momo-surface bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
+            <div class="report-panel-header momo-section-header px-4 py-4 sm:px-6 flex items-center justify-between border-b border-slate-100">
               <div><h2 class="text-base sm:text-lg font-black text-slate-800">月度趨勢</h2><p class="text-[10px] font-bold text-slate-400 mt-0.5">營業額、支出與淨利</p></div>
               <div class="flex items-center gap-3 text-[9px] font-black"><span class="text-macaron-peach-500">● 營業額</span><span class="text-sky-600">● 支出</span><span class="text-emerald-600">● 淨利</span></div>
             </div>
-            <div class="p-4 sm:p-6 overflow-x-auto">
+            <div class="report-trend-scroll p-4 sm:p-6 overflow-x-auto">
               <svg viewBox="0 0 600 150" class="w-full min-w-[560px] h-auto">
                 <line v-for="y in [20,55,90,125]" :key="y" x1="30" :y1="y" x2="585" :y2="y" stroke="#E2E8F0" stroke-dasharray="3,3" stroke-width="0.8"></line>
                 <line x1="30" :y1="reportTrendChart.zeroY" x2="585" :y2="reportTrendChart.zeroY" stroke="#94A3B8" stroke-width="1"></line>
@@ -3449,8 +3452,8 @@
           </section>
 
           <!-- Actionable findings -->
-          <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-4 sm:px-6 border-b border-slate-100"><h2 class="text-base sm:text-lg font-black text-slate-800">經營提醒</h2></div>
+          <section class="report-panel report-insights-panel momo-surface bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
+            <div class="report-panel-header momo-section-header px-4 py-4 sm:px-6 border-b border-slate-100"><h2 class="text-base sm:text-lg font-black text-slate-800">經營提醒</h2></div>
             <div class="divide-y divide-slate-100">
               <div v-for="insight in reportInsights" :key="insight.title" class="px-4 py-3 sm:px-6 flex items-start gap-3">
                 <span class="mt-1 w-2 h-2 rounded-full shrink-0" :class="insight.tone === 'good' ? 'bg-emerald-500' : insight.tone === 'warn' ? 'bg-amber-500' : 'bg-sky-500'"></span>
@@ -3460,9 +3463,9 @@
           </section>
 
           <!-- Income / expense structure -->
-          <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 pt-4 sm:px-6 sm:pt-5"><h2 class="text-base sm:text-lg font-black text-slate-800">收支結構</h2>
-              <div class="grid grid-cols-2 mt-3 border border-slate-200 rounded-xl overflow-hidden">
+          <section class="report-panel report-breakdown-panel momo-surface bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
+            <div class="report-panel-header report-breakdown-header momo-section-header px-4 pt-4 sm:px-6 sm:pt-5"><h2 class="text-base sm:text-lg font-black text-slate-800">收支結構</h2>
+              <div class="report-breakdown-toggle grid grid-cols-2 mt-3 border border-slate-200 rounded-xl overflow-hidden">
                 <button @click="reportBreakdownTab = 'income'" class="min-h-[44px] text-xs font-black border-r border-slate-200" :class="reportBreakdownTab === 'income' ? 'bg-macaron-peach-500 text-white' : 'bg-white text-slate-500'">服務收入</button>
                 <button @click="reportBreakdownTab = 'expense'" class="min-h-[44px] text-xs font-black" :class="reportBreakdownTab === 'expense' ? 'bg-sky-500 text-white' : 'bg-white text-slate-500'">支出分類</button>
               </div>
@@ -3477,10 +3480,10 @@
           </section>
 
           <!-- Monthly P&L table -->
-          <section class="bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-4 py-4 sm:px-6 flex items-center justify-between border-b border-slate-100"><div><h2 class="text-base sm:text-lg font-black text-slate-800">每月損益表</h2><p class="text-[10px] font-bold text-slate-400 mt-0.5">點擊月份查看業績紀錄</p></div><span class="text-[10px] font-black text-slate-400">{{ reportMonthlyRows.length }} 個月</span></div>
-            <div class="overflow-x-auto">
-              <table class="w-full min-w-[620px] text-left">
+          <section class="report-panel report-monthly-table-panel momo-surface bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
+            <div class="report-panel-header momo-section-header px-4 py-4 sm:px-6 flex items-center justify-between border-b border-slate-100"><div><h2 class="text-base sm:text-lg font-black text-slate-800">每月損益表</h2><p class="text-[10px] font-bold text-slate-400 mt-0.5">點擊月份查看業績紀錄</p></div><span class="text-[10px] font-black text-slate-400">{{ reportMonthlyRows.length }} 個月</span></div>
+            <div class="report-table-scroll overflow-x-auto">
+              <table class="report-data-table report-monthly-table w-full min-w-[620px] text-left">
                 <thead class="bg-slate-50 text-[10px] font-black text-slate-400"><tr><th class="px-4 py-3">月份</th><th class="px-4 py-3 text-right">營業額</th><th class="px-4 py-3 text-right">支出</th><th class="px-4 py-3 text-right">淨利</th><th class="px-4 py-3 text-right">淨利率</th><th class="w-10"></th></tr></thead>
                 <tbody class="divide-y divide-slate-100">
                   <tr v-for="month in reportMonthlyRows" :key="month.month" @click="openReportMonth(month.month)" class="cursor-pointer hover:bg-orange-50/40">
@@ -4155,9 +4158,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.10-expenses-workspace"></script>
+  <script src="/assets/momo-core.js?v=2026.07.10-report-workspace"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.10-expenses-workspace"></script>
+  <script src="/assets/momo-app.js?v=2026.07.10-report-workspace"></script>
 </body>
 </html>
