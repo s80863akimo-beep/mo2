@@ -2098,14 +2098,13 @@
     }
 
     body.momo-polish .report-settlement-panel { order: 1; }
-    body.momo-polish .report-overview-panel { order: 2; }
-    body.momo-polish .report-prepaid-panel { order: 3; }
-    body.momo-polish .report-health-panel { order: 4; }
-    body.momo-polish .report-yield-panel { order: 5; }
-    body.momo-polish .report-trend-panel { order: 6; }
-    body.momo-polish .report-insights-panel { order: 7; }
-    body.momo-polish .report-breakdown-panel { order: 8; }
-    body.momo-polish .report-monthly-table-panel { order: 9; }
+    body.momo-polish .report-health-panel { order: 2; }
+    body.momo-polish .report-yield-panel { order: 3; }
+    body.momo-polish .report-prepaid-panel { order: 4; }
+    body.momo-polish .report-overview-panel { order: 5; }
+    body.momo-polish .report-trend-panel,
+    body.momo-polish .report-breakdown-panel,
+    body.momo-polish .report-monthly-table-panel { order: 6; }
 
     body.momo-polish .report-panel {
       min-width: 0;
@@ -2169,12 +2168,6 @@
       color: #475569 !important;
     }
 
-    body.momo-polish .report-dark-button {
-      border-color: var(--momo-ink) !important;
-      background: var(--momo-ink) !important;
-      color: #FFFFFF !important;
-    }
-
     body.momo-polish .report-warning-button {
       border-color: #F1D9AE !important;
       background: #FFF9EE !important;
@@ -2192,9 +2185,7 @@
     body.momo-polish .report-actions::-webkit-scrollbar,
     body.momo-polish .report-cashflow-grid::-webkit-scrollbar,
     body.momo-polish .report-prepaid-grid::-webkit-scrollbar,
-    body.momo-polish .report-health-metrics::-webkit-scrollbar,
     body.momo-polish .report-yield-controls::-webkit-scrollbar,
-    body.momo-polish .report-yield-summary-grid::-webkit-scrollbar,
     body.momo-polish .report-unclosed-strip > .flex::-webkit-scrollbar {
       display: none;
     }
@@ -2215,16 +2206,14 @@
 
     body.momo-polish .report-settlement-grid,
     body.momo-polish .report-overview-grid,
-    body.momo-polish .report-prepaid-grid,
-    body.momo-polish .report-yield-summary-grid {
+    body.momo-polish .report-prepaid-grid {
       gap: 1px;
       background: var(--momo-line);
     }
 
     body.momo-polish .report-settlement-grid > div,
     body.momo-polish .report-overview-grid > div,
-    body.momo-polish .report-prepaid-grid > div,
-    body.momo-polish .report-yield-summary-grid > div {
+    body.momo-polish .report-prepaid-grid > div {
       min-width: 0;
       min-height: 94px;
       border: 0 !important;
@@ -2233,25 +2222,21 @@
 
     body.momo-polish .report-settlement-grid > div > div:nth-child(2),
     body.momo-polish .report-overview-grid > div > div:nth-child(2),
-    body.momo-polish .report-prepaid-grid > div > div:nth-child(2),
-    body.momo-polish .report-yield-summary-grid > div > div:nth-child(2) {
+    body.momo-polish .report-prepaid-grid > div > div:nth-child(2) {
       font-variant-numeric: tabular-nums;
     }
 
-    body.momo-polish .report-cashflow-grid,
-    body.momo-polish .report-overview-footer {
+    body.momo-polish .report-cashflow-grid {
       border-color: var(--momo-line) !important;
       background: var(--momo-surface-muted) !important;
     }
 
-    body.momo-polish .report-cashflow-grid > div,
-    body.momo-polish .report-overview-footer > div {
+    body.momo-polish .report-cashflow-grid > div {
       min-width: 0;
       border-color: var(--momo-line) !important;
     }
 
-    body.momo-polish .report-cashflow-grid > div > div:last-child,
-    body.momo-polish .report-overview-footer > div > div:last-child {
+    body.momo-polish .report-cashflow-grid > div > div:last-child {
       font-variant-numeric: tabular-nums;
     }
 
@@ -2291,81 +2276,6 @@
       min-height: 90px !important;
     }
 
-    body.momo-polish .report-overview-footer {
-      min-height: 58px;
-    }
-
-    body.momo-polish .report-health-layout {
-      background: var(--momo-surface);
-    }
-
-    body.momo-polish .report-health-score,
-    body.momo-polish .report-health-content {
-      border-color: var(--momo-line) !important;
-    }
-
-    body.momo-polish .report-health-score .text-5xl {
-      font-variant-numeric: tabular-nums;
-    }
-
-    body.momo-polish .report-health-summary {
-      overflow: hidden;
-      border: 1px solid var(--momo-line);
-      border-radius: 8px;
-      background: var(--momo-surface);
-    }
-
-    body.momo-polish .report-health-summary > div {
-      margin-top: 0 !important;
-      border: 0 !important;
-      border-bottom: 1px solid var(--momo-line) !important;
-      border-radius: 0 !important;
-      background: var(--momo-surface) !important;
-    }
-
-    body.momo-polish .report-health-summary > div:last-child {
-      border-bottom: 0 !important;
-    }
-
-    body.momo-polish .report-health-metric {
-      min-height: 78px;
-      border-color: var(--momo-line) !important;
-      border-left-width: 3px !important;
-      border-radius: 6px !important;
-      background: var(--momo-surface) !important;
-    }
-
-    body.momo-polish .report-health-metric.bg-emerald-50 { border-left-color: var(--momo-success) !important; }
-    body.momo-polish .report-health-metric.bg-rose-50 { border-left-color: var(--momo-danger) !important; }
-    body.momo-polish .report-health-metric.bg-amber-50 { border-left-color: var(--momo-warning) !important; }
-    body.momo-polish .report-health-metric.bg-slate-50 { border-left-color: var(--momo-info) !important; }
-
-    body.momo-polish .report-health-detail-grid {
-      overflow: hidden;
-      gap: 1px !important;
-      border: 1px solid var(--momo-line);
-      border-radius: 8px;
-      background: var(--momo-line);
-    }
-
-    body.momo-polish .momo-report-page .report-health-subpanel {
-      border: 0 !important;
-      border-radius: 0 !important;
-      background: var(--momo-surface) !important;
-      box-shadow: none !important;
-    }
-
-    body.momo-polish .report-health-subpanel > div:first-child {
-      border-color: var(--momo-line) !important;
-      background: var(--momo-surface-muted) !important;
-    }
-
-    body.momo-polish .report-health-subpanel button {
-      border-color: var(--momo-line) !important;
-      border-radius: 6px !important;
-      box-shadow: none !important;
-    }
-
     body.momo-polish .report-yield-controls select {
       min-height: 40px !important;
       border-color: var(--momo-line) !important;
@@ -2379,11 +2289,6 @@
     body.momo-polish .report-yield-controls button.bg-slate-900 {
       border-color: var(--momo-ink) !important;
       background: var(--momo-ink) !important;
-    }
-
-    body.momo-polish .report-yield-leader {
-      border-color: #CFE8DE !important;
-      background: #F4FAF7 !important;
     }
 
     body.momo-polish .report-yield-list {
@@ -2468,9 +2373,109 @@
       background: var(--momo-info) !important;
     }
 
+    body.momo-polish .report-operations-panel,
+    body.momo-polish .report-annual-panel {
+      border-bottom: 0 !important;
+      border-radius: 8px 8px 0 0 !important;
+    }
+
+    body.momo-polish .report-operations-detail-panel,
+    body.momo-polish .report-analysis-panel {
+      margin-top: -1rem !important;
+      border-top-color: var(--momo-line) !important;
+      border-radius: 0 0 8px 8px !important;
+    }
+
+    body.momo-polish .report-operations-detail-panel {
+      box-shadow: var(--momo-panel-shadow) !important;
+    }
+
+    body.momo-polish .report-operations-grid,
+    body.momo-polish .report-completeness-grid {
+      gap: 1px;
+      border-color: var(--momo-line) !important;
+      background: var(--momo-line);
+    }
+
+    body.momo-polish .report-operations-metric,
+    body.momo-polish .report-completeness-item {
+      min-width: 0;
+      min-height: 88px;
+      background: var(--momo-surface);
+    }
+
+    body.momo-polish .report-operations-metric > div:nth-child(2) {
+      font-variant-numeric: tabular-nums;
+    }
+
+    body.momo-polish .report-completeness-grid {
+      border-top: 1px solid var(--momo-line);
+    }
+
+    body.momo-polish .report-completeness-item {
+      min-height: 78px;
+    }
+
+    body.momo-polish .report-status-dot {
+      width: 7px;
+      height: 7px;
+      flex: 0 0 7px;
+      border-radius: 50%;
+    }
+
+    body.momo-polish .report-prepaid-empty {
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted);
+    }
+
+    body.momo-polish .report-analysis-tabs {
+      gap: 1px;
+      border-color: var(--momo-line) !important;
+      background: var(--momo-line);
+    }
+
+    body.momo-polish .report-analysis-tab {
+      position: relative;
+      min-height: 44px;
+      border: 0;
+      background: var(--momo-surface-muted);
+      color: #64748B;
+      font-size: 0.75rem;
+      font-weight: 900;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .report-analysis-tab::after {
+      content: "";
+      position: absolute;
+      right: 1rem;
+      bottom: 0;
+      left: 1rem;
+      height: 2px;
+      background: transparent;
+    }
+
+    body.momo-polish .report-analysis-tab.is-active {
+      background: var(--momo-surface) !important;
+      color: var(--momo-brand) !important;
+    }
+
+    body.momo-polish .report-analysis-tab.is-active::after {
+      background: var(--momo-brand);
+    }
+
+    body.momo-polish .report-analysis-panel > .report-panel-header {
+      background: var(--momo-surface-muted) !important;
+    }
+
     @media (max-width: 640px) {
       body.momo-polish .momo-finance-report {
         gap: 0.875rem;
+      }
+
+      body.momo-polish .report-operations-detail-panel,
+      body.momo-polish .report-analysis-panel {
+        margin-top: -0.875rem !important;
       }
 
       body.momo-polish .report-panel-header {
@@ -2522,6 +2527,33 @@
       body.momo-polish .report-settlement-grid,
       body.momo-polish .report-overview-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+
+      body.momo-polish .report-operations-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+
+      body.momo-polish .report-operations-metric {
+        min-height: 82px;
+        padding: 0.75rem !important;
+      }
+
+      body.momo-polish .report-completeness-grid {
+        display: flex !important;
+        grid-template-columns: none !important;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+
+      body.momo-polish .report-completeness-grid::-webkit-scrollbar {
+        display: none;
+      }
+
+      body.momo-polish .report-completeness-item {
+        min-width: 148px;
+        min-height: 76px;
+        flex: 0 0 148px;
+        padding: 0.625rem 0.75rem !important;
       }
 
       body.momo-polish .report-settlement-grid > div,
@@ -2579,13 +2611,7 @@
         min-height: 82px !important;
       }
 
-      body.momo-polish .report-overview-footer > div {
-        padding: 0.625rem 0.75rem !important;
-      }
-
-      body.momo-polish .report-prepaid-grid,
-      body.momo-polish .report-yield-summary-grid,
-      body.momo-polish .report-health-metrics {
+      body.momo-polish .report-prepaid-grid {
         display: flex !important;
         grid-template-columns: none !important;
         gap: 1px !important;
@@ -2594,60 +2620,12 @@
         scroll-snap-type: x proximity;
       }
 
-      body.momo-polish .report-prepaid-grid > div,
-      body.momo-polish .report-yield-summary-grid > div {
+      body.momo-polish .report-prepaid-grid > div {
         min-width: 144px;
         min-height: 82px;
         flex: 0 0 144px;
         padding: 0.75rem !important;
         scroll-snap-align: start;
-      }
-
-      body.momo-polish .report-health-score {
-        padding: 0.875rem !important;
-      }
-
-      body.momo-polish .report-health-score .text-5xl {
-        font-size: 2.4rem !important;
-      }
-
-      body.momo-polish .report-health-summary {
-        margin-top: 0.75rem !important;
-      }
-
-      body.momo-polish .report-health-summary > div {
-        padding: 0.5rem 0.625rem !important;
-      }
-
-      body.momo-polish .report-health-content {
-        padding: 0 !important;
-      }
-
-      body.momo-polish .report-health-metrics {
-        gap: 0.5rem !important;
-        padding: 0.75rem;
-        background: var(--momo-surface-muted);
-      }
-
-      body.momo-polish .report-health-metric {
-        min-width: 148px;
-        min-height: 74px;
-        flex: 0 0 148px;
-        padding: 0.625rem 0.75rem !important;
-        scroll-snap-align: start;
-      }
-
-      body.momo-polish .report-health-detail-grid {
-        grid-template-columns: minmax(0, 1fr) !important;
-        gap: 1px !important;
-        margin-top: 0 !important;
-        border: 0;
-        border-top: 1px solid var(--momo-line);
-        border-radius: 0;
-      }
-
-      body.momo-polish .report-health-subpanel {
-        min-width: 0;
       }
 
       body.momo-polish .report-yield-controls {
@@ -2664,14 +2642,6 @@
         min-width: 136px;
         min-height: 40px !important;
         flex: 0 0 auto;
-      }
-
-      body.momo-polish .report-yield-summary-grid .text-xl {
-        font-size: 1.1rem !important;
-      }
-
-      body.momo-polish .report-yield-leader {
-        padding: 0.625rem 0.875rem !important;
       }
 
       body.momo-polish .report-yield-body {

@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.10-report-workspace';
+    const APP_VERSION = '2026.07.11-report-consolidation';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -193,8 +193,9 @@
           hoveredReportBar: null,
           hideEmptyMonths: false,
           reportBreakdownTab: 'income',
+          reportAnalysisTab: 'trend',
           reportYieldSort: 'yield_desc',
-          reportYieldMinCount: 1,
+          reportYieldMinCount: 3,
           appVersion: APP_VERSION,
           updateAvailable: false,
           pendingServiceWorker: null,
@@ -1652,18 +1653,6 @@
           };
           return rows.sort(sorters[this.reportYieldSort] || sorters.yield_desc);
         },
-        reportYieldViewSummary() {
-          const hidden = Math.max(0, this.serviceYieldRows.length - this.reportServiceYieldRows.length);
-          const lowConfidence = this.reportServiceYieldRows.filter(row => row.confidenceTone !== 'ok').length;
-          return {
-            visible: this.reportServiceYieldRows.length,
-            hidden,
-            lowConfidence,
-            top: this.reportServiceYieldRows[0] || null,
-            sortLabel: this.reportYieldSortOptions.find(option => option.value === this.reportYieldSort)?.label || '產值高到低'
-          };
-        },
-
         crmFilters() {
           return [
             { value: 'all', label: '全部顧客' },
@@ -2151,29 +2140,6 @@
           const profitMargin  = totalRevenue > 0 ? Math.round(netProfit / totalRevenue * 100) : 0;
           return { totalRevenue, totalExpenses, netProfit, bestMonth, worstMonth, profitMargin };
         },
-        annualCashPosition() {
-          const yearOrders = this.orders.filter(o => {
-            const [year] = (o.date || '').split('-');
-            return this.isOrderActive(o) && year === this.selectedYear && o.customerName && !this.isBlockedSlot(o.customerName);
-          });
-          const cashIn = yearOrders
-            .reduce((sum, o) => {
-              if (o.paymentMethod === '儲值扣款' || o.paymentMethod === '轉帳') return sum;
-              if (o.paymentMethod === '現金＋儲值扣款') return sum + this.getMixedCashAmount(o);
-              if (o.paymentMethod === '儲值進帳') return sum + (this.getTopupChannel(o) === '現金' ? (Number(o.amount) || 0) : 0);
-              return o.paymentMethod === '現金' ? sum + (Number(o.amount) || 0) : sum;
-            }, 0);
-          const prepaidIn = yearOrders
-            .filter(o => o.paymentMethod === '儲值進帳')
-            .reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
-          const prepaidOut = yearOrders
-            .reduce((sum, o) => {
-              if (o.paymentMethod === '儲值扣款') return sum + (Number(o.amount) || 0);
-              if (o.paymentMethod === '現金＋儲值扣款') return sum + this.getMixedPrepaidAmount(o);
-              return sum;
-            }, 0);
-          return { cashIn, prepaidIn, prepaidOut };
-        },
         reportSettlementMonth() {
           if (this.selectedMonth && this.selectedMonth !== 'All') return String(this.selectedMonth).padStart(2, '0');
           const now = new Date();
@@ -2371,141 +2337,104 @@
             ready: unclosedDates.length === 0
           };
         },
-        monthlyBusinessHealth() {
+        monthlyReportCompleteness() {
           const s = this.monthlySettlementSummary;
           const p = this.monthlyPrepaidReconciliation;
+          const syncTotal = Math.max(0, Number(this.syncIssueSummary.total) || 0);
+          const pricing = (this.priceMatchWorkbenchRows || []).length;
+          const pricingFromSync = Math.max(0, Number(this.syncIssueSummary.pricing) || 0);
+          const issueCount = syncTotal + Math.max(0, pricing - pricingFromSync);
+          const expenseMissing = s.serviceRevenue > 0 && s.expenses === 0;
+          const ready = s.ready && !expenseMissing && issueCount === 0 && p.balanced;
+          const items = [
+            {
+              key: 'closeout',
+              label: '打烊快照',
+              value: s.ready ? '已完成' : `未完成 ${s.unclosedDates.length} 天`,
+              detail: `快照 ${s.snapshotDays} 天 · 暫算 ${s.liveDays} 天`,
+              tone: s.ready ? 'good' : 'warn'
+            },
+            {
+              key: 'expenses',
+              label: '支出紀錄',
+              value: !s.serviceRevenue ? '尚無營收' : expenseMissing ? '尚未記錄' : `NT$ ${this.formatNumber(s.expenses)}`,
+              detail: expenseMissing ? '有營收但支出為 0，淨利率暫不判定' : '已納入本月損益',
+              tone: expenseMissing ? 'risk' : s.serviceRevenue ? 'good' : 'neutral'
+            },
+            {
+              key: 'sync',
+              label: '同步資料',
+              value: issueCount ? `${issueCount} 項待確認` : '資料正常',
+              detail: pricing ? `包含價目未匹配 ${pricing} 項` : '金額、付款與價目資料可用',
+              tone: issueCount ? 'warn' : 'good'
+            },
+            {
+              key: 'prepaid',
+              label: '儲值帳本',
+              value: p.balanced ? '帳面平衡' : '需要對帳',
+              detail: `期末 NT$ ${this.formatNumber(p.closingBalance)}`,
+              tone: p.balanced ? 'good' : 'risk'
+            }
+          ];
+          return {
+            ready,
+            label: ready ? '可封存' : '需確認',
+            className: ready ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
+            expenseMissing,
+            issueCount,
+            items
+          };
+        },
+        monthlyOperationsSummary() {
+          const s = this.monthlySettlementSummary;
           const y = this.settlementYieldSummary;
-          const serviceRows = this.settlementServiceYieldRows || [];
-          const serviceRevenue = Number(s.serviceRevenue) || 0;
-          const netProfit = Number(s.netProfit) || 0;
-          const profitMargin = Number(s.profitMargin) || 0;
           const monthIndex = Math.max(1, Number(s.month) || 1) - 1;
           const previousMonth = monthIndex > 0
             ? this.annualMonthlyData[monthIndex - 1]
             : this.lastYearMonthlyData[11];
-          const percentChange = (current, previous) => previous ? Math.round((current - previous) / previous * 100) : null;
-          const revenueChange = percentChange(serviceRevenue, previousMonth?.revenue || 0);
-          const orderChange = percentChange(s.ordersCount, previousMonth?.count || 0);
-          const prepaidLiability = Math.max(0, Number(p.closingBalance) || 0);
-          const prepaidChange = prepaidLiability - Math.max(0, Number(p.openingBalance) || 0);
-          const prepaidPressureRatio = serviceRevenue > 0 ? Math.round(prepaidLiability / serviceRevenue * 100) : 0;
-          const lowYieldRows = serviceRows
-            .filter(row => row.yieldPerHour > 0 && row.yieldPerHour < 1000)
-            .sort((a, b) => a.yieldPerHour - b.yieldPerHour || b.count - a.count)
-            .slice(0, 3);
-          const highYieldRows = serviceRows
-            .filter(row => row.yieldPerHour > 0)
-            .sort((a, b) => b.yieldPerHour - a.yieldPerHour || b.totalAmount - a.totalAmount)
-            .slice(0, 3);
-          const highValueAtRisk = this.crmList.filter(c => c.valueTier === 'high' && ['overdue', 'inactive', 'dormant', 'prepaidDormant'].includes(c.returnGroup));
-          const dataIssues = {
-            unclosed: s.unclosedDates.length,
-            sync: this.syncIssueSummary.total || 0,
-            pricing: (this.priceMatchWorkbenchRows || []).length,
-            pricingFromSync: this.syncIssueSummary.pricing || 0,
-            money: this.syncIssueSummary.money || 0,
-            locked: this.syncIssueSummary.locked || 0,
-            yieldMissing: (y.unmatched?.length || 0) + (y.actualMissing?.length || 0)
+          const previousLabel = monthIndex > 0
+            ? `${s.year}/${monthIndex} 月`
+            : `${Number(s.year) - 1}/12 月`;
+          const previousAverage = previousMonth?.count
+            ? Math.round(previousMonth.revenue / previousMonth.count)
+            : 0;
+          const compare = (current, previous) => {
+            if (!previous) return '尚無上一個完整月份可比';
+            const change = Math.round((current - previous) / previous * 100);
+            return `較 ${previousLabel} ${change >= 0 ? '↑' : '↓'} ${Math.abs(change)}%`;
           };
-          const combinedDataIssues = dataIssues.sync + Math.max(0, dataIssues.pricing - dataIssues.pricingFromSync);
-
-          const actions = [];
-          if (!serviceRevenue && !s.expenses) {
-            actions.push({ title: '本月尚無可判斷資料', detail: '同步行事曆或新增業績後，健檢會開始產生結論。', tone: 'info' });
-          }
-          if (dataIssues.unclosed) {
-            actions.push({ title: '先補齊打烊快照', detail: `${dataIssues.unclosed} 天未打烊，正式月結仍含明細暫算。`, tone: 'warn', cta: '補打烊', action: 'closeout' });
-          }
-          if (dataIssues.money || dataIssues.locked) {
-            actions.push({ title: '同步資料需確認', detail: `金額/付款 ${dataIssues.money} 筆，鎖帳異常 ${dataIssues.locked} 筆。`, tone: dataIssues.money ? 'risk' : 'warn', cta: '安全頁', action: 'safety', filter: dataIssues.money ? 'money' : 'locked' });
-          }
-          if (dataIssues.pricing) {
-            actions.push({ title: '價目表仍有未匹配', detail: `${dataIssues.pricing} 個服務名稱未匹配，會影響自動計價與工時口徑。`, tone: 'warn', cta: '處理價目', action: 'pricing' });
-          }
-          if (!p.balanced) {
-            actions.push({ title: '儲值帳本需對帳', detail: '期初 + 進帳 - 扣款 + 調整 與期末不一致。', tone: 'risk' });
-          }
-          if (serviceRevenue && y.actualCoverage < 70) {
-            actions.push({ title: '實際工時覆蓋偏低', detail: `目前 ${y.actualCoverage}%，會降低時間產值判斷可信度。`, tone: 'warn' });
-          }
-          if (lowYieldRows.length) {
-            actions.push({ title: '有低時間產值服務', detail: `${lowYieldRows[0].serviceName} 約 NT$ ${this.formatNumber(lowYieldRows[0].yieldPerHour)}/hr，可檢查排程或定價。`, tone: 'warn' });
-          }
-          if (highValueAtRisk.length) {
-            actions.push({ title: '高價值顧客回流變慢', detail: `${highValueAtRisk.length} 位高價值顧客目前在超週期或久未回狀態。`, tone: 'info' });
-          }
-          if (!actions.length) {
-            actions.push({ title: '本月主要指標穩定', detail: '月結、儲值、工時與同步資料目前沒有重大待處理項目。', tone: 'good' });
-          }
-
-          let score = serviceRevenue || s.expenses ? 100 : 0;
-          if (serviceRevenue || s.expenses) {
-            if (profitMargin < 0) score -= 30;
-            else if (profitMargin < 10) score -= 18;
-            else if (profitMargin < 20) score -= 8;
-            if (netProfit < 0) score -= 10;
-            if (dataIssues.unclosed) score -= Math.min(18, 6 + dataIssues.unclosed * 2);
-            if (!p.balanced) score -= 12;
-            if (dataIssues.money) score -= 14;
-            if (dataIssues.locked) score -= 8;
-            if (dataIssues.pricing) score -= Math.min(10, dataIssues.pricing * 2);
-            if (serviceRevenue && y.actualCoverage < 70) score -= 8;
-            if (dataIssues.yieldMissing) score -= Math.min(8, dataIssues.yieldMissing);
-            if (prepaidPressureRatio >= 80) score -= 6;
-            if (lowYieldRows.length) score -= 5;
-            if (highValueAtRisk.length) score -= Math.min(6, highValueAtRisk.length * 2);
-          }
-          score = Math.max(0, Math.min(100, score));
-          const status = !serviceRevenue && !s.expenses
-            ? { label: '尚無資料', tone: 'info', className: 'bg-slate-50 text-slate-600 border-slate-200' }
-            : score >= 85
-              ? { label: '成長中', tone: 'good', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
-              : score >= 70
-                ? { label: '穩定', tone: 'ok', className: 'bg-sky-50 text-sky-700 border-sky-200' }
-                : score >= 50
-                  ? { label: '需檢查', tone: 'warn', className: 'bg-amber-50 text-amber-700 border-amber-200' }
-                  : { label: '偏弱', tone: 'risk', className: 'bg-rose-50 text-rose-600 border-rose-200' };
-          const trustScore = Math.max(0, 100
-            - (dataIssues.unclosed ? Math.min(30, dataIssues.unclosed * 5) : 0)
-            - (dataIssues.money ? 25 : 0)
-            - (dataIssues.locked ? 15 : 0)
-            - (dataIssues.pricing ? Math.min(20, dataIssues.pricing * 4) : 0)
-            - (!p.balanced ? 15 : 0));
-          const trustLabel = trustScore >= 85 ? '可信' : trustScore >= 65 ? '可用需留意' : '先檢查';
-          const headline = !serviceRevenue && !s.expenses
-            ? '本月還沒有足夠資料可判斷。'
-            : `${s.label} ${status.label}：營業額 NT$ ${this.formatNumber(serviceRevenue)}，淨利率 ${profitMargin}%，${trustLabel}。`;
-          const summary = [
-            revenueChange !== null ? `營業額較上月${revenueChange >= 0 ? '增加' : '減少'} ${Math.abs(revenueChange)}%` : '尚無上月營收可比',
-            `客單 NT$ ${this.formatNumber(s.avgTicket)}、${s.ordersCount} 筆服務`,
-            y.average ? `時間產值 NT$ ${this.formatNumber(y.average)}/hr，實際工時覆蓋 ${y.actualCoverage}%` : '時間產值尚無可用工時',
-            prepaidLiability ? `期末儲值負債 NT$ ${this.formatNumber(prepaidLiability)}${prepaidChange ? `（${prepaidChange > 0 ? '+' : ''}${this.formatNumber(prepaidChange)}）` : ''}` : '本月底無儲值負債'
-          ];
-          const metricCards = [
-            { label: '月營業額', value: `NT$ ${this.formatNumber(serviceRevenue)}`, detail: revenueChange === null ? '無上月比較' : `${revenueChange >= 0 ? '↑' : '↓'} ${Math.abs(revenueChange)}% vs 上月`, tone: revenueChange === null || revenueChange >= 0 ? 'good' : 'warn' },
-            { label: '淨利 / 淨利率', value: `NT$ ${this.formatNumber(netProfit)}`, detail: `${profitMargin}% · ${profitMargin >= 20 ? '健康' : profitMargin >= 0 ? '待拉高' : '赤字'}`, tone: profitMargin >= 20 ? 'good' : profitMargin >= 0 ? 'warn' : 'risk' },
-            { label: '客單 / 服務筆數', value: `NT$ ${this.formatNumber(s.avgTicket)}`, detail: `${s.ordersCount} 筆${orderChange === null ? '' : ` · ${orderChange >= 0 ? '↑' : '↓'} ${Math.abs(orderChange)}%`}`, tone: 'neutral' },
-            { label: '時間產值', value: y.average ? `NT$ ${this.formatNumber(y.average)}/hr` : '尚無', detail: `${y.actualAverage ? '實際' : '預估'} · 覆蓋 ${y.actualCoverage}%`, tone: y.average >= 1600 ? 'good' : y.average >= 1000 ? 'neutral' : y.average ? 'warn' : 'info' },
-            { label: '儲值負債', value: `NT$ ${this.formatNumber(prepaidLiability)}`, detail: `${p.balanced ? '帳面平衡' : '需對帳'} · ${prepaidPressureRatio}% 營收比`, tone: p.balanced && prepaidPressureRatio < 80 ? 'neutral' : 'warn' },
-            { label: '報表可信度', value: trustLabel, detail: `快照 ${s.snapshotDays} 天 · 異常 ${combinedDataIssues} 項`, tone: trustScore >= 85 ? 'good' : trustScore >= 65 ? 'warn' : 'risk' }
-          ];
           return {
-            score,
-            status,
-            headline,
-            summary,
-            actions: actions.slice(0, 5),
-            metricCards,
-            highYieldRows,
-            lowYieldRows,
-            highValueAtRisk: highValueAtRisk.slice(0, 4),
-            trustScore,
-            trustLabel,
-            revenueChange,
-            prepaidLiability,
-            prepaidChange,
-            prepaidPressureRatio,
-            dataIssues: { ...dataIssues, combined: combinedDataIssues }
+            previousLabel,
+            cards: [
+              {
+                key: 'revenue',
+                label: '營業額',
+                value: `NT$ ${this.formatNumber(s.serviceRevenue)}`,
+                detail: compare(s.serviceRevenue, previousMonth?.revenue || 0),
+                tone: 'brand'
+              },
+              {
+                key: 'orders',
+                label: '服務筆數',
+                value: `${s.ordersCount} 筆`,
+                detail: compare(s.ordersCount, previousMonth?.count || 0),
+                tone: 'neutral'
+              },
+              {
+                key: 'ticket',
+                label: '平均客單',
+                value: `NT$ ${this.formatNumber(s.avgTicket)}`,
+                detail: compare(s.avgTicket, previousAverage),
+                tone: 'neutral'
+              },
+              {
+                key: 'yield',
+                label: '每小時產值',
+                value: y.average ? `NT$ ${this.formatNumber(y.average)}` : '尚無',
+                detail: y.average ? `${y.actualAverage ? '實際工時' : '預估工時'} · 覆蓋 ${y.actualCoverage}%` : '尚無可用工時',
+                tone: 'info'
+              }
+            ]
           };
         },
         reportComparisons() {
@@ -2536,28 +2465,6 @@
             netPoints: line('netY'),
             zeroY: yFor(0)
           };
-        },
-        reportInsights() {
-          const active = this.annualMonthlyData.filter(month => month.revenue > 0 || month.expenses > 0);
-          if (!active.length) return [{ title: '尚無年度資料', detail: '同步行事曆或新增業績後，這裡會產生經營提醒。', tone: 'info' }];
-          const best = [...active].sort((a, b) => b.net - a.net)[0];
-          const highExpense = [...active].sort((a, b) => (b.expenses / Math.max(1, b.revenue)) - (a.expenses / Math.max(1, a.revenue)))[0];
-          const insights = [{
-            title: `${best.label}淨利最高`,
-            detail: `淨利 NT$ ${this.formatNumber(best.net)}，可回看當月服務組合與預約密度。`,
-            tone: 'good'
-          }];
-          if (highExpense.expenses > 0) insights.push({
-            title: `${highExpense.label}支出占比較高`,
-            detail: `支出占營業額 ${Math.round(highExpense.expenses / Math.max(1, highExpense.revenue) * 100)}%，建議檢查材料與固定成本。`,
-            tone: 'warn'
-          });
-          insights.push({
-            title: this.annualSummary.profitMargin >= 20 ? '淨利率維持健康' : '淨利率低於建議目標',
-            detail: `目前 ${this.annualSummary.profitMargin}%，建議目標至少 20%。`,
-            tone: this.annualSummary.profitMargin >= 20 ? 'good' : 'warn'
-          });
-          return insights;
         },
         reportBreakdownRows() {
           const source = this.reportBreakdownTab === 'income'
@@ -5079,37 +4986,22 @@
         copyMonthlySettlementSummary() {
           const s = this.monthlySettlementSummary;
           const p = this.monthlyPrepaidReconciliation;
+          const completeness = this.monthlyReportCompleteness;
           const lines = [
             `摸摸頭 momohair 月結摘要 ${s.label}`,
             `營業額：NT$ ${this.formatNumber(s.serviceRevenue)}（${s.ordersCount} 筆，客單 NT$ ${this.formatNumber(s.avgTicket)}）`,
             `支出：NT$ ${this.formatNumber(s.expenses)}`,
-            `淨利：NT$ ${this.formatNumber(s.netProfit)}（淨利率 ${s.profitMargin}%）`,
+            `淨利：NT$ ${this.formatNumber(s.netProfit)}（淨利率 ${completeness.expenseMissing ? '待確認，本月支出為 0' : `${s.profitMargin}%`}）`,
             `現金入帳：NT$ ${this.formatNumber(s.cashIn)}`,
             `轉帳入帳：NT$ ${this.formatNumber(s.transferIn)}`,
             `儲值扣款：NT$ ${this.formatNumber(s.prepaidOut)}`,
             `儲值進帳：NT$ ${this.formatNumber(s.prepaidIn)}`,
             `月結口徑：${s.settlementBasis}`,
             `儲值對帳：期初 NT$ ${this.formatNumber(p.openingBalance)} + 進帳 NT$ ${this.formatNumber(p.topupIn)} - 扣款 NT$ ${this.formatNumber(p.debitOut)} + 調整 NT$ ${this.formatNumber(p.adjustments)} = 期末 NT$ ${this.formatNumber(p.closingBalance)}`,
-            `打烊狀態：${s.ready ? '已完整' : `未打烊 ${s.unclosedDates.length} 天`}`
+            `月結狀態：${completeness.label}`
           ];
           if (s.unclosedDates.length) lines.push(`未打烊日期：${s.unclosedDates.join('、')}`);
           this.copyTextToClipboard(lines.join('\n'), '月結摘要已複製');
-        },
-        copyMonthlyBusinessHealthSummary() {
-          const s = this.monthlySettlementSummary;
-          const h = this.monthlyBusinessHealth;
-          const lines = [
-            `摸摸頭 momohair 月度營運健檢 ${s.label}`,
-            `狀態：${h.status.label}（${h.score} 分）`,
-            h.headline,
-            `營業額：NT$ ${this.formatNumber(s.serviceRevenue)}｜淨利：NT$ ${this.formatNumber(s.netProfit)}｜淨利率：${s.profitMargin}%`,
-            `服務：${s.ordersCount} 筆｜客單：NT$ ${this.formatNumber(s.avgTicket)}｜時間產值：${this.settlementYieldSummary.average ? `NT$ ${this.formatNumber(this.settlementYieldSummary.average)}/hr` : '尚無'}`,
-            `儲值：期末負債 NT$ ${this.formatNumber(h.prepaidLiability)}｜${this.monthlyPrepaidReconciliation.balanced ? '帳面平衡' : '需對帳'}`,
-            `報表可信度：${h.trustLabel}（快照 ${s.snapshotDays} 天、暫算 ${s.liveDays} 天、同步/價目異常 ${h.dataIssues.combined} 項）`,
-            '優先處理：',
-            ...h.actions.map((item, index) => `${index + 1}. ${item.title}：${item.detail}`)
-          ];
-          this.copyTextToClipboard(lines.join('\n'), '月度健檢已複製');
         },
         addDaysToDate(date, days) {
           if (!date) return '';
@@ -5300,19 +5192,6 @@
           this.syncIssueFilter = filter || 'all';
           this.showMobileTools = false;
           this.scrollToTopForNavigation();
-        },
-        handleMonthlyBusinessHealthAction(item = {}) {
-          if (item.action === 'closeout') {
-            this.openCloseoutSheet(this.monthlySettlementSummary.unclosedDates[0] || new Date().toLocaleDateString('sv-SE'));
-            return;
-          }
-          if (item.action === 'pricing') {
-            this.goToSafetySync('pricing');
-            return;
-          }
-          if (item.action === 'safety') {
-            this.goToSafetySync(item.filter || 'all');
-          }
         },
         async handleHomeAttentionItem(item = {}) {
           if (item.action === 'closeout') {
@@ -7780,25 +7659,20 @@
         exportMonthlySettlementReport() {
           const s = this.monthlySettlementSummary;
           const p = this.monthlyPrepaidReconciliation;
-          const h = this.monthlyBusinessHealth;
+          const completeness = this.monthlyReportCompleteness;
+          const operations = this.monthlyOperationsSummary;
           const sections = [
             {
-              title: `月度營運健檢 ${s.label}`,
+              title: `帳務完整度與本月營運 ${s.label}`,
               headers: ['項目', '數值'],
               rows: [
-                ['健檢狀態', h.status.label],
-                ['健檢分數', h.score],
-                ['老闆摘要', h.headline],
-                ['報表可信度', h.trustLabel],
+                ['月結狀態', completeness.label],
+                ...completeness.items.map(item => [item.label, `${item.value}｜${item.detail}`]),
+                ['營業額比較', operations.cards[0].detail],
+                ['服務筆數比較', operations.cards[1].detail],
+                ['平均客單比較', operations.cards[2].detail],
                 ['時間產值(NT$/hr)', this.settlementYieldSummary.average || ''],
-                ['實際工時覆蓋率', `${this.settlementYieldSummary.actualCoverage}%`],
-                ['期末儲值負債(NT$)', h.prepaidLiability],
-                ['儲值負債/營業額', `${h.prepaidPressureRatio}%`],
-                ['未打烊天數', h.dataIssues.unclosed],
-                ['同步異常', h.dataIssues.sync],
-                ['價目未匹配', h.dataIssues.pricing],
-                ['高價值回流觀察', h.highValueAtRisk.map(c => c.name).join('、')],
-                ['優先處理', h.actions.map(item => `${item.title}：${item.detail}`).join('｜')]
+                ['實際工時覆蓋率', `${this.settlementYieldSummary.actualCoverage}%`]
               ]
             },
             {
@@ -7822,7 +7696,7 @@
                 ['儲值進帳(NT$)', s.prepaidIn],
                 ['支出(NT$)', s.expenses],
                 ['淨利(NT$)', s.netProfit],
-                ['淨利率', `${s.profitMargin}%`],
+                ['淨利率', completeness.expenseMissing ? '待確認（本月支出為 0）' : `${s.profitMargin}%`],
                 ['有資料日期', s.businessDays],
                 ['已打烊日期', s.closedDays],
                 ['快照天數', s.snapshotDays],
@@ -7931,21 +7805,23 @@
           this.showToast(`${s.label} 正式月結 CSV 已匯出`);
         },
         exportAnnualReport() {
-          const headers = ['月份', '收入(NT$)', '支出(NT$)', '淨利(NT$)', '淨利率', '服務人次'];
+          const headers = ['月份', '收入(NT$)', '支出(NT$)', '淨利(NT$)', '淨利率', '服務人次', '資料狀態'];
           const rows = this.annualMonthlyData.map(m => [
             m.label,
             m.revenue || 0,
             m.expenses || 0,
             m.net || 0,
-            m.revenue > 0 ? Math.round(m.net / m.revenue * 100) + '%' : '-',
-            m.count || 0
+            m.revenue > 0 && m.expenses === 0 ? '待確認' : m.revenue > 0 ? Math.round(m.net / m.revenue * 100) + '%' : '-',
+            m.count || 0,
+            m.revenue > 0 && m.expenses === 0 ? '支出為 0，淨利率待確認' : m.revenue > 0 ? '已包含支出資料' : '尚無資料'
           ]);
           rows.push(['全年合計',
             this.annualSummary.totalRevenue,
             this.annualSummary.totalExpenses,
             this.annualSummary.netProfit,
-            this.annualSummary.profitMargin + '%',
-            this.annualMonthlyData.reduce((s, m) => s + m.count, 0)
+            this.annualSummary.totalRevenue > 0 && this.annualSummary.totalExpenses === 0 ? '待確認' : this.annualSummary.profitMargin + '%',
+            this.annualMonthlyData.reduce((s, m) => s + m.count, 0),
+            this.annualSummary.totalRevenue > 0 && this.annualSummary.totalExpenses === 0 ? '全年支出為 0，淨利率待確認' : '已包含支出資料'
           ]);
           let csv = '\uFEFF';
           csv += [`"${this.selectedYear} 年 年度損益報表"`, ''].join('\n');
