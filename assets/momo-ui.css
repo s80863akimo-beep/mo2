@@ -2697,4 +2697,421 @@
       }
     }
 
+    /* Inventory: compact replenishment workspace */
+    body.momo-polish .momo-inventory-page {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    body.momo-polish .momo-inventory-page > * {
+      min-width: 0;
+      margin-top: 0 !important;
+    }
+
+    body.momo-polish .inventory-overview-panel,
+    body.momo-polish .inventory-replenishment-panel {
+      border-color: var(--momo-line) !important;
+      border-radius: 8px !important;
+      box-shadow: var(--momo-panel-shadow) !important;
+    }
+
+    body.momo-polish .inventory-overview-header,
+    body.momo-polish .inventory-replenishment-header {
+      min-height: 52px;
+      padding: 0.75rem 1rem !important;
+      border-color: var(--momo-line) !important;
+    }
+
+    body.momo-polish .inventory-overview-header h3,
+    body.momo-polish .inventory-replenishment-header h3,
+    body.momo-polish .inventory-ledger-toolbar h3 {
+      color: var(--momo-ink) !important;
+    }
+
+    body.momo-polish .inventory-overview-grid {
+      gap: 1px;
+      background: var(--momo-line);
+    }
+
+    body.momo-polish .inventory-overview-metric {
+      min-width: 0;
+      min-height: 88px;
+      border: 0 !important;
+      background: var(--momo-surface);
+    }
+
+    body.momo-polish .inventory-overview-metric > div:nth-child(2) {
+      font-variant-numeric: tabular-nums;
+    }
+
+    body.momo-polish .inventory-replenishment-filter {
+      min-height: 36px !important;
+      border-color: #F1D9AE !important;
+      border-radius: 8px !important;
+      background: #FFF9EE !important;
+      color: var(--momo-warning) !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .inventory-replenishment-list {
+      gap: 1px;
+      background: var(--momo-line);
+    }
+
+    body.momo-polish .inventory-replenishment-item {
+      min-width: 0;
+      border: 0 !important;
+      border-left: 4px solid var(--momo-warning) !important;
+      border-radius: 0 !important;
+      background: var(--momo-surface) !important;
+    }
+
+    body.momo-polish .inventory-replenishment-item--out {
+      border-left-color: var(--momo-danger) !important;
+    }
+
+    body.momo-polish .inventory-replenishment-actions button {
+      border-color: var(--momo-line) !important;
+      border-radius: 6px !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .inventory-replenishment-actions .inventory-refill-button {
+      border-color: var(--momo-ink) !important;
+      background: var(--momo-ink) !important;
+      color: #FFFFFF !important;
+    }
+
+    body.momo-polish .inventory-replenishment-empty {
+      min-height: 60px;
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted);
+    }
+
+    body.momo-polish .inventory-status-check {
+      display: inline-flex;
+      width: 26px;
+      height: 26px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #EAF7F1;
+      color: var(--momo-success);
+      font-size: 0.75rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .inventory-form-sheet {
+      border-color: var(--momo-line) !important;
+      border-radius: 8px !important;
+      box-shadow: 0 24px 60px -36px rgba(15, 23, 42, 0.6) !important;
+    }
+
+    body.momo-polish .inventory-form-sheet button[aria-label="關閉新增庫存"] {
+      border-radius: 50% !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .inventory-form-input {
+      min-height: 44px !important;
+      border-color: var(--momo-line) !important;
+      border-radius: 8px !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .inventory-form-input:focus {
+      border-color: rgba(217, 95, 84, 0.5) !important;
+      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.1) !important;
+    }
+
+    body.momo-polish .inventory-form-submit {
+      border-color: var(--momo-brand) !important;
+      border-radius: 8px !important;
+      background: var(--momo-brand) !important;
+      color: #FFFFFF !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .inventory-ledger {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .inventory-ledger > * {
+      min-width: 0;
+      margin-top: 0 !important;
+    }
+
+    body.momo-polish .inventory-ledger-toolbar {
+      padding: 1rem !important;
+      border-color: var(--momo-line) !important;
+      border-radius: 8px !important;
+      background: var(--momo-surface) !important;
+      box-shadow: var(--momo-panel-shadow) !important;
+    }
+
+    body.momo-polish .inventory-add-button {
+      min-height: 40px !important;
+      padding: 0 1rem !important;
+      border-color: var(--momo-brand) !important;
+      border-radius: 8px !important;
+      background: var(--momo-brand) !important;
+      color: #FFFFFF !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .inventory-search-input.compact-search-input {
+      min-height: 42px !important;
+      height: 42px !important;
+      border-color: var(--momo-line) !important;
+      border-radius: 8px !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .inventory-search-input.compact-search-input:focus {
+      border-color: rgba(217, 95, 84, 0.5) !important;
+      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.1) !important;
+    }
+
+    body.momo-polish .inventory-filter-button {
+      min-height: 38px !important;
+      border-color: var(--momo-line) !important;
+      border-radius: 6px !important;
+      background: var(--momo-surface-muted) !important;
+      color: #64748B !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .inventory-filter-button.bg-slate-800 {
+      border-color: var(--momo-brand) !important;
+      background: var(--momo-brand) !important;
+      color: #FFFFFF !important;
+    }
+
+    body.momo-polish .inventory-filter-button.bg-amber-500 {
+      border-color: var(--momo-warning) !important;
+      background: var(--momo-warning) !important;
+      color: #FFFFFF !important;
+    }
+
+    body.momo-polish .inventory-filter-button.bg-rose-500 {
+      border-color: var(--momo-danger) !important;
+      background: var(--momo-danger) !important;
+      color: #FFFFFF !important;
+    }
+
+    body.momo-polish .inventory-table-shell {
+      border-color: var(--momo-line) !important;
+      border-radius: 8px !important;
+      background: var(--momo-surface);
+      box-shadow: var(--momo-panel-shadow) !important;
+    }
+
+    body.momo-polish .inventory-table thead tr {
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted) !important;
+      color: var(--momo-muted) !important;
+    }
+
+    body.momo-polish .inventory-table tbody {
+      border-color: var(--momo-line) !important;
+    }
+
+    body.momo-polish .inventory-table-row {
+      position: relative;
+      background: var(--momo-surface) !important;
+    }
+
+    body.momo-polish .inventory-table-row:hover {
+      background: #FAFBFC !important;
+    }
+
+    body.momo-polish .inventory-table-row--low td:first-child {
+      box-shadow: inset 4px 0 0 var(--momo-warning);
+    }
+
+    body.momo-polish .inventory-table-row--out td:first-child {
+      box-shadow: inset 4px 0 0 var(--momo-danger);
+    }
+
+    body.momo-polish .inventory-table input {
+      border-radius: 6px !important;
+    }
+
+    body.momo-polish .inventory-stock-controls button {
+      border-color: var(--momo-line) !important;
+      border-radius: 6px !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .inventory-stock-controls button.bg-slate-900 {
+      border-color: var(--momo-ink) !important;
+      background: var(--momo-ink) !important;
+    }
+
+    body.momo-polish .inventory-empty-state {
+      min-height: 168px;
+      border: 1px dashed var(--momo-line-strong);
+      border-radius: 8px !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .inventory-mobile-list {
+      overflow: hidden;
+      border: 1px solid var(--momo-line);
+      border-radius: 8px;
+      background: var(--momo-surface);
+      box-shadow: var(--momo-panel-shadow);
+    }
+
+    body.momo-polish .inventory-mobile-rows {
+      gap: 0 !important;
+    }
+
+    body.momo-polish .inventory-mobile-item {
+      position: relative;
+      margin-top: 0 !important;
+      border: 0 !important;
+      border-bottom: 1px solid var(--momo-line) !important;
+      border-radius: 0 !important;
+      background: var(--momo-surface) !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .inventory-mobile-item:last-child {
+      border-bottom: 0 !important;
+    }
+
+    body.momo-polish .inventory-mobile-item::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 4px;
+      background: var(--momo-success);
+      opacity: 0.75;
+    }
+
+    body.momo-polish .inventory-mobile-item--low::before {
+      background: var(--momo-warning);
+    }
+
+    body.momo-polish .inventory-mobile-item--out::before {
+      background: var(--momo-danger);
+    }
+
+    body.momo-polish .inventory-mobile-summary {
+      min-height: 64px;
+      padding: 0.75rem 0.875rem 0.625rem 1rem !important;
+    }
+
+    body.momo-polish .inventory-mobile-quick,
+    body.momo-polish .inventory-mobile-actions {
+      padding-right: 0.875rem !important;
+      padding-left: 1rem !important;
+    }
+
+    body.momo-polish .inventory-mobile-quick button,
+    body.momo-polish .inventory-mobile-actions button,
+    body.momo-polish .inventory-mobile-editor button {
+      border-radius: 6px !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .inventory-mobile-quick button.bg-slate-800,
+    body.momo-polish .inventory-mobile-actions button.bg-slate-900,
+    body.momo-polish .inventory-mobile-editor button.bg-slate-900 {
+      background: var(--momo-ink) !important;
+    }
+
+    body.momo-polish .inventory-mobile-editor {
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .inventory-mobile-editor input {
+      min-height: 42px !important;
+      border-color: var(--momo-line) !important;
+      border-radius: 6px !important;
+      background: var(--momo-surface) !important;
+    }
+
+    @media (min-width: 1024px) {
+      body.momo-polish .inventory-ledger-toolbar {
+        display: grid;
+        grid-template-columns: minmax(300px, 1fr) minmax(240px, 320px) minmax(270px, 340px);
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      body.momo-polish .inventory-ledger-toolbar > * {
+        min-width: 0;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body.momo-polish .momo-inventory-page {
+        gap: 0.875rem;
+      }
+
+      body.momo-polish .inventory-overview-header,
+      body.momo-polish .inventory-replenishment-header {
+        min-height: 48px;
+        padding: 0.75rem 0.875rem !important;
+      }
+
+      body.momo-polish .inventory-overview-metric {
+        min-height: 78px;
+        padding: 0.75rem !important;
+      }
+
+      body.momo-polish .inventory-replenishment-empty {
+        min-height: 56px;
+        padding: 0.625rem 0.875rem !important;
+      }
+
+      body.momo-polish .inventory-replenishment-list {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+
+      body.momo-polish .inventory-ledger-toolbar {
+        padding: 0.875rem !important;
+      }
+
+      body.momo-polish .inventory-add-button {
+        min-height: 38px !important;
+        padding: 0 0.75rem !important;
+      }
+
+      body.momo-polish .inventory-search-input.compact-search-input {
+        min-height: 42px !important;
+        height: 42px !important;
+        border-radius: 8px !important;
+      }
+
+      body.momo-polish .inventory-filter-button {
+        min-height: 38px !important;
+      }
+
+      body.momo-polish .inventory-empty-state {
+        min-height: 150px;
+        padding: 2rem 1rem !important;
+      }
+
+      body.momo-polish .inventory-form-sheet {
+        border-radius: 1.25rem 1.25rem 0 0 !important;
+      }
+    }
+
     [v-cloak] { display: none !important; }

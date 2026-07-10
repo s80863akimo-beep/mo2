@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v76-report-consolidation';
-const APP_VERSION = '2026.07.11-report-consolidation-2';
+const CACHE_NAME = 'momohair-shell-v77-inventory-workspace';
+const APP_VERSION = '2026.07.11-inventory-workspace';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
