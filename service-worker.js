@@ -1,9 +1,11 @@
-const CACHE_NAME = 'momohair-shell-v68-visual-crm-panel';
-const APP_VERSION = '2026.07.10-visual-crm-panel';
+const CACHE_NAME = 'momohair-shell-v69-maintainable-ui';
+const APP_VERSION = '2026.07.10-maintainable-ui';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
+  `/assets/momo-ui.css?v=${APP_VERSION}`,
   `/assets/momo-core.js?v=${APP_VERSION}`,
+  `/assets/momo-app.js?v=${APP_VERSION}`,
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -17,7 +19,7 @@ async function isValidAppShellResponse(response) {
   if (!contentType.includes('text/html')) return false;
   try {
     const text = await response.clone().text();
-    return text.includes('<div id="app"') && text.includes('APP_VERSION');
+    return text.includes('<div id="app"') && text.includes('/assets/momo-app.js?v=');
   } catch (error) {
     return false;
   }
