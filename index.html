@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.11-inventory-workspace">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.11-crm-workspace-2">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.11-inventory-workspace">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.11-crm-workspace-2">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -2221,56 +2221,60 @@
         </div>
 
         <!-- Tab 5: CRM 與儲值帳本 -->
-        <div v-else-if="activeTab === 'crm'" key="crm" class="momo-list-page space-y-4 sm:space-y-6">
-          <section class="bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
-            <div class="p-4 sm:p-6 bg-gradient-to-r from-white to-orange-50/40 border-b border-orange-100/40">
+        <div v-else-if="activeTab === 'crm'" key="crm" class="momo-list-page momo-crm-page">
+          <section class="crm-overview-panel momo-surface bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
+            <div class="crm-overview-header p-4 sm:p-6 border-b border-orange-100/40">
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <h3 class="font-black text-slate-800 text-lg sm:text-xl">顧客與儲值帳本</h3>
-                  <p class="text-[11px] sm:text-xs text-slate-400 font-semibold mt-1">客史、配方與每筆儲值異動集中管理</p>
+                  <h3 class="font-black text-slate-800 text-lg sm:text-xl">顧客 CRM</h3>
+                  <p class="text-[11px] sm:text-xs text-slate-400 font-semibold mt-1">客史、配方與儲值帳本</p>
                 </div>
-                <button @click="exportCrmCSV" class="min-h-[40px] px-3 rounded-xl bg-white border border-orange-100 text-[11px] font-black text-slate-500 shrink-0">匯出 CRM</button>
+                <div class="crm-overview-actions flex items-center gap-2 shrink-0">
+                  <button @click="exportCrmCSV" class="crm-export-button min-h-[40px] px-3 rounded-xl bg-white border border-orange-100 text-[11px] font-black text-slate-500">匯出</button>
+                </div>
               </div>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
-                <div class="rounded-2xl bg-orange-50/70 px-3 py-3">
+              <div class="crm-overview-grid grid grid-cols-4 mt-4">
+                <div class="crm-overview-metric px-3 py-3">
                   <div class="text-[9px] font-black text-slate-400">顧客</div>
                   <div class="text-lg font-black text-slate-800">{{ crmStats.totalCustomers }}</div>
                 </div>
-                <div class="rounded-2xl bg-violet-50/70 px-3 py-3">
+                <div class="crm-overview-metric px-3 py-3">
                   <div class="text-[9px] font-black text-slate-400">有配方</div>
                   <div class="text-lg font-black text-violet-700">{{ crmStats.formulaCount }}</div>
                 </div>
-                <div class="rounded-2xl bg-amber-50/70 px-3 py-3">
+                <div class="crm-overview-metric px-3 py-3">
                   <div class="text-[9px] font-black text-slate-400">餘額偏低</div>
                   <div class="text-lg font-black text-amber-700">{{ crmStats.lowPrepaidCustomers }}</div>
                 </div>
-                <div class="rounded-2xl bg-emerald-50/70 px-3 py-3">
+                <div class="crm-overview-metric px-3 py-3">
                   <div class="text-[9px] font-black text-slate-400">儲值餘額</div>
-                  <div class="text-sm sm:text-lg font-black text-emerald-700">NT$ {{ formatNumber(crmStats.prepaidLiability) }}</div>
+                  <div class="text-xs sm:text-lg font-black text-emerald-700">NT$ {{ formatNumber(crmStats.prepaidLiability) }}</div>
                 </div>
               </div>
             </div>
-            <div class="p-2">
-              <div class="grid grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1">
-                <button @click="crmViewMode = 'customers'" class="min-h-[42px] rounded-xl text-xs font-black transition-all"
+            <div class="crm-view-switch-wrap p-2">
+              <div class="crm-view-switch grid grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1">
+                <button @click="crmViewMode = 'customers'" class="crm-view-tab min-h-[42px] rounded-xl text-xs font-black transition-all"
                         :class="crmViewMode === 'customers' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'">顧客檔案</button>
-                <button @click="crmViewMode = 'ledger'" class="min-h-[42px] rounded-xl text-xs font-black transition-all"
+                <button @click="crmViewMode = 'ledger'" class="crm-view-tab min-h-[42px] rounded-xl text-xs font-black transition-all"
                         :class="crmViewMode === 'ledger' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-400'">儲值帳本</button>
               </div>
             </div>
           </section>
 
           <template v-if="crmViewMode === 'customers'">
-            <section class="bg-white rounded-3xl border border-slate-200 macaron-shadow overflow-hidden">
-              <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <section v-if="crmShowInsights" class="crm-insights-panel momo-surface bg-white rounded-3xl border border-slate-200 macaron-shadow overflow-hidden">
+              <div class="crm-insights-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-base sm:text-lg font-black text-slate-800">顧客回流分析</h3>
-                    <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[9px] font-black">觀察用，不進首頁待辦</span>
                   </div>
-                  <p class="text-[10px] font-bold text-slate-400 mt-0.5">依最後消費日、常做服務週期、累計價值與儲值狀態分群，只用來看客人狀態。</p>
+                  <p class="text-[10px] font-bold text-slate-400 mt-0.5">依最後消費日、常做服務週期、累計價值與儲值狀態分群</p>
                 </div>
-                <button @click="crmFilterMode = 'all'; crmSearchQuery = ''" class="min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black">看全部顧客</button>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button @click="crmFilterMode = 'all'; crmSearchQuery = ''" class="min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black">全部顧客</button>
+                  <button @click="crmShowInsights = false" aria-label="關閉回流分析" class="crm-icon-button min-h-[38px] w-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-lg font-semibold">×</button>
+                </div>
               </div>
 
               <div class="grid grid-cols-2 lg:grid-cols-6 divide-x divide-y lg:divide-y-0 divide-slate-100">
@@ -2319,15 +2323,25 @@
               </div>
             </section>
 
-            <section class="bg-white rounded-3xl border border-orange-50 macaron-shadow p-3 sm:p-4 space-y-3">
-              <div class="flex flex-col sm:flex-row gap-2">
-                <div class="relative flex-1">
-                  <input type="text" v-model="crmSearchQuery" placeholder="搜尋顧客、服務或配方..."
-                         class="compact-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-9 pr-9 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
-                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                  <button v-if="crmSearchQuery" @click="crmSearchQuery = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-black text-sm">×</button>
+            <section class="crm-directory-toolbar momo-surface bg-white rounded-3xl border border-orange-50 macaron-shadow p-3 sm:p-4 space-y-3">
+              <div class="crm-directory-heading flex items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-sm sm:text-base font-black text-slate-800">顧客名單</h3>
+                  <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredCrmList.length }} 位顧客</p>
                 </div>
-                <select v-model="crmSortMode" class="min-h-[44px] jelly-input bg-white border border-orange-100 rounded-2xl px-3 text-xs font-black text-slate-600 sm:w-44">
+                <button @click="crmShowInsights = !crmShowInsights" :aria-expanded="crmShowInsights" class="crm-directory-insights min-h-[36px] px-3 rounded-xl border text-[11px] font-black"
+                        :class="crmShowInsights ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200'">
+                  {{ crmShowInsights ? '收合分析' : '回流分析' }}
+                </button>
+              </div>
+              <div class="crm-directory-controls flex flex-col sm:flex-row gap-2">
+                <div class="crm-search-shell relative flex-1">
+                  <input type="text" v-model="crmSearchQuery" placeholder="搜尋顧客、服務或配方..."
+                         class="crm-search-input compact-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-10 pr-10 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
+                  <span class="crm-search-marker absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true"></span>
+                  <button v-if="crmSearchQuery" @click="crmSearchQuery = ''" aria-label="清除顧客搜尋" class="crm-search-clear absolute right-2.5 top-1/2 -translate-y-1/2 min-h-8 w-8 text-slate-400 font-black text-sm">×</button>
+                </div>
+                <select v-model="crmSortMode" aria-label="顧客排序" class="crm-sort-select min-h-[44px] jelly-input bg-white border border-orange-100 rounded-2xl px-3 text-xs font-black text-slate-600 sm:w-44">
                   <option value="lastDate">最近來訪</option>
                   <option value="totalSpent">消費最高</option>
                   <option value="prepaidLow">儲值最低</option>
@@ -2335,98 +2349,82 @@
                   <option value="name">姓名排序</option>
                 </select>
               </div>
-              <div class="flex gap-2 overflow-x-auto pb-1">
+              <div class="crm-filter-row flex gap-2 overflow-x-auto pb-1">
                 <button v-for="filter in crmFilters" :key="filter.value" @click="crmFilterMode = filter.value"
-                        class="whitespace-nowrap min-h-[36px] rounded-xl px-3 text-[11px] font-black border"
+                        class="crm-filter-button whitespace-nowrap min-h-[36px] rounded-xl px-3 text-[11px] font-black border"
                         :class="crmFilterMode === filter.value ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-orange-100'">
                   {{ filter.label }}
                 </button>
               </div>
-              <div v-if="crmSearchQuery || crmFilterMode !== 'all'" class="text-[10px] font-bold text-slate-400">
+              <div v-if="crmSearchQuery || crmFilterMode !== 'all'" class="crm-filter-result text-[10px] font-bold text-slate-400">
                 找到 {{ filteredCrmList.length }} 位顧客
               </div>
             </section>
 
-            <div v-if="filteredCrmList.length === 0" class="bg-white py-14 rounded-3xl text-center border border-orange-50 macaron-shadow">
-              <div class="mx-auto w-10 h-1.5 rounded-full bg-orange-100"></div>
+            <div v-if="filteredCrmList.length === 0" class="crm-empty-state momo-surface bg-white py-14 rounded-3xl text-center border border-orange-50 macaron-shadow">
               <div class="mt-2 text-sm font-black text-slate-500">找不到符合條件的顧客</div>
               <button @click="crmSearchQuery = ''; crmFilterMode = 'all'" class="mt-3 text-xs font-black text-macaron-peach-500">清除搜尋與篩選</button>
             </div>
 
-            <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              <article v-for="cust in filteredCrmList" :key="cust.id" :id="'crm-card-' + cust.id"
-                       class="crm-customer-card bg-white rounded-3xl border macaron-shadow overflow-hidden transition-all"
-                       :class="expandedCrmCustomerName === cust.id ? 'crm-customer-card--expanded border-macaron-peach-200 lg:col-span-2' : 'border-orange-50'">
-                <button type="button" @click="toggleCrmCustomer(cust.id)" :aria-expanded="expandedCrmCustomerName === cust.id" class="w-full p-4 text-left">
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                      <div class="w-11 h-11 rounded-2xl bg-white border border-orange-100 shadow-sm flex items-center justify-center shrink-0">
-                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-slate-50 to-orange-50 border border-white flex flex-col items-center justify-center leading-none">
-                          <span class="text-[12px] text-slate-400">♡</span>
-                          <span class="mt-0.5 text-[7px] font-black tracking-widest text-slate-400">CRM</span>
-                        </div>
+            <div v-else class="crm-customer-list momo-surface">
+              <article v-for="cust in visibleCrmList" :key="cust.id" :id="'crm-card-' + cust.id"
+                       :role="expandedCrmCustomerName === cust.id ? 'dialog' : null"
+                       :aria-modal="expandedCrmCustomerName === cust.id ? 'true' : null"
+                       class="crm-customer-card bg-white border overflow-hidden transition-all"
+                       :class="expandedCrmCustomerName === cust.id ? 'crm-customer-card--expanded border-macaron-peach-200' : 'border-orange-50'">
+                <button type="button" @click="toggleCrmCustomer(cust.id)" :aria-expanded="expandedCrmCustomerName === cust.id"
+                        :aria-label="`開啟 ${cust.name} 的完整顧客檔案`" class="crm-customer-summary w-full text-left">
+                  <div class="crm-customer-identity flex items-center gap-3 min-w-0">
+                    <div class="crm-customer-avatar shrink-0">
+                      {{ (cust.name || '?').slice(0, 1).toUpperCase() }}
+                    </div>
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-1.5">
+                        <h4 class="font-black text-slate-800 truncate">{{ cust.name }}</h4>
+                        <span class="text-[9px] px-1.5 py-0.5 rounded-md font-black" :class="cust.gender === '男' ? 'bg-sky-50 text-sky-600' : 'bg-rose-50 text-rose-600'">{{ cust.gender }}</span>
+                        <span class="crm-customer-status text-[9px] font-black px-2 py-1 rounded-lg border shrink-0" :class="cust.statusClass">{{ cust.statusLabel }}</span>
                       </div>
-                      <div class="min-w-0">
-                        <div class="flex items-center gap-2">
-                          <h4 class="font-black text-slate-800 truncate">{{ cust.name }}</h4>
-                          <span class="text-[9px] px-1.5 py-0.5 rounded-md font-black" :class="cust.gender === '男' ? 'bg-sky-50 text-sky-600' : 'bg-rose-50 text-rose-600'">{{ cust.gender }}</span>
-                        </div>
-                        <p class="mt-1 text-[11px] text-slate-400 font-bold">ID {{ shortCustomerId(cust.id) }} · {{ cust.count }} 次消費 · 最近 {{ cust.daysSinceLastVisit }} 天前 · 週期 {{ cust.revisitDays }} 天</p>
-                        <div v-if="cust.tags.length" class="mt-1 flex flex-wrap gap-1">
-                          <span v-for="tag in cust.tags.slice(0, 3)" :key="tag" class="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600">{{ tag }}</span>
-                        </div>
+                      <p class="mt-1 text-[11px] text-slate-400 font-bold truncate">
+                        {{ cust.count }} 次消費 · {{ cust.count ? '最近 ' + cust.daysSinceLastVisit + ' 天前' : '尚無消費' }} · {{ cust.primaryService }}
+                      </p>
+                      <div v-if="cust.tags.length" class="crm-customer-tags mt-1 flex flex-wrap gap-1">
+                        <span v-for="tag in cust.tags.slice(0, 2)" :key="tag" class="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600">{{ tag }}</span>
                       </div>
                     </div>
-                    <span class="text-[9px] font-black px-2 py-1 rounded-lg border shrink-0" :class="cust.statusClass">{{ cust.statusLabel }}</span>
                   </div>
-                  <div class="grid grid-cols-3 mt-3 pt-3 border-t border-orange-50">
-                    <div><div class="text-[9px] font-black text-slate-400">累計消費</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(cust.totalSpent) }}</div></div>
-                    <div><div class="text-[9px] font-black text-slate-400">儲值餘額</div><div class="text-xs font-black" :class="cust.prepaidBalance > 0 ? 'text-emerald-700' : cust.prepaidBalance < 0 ? 'text-rose-600' : 'text-slate-500'">NT$ {{ formatNumber(cust.prepaidBalance) }}</div></div>
-                    <div class="text-right"><div class="text-[9px] font-black text-slate-400">偏好服務</div><div class="text-xs font-black text-slate-700 truncate">{{ cust.primaryService }}</div></div>
+                  <div class="crm-customer-financials">
+                    <div class="crm-customer-metric"><div class="text-[9px] font-black text-slate-400">累計消費</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(cust.totalSpent) }}</div></div>
+                    <div class="crm-customer-metric"><div class="text-[9px] font-black text-slate-400">儲值餘額</div><div class="text-xs font-black" :class="cust.prepaidBalance > 0 ? 'text-emerald-700' : cust.prepaidBalance < 0 ? 'text-rose-600' : 'text-slate-500'">NT$ {{ formatNumber(cust.prepaidBalance) }}</div></div>
                   </div>
-                  <div class="mt-2 rounded-xl bg-slate-50/80 border border-slate-100 px-3 py-2 text-[10px] font-bold text-slate-500 leading-relaxed">
-                    {{ cust.returnReason }}<span v-if="cust.returnDueDate"> · 預估回流日 {{ cust.returnDueDate }}</span>
+                  <div class="crm-customer-preference min-w-0">
+                    <div class="text-[9px] font-black text-slate-400">回流觀察</div>
+                    <div class="mt-0.5 text-[10px] font-bold text-slate-500 truncate">{{ cust.returnReason }}</div>
                   </div>
-                  <div v-if="expandedCrmCustomerName === cust.id" class="mt-2 rounded-xl bg-orange-50 border border-orange-100 px-3 py-2 flex items-center justify-between gap-2">
-                    <span class="text-[10px] font-black text-orange-700">顧客檔案已展開</span>
-                    <span class="text-[10px] font-black text-slate-400">下方有完整結尾與收合按鈕</span>
-                  </div>
+                  <span class="crm-customer-open" aria-hidden="true">›</span>
                 </button>
 
-                <div v-if="expandedCrmCustomerName === cust.id" class="crm-profile-panel border-t border-orange-100 p-3 sm:p-4 space-y-3">
+                <div v-if="expandedCrmCustomerName === cust.id" class="crm-profile-panel crm-profile-content border-t border-orange-100 p-3 sm:p-4 space-y-3">
                   <div class="crm-save-bar crm-profile-panel-header rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg shadow-orange-100/60">
-                    <div class="flex items-start justify-between gap-3">
+                    <div class="crm-profile-header-main flex items-start justify-between gap-3">
                       <div class="min-w-0">
-                        <div class="text-[9px] font-black tracking-[0.18em] text-slate-400 uppercase">Customer File</div>
+                        <div class="text-[9px] font-black text-slate-400">顧客完整檔案</div>
                         <div class="mt-0.5 flex flex-wrap items-center gap-2">
                           <h3 class="text-base font-black text-slate-900 truncate">{{ cust.name }}</h3>
                           <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="cust.statusClass">{{ cust.statusLabel }}</span>
-                          <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="crmDraftHasChanges(cust) ? 'bg-amber-50 text-amber-700' : 'bg-slate-50 text-slate-500'">
-                            {{ crmDraftHasChanges(cust) ? '尚未儲存' : '已同步草稿' }}
-                          </span>
                         </div>
-                        <div class="mt-1 text-[10px] font-bold text-slate-400 truncate">完整檔案面板 · {{ cust.count }} 次消費 · 餘額 NT$ {{ formatNumber(cust.prepaidBalance) }}</div>
+                        <div class="mt-1 text-[10px] font-bold text-slate-400 truncate">ID {{ shortCustomerId(cust.id) }} · {{ cust.count }} 次消費 · 餘額 NT$ {{ formatNumber(cust.prepaidBalance) }}</div>
                       </div>
-                      <button @click.stop="toggleCrmCustomer(cust.id)" class="min-h-[36px] px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-black shrink-0">收合</button>
-                    </div>
-
-                    <div class="crm-profile-map mt-3 flex gap-1.5 overflow-x-auto pb-1">
-                      <span class="px-2.5 py-1.5 rounded-full bg-slate-900 text-white text-[9px] font-black">1 快照</span>
-                      <span class="px-2.5 py-1.5 rounded-full bg-orange-50 text-orange-700 border border-orange-100 text-[9px] font-black">2 客史</span>
-                      <span class="px-2.5 py-1.5 rounded-full bg-violet-50 text-violet-700 border border-violet-100 text-[9px] font-black">3 回流/儲值</span>
-                      <span class="px-2.5 py-1.5 rounded-full bg-slate-50 text-slate-600 border border-slate-100 text-[9px] font-black">4 配方/備註</span>
-                      <span class="px-2.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-[9px] font-black">5 底部完成</span>
-                    </div>
-
-                    <div class="mt-3 flex items-center gap-2">
-                      <div class="min-w-0 flex-1">
-                        <div class="text-[11px] font-black" :class="crmDraftHasChanges(cust) ? 'text-amber-700' : 'text-slate-700'">
-                          {{ crmDraftHasChanges(cust) ? '有修改尚未儲存' : '編輯完成可直接往下看完整檔案' }}
-                        </div>
-                        <div class="hidden sm:block text-[9px] font-bold text-slate-400 truncate">這列會固定跟著畫面，滑到很下面也知道正在看哪位顧客。</div>
+                      <div class="crm-profile-actions flex items-center gap-2 shrink-0">
+                        <button v-if="crmDraftHasChanges(cust)" @click.stop="cancelCrmDraft(cust)" class="crm-profile-restore min-h-[36px] px-3 rounded-xl bg-white border border-slate-200 text-slate-500 text-[11px] font-black">還原</button>
+                        <button @click.stop="saveCrmDraft(cust)" :disabled="!crmDraftHasChanges(cust)" class="crm-profile-save min-h-[36px] px-3 sm:px-4 rounded-xl text-[11px] font-black disabled:opacity-45" :class="crmDraftHasChanges(cust) ? 'bg-slate-900 text-white shadow-md shadow-slate-200' : 'bg-slate-100 text-slate-400'">儲存</button>
+                        <button @click.stop="toggleCrmCustomer(cust.id)" :aria-label="`關閉 ${cust.name} 的完整顧客檔案`" class="crm-profile-close min-h-[38px] w-10 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-lg font-semibold">×</button>
                       </div>
-                      <button @click.stop="cancelCrmDraft(cust)" class="min-h-[34px] px-3 rounded-xl bg-white border border-slate-200 text-slate-500 text-[11px] font-black shrink-0">還原</button>
-                      <button @click.stop="saveCrmDraft(cust)" :disabled="!crmDraftHasChanges(cust)" class="min-h-[34px] px-3 sm:px-4 rounded-xl text-[11px] font-black shrink-0 disabled:opacity-45" :class="crmDraftHasChanges(cust) ? 'bg-slate-900 text-white shadow-md shadow-slate-200' : 'bg-slate-100 text-slate-400'">儲存顧客資料</button>
+                    </div>
+                    <div class="crm-profile-save-state mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <span class="text-[10px] font-black" :class="crmDraftHasChanges(cust) ? 'text-amber-700' : 'text-emerald-700'">
+                        {{ crmDraftHasChanges(cust) ? '有修改尚未儲存' : '資料已儲存' }}
+                      </span>
+                      <span class="text-[9px] font-bold text-slate-400">完整檔案</span>
                     </div>
                   </div>
 
@@ -2445,7 +2443,7 @@
 
                   <details open class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
                     <summary class="min-h-[44px] cursor-pointer px-3 flex items-center justify-between text-xs font-black text-slate-700">
-                      <span>顧客詳細檔案 2.0</span><span class="text-[10px] text-slate-400">{{ cust.workTimeBasis }}</span>
+                      <span>消費與服務紀錄</span><span class="text-[10px] text-slate-400">{{ cust.workTimeBasis }}</span>
                     </summary>
                     <div class="p-3 pt-1 space-y-3">
                       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -2623,47 +2621,50 @@
                       <span class="crm-end-marker h-px flex-1"></span>
                     </div>
                     <div class="mt-2 text-sm font-black text-slate-800">{{ cust.name }} 的完整檔案已看完</div>
-                    <div class="mt-1 text-[10px] font-bold text-slate-400">上方已包含快照、客史、儲值、回流、配方、備註與合併工具。</div>
-                    <button @click.stop="toggleCrmCustomer(cust.id)" class="mt-3 min-h-[40px] w-full sm:w-auto px-5 rounded-xl bg-slate-900 text-white text-[11px] font-black">收合檔案</button>
+                    <button @click.stop="toggleCrmCustomer(cust.id)" class="mt-3 min-h-[40px] w-full sm:w-auto px-5 rounded-xl bg-slate-900 text-white text-[11px] font-black">返回顧客名單</button>
                   </div>
                 </div>
               </article>
+              <div v-if="crmHasMoreCustomers" class="crm-load-more px-4 py-4 text-center">
+                <div class="text-[10px] font-bold text-slate-400">已顯示 {{ visibleCrmList.length }} / {{ filteredCrmList.length }} 位</div>
+                <button @click="showMoreCrmCustomers" class="mt-2 min-h-[40px] px-5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-black">顯示更多</button>
+              </div>
             </div>
           </template>
 
           <template v-else>
-            <section class="grid grid-cols-3 gap-2">
-              <div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-3"><div class="text-[9px] font-black text-emerald-600">累計儲值</div><div class="mt-1 text-sm sm:text-lg font-black text-emerald-800">NT$ {{ formatNumber(prepaidLedgerSummary.totalIn) }}</div></div>
-              <div class="rounded-2xl bg-sky-50 border border-sky-100 p-3"><div class="text-[9px] font-black text-sky-600">累計扣款</div><div class="mt-1 text-sm sm:text-lg font-black text-sky-800">NT$ {{ formatNumber(prepaidLedgerSummary.totalOut) }}</div></div>
-              <div class="rounded-2xl bg-white border border-orange-100 p-3"><div class="text-[9px] font-black text-slate-400">帳面餘額</div><div class="mt-1 text-sm sm:text-lg font-black" :class="prepaidLedgerSummary.balance >= 0 ? 'text-slate-800' : 'text-rose-600'">NT$ {{ formatNumber(prepaidLedgerSummary.balance) }}</div></div>
+            <section class="crm-ledger-summary momo-surface grid grid-cols-3 gap-2">
+              <div class="crm-ledger-metric rounded-2xl bg-emerald-50 border border-emerald-100 p-3"><div class="text-[9px] font-black text-emerald-600">累計儲值</div><div class="mt-1 text-sm sm:text-lg font-black text-emerald-800">NT$ {{ formatNumber(prepaidLedgerSummary.totalIn) }}</div></div>
+              <div class="crm-ledger-metric rounded-2xl bg-sky-50 border border-sky-100 p-3"><div class="text-[9px] font-black text-sky-600">累計扣款</div><div class="mt-1 text-sm sm:text-lg font-black text-sky-800">NT$ {{ formatNumber(prepaidLedgerSummary.totalOut) }}</div></div>
+              <div class="crm-ledger-metric rounded-2xl bg-white border border-orange-100 p-3"><div class="text-[9px] font-black text-slate-400">帳面餘額</div><div class="mt-1 text-sm sm:text-lg font-black" :class="prepaidLedgerSummary.balance >= 0 ? 'text-slate-800' : 'text-rose-600'">NT$ {{ formatNumber(prepaidLedgerSummary.balance) }}</div></div>
             </section>
 
-            <section class="bg-white rounded-3xl border border-orange-50 macaron-shadow p-3 sm:p-4 space-y-3">
-              <div class="relative">
-                <input v-model="prepaidLedgerSearchQuery" type="text" placeholder="搜尋儲值顧客或服務..." class="w-full min-h-[44px] rounded-2xl bg-emerald-50/30 border border-emerald-100 pl-10 pr-9 text-sm font-semibold text-slate-700">
-                <span class="absolute left-3.5 top-1/2 -translate-y-1/2">🔍</span>
-                <button v-if="prepaidLedgerSearchQuery" @click="prepaidLedgerSearchQuery = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-black">×</button>
+            <section class="crm-ledger-controls momo-surface bg-white rounded-3xl border border-orange-50 macaron-shadow p-3 sm:p-4 space-y-3">
+              <div class="crm-search-shell relative">
+                <input v-model="prepaidLedgerSearchQuery" type="text" placeholder="搜尋儲值顧客或服務..." class="crm-ledger-search w-full min-h-[44px] rounded-2xl bg-emerald-50/30 border border-emerald-100 pl-10 pr-10 text-sm font-semibold text-slate-700">
+                <span class="crm-search-marker absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true"></span>
+                <button v-if="prepaidLedgerSearchQuery" @click="prepaidLedgerSearchQuery = ''" aria-label="清除儲值搜尋" class="crm-search-clear absolute right-2.5 top-1/2 -translate-y-1/2 min-h-8 w-8 text-slate-400 font-black">×</button>
               </div>
-              <div class="grid grid-cols-3 gap-2">
-                <button @click="prepaidLedgerFilter = 'all'" class="min-h-[38px] rounded-xl text-[11px] font-black border" :class="prepaidLedgerFilter === 'all' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'">全部 {{ prepaidLedgerEntries.length }}</button>
-                <button @click="prepaidLedgerFilter = 'in'" class="min-h-[38px] rounded-xl text-[11px] font-black border" :class="prepaidLedgerFilter === 'in' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-emerald-50 text-emerald-700 border-emerald-100'">進帳</button>
-                <button @click="prepaidLedgerFilter = 'out'" class="min-h-[38px] rounded-xl text-[11px] font-black border" :class="prepaidLedgerFilter === 'out' ? 'bg-sky-600 text-white border-sky-600' : 'bg-sky-50 text-sky-700 border-sky-100'">扣款</button>
+              <div class="crm-ledger-filters grid grid-cols-3 gap-2">
+                <button @click="prepaidLedgerFilter = 'all'" class="crm-ledger-filter min-h-[38px] rounded-xl text-[11px] font-black border" :class="prepaidLedgerFilter === 'all' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'">全部 {{ prepaidLedgerEntries.length }}</button>
+                <button @click="prepaidLedgerFilter = 'in'" class="crm-ledger-filter min-h-[38px] rounded-xl text-[11px] font-black border" :class="prepaidLedgerFilter === 'in' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-emerald-50 text-emerald-700 border-emerald-100'">進帳</button>
+                <button @click="prepaidLedgerFilter = 'out'" class="crm-ledger-filter min-h-[38px] rounded-xl text-[11px] font-black border" :class="prepaidLedgerFilter === 'out' ? 'bg-sky-600 text-white border-sky-600' : 'bg-sky-50 text-sky-700 border-sky-100'">扣款</button>
               </div>
               <div class="text-[10px] font-bold text-slate-400">共 {{ filteredPrepaidLedger.length }} 筆 · {{ prepaidLedgerSummary.customers }} 位儲值顧客</div>
             </section>
 
-            <div v-if="!prepaidLedgerGroups.length" class="bg-white py-14 rounded-3xl text-center border border-orange-50 macaron-shadow">
-              <div class="mx-auto w-10 h-1.5 rounded-full bg-emerald-100"></div><div class="mt-2 text-sm font-black text-slate-500">目前沒有符合條件的儲值紀錄</div>
+            <div v-if="!prepaidLedgerGroups.length" class="crm-empty-state momo-surface bg-white py-14 rounded-3xl text-center border border-orange-50 macaron-shadow">
+              <div class="mt-2 text-sm font-black text-slate-500">目前沒有符合條件的儲值紀錄</div>
             </div>
-            <div v-else class="space-y-3">
-              <section v-for="group in prepaidLedgerGroups" :key="group.date" class="bg-white rounded-3xl border border-orange-50 macaron-shadow overflow-hidden">
-                <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex justify-between">
+            <div v-else class="crm-ledger-groups space-y-3">
+              <section v-for="group in prepaidLedgerGroups" :key="group.date" class="crm-ledger-group momo-surface bg-white rounded-3xl border border-orange-50 macaron-shadow overflow-hidden">
+                <div class="crm-ledger-group-header px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex justify-between">
                   <span class="text-xs font-black text-slate-600">{{ group.date }}</span><span class="text-[10px] font-bold text-slate-400">{{ group.entries.length }} 筆異動</span>
                 </div>
                 <div class="divide-y divide-slate-100">
-                  <div v-for="entry in group.entries" :key="entry.id" class="px-4 py-3 flex items-center justify-between gap-3">
+                  <div v-for="entry in group.entries" :key="entry.id" class="crm-ledger-row px-4 py-3 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
-                      <span class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0" :class="entry.type === 'in' ? 'bg-emerald-50 text-emerald-700' : 'bg-sky-50 text-sky-700'">{{ entry.type === 'in' ? '＋' : '－' }}</span>
+                      <span class="crm-ledger-type w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0" :class="entry.type === 'in' ? 'bg-emerald-50 text-emerald-700' : 'bg-sky-50 text-sky-700'">{{ entry.type === 'in' ? '＋' : '－' }}</span>
                       <div class="min-w-0"><div class="text-sm font-black text-slate-800 truncate">{{ entry.customerName }}</div><div class="text-[10px] font-bold text-slate-400 truncate">{{ entry.serviceName }} · {{ ledgerKindLabel(entry.kind) }}<span v-if="entry.note"> · {{ entry.note }}</span></div></div>
                     </div>
                     <div class="shrink-0 flex items-center gap-2">
@@ -4035,9 +4036,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.11-inventory-workspace"></script>
+  <script src="/assets/momo-core.js?v=2026.07.11-crm-workspace-2"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.11-inventory-workspace"></script>
+  <script src="/assets/momo-app.js?v=2026.07.11-crm-workspace-2"></script>
 </body>
 </html>

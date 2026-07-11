@@ -3114,4 +3114,633 @@
       }
     }
 
+    /* CRM: searchable customer directory and focused customer file */
+    body.momo-polish .momo-crm-page {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    body.momo-polish .momo-crm-page > * {
+      min-width: 0;
+      margin-top: 0 !important;
+    }
+
+    body.momo-polish .crm-overview-panel,
+    body.momo-polish .crm-directory-toolbar,
+    body.momo-polish .crm-insights-panel,
+    body.momo-polish .crm-empty-state,
+    body.momo-polish .crm-ledger-controls,
+    body.momo-polish .crm-ledger-group {
+      border-color: var(--momo-line) !important;
+      border-radius: 8px !important;
+      background: var(--momo-surface) !important;
+      box-shadow: var(--momo-panel-shadow) !important;
+    }
+
+    body.momo-polish .crm-overview-header {
+      padding: 1rem !important;
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface) !important;
+    }
+
+    body.momo-polish .crm-overview-actions button,
+    body.momo-polish .crm-directory-insights,
+    body.momo-polish .crm-insights-header button {
+      border-radius: 8px !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .crm-export-button {
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted) !important;
+      color: var(--momo-muted) !important;
+    }
+
+    body.momo-polish .crm-directory-insights {
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted) !important;
+      color: var(--momo-ink) !important;
+    }
+
+    body.momo-polish .crm-directory-insights.bg-slate-800 {
+      border-color: var(--momo-ink) !important;
+      background: var(--momo-ink) !important;
+      color: #FFFFFF !important;
+    }
+
+    body.momo-polish .crm-overview-grid {
+      gap: 1px;
+      overflow: hidden;
+      border: 1px solid var(--momo-line);
+      border-radius: 8px;
+      background: var(--momo-line);
+    }
+
+    body.momo-polish .crm-overview-metric {
+      min-width: 0;
+      min-height: 72px;
+      background: var(--momo-surface-muted);
+    }
+
+    body.momo-polish .crm-overview-metric > div:last-child {
+      overflow: hidden;
+      font-variant-numeric: tabular-nums;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .crm-view-switch-wrap {
+      padding: 0.5rem !important;
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface) !important;
+    }
+
+    body.momo-polish .crm-view-switch {
+      border: 1px solid var(--momo-line);
+      border-radius: 8px !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .crm-view-tab {
+      border-radius: 6px !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .crm-view-tab.bg-white {
+      border: 1px solid var(--momo-line);
+      background: var(--momo-surface) !important;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05) !important;
+    }
+
+    body.momo-polish .crm-insights-header {
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted);
+    }
+
+    body.momo-polish .crm-icon-button {
+      border-radius: 50% !important;
+    }
+
+    body.momo-polish .crm-insights-panel > .grid {
+      border-color: var(--momo-line) !important;
+    }
+
+    body.momo-polish .crm-insights-panel button {
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .crm-insights-panel .rounded-2xl,
+    body.momo-polish .crm-insights-panel .rounded-xl {
+      border-radius: 6px !important;
+    }
+
+    body.momo-polish .crm-directory-toolbar {
+      padding: 1rem !important;
+    }
+
+    body.momo-polish .crm-directory-heading {
+      min-height: 40px;
+    }
+
+    body.momo-polish .crm-search-input.compact-search-input,
+    body.momo-polish .crm-ledger-search,
+    body.momo-polish .crm-sort-select {
+      min-height: 42px !important;
+      height: 42px !important;
+      border-color: var(--momo-line) !important;
+      border-radius: 8px !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .crm-search-input.compact-search-input:focus,
+    body.momo-polish .crm-ledger-search:focus,
+    body.momo-polish .crm-sort-select:focus {
+      border-color: rgba(217, 95, 84, 0.5) !important;
+      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.1) !important;
+    }
+
+    body.momo-polish .crm-search-marker {
+      width: 13px;
+      height: 13px;
+      border: 2px solid #94A3B8;
+      border-radius: 50%;
+    }
+
+    body.momo-polish .crm-search-marker::after {
+      content: "";
+      position: absolute;
+      width: 6px;
+      height: 2px;
+      right: -5px;
+      bottom: -2px;
+      border-radius: 999px;
+      background: #94A3B8;
+      transform: rotate(45deg);
+      transform-origin: left center;
+    }
+
+    body.momo-polish .crm-search-clear {
+      border-radius: 50% !important;
+    }
+
+    body.momo-polish .crm-filter-row {
+      scrollbar-width: none;
+    }
+
+    body.momo-polish .crm-filter-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    body.momo-polish .crm-filter-button {
+      min-height: 36px !important;
+      border-color: var(--momo-line) !important;
+      border-radius: 6px !important;
+      background: var(--momo-surface-muted) !important;
+      color: var(--momo-muted) !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .crm-filter-button.bg-slate-800 {
+      border-color: var(--momo-brand) !important;
+      background: var(--momo-brand) !important;
+      color: #FFFFFF !important;
+    }
+
+    body.momo-polish .crm-customer-list {
+      overflow: hidden;
+      border: 1px solid var(--momo-line);
+      border-radius: 8px;
+      background: var(--momo-surface);
+      box-shadow: var(--momo-panel-shadow);
+    }
+
+    body.momo-polish .crm-customer-card {
+      margin: 0 !important;
+      border: 0 !important;
+      border-bottom: 1px solid var(--momo-line) !important;
+      border-radius: 0 !important;
+      background: var(--momo-surface) !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .crm-customer-card:last-of-type {
+      border-bottom: 0 !important;
+    }
+
+    body.momo-polish .crm-customer-summary {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) minmax(220px, 0.55fr) minmax(180px, 0.65fr) 24px;
+      min-height: 82px;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem !important;
+    }
+
+    body.momo-polish .crm-customer-summary:hover {
+      background: #FAFBFC;
+    }
+
+    body.momo-polish .crm-customer-avatar {
+      display: inline-flex;
+      width: 38px;
+      height: 38px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #F4CAC5;
+      border-radius: 50%;
+      background: var(--momo-brand-soft);
+      color: var(--momo-brand);
+      font-size: 0.78rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .crm-customer-financials {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+      min-width: 0;
+      padding-left: 1rem;
+      border-left: 1px solid var(--momo-line);
+    }
+
+    body.momo-polish .crm-customer-metric {
+      min-width: 0;
+    }
+
+    body.momo-polish .crm-customer-metric > div:last-child {
+      overflow: hidden;
+      font-variant-numeric: tabular-nums;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .crm-customer-preference {
+      padding-left: 1rem;
+      border-left: 1px solid var(--momo-line);
+    }
+
+    body.momo-polish .crm-customer-open {
+      color: #94A3B8;
+      font-size: 1.5rem;
+      font-weight: 500;
+      line-height: 1;
+      text-align: center;
+    }
+
+    body.momo-polish .crm-load-more {
+      border-top: 1px solid var(--momo-line);
+      background: var(--momo-surface-muted);
+    }
+
+    body.momo-polish .crm-load-more button {
+      border-radius: 6px !important;
+      box-shadow: none !important;
+    }
+
+    body:has(.crm-customer-card--expanded) {
+      overflow: hidden;
+    }
+
+    body:has(.crm-customer-card--expanded) .floating-nav {
+      display: none !important;
+    }
+
+    body.momo-polish .crm-customer-card--expanded {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 100 !important;
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: #F6F8FA !important;
+      box-shadow: none !important;
+      transition: none !important;
+    }
+
+    body.momo-polish .crm-customer-card--expanded > .crm-customer-summary {
+      display: none !important;
+    }
+
+    body.momo-polish .crm-customer-card--expanded .crm-profile-panel {
+      min-height: 100%;
+      padding: 0 1rem 2rem !important;
+      border: 0 !important;
+      background: #F6F8FA !important;
+    }
+
+    body.momo-polish .crm-customer-card--expanded .crm-profile-panel-header {
+      position: sticky;
+      top: 0 !important;
+      z-index: 30;
+      width: calc(100% + 2rem);
+      max-width: none;
+      margin: 0 0 1rem -1rem !important;
+      padding: calc(0.8rem + env(safe-area-inset-top, 0px)) max(1rem, env(safe-area-inset-right, 0px)) 0.8rem max(1rem, env(safe-area-inset-left, 0px)) !important;
+      border-width: 0 0 1px !important;
+      border-color: var(--momo-line) !important;
+      border-radius: 0 !important;
+      background: #FFFFFF !important;
+      box-shadow: 0 12px 26px -24px rgba(15, 23, 42, 0.55) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    body.momo-polish .crm-profile-header-main,
+    body.momo-polish .crm-profile-save-state {
+      width: min(1100px, 100%);
+      margin-right: auto;
+      margin-left: auto;
+    }
+
+    body.momo-polish .crm-profile-actions button {
+      border-radius: 6px !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .crm-profile-actions .crm-profile-save.bg-slate-900 {
+      border-color: var(--momo-brand) !important;
+      background: var(--momo-brand) !important;
+      color: #FFFFFF !important;
+    }
+
+    body.momo-polish .crm-profile-close {
+      border-radius: 50% !important;
+    }
+
+    body.momo-polish .crm-profile-content > *:not(.crm-profile-panel-header) {
+      width: min(1100px, 100%);
+      margin-right: auto !important;
+      margin-left: auto !important;
+    }
+
+    body.momo-polish .crm-profile-content .rounded-2xl {
+      border-radius: 8px !important;
+    }
+
+    body.momo-polish .crm-profile-content .rounded-xl {
+      border-radius: 6px !important;
+    }
+
+    body.momo-polish .crm-profile-content details,
+    body.momo-polish .crm-profile-content > div.rounded-2xl {
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface) !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .crm-profile-content details > summary {
+      min-height: 48px !important;
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted);
+    }
+
+    body.momo-polish .crm-profile-content input,
+    body.momo-polish .crm-profile-content select,
+    body.momo-polish .crm-profile-content textarea {
+      border-color: var(--momo-line) !important;
+      border-radius: 6px !important;
+      background: var(--momo-surface) !important;
+    }
+
+    body.momo-polish .crm-profile-content input:focus,
+    body.momo-polish .crm-profile-content select:focus,
+    body.momo-polish .crm-profile-content textarea:focus {
+      outline: none;
+      border-color: rgba(217, 95, 84, 0.5) !important;
+      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.1) !important;
+    }
+
+    body.momo-polish .crm-profile-finish {
+      border-color: var(--momo-line-strong) !important;
+      background: var(--momo-surface) !important;
+    }
+
+    body.momo-polish .crm-profile-finish button {
+      border-radius: 6px !important;
+      background: var(--momo-ink) !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .crm-ledger-summary {
+      gap: 1px !important;
+      overflow: hidden;
+      border: 1px solid var(--momo-line);
+      border-radius: 8px;
+      background: var(--momo-line);
+      box-shadow: var(--momo-panel-shadow);
+    }
+
+    body.momo-polish .crm-ledger-metric {
+      min-width: 0;
+      min-height: 78px;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: var(--momo-surface) !important;
+    }
+
+    body.momo-polish .crm-ledger-metric > div:last-child {
+      overflow: hidden;
+      font-variant-numeric: tabular-nums;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .crm-ledger-controls {
+      padding: 1rem !important;
+    }
+
+    body.momo-polish .crm-ledger-filter {
+      border-color: var(--momo-line) !important;
+      border-radius: 6px !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .crm-ledger-group-header {
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .crm-ledger-row {
+      border-color: var(--momo-line) !important;
+    }
+
+    body.momo-polish .crm-ledger-type {
+      border-radius: 50% !important;
+    }
+
+    @media (max-width: 900px) {
+      body.momo-polish .crm-customer-summary {
+        grid-template-columns: minmax(0, 1fr) minmax(200px, 0.6fr) 24px;
+      }
+
+      body.momo-polish .crm-customer-preference {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body.momo-polish .momo-crm-page {
+        gap: 0.875rem;
+      }
+
+      body.momo-polish .crm-overview-header {
+        padding: 0.875rem !important;
+      }
+
+      body.momo-polish .crm-overview-actions {
+        gap: 0.375rem !important;
+      }
+
+      body.momo-polish .crm-overview-actions button {
+        min-height: 38px !important;
+        padding-right: 0.65rem !important;
+        padding-left: 0.65rem !important;
+      }
+
+      body.momo-polish .crm-overview-grid {
+        margin-top: 0.75rem !important;
+      }
+
+      body.momo-polish .crm-overview-metric {
+        min-height: 66px;
+        padding: 0.65rem 0.55rem !important;
+      }
+
+      body.momo-polish .crm-overview-metric > div:last-child {
+        font-size: 0.9rem !important;
+      }
+
+      body.momo-polish .crm-overview-metric:last-child > div:last-child {
+        font-size: 0.72rem !important;
+      }
+
+      body.momo-polish .crm-view-switch-wrap {
+        padding: 0.375rem !important;
+      }
+
+      body.momo-polish .crm-view-tab {
+        min-height: 40px !important;
+      }
+
+      body.momo-polish .crm-directory-toolbar,
+      body.momo-polish .crm-ledger-controls {
+        padding: 0.875rem !important;
+      }
+
+      body.momo-polish .crm-directory-heading {
+        min-height: 36px;
+      }
+
+      body.momo-polish .crm-directory-insights {
+        min-height: 36px !important;
+      }
+
+      body.momo-polish .crm-search-input.compact-search-input,
+      body.momo-polish .crm-ledger-search,
+      body.momo-polish .crm-sort-select {
+        min-height: 42px !important;
+        height: 42px !important;
+        border-radius: 8px !important;
+      }
+
+      body.momo-polish .crm-customer-summary {
+        grid-template-columns: minmax(0, 1fr) 22px;
+        min-height: 94px;
+        gap: 0.5rem 0.75rem;
+        padding: 0.75rem 0.875rem !important;
+      }
+
+      body.momo-polish .crm-customer-identity {
+        grid-column: 1;
+        min-width: 0;
+      }
+
+      body.momo-polish .crm-customer-avatar {
+        width: 36px;
+        height: 36px;
+      }
+
+      body.momo-polish .crm-customer-financials {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        gap: 1rem;
+        padding: 0.55rem 0 0 3rem;
+        border-top: 1px solid var(--momo-line);
+        border-left: 0;
+      }
+
+      body.momo-polish .crm-customer-open {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+      }
+
+      body.momo-polish .crm-customer-tags {
+        display: none;
+      }
+
+      body.momo-polish .crm-customer-status {
+        max-width: 6.5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      body.momo-polish .crm-customer-card--expanded .crm-profile-panel {
+        padding: 0 0.75rem calc(1.5rem + env(safe-area-inset-bottom, 0px)) !important;
+      }
+
+      body.momo-polish .crm-customer-card--expanded .crm-profile-panel-header {
+        width: calc(100% + 1.5rem);
+        margin-right: -0.75rem !important;
+        margin-left: -0.75rem !important;
+        padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
+        padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+      }
+
+      body.momo-polish .crm-profile-header-main {
+        flex-wrap: wrap;
+      }
+
+      body.momo-polish .crm-profile-actions {
+        gap: 0.375rem !important;
+        margin-left: auto;
+      }
+
+      body.momo-polish .crm-profile-actions button {
+        min-height: 38px !important;
+      }
+
+      body.momo-polish .crm-profile-save {
+        min-width: 58px;
+      }
+
+      body.momo-polish .crm-profile-content > *:not(.crm-profile-panel-header) {
+        width: 100%;
+      }
+
+      body.momo-polish .crm-profile-content details > summary {
+        min-height: 46px !important;
+      }
+
+      body.momo-polish .crm-ledger-metric {
+        min-height: 70px;
+        padding: 0.65rem !important;
+      }
+
+      body.momo-polish .crm-ledger-metric > div:last-child {
+        font-size: 0.78rem !important;
+      }
+
+      body.momo-polish .crm-ledger-group {
+        border-radius: 8px !important;
+      }
+
+      body.momo-polish .crm-ledger-row {
+        padding: 0.75rem 0.875rem !important;
+      }
+    }
+
     [v-cloak] { display: none !important; }

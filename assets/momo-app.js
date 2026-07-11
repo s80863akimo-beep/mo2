@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.11-inventory-workspace';
+    const APP_VERSION = '2026.07.11-crm-workspace-2';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -274,6 +274,8 @@
           crmFilterMode: 'all',
           crmSortMode: 'lastDate',
           crmViewMode: 'customers',
+          crmShowInsights: false,
+          crmVisibleLimit: 40,
           expandedCrmCustomerName: null,
           mergeTargetByCustomer: {},
           prepaidLedgerSearchQuery: '',
@@ -2026,6 +2028,14 @@
           return list.sort(sorters[this.crmSortMode] || sorters.lastDate);
         },
 
+        visibleCrmList() {
+          return this.filteredCrmList.slice(0, this.crmVisibleLimit);
+        },
+
+        crmHasMoreCustomers() {
+          return this.crmVisibleLimit < this.filteredCrmList.length;
+        },
+
         prepaidLedgerEntries() {
           const balances = {};
           return this.prepaidLedger
@@ -2658,6 +2668,25 @@
         activeTab(newVal) {
           if (newVal === 'safety' && this.cloudReady && this.authUser && this.cloudBackupStatus === 'idle') {
             this.fetchCloudBackupList({ silent: true });
+          }
+          if (newVal !== 'crm') {
+            this.expandedCrmCustomerName = null;
+            this.crmShowInsights = false;
+          }
+        },
+        crmSearchQuery() {
+          this.resetCrmVisibleLimit();
+        },
+        crmFilterMode() {
+          this.resetCrmVisibleLimit();
+        },
+        crmSortMode() {
+          this.resetCrmVisibleLimit();
+        },
+        crmViewMode(newVal) {
+          if (newVal !== 'customers') {
+            this.expandedCrmCustomerName = null;
+            this.crmShowInsights = false;
           }
         },
         'newOrder.customerName'(newVal) {
@@ -7540,9 +7569,15 @@
           if (shouldOpen) {
             this.$nextTick(() => {
               const card = document.getElementById(`crm-card-${customerId}`);
-              if (card) this.scrollElementIntoViewForNavigation(card, { block: 'start' });
+              if (card) card.scrollTop = 0;
             });
           }
+        },
+        resetCrmVisibleLimit() {
+          this.crmVisibleLimit = 40;
+        },
+        showMoreCrmCustomers() {
+          this.crmVisibleLimit = Math.min(this.crmVisibleLimit + 40, this.filteredCrmList.length);
         },
         startOrderForCustomer(cust) {
           this.newOrder.date = new Date().toLocaleDateString('sv-SE');
