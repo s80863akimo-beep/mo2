@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.11-crm-workspace-2';
+    const APP_VERSION = '2026.07.11-safety-workspace-2';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -169,6 +169,9 @@
           integrityReport: safeParse(localStorage.getItem('momo_integrity_report'), null),
           safetyReport: safeParse(localStorage.getItem('momo_safety_report'), null),
           safetyChecking: false,
+          safetyShowAllIssues: false,
+          safetyShowAllCloudBackups: false,
+          safetyShowAllLocalSnapshots: false,
           pendingActionStartDate: '2026-07-01',
           operationLogs: safeParse(localStorage.getItem('momo_operation_logs'), []),
           showOperationLogModal: false,
@@ -601,6 +604,9 @@
             })
             .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
         },
+        visibleBackupSnapshotRows() {
+          return this.backupSnapshotRows.slice(0, this.safetyShowAllLocalSnapshots ? 50 : 5);
+        },
         backupSnapshotSummary() {
           const latest = this.backupSnapshotRows[0] || null;
           return {
@@ -622,6 +628,9 @@
             .filter(row => row.backupDate || row.createdAt)
             .sort((a, b) => String(b.backupDate || b.createdAt).localeCompare(String(a.backupDate || a.createdAt))
               || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+        },
+        visibleCloudBackupRows() {
+          return this.cloudBackupRows.slice(0, this.safetyShowAllCloudBackups ? 50 : 5);
         },
         cloudBackupSummary() {
           if (!this.authConfig.configured) {
@@ -800,7 +809,7 @@
             const message = String(issue.message || '').trim();
             if (!message) return;
             const severity = issue.severity === 'error' ? 'error' : 'warning';
-            const key = `${source}:${issue.code || ''}:${message}`;
+            const key = message.toLowerCase();
             if (seen.has(key)) return;
             seen.add(key);
             rows.push({
@@ -842,6 +851,9 @@
 
           const order = { error: 0, warning: 1 };
           return rows.sort((a, b) => (order[a.severity] ?? 9) - (order[b.severity] ?? 9));
+        },
+        visibleHealthIssueRows() {
+          return this.healthIssueRows.slice(0, this.safetyShowAllIssues ? 50 : 5);
         },
         healthIssueSummary() {
           const errorCount = this.healthIssueRows.filter(issue => issue.severity === 'error').length;
@@ -2672,6 +2684,11 @@
           if (newVal !== 'crm') {
             this.expandedCrmCustomerName = null;
             this.crmShowInsights = false;
+          }
+          if (newVal !== 'safety') {
+            this.safetyShowAllIssues = false;
+            this.safetyShowAllCloudBackups = false;
+            this.safetyShowAllLocalSnapshots = false;
           }
         },
         crmSearchQuery() {

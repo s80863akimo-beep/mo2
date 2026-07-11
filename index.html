@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.11-crm-workspace-2">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.11-safety-workspace-2">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.11-crm-workspace-2">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.11-safety-workspace-2">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -3380,20 +3380,25 @@
         </div>
 
         <!-- Tab 7: Data Safety -->
-        <div v-else-if="activeTab === 'safety'" key="safety" class="momo-list-page space-y-6">
-          <section class="bg-white rounded-3xl sm:rounded-4xl border border-slate-200 macaron-shadow overflow-hidden">
-            <div class="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div v-else-if="activeTab === 'safety'" key="safety" class="momo-list-page momo-safety-page">
+          <section class="safety-overview-panel momo-surface bg-white rounded-3xl sm:rounded-4xl border border-slate-200 macaron-shadow overflow-hidden">
+            <div class="safety-overview-header p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div class="min-w-0">
                 <h2 class="text-lg sm:text-xl font-black text-slate-800">資料安全中心</h2>
-                <p class="text-[11px] font-bold text-slate-400 mt-0.5">備份快照、健康檢查、雲端狀態與還原入口集中管理</p>
+                <p class="text-[11px] font-bold text-slate-400 mt-0.5">資料、同步、備份與版本狀態</p>
               </div>
-              <span class="shrink-0 px-3 py-1 rounded-full border text-[11px] font-black" :class="statusToneClasses(healthIssueSummary.status === 'ok' ? 'ok' : healthIssueSummary.status === 'error' ? 'error' : 'warn')">
-                {{ healthIssueSummary.title }}
-              </span>
+              <div class="safety-overview-actions flex items-center gap-2 shrink-0">
+                <span class="shrink-0 px-3 py-1 rounded-full border text-[11px] font-black" :class="statusToneClasses(healthIssueSummary.status === 'ok' ? 'ok' : healthIssueSummary.status === 'error' ? 'error' : 'warn')">
+                  {{ healthIssueSummary.title }}
+                </span>
+                <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="safety-check-button min-h-[38px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black disabled:opacity-50">
+                  {{ safetyChecking || pwaCheckingUpdate ? '檢查中…' : '重新檢查' }}
+                </button>
+              </div>
             </div>
 
-            <div class="grid grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
-              <div v-for="card in dataSafetyCards" :key="'safety-card-' + card.key" class="p-4 sm:p-5">
+            <div class="safety-status-grid grid grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+              <div v-for="card in dataSafetyCards" :key="'safety-card-' + card.key" class="safety-status-card p-4 sm:p-5">
                 <div class="flex items-center justify-between gap-2">
                   <div class="text-[10px] font-black text-slate-400">{{ card.label }}</div>
                   <span class="w-2 h-2 rounded-full" :class="statusToneClasses(card.tone, 'dot')"></span>
@@ -3403,7 +3408,7 @@
               </div>
             </div>
 
-            <div class="px-4 sm:px-6 pb-5">
+            <div class="safety-storage-meter px-4 sm:px-6 pb-5">
               <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
                 <div class="h-full rounded-full" :class="localStorageUsagePercent >= 80 ? 'bg-rose-500' : localStorageUsagePercent >= 60 ? 'bg-amber-500' : 'bg-emerald-500'" :style="{ width: localStorageUsagePercent + '%' }"></div>
               </div>
@@ -3414,29 +3419,49 @@
             </div>
           </section>
 
-          <section class="grid grid-cols-2 lg:grid-cols-5 gap-2.5">
-            <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="min-h-[52px] rounded-2xl bg-slate-900 text-white text-xs font-black disabled:opacity-50">
-              {{ safetyChecking || pwaCheckingUpdate ? '檢查中…' : '重新健康檢查' }}
-            </button>
-            <button @click="createLocalBackupSnapshot('manual', { silent: false, force: true })" class="min-h-[52px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black">
-              建立本機快照
-            </button>
-            <button v-if="cloudReady" @click="createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="min-h-[52px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black disabled:opacity-50">
-              {{ backupStatus === 'saving' ? '雲端備份中…' : '建立雲端備份' }}
-            </button>
-            <button v-else @click="exportBackup" class="min-h-[52px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">
-              下載 JSON 備份
-            </button>
-            <button @click="showOperationLogModal = true" class="min-h-[52px] rounded-2xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">
-              操作紀錄
-            </button>
-            <button @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" class="min-h-[52px] rounded-2xl bg-white border border-slate-200 text-slate-600 text-xs font-black disabled:opacity-50">
-              {{ pwaClearingCache ? '清理中…' : '清舊快取' }}
-            </button>
+          <section class="safety-attention-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <div class="safety-panel-header px-4 py-4 sm:px-6 border-b border-slate-100 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h3 class="text-base font-black text-slate-800">立即處理</h3>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">錯誤優先，其次確認提醒</p>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-black" :class="healthIssueSummary.status === 'ok' ? 'bg-emerald-50 text-emerald-700' : healthIssueSummary.status === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'">
+                {{ healthIssueSummary.total ? `${healthIssueSummary.errorCount} 錯誤 · ${healthIssueSummary.warningCount} 提醒` : '正常' }}
+              </span>
+            </div>
+
+            <div v-if="!healthIssueRows.length" class="safety-empty-state p-8 text-center">
+              <div class="text-sm font-black text-emerald-700">目前沒有需要處理的問題</div>
+              <p class="mt-1 text-xs font-bold text-slate-400">資料、同步與備份狀態正常。</p>
+            </div>
+            <div v-else class="safety-issue-list divide-y divide-slate-100">
+              <div v-for="issue in visibleHealthIssueRows" :key="'health-' + issue.source + '-' + issue.code + '-' + issue.message"
+                   class="safety-issue-row px-4 py-3 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                   :class="issue.severity === 'error' ? 'safety-issue-row--error' : 'safety-issue-row--warning'">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="issue.severity === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'">
+                      {{ issue.severity === 'error' ? '錯誤' : '提醒' }}
+                    </span>
+                    <span class="text-[10px] font-black text-slate-400">{{ issue.sourceLabel }}</span>
+                  </div>
+                  <div class="mt-1 text-sm font-black text-slate-800 leading-relaxed">{{ issue.message }}</div>
+                  <div v-if="issue.serviceName" class="mt-0.5 text-[10px] font-bold text-slate-400">服務：{{ issue.serviceName }}</div>
+                </div>
+                <button @click="handleHealthIssue(issue)" class="safety-issue-action min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black shrink-0">
+                  {{ issue.actionLabel }}
+                </button>
+              </div>
+            </div>
+            <div v-if="healthIssueRows.length > 5" class="safety-issue-footer px-4 py-3 sm:px-6 border-t border-slate-100 text-center">
+              <button @click="safetyShowAllIssues = !safetyShowAllIssues" class="min-h-[36px] px-4 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-black">
+                {{ safetyShowAllIssues ? '收合問題清單' : `查看全部 ${Math.min(healthIssueRows.length, 50)} 項` }}
+              </button>
+            </div>
           </section>
 
-          <section class="bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
-            <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <section class="safety-sync-panel safety-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <div class="safety-panel-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <h3 class="text-base font-black text-slate-800">同步與價目檢查</h3>
@@ -3450,46 +3475,42 @@
                   <span v-if="syncReport?.syncedAt"> · 最後同步 {{ formatDateTime(syncReport.syncedAt) }}</span>
                 </p>
               </div>
-              <div class="grid grid-cols-3 gap-2 lg:w-[360px]">
+              <div class="safety-sync-actions grid grid-cols-2 gap-2 lg:w-[250px]">
                 <button @click="openSyncIssueModal(priceMatchWorkbenchRows.length ? 'pricing' : 'all')"
-                        class="min-h-[38px] rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black">
+                         class="min-h-[38px] rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black">
                   查看異常
                 </button>
                 <button @click="retryCalendarSync" :disabled="syncing"
                         class="min-h-[38px] rounded-xl bg-slate-900 text-white text-[11px] font-black disabled:opacity-50">
                   {{ syncing ? '同步中…' : '重新同步' }}
                 </button>
-                <button @click="openServiceConfigModal"
-                        class="min-h-[38px] rounded-xl bg-orange-50 border border-orange-100 text-orange-700 text-[11px] font-black">
-                  價目表
-                </button>
               </div>
             </div>
 
-            <div class="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
-              <div class="p-4">
+            <div class="safety-sync-metrics grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+              <div class="safety-sync-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">同步結果</div>
                 <div class="mt-1 text-lg font-black text-slate-800">{{ syncReport ? (syncReport.received || 0) + ' 筆' : '未同步' }}</div>
                 <div class="mt-1 text-[10px] font-bold text-slate-400">新增 {{ syncReport?.merged || 0 }} · 更新 {{ syncReport?.updated || 0 }} · 取消 {{ syncReport?.cancelled || 0 }}</div>
               </div>
-              <div class="p-4">
+              <div class="safety-sync-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">金額付款</div>
                 <div class="mt-1 text-lg font-black" :class="syncIssueSummary.money ? 'text-rose-600' : 'text-slate-800'">{{ syncIssueSummary.money }} 筆</div>
                 <div class="mt-1 text-[10px] font-bold text-slate-400">金額 0、付款格式、混合付款</div>
               </div>
-              <div class="p-4">
+              <div class="safety-sync-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">鎖帳衝突</div>
                 <div class="mt-1 text-lg font-black" :class="syncIssueSummary.locked ? 'text-amber-600' : 'text-slate-800'">{{ syncIssueSummary.locked }} 筆</div>
                 <div class="mt-1 text-[10px] font-bold text-slate-400">月結鎖帳後的取消或改動</div>
               </div>
-              <div class="p-4">
+              <div class="safety-sync-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">價目未匹配</div>
                 <div class="mt-1 text-lg font-black" :class="priceMatchWorkbenchRows.length ? 'text-orange-600' : 'text-slate-800'">{{ priceMatchWorkbenchRows.length }} 項</div>
                 <div class="mt-1 text-[10px] font-bold text-slate-400">行事曆服務名稱未進價目表</div>
               </div>
             </div>
 
-            <div v-if="syncError" class="px-4 py-3 sm:px-6 border-t border-rose-100 bg-rose-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div v-if="syncError" class="safety-sync-error px-4 py-3 sm:px-6 border-t border-rose-100 bg-rose-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div class="min-w-0">
                 <div class="text-xs font-black text-rose-700">{{ syncError.title }}</div>
                 <div class="mt-0.5 text-[10px] font-bold text-rose-500 line-clamp-2">{{ syncError.message }}</div>
@@ -3497,7 +3518,7 @@
               <button @click="retryCalendarSync" :disabled="syncing" class="min-h-[36px] px-3 rounded-xl bg-white border border-rose-100 text-rose-700 text-[11px] font-black disabled:opacity-50">重試同步</button>
             </div>
 
-            <div v-if="syncIssueSummary.total" class="px-4 py-3 sm:px-6 border-t border-slate-100 flex flex-wrap gap-2">
+            <div v-if="syncIssueSummary.total" class="safety-sync-filters px-4 py-3 sm:px-6 border-t border-slate-100 flex flex-wrap gap-2">
               <button v-for="filter in syncIssueFilters().filter(item => item.count)"
                       :key="'safety-sync-filter-' + filter.key"
                       @click="openSyncIssueModal(filter.key)"
@@ -3507,8 +3528,8 @@
               </button>
             </div>
 
-            <div v-if="priceMatchWorkbenchRows.length" class="border-t border-orange-100">
-              <div class="px-4 py-3 sm:px-6 bg-orange-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div v-if="priceMatchWorkbenchRows.length" class="safety-price-workbench border-t border-orange-100">
+              <div class="safety-price-header px-4 py-3 sm:px-6 bg-orange-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div class="min-w-0">
                   <div class="text-sm font-black text-orange-800">價目表未匹配工作台</div>
                   <p class="mt-0.5 text-[10px] font-bold text-orange-500">把行事曆服務名稱加入價目表後，後續同步計價會使用同一份設定。</p>
@@ -3516,7 +3537,7 @@
                 <button @click="openSyncIssueModal('pricing')" class="min-h-[34px] px-3 rounded-xl bg-white border border-orange-100 text-orange-700 text-[11px] font-black">全部明細</button>
               </div>
               <div class="divide-y divide-orange-50">
-                <div v-for="row in priceMatchWorkbenchRows.slice(0, 8)" :key="'safety-price-workbench-' + row.key" class="px-4 py-3 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div v-for="row in priceMatchWorkbenchRows.slice(0, 8)" :key="'safety-price-workbench-' + row.key" class="safety-price-row px-4 py-3 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div class="min-w-0">
                     <div class="text-sm font-black text-slate-800 truncate">{{ row.serviceName }}</div>
                     <div class="mt-0.5 text-[10px] font-bold text-slate-400">
@@ -3534,11 +3555,16 @@
             </div>
           </section>
 
-          <section class="bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
-            <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div class="safety-section-heading">
+            <h3 class="text-base sm:text-lg font-black text-slate-800">備份與還原</h3>
+            <p class="mt-0.5 text-[10px] font-bold text-slate-400">正式雲端備份與裝置內保護快照</p>
+          </div>
+
+          <section class="safety-cloud-panel safety-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <div class="safety-panel-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                  <h3 class="text-base font-black text-slate-800">雲端備份工作台</h3>
+                  <h3 class="text-base font-black text-slate-800">雲端備份</h3>
                   <span class="px-2 py-0.5 rounded-full border text-[9px] font-black" :class="statusToneClasses(cloudBackupSummary.status)">
                     {{ cloudBackupSummary.title }}
                   </span>
@@ -3600,8 +3626,8 @@
               <div class="text-sm font-black text-slate-700">尚無雲端備份</div>
               <p class="mt-1 text-xs font-bold text-slate-400">按「建立雲端」後，系統會保存今日正式備份。</p>
             </div>
-            <div v-else class="divide-y divide-slate-100">
-              <div v-for="backup in cloudBackupRows" :key="'cloud-backup-' + backup.id + '-' + backup.backupDate" class="px-4 py-3 sm:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div v-else class="safety-backup-list divide-y divide-slate-100">
+              <div v-for="backup in visibleCloudBackupRows" :key="'cloud-backup-' + backup.id + '-' + backup.backupDate" class="safety-backup-row px-4 py-3 sm:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="text-sm font-black text-slate-800">正式雲端備份 · {{ backup.backupDate }}</span>
@@ -3633,50 +3659,18 @@
                   </button>
                 </div>
               </div>
-            </div>
-          </section>
-
-          <section class="bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
-            <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex items-center justify-between gap-3">
-              <div class="min-w-0">
-                <h3 class="text-base font-black text-slate-800">健康檢查結果</h3>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">
-                  {{ safetyReport?.checkedAt ? `最後檢查 ${formatDateTime(safetyReport.checkedAt)}` : '尚未完成安全檢查' }}
-                </p>
-              </div>
-              <span class="px-2.5 py-1 rounded-full text-[10px] font-black" :class="healthIssueSummary.status === 'ok' ? 'bg-emerald-50 text-emerald-700' : healthIssueSummary.status === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'">
-                {{ healthIssueSummary.total ? `${healthIssueSummary.errorCount} 錯誤 · ${healthIssueSummary.warningCount} 提醒` : '正常' }}
-              </span>
-            </div>
-
-            <div v-if="!healthIssueRows.length" class="p-8 text-center">
-              <div class="text-sm font-black text-emerald-700">目前沒有資料健康問題</div>
-              <p class="mt-1 text-xs font-bold text-slate-400">月結、儲值、CRM、支出、庫存與同步狀態目前可正常使用。</p>
-            </div>
-            <div v-else class="divide-y divide-slate-100">
-              <div v-for="issue in healthIssueRows.slice(0, 50)" :key="'health-' + issue.source + '-' + issue.code + '-' + issue.message" class="px-4 py-3 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="issue.severity === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'">
-                      {{ issue.severity === 'error' ? '錯誤' : '提醒' }}
-                    </span>
-                    <span class="text-[10px] font-black text-slate-400">{{ issue.sourceLabel }}</span>
-                    <span v-if="issue.code" class="text-[10px] font-bold text-slate-300">{{ issue.code }}</span>
-                  </div>
-                  <div class="mt-1 text-sm font-black text-slate-800 leading-relaxed">{{ issue.message }}</div>
-                  <div v-if="issue.serviceName" class="mt-0.5 text-[10px] font-bold text-slate-400">服務：{{ issue.serviceName }}</div>
-                </div>
-                <button @click="handleHealthIssue(issue)" class="min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black shrink-0">
-                  {{ issue.actionLabel }}
+              <div v-if="cloudBackupRows.length > 5" class="safety-backup-footer px-4 py-3 text-center">
+                <button @click="safetyShowAllCloudBackups = !safetyShowAllCloudBackups" class="min-h-[36px] px-4 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-black">
+                  {{ safetyShowAllCloudBackups ? '收合雲端備份' : `查看全部 ${cloudBackupRows.length} 份` }}
                 </button>
               </div>
             </div>
           </section>
 
-          <section class="bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
-            <div class="px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <section class="safety-local-panel safety-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <div class="safety-panel-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div class="min-w-0">
-                <h3 class="text-base font-black text-slate-800">本機備份快照</h3>
+                <h3 class="text-base font-black text-slate-800">本機快照</h3>
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ backupSnapshotSummary.detail }}</p>
               </div>
               <div class="flex gap-2">
@@ -3689,8 +3683,8 @@
               <div class="text-sm font-black text-slate-700">尚無本機快照</div>
               <p class="mt-1 text-xs font-bold text-slate-400">完成打烊、更正單、儲值沖銷或月結匯出後會自動留下快照。</p>
             </div>
-            <div v-else class="divide-y divide-slate-100">
-              <div v-for="snapshot in backupSnapshotRows" :key="snapshot.id" class="px-4 py-3 sm:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div v-else class="safety-backup-list divide-y divide-slate-100">
+              <div v-for="snapshot in visibleBackupSnapshotRows" :key="snapshot.id" class="safety-backup-row px-4 py-3 sm:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="text-sm font-black text-slate-800">{{ snapshot.reasonLabel }}</span>
@@ -3715,29 +3709,45 @@
                   <button @click="deleteBackupSnapshot(snapshot.id)" class="min-h-[38px] rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-[11px] font-black">刪除</button>
                 </div>
               </div>
+              <div v-if="backupSnapshotRows.length > 5" class="safety-backup-footer px-4 py-3 text-center">
+                <button @click="safetyShowAllLocalSnapshots = !safetyShowAllLocalSnapshots" class="min-h-[36px] px-4 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-black">
+                  {{ safetyShowAllLocalSnapshots ? '收合本機快照' : `查看全部 ${backupSnapshotRows.length} 份` }}
+                </button>
+              </div>
             </div>
           </section>
 
-          <section class="bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
-            <div class="px-4 py-4 sm:px-6 border-b border-slate-100">
-              <h3 class="text-base font-black text-slate-800">備份策略</h3>
-              <p class="text-[10px] font-bold text-slate-400 mt-0.5">系統自動保留最近 10 份本機快照；雲端保留近 14 天每日備份，並保留每月最後一份。</p>
+          <details class="safety-advanced-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <summary class="safety-advanced-summary min-h-[56px] px-4 py-3 sm:px-6 cursor-pointer flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h3 class="text-sm sm:text-base font-black text-slate-800">進階工具</h3>
+                <p class="mt-0.5 text-[10px] font-bold text-slate-400">操作紀錄、App 快取與備份規則</p>
+              </div>
+              <span class="safety-advanced-chevron text-slate-400" aria-hidden="true">›</span>
+            </summary>
+            <div class="safety-advanced-body border-t border-slate-100">
+              <div class="safety-advanced-actions grid grid-cols-2 gap-2 p-4 sm:px-6">
+                <button @click="showOperationLogModal = true" class="min-h-[42px] rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-black">操作紀錄</button>
+                <button @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" class="min-h-[42px] rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-black disabled:opacity-50">
+                  {{ pwaClearingCache ? '清理中…' : '清除 App 舊快取' }}
+                </button>
+              </div>
+              <div class="safety-backup-policy grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 border-t border-slate-100">
+                <div class="p-4">
+                  <div class="text-xs font-black text-slate-700">自動快照</div>
+                  <p class="mt-1 text-[11px] font-bold text-slate-400 leading-relaxed">打烊、鎖帳更正、儲值沖銷、月結匯出、價目表更新與資料還原。</p>
+                </div>
+                <div class="p-4">
+                  <div class="text-xs font-black text-slate-700">還原保護</div>
+                  <p class="mt-1 text-[11px] font-bold text-slate-400 leading-relaxed">每次還原前會先建立保護快照。</p>
+                </div>
+                <div class="p-4">
+                  <div class="text-xs font-black text-slate-700">保留規則</div>
+                  <p class="mt-1 text-[11px] font-bold text-slate-400 leading-relaxed">本機保留 10 份；雲端保留近 14 天及每月最後一份。</p>
+                </div>
+              </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
-              <div class="p-4">
-                <div class="text-xs font-black text-slate-700">自動快照時機</div>
-                <p class="mt-1 text-[11px] font-bold text-slate-400 leading-relaxed">打烊、鎖帳更正單、儲值沖銷、月結匯出、價目表更新與匯入還原。</p>
-              </div>
-              <div class="p-4">
-                <div class="text-xs font-black text-slate-700">還原保護</div>
-                <p class="mt-1 text-[11px] font-bold text-slate-400 leading-relaxed">每次還原前會先建立保護快照，保留目前狀態。</p>
-              </div>
-              <div class="p-4">
-                <div class="text-xs font-black text-slate-700">容量控管</div>
-                <p class="mt-1 text-[11px] font-bold text-slate-400 leading-relaxed">若本機容量過高，請下載 JSON 備份後刪除舊快照或清除 App 舊快取。</p>
-              </div>
-            </div>
-          </section>
+          </details>
         </div>
 
       </transition>
@@ -4036,9 +4046,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.11-crm-workspace-2"></script>
+  <script src="/assets/momo-core.js?v=2026.07.11-safety-workspace-2"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.11-crm-workspace-2"></script>
+  <script src="/assets/momo-app.js?v=2026.07.11-safety-workspace-2"></script>
 </body>
 </html>
