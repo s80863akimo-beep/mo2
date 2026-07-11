@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.11-safety-workspace-2';
+    const APP_VERSION = '2026.07.11-dialog-system-4';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -2674,6 +2674,9 @@
             if (s.name) dict[s.name.trim()] = Number(s.price) || 0;
           });
           return dict;
+        },
+        serviceConfigHasChanges() {
+          return JSON.stringify(this.tempServicesConfig || []) !== JSON.stringify(this.servicesConfig || []);
         }
       },
       watch: {
@@ -7668,6 +7671,13 @@
           this.showServiceConfigModal = true;
         },
         closeServiceConfigModal() {
+          if (this.serviceConfigHasChanges) {
+            this.showConfirm('價目表有尚未儲存的修改，確定要放棄並關閉嗎？', () => {
+              this.showServiceConfigModal = false;
+              this.tempServicesConfig = JSON.parse(JSON.stringify(this.servicesConfig || []));
+            });
+            return;
+          }
           this.showServiceConfigModal = false;
         },
         addTempService() {

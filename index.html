@@ -26,22 +26,22 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.11-safety-workspace-2">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.11-dialog-system-4">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.11-safety-workspace-2">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.11-dialog-system-4">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
 
     <!-- Supabase owner login (only enforced after Render enables REQUIRE_AUTH) -->
     <transition name="fade">
-      <div v-if="showAuthSheet" class="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-slate-900/45 sm:p-6"
+      <div v-if="showAuthSheet" class="momo-dialog-overlay fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-slate-900/45 sm:p-6"
            @click="!authConfig.required && (showAuthSheet = false)">
-        <section class="ios-sheet w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-white border border-orange-100 p-6 macaron-shadow-lg safe-pb" @click.stop>
+        <section class="momo-dialog momo-dialog--sm momo-dialog--auth ios-sheet w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-white border border-orange-100 p-6 macaron-shadow-lg safe-pb" @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
           <div class="flex items-start justify-between gap-4">
             <div>
@@ -49,7 +49,7 @@
               <h2 class="mt-4 text-xl font-black text-slate-800">登入摸摸頭營運總部</h2>
               <p class="mt-1 text-xs font-bold text-slate-400">使用 Supabase Authentication 中建立的管理員帳號</p>
             </div>
-            <button v-if="!authConfig.required" type="button" @click="showAuthSheet = false" class="w-10 h-10 rounded-full bg-slate-50 text-slate-500" aria-label="關閉登入">✕</button>
+            <button v-if="!authConfig.required" type="button" @click="showAuthSheet = false" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-50 text-slate-500" aria-label="關閉登入"><span aria-hidden="true">×</span></button>
           </div>
           <form class="mt-5 space-y-3" @submit.prevent="signInWithSupabase">
             <label class="block"><span class="block mb-1 text-[11px] font-black text-slate-500">Email</span><input v-model.trim="authForm.email" type="email" required autocomplete="username" class="w-full min-h-[46px] rounded-2xl border border-orange-100 px-4 text-sm font-semibold" placeholder="你的管理員 Email"></label>
@@ -414,21 +414,21 @@
 
     <!-- Operation Log Modal -->
     <transition name="fade">
-      <div v-if="showOperationLogModal" class="fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click="showOperationLogModal = false">
-        <div class="ios-sheet w-full sm:max-w-2xl max-h-[82vh] bg-white rounded-t-3xl sm:rounded-3xl macaron-shadow-lg border border-orange-100 overflow-hidden flex flex-col" @click.stop>
+      <div v-if="showOperationLogModal" class="momo-dialog-overlay fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click="showOperationLogModal = false">
+        <div class="momo-dialog momo-dialog--lg ios-sheet w-full sm:max-w-2xl max-h-[82vh] bg-white rounded-t-3xl sm:rounded-3xl macaron-shadow-lg border border-orange-100 overflow-hidden flex flex-col" @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
-          <div class="px-5 py-4 border-b border-orange-100 flex items-center justify-between gap-3">
+          <div class="momo-dialog-header px-5 py-4 border-b border-orange-100 flex items-center justify-between gap-3">
             <div>
               <h3 class="text-base font-black text-slate-800">操作紀錄</h3>
               <p class="text-[10px] font-bold text-slate-400 mt-0.5">最近 {{ operationLogs.length }} 筆 · 保留最近 300 筆</p>
             </div>
             <div class="flex items-center gap-2">
               <button @click="exportOperationLogCSV" class="min-h-[38px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">匯出</button>
-              <button @click="showOperationLogModal = false" class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉">✕</button>
+              <button @click="showOperationLogModal = false" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉操作紀錄"><span aria-hidden="true">×</span></button>
             </div>
           </div>
-          <div v-if="!operationLogs.length" class="p-8 text-center text-sm font-bold text-slate-400">尚無操作紀錄</div>
-          <div v-else class="overflow-y-auto divide-y divide-orange-50">
+          <div v-if="!operationLogs.length" class="momo-dialog-body p-8 text-center text-sm font-bold text-slate-400">尚無操作紀錄</div>
+          <div v-else class="momo-dialog-body momo-dialog-list overflow-y-auto divide-y divide-orange-50">
             <div v-for="log in operationLogs.slice(0, 80)" :key="log.id" class="px-5 py-3 flex items-start justify-between gap-3">
               <div class="min-w-0">
                 <div class="text-xs font-black text-slate-700">{{ log.label }}</div>
@@ -443,17 +443,17 @@
 
     <!-- Sync Issue Inspection Modal -->
     <transition name="fade">
-      <div v-if="showSyncIssueModal" class="fixed inset-0 z-[86] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click="showSyncIssueModal = false">
-        <div class="ios-sheet w-full sm:max-w-3xl max-h-[86vh] bg-white rounded-t-3xl sm:rounded-3xl macaron-shadow-lg border border-amber-100 overflow-hidden flex flex-col" @click.stop>
+      <div v-if="showSyncIssueModal" class="momo-dialog-overlay fixed inset-0 z-[86] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click="showSyncIssueModal = false">
+        <div class="momo-dialog momo-dialog--xl ios-sheet w-full sm:max-w-3xl max-h-[86vh] bg-white rounded-t-3xl sm:rounded-3xl macaron-shadow-lg border border-amber-100 overflow-hidden flex flex-col" @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
-          <div class="px-5 py-4 border-b border-amber-100 bg-amber-50/40 flex items-start justify-between gap-3">
+          <div class="momo-dialog-header px-5 py-4 border-b border-amber-100 bg-amber-50/40 flex items-start justify-between gap-3">
             <div class="min-w-0">
               <h3 class="text-base font-black text-slate-800">同步異常檢查</h3>
               <p class="text-[10px] font-bold text-slate-500 mt-0.5">
                 {{ syncReport?.period || '尚未同步' }} · 異常 {{ syncIssueSummary.total }} 筆 · 價目未匹配 {{ priceMatchWorkbenchRows.length }} 項
               </p>
             </div>
-            <button @click="showSyncIssueModal = false" class="w-10 h-10 rounded-full bg-white text-slate-500 font-black" aria-label="關閉">✕</button>
+            <button @click="showSyncIssueModal = false" class="momo-dialog-close w-10 h-10 rounded-full bg-white text-slate-500 font-black" aria-label="關閉同步異常"><span aria-hidden="true">×</span></button>
           </div>
 
           <div class="px-5 py-3 border-b border-amber-100 bg-white flex gap-2 overflow-x-auto">
@@ -465,7 +465,7 @@
             </button>
           </div>
 
-          <div class="overflow-y-auto flex-1">
+          <div class="momo-dialog-body momo-dialog-list overflow-y-auto flex-1">
             <div v-if="syncIssueFilter === 'pricing' && priceMatchWorkbenchRows.length" class="p-4 border-b border-orange-100 bg-orange-50/50">
               <div class="flex items-center justify-between gap-3 mb-2">
                 <div>
@@ -516,7 +516,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-2 border-t border-amber-100 bg-white">
+          <div class="momo-dialog-footer grid grid-cols-2 border-t border-amber-100 bg-white">
             <button @click="retryCalendarSync" :disabled="syncing" class="min-h-[52px] text-amber-700 text-xs font-black border-r border-amber-100 disabled:opacity-50">{{ syncing ? '同步中…' : '重新同步' }}</button>
             <button @click="showSyncIssueModal = false" class="min-h-[52px] text-slate-600 text-xs font-black">完成</button>
           </div>
@@ -1202,14 +1202,14 @@
 
           <!-- Closeout bottom sheet -->
           <transition name="fade">
-            <div v-if="showCloseoutSheet" class="closeout-sheet-overlay fixed inset-0 z-[70] bg-slate-900/40 flex items-end sm:items-center justify-center sm:p-4" @click="showCloseoutSheet = false">
-              <div class="closeout-sheet-panel ios-sheet w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden safe-pb" @click.stop>
+            <div v-if="showCloseoutSheet" class="momo-dialog-overlay closeout-sheet-overlay fixed inset-0 z-[70] bg-slate-900/40 flex items-end sm:items-center justify-center sm:p-4" @click="showCloseoutSheet = false">
+              <div class="momo-dialog momo-dialog--md closeout-sheet-panel ios-sheet w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden safe-pb" @click.stop>
                 <div class="ios-sheet-handle sm:hidden"></div>
-                <div class="px-4 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+                <div class="momo-dialog-header px-4 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
                   <div><h3 class="text-base font-black text-slate-800">每日打烊對帳</h3><p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ selectedCloseoutDateLabel }}</p></div>
-                  <button @click="showCloseoutSheet = false" class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉">✕</button>
+                  <button @click="showCloseoutSheet = false" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉每日打烊"><span aria-hidden="true">×</span></button>
                 </div>
-                <div class="closeout-sheet-body ios-sheet-body p-4 space-y-4 max-h-[75vh] overflow-y-auto">
+                <div class="momo-dialog-body closeout-sheet-body ios-sheet-body p-4 space-y-4 max-h-[75vh] overflow-y-auto">
                   <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">打烊日期</span><input type="date" v-model="closeoutDate" @change="loadCloseoutFormForDate" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-black"></label>
                   <div class="p-4 rounded-xl bg-slate-900 text-white">
                     <div class="flex items-center justify-between gap-3">
@@ -1236,7 +1236,7 @@
                     <span>{{ todayCloseoutDifference === 0 ? '帳實相符' : '帳實差額需確認' }}</span><span>{{ todayCloseoutDifference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutDifference) }}</span>
                   </div>
                   <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">打烊備註</span><input type="text" v-model="closeoutNote" placeholder="差額原因、找零或臨時採買" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-semibold"></label>
-                  <div class="ios-action-bar">
+                  <div class="momo-dialog-action-bar ios-action-bar">
                     <button @click="copyCloseoutDraftSummary" class="mb-2 w-full min-h-[46px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-black">複製目前摘要</button>
                     <button @click="completeCloseoutFromSheet" class="ios-primary-action w-full min-h-[52px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ selectedCloseoutRecord ? '更新打烊紀錄' : '完成打烊並鎖帳' }}</button>
                   </div>
@@ -1297,17 +1297,19 @@
             <!-- Quick Add Order Form -->
             <transition name="fade">
             <div v-if="showMobileAddOrderForm"
-                 class="fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6"
+                 class="momo-dialog-overlay fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6"
                  @click="showMobileAddOrderForm = false">
-            <div class="ios-sheet bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb"
+            <div class="momo-dialog momo-dialog--md momo-form-dialog ios-sheet bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb"
                  @click.stop>
               <div class="ios-sheet-handle lg:hidden"></div>
-              <h3 class="font-black text-slate-800 text-lg flex items-center justify-between">
-                <span>快速收款</span>
-                <!-- Close Button on Mobile -->
-                <button type="button" @click="showMobileAddOrderForm = false" class="text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-orange-50 transition-colors" aria-label="關閉新增業績">✕</button>
-              </h3>
-              <form @submit.prevent="addOrder" class="space-y-3.5">
+              <div class="momo-dialog-header">
+                <div>
+                  <h3 class="font-black text-slate-800 text-lg">快速收款</h3>
+                  <p class="momo-dialog-subtitle">新增服務業績與付款方式</p>
+                </div>
+                <button type="button" @click="showMobileAddOrderForm = false" class="momo-dialog-close" aria-label="關閉新增業績"><span aria-hidden="true">×</span></button>
+              </div>
+              <form @submit.prevent="addOrder" class="momo-dialog-body momo-dialog-form space-y-3.5">
                 <div>
                   <label class="block text-[11px] font-black text-slate-400 mb-1">日期</label>
                   <input type="date" v-model="newOrder.date" required
@@ -1398,7 +1400,7 @@
                 <div v-if="newOrderWarningsPreview.length" class="rounded-2xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] font-black text-amber-700 space-y-1">
                   <div v-for="warning in newOrderWarningsPreview" :key="warning">{{ warning }}</div>
                 </div>
-                <div class="ios-action-bar">
+                <div class="momo-dialog-action-bar ios-action-bar">
                   <label class="mb-2 flex items-center justify-between gap-3 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2 text-[11px] font-black text-slate-500">
                     <span>寫入後繼續新增下一筆</span>
                     <input type="checkbox" v-model="continueAddingOrders" class="w-5 h-5 rounded border-slate-200">
@@ -1726,15 +1728,20 @@
             <!-- Add Expense Form -->
             <transition name="fade">
             <div v-if="showExpenseForm"
-                 class="fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6"
+                 class="momo-dialog-overlay fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6"
                  @click="showExpenseForm = false">
-            <div class="expense-form-sheet ios-sheet bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb"
+            <div class="momo-dialog momo-dialog--md momo-form-dialog expense-form-sheet ios-sheet bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb"
                  @click.stop>
               <div class="ios-sheet-handle lg:hidden"></div>
-              <h3 class="font-black text-slate-800 text-lg flex items-center justify-between">
-                <span>新增支出紀錄</span>
-                <button type="button" @click="showExpenseForm = false" class="w-9 h-9 rounded-full bg-slate-50 text-slate-400 font-black" aria-label="關閉新增支出">✕</button>
-              </h3>
+              <div class="momo-dialog-header">
+                <div>
+                  <h3 class="font-black text-slate-800 text-lg">新增支出紀錄</h3>
+                  <p class="momo-dialog-subtitle">記錄成本、薪資與臨時採買</p>
+                </div>
+                <button type="button" @click="showExpenseForm = false" class="momo-dialog-close" aria-label="關閉新增支出"><span aria-hidden="true">×</span></button>
+              </div>
+
+              <div class="momo-dialog-body momo-dialog-scroll space-y-4">
 
               <!-- 一鍵匯入薪水 -->
               <div class="expense-salary-card bg-gradient-to-r from-macaron-peach-50 to-macaron-soft rounded-2xl p-4 border border-macaron-peach-200 space-y-2">
@@ -1799,13 +1806,14 @@
                          autocorrect="on" autocapitalize="sentences"
                          class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
                 </div>
-                <div class="ios-action-bar">
+                <div class="momo-dialog-action-bar ios-action-bar">
                   <button type="submit"
                           class="expense-submit-button ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
                     寫入支出資料庫
                   </button>
                 </div>
               </form>
+              </div>
             </div>
             </div>
             </transition>
@@ -2011,14 +2019,17 @@
 
             <!-- Add Item Form -->
             <transition name="fade">
-            <div v-if="showInventoryForm" class="fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6" @click="showInventoryForm = false">
-            <div class="inventory-form-sheet ios-sheet bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb" @click.stop>
+            <div v-if="showInventoryForm" class="momo-dialog-overlay fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6" @click="showInventoryForm = false">
+            <div class="momo-dialog momo-dialog--md momo-form-dialog inventory-form-sheet ios-sheet bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb" @click.stop>
               <div class="ios-sheet-handle lg:hidden"></div>
-              <h3 class="font-black text-slate-800 text-lg flex items-center justify-between">
-                <span>新增庫存商品</span>
-                <button type="button" @click="showInventoryForm = false" class="w-9 h-9 rounded-full bg-slate-50 text-slate-400 font-black" aria-label="關閉新增庫存">✕</button>
-              </h3>
-              <form @submit.prevent="addInventoryItem" class="space-y-4">
+              <div class="momo-dialog-header">
+                <div>
+                  <h3 class="font-black text-slate-800 text-lg">新增庫存商品</h3>
+                  <p class="momo-dialog-subtitle">設定目前數量與補貨警戒值</p>
+                </div>
+                <button type="button" @click="showInventoryForm = false" class="momo-dialog-close" aria-label="關閉新增庫存"><span aria-hidden="true">×</span></button>
+              </div>
+              <form @submit.prevent="addInventoryItem" class="momo-dialog-body momo-dialog-form space-y-4">
                 <div>
                   <label class="block text-xs font-black text-slate-400 uppercase mb-1">商品名稱</label>
                   <input type="text" v-model="newInventory.name" required placeholder="如: 日本染髮護髮素 B"
@@ -2042,7 +2053,7 @@
                   <input type="text" v-model="newInventory.notes" placeholder="如: 進貨管道或特點"
                           class="inventory-form-input w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
                 </div>
-                <div class="ios-action-bar">
+                <div class="momo-dialog-action-bar ios-action-bar">
                   <button type="submit"
                           class="inventory-form-submit ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
                     建立商品庫存
@@ -3775,10 +3786,10 @@
 
     <!-- 多裝置版本衝突處理 -->
     <transition name="fade">
-      <div v-if="cloudConflict" class="fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-        <div class="ios-sheet bg-white rounded-3xl w-full max-w-2xl max-h-[88dvh] macaron-shadow-lg border border-amber-100 overflow-hidden flex flex-col">
+      <div v-if="cloudConflict" class="momo-dialog-overlay fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+        <div class="momo-dialog momo-dialog--lg ios-sheet bg-white rounded-3xl w-full max-w-2xl max-h-[88dvh] macaron-shadow-lg border border-amber-100 overflow-hidden flex flex-col">
           <div class="ios-sheet-handle sm:hidden"></div>
-          <div class="p-5 sm:p-6 space-y-3 overflow-y-auto">
+          <div class="momo-dialog-body p-5 sm:p-6 space-y-3 overflow-y-auto">
             <div class="mx-auto w-10 h-1.5 rounded-full bg-amber-100"></div>
             <h3 class="text-base font-black text-slate-800 text-center">另一台裝置已修改這筆資料</h3>
             <p class="text-xs font-semibold text-slate-500 text-center leading-relaxed">{{ cloudConflict.label }} 的雲端版本較新。系統已暫停同步並保留本機內容。</p>
@@ -3821,7 +3832,7 @@
               找不到可比較的欄位；建議先使用雲端版本或重新整理後再試。
             </div>
           </div>
-          <div class="grid grid-cols-2 border-t border-amber-100 shrink-0 bg-white">
+          <div class="momo-dialog-footer grid grid-cols-2 border-t border-amber-100 shrink-0 bg-white">
             <button @click="useCloudConflictVersion" class="min-h-[54px] px-3 text-sky-700 text-xs font-black border-r border-amber-100 hover:bg-sky-50">使用雲端版本</button>
             <button @click="keepLocalConflictVersion" class="min-h-[54px] px-3 text-amber-700 text-xs font-black hover:bg-amber-50">保留本機並覆蓋全部</button>
           </div>
@@ -3832,12 +3843,12 @@
     <!-- Cloud backup restore guard modal -->
     <transition name="fade">
       <div v-if="showCloudRestoreModal"
-           class="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-3 sm:p-4 bg-slate-900/45 backdrop-blur-sm"
+           class="momo-dialog-overlay fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-3 sm:p-4 bg-slate-900/45 backdrop-blur-sm"
            @click="closeCloudRestoreModal">
-        <div class="ios-sheet bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-2xl macaron-shadow-lg border border-sky-100 overflow-hidden"
+        <div class="momo-dialog momo-dialog--lg ios-sheet bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-2xl macaron-shadow-lg border border-sky-100 overflow-hidden"
              @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
-          <div class="p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between gap-3">
+          <div class="momo-dialog-header p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between gap-3">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
                 <h3 class="text-base sm:text-lg font-black text-slate-800">還原雲端備份</h3>
@@ -3850,10 +3861,10 @@
                 {{ cloudRestoreDraft?.backup?.backupDate || '讀取中' }} · schema v{{ cloudRestoreDraft?.backup?.schemaVersion || dataSchemaVersion }} · {{ cloudRestoreDraft?.backup?.totalRecords || 0 }} 筆
               </p>
             </div>
-            <button @click="closeCloudRestoreModal" :disabled="cloudBackupStatus === 'restoring'" class="w-9 h-9 rounded-full bg-slate-50 text-slate-500 font-black disabled:opacity-30" aria-label="關閉">✕</button>
+            <button @click="closeCloudRestoreModal" :disabled="cloudBackupStatus === 'restoring'" class="momo-dialog-close w-9 h-9 rounded-full bg-slate-50 text-slate-500 font-black disabled:opacity-30" aria-label="關閉還原備份"><span aria-hidden="true">×</span></button>
           </div>
 
-          <div class="max-h-[70vh] overflow-y-auto p-4 sm:p-5 space-y-4">
+          <div class="momo-dialog-body max-h-[70vh] overflow-y-auto p-4 sm:p-5 space-y-4">
             <div class="rounded-2xl bg-sky-50 border border-sky-100 px-3 py-3">
               <div class="text-xs font-black text-sky-800">還原前保護</div>
               <p class="mt-1 text-[11px] font-bold text-sky-700 leading-relaxed">
@@ -3897,7 +3908,7 @@
             </label>
           </div>
 
-          <div class="grid grid-cols-2 border-t border-slate-100 bg-white">
+          <div class="momo-dialog-footer grid grid-cols-2 border-t border-slate-100 bg-white">
             <button @click="closeCloudRestoreModal"
                     :disabled="cloudBackupStatus === 'restoring'"
                     class="min-h-[54px] text-slate-500 text-sm font-black border-r border-slate-100 disabled:opacity-40">
@@ -3917,16 +3928,17 @@
     <!-- 自訂確認對話框 Modal（取代瀏覽器原生 confirm，風格一致） -->
     <transition name="fade">
       <div v-if="confirmModal.show"
-           class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+           class="momo-dialog-overlay fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
            @click="closeConfirm">
-        <div class="ios-sheet bg-white rounded-3xl w-full max-w-sm macaron-shadow-lg border border-orange-100 overflow-hidden"
+        <div class="momo-dialog momo-dialog--sm momo-dialog--confirm ios-sheet bg-white rounded-3xl w-full max-w-sm macaron-shadow-lg border border-orange-100 overflow-hidden"
              @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
-          <div class="p-6 space-y-2">
-            <div class="mx-auto w-10 h-1.5 rounded-full bg-rose-100"></div>
+          <div class="momo-dialog-body momo-confirm-body p-6 space-y-2">
+            <div class="momo-confirm-mark" aria-hidden="true">!</div>
+            <h3 class="text-base font-black text-slate-800 text-center">確認操作</h3>
             <p class="text-sm font-bold text-slate-700 text-center leading-relaxed whitespace-pre-line">{{ confirmModal.message }}</p>
           </div>
-          <div class="flex border-t border-orange-100">
+          <div class="momo-dialog-footer flex border-t border-orange-100">
             <button @click="closeConfirm"
                     class="flex-1 py-4 text-slate-500 text-sm font-black jelly-btn hover:bg-orange-50 transition-colors border-r border-orange-100">
               取消
@@ -3942,13 +3954,13 @@
 
     <!-- iOS home-screen guidance -->
     <transition name="fade">
-      <div v-if="showIosGuide" class="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click="dismissIosGuide">
-        <div class="ios-sheet bg-white rounded-3xl w-full max-w-sm macaron-shadow-lg border border-sky-100 overflow-hidden" @click.stop>
+      <div v-if="showIosGuide" class="momo-dialog-overlay fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click="dismissIosGuide">
+        <div class="momo-dialog momo-dialog--sm ios-sheet bg-white rounded-3xl w-full max-w-sm macaron-shadow-lg border border-sky-100 overflow-hidden" @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
-          <div class="p-5 space-y-4">
-            <div class="flex items-center justify-between">
+          <div class="momo-dialog-body p-5 space-y-4">
+            <div class="momo-dialog-header momo-dialog-header--inline flex items-center justify-between">
               <h3 class="text-base font-black text-slate-800">加入 iPhone 主畫面</h3>
-              <button @click="dismissIosGuide" class="w-9 h-9 rounded-full bg-slate-50 text-slate-500 font-black" aria-label="關閉">✕</button>
+              <button @click="dismissIosGuide" class="momo-dialog-close w-9 h-9 rounded-full bg-slate-50 text-slate-500 font-black" aria-label="關閉加入主畫面說明"><span aria-hidden="true">×</span></button>
             </div>
             <ol class="space-y-3 text-sm font-bold text-slate-600">
               <li class="flex gap-3"><span class="w-7 h-7 shrink-0 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center">1</span><span>使用 Safari 開啟此系統</span></li>
@@ -3956,32 +3968,31 @@
               <li class="flex gap-3"><span class="w-7 h-7 shrink-0 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center">3</span><span>由主畫面開啟，即可全螢幕操作</span></li>
             </ol>
           </div>
-          <button @click="dismissIosGuide" class="w-full min-h-[52px] border-t border-sky-100 text-sky-600 text-sm font-black">我知道了</button>
+          <button @click="dismissIosGuide" class="momo-dialog-footer w-full min-h-[52px] border-t border-sky-100 text-sky-600 text-sm font-black">我知道了</button>
         </div>
       </div>
     </transition>
 
     <!-- Service Config Modal - Extracted out of nav to fix iOS Safari bounding-box position:fixed context issue -->
     <transition name="fade">
-      <div v-if="showServiceConfigModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click="closeServiceConfigModal">
-        <div class="ios-sheet bg-white rounded-4xl max-w-xl w-full max-h-[85vh] flex flex-col macaron-shadow-lg border border-orange-100 overflow-hidden" @click.stop>
+      <div v-if="showServiceConfigModal" class="momo-dialog-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click="closeServiceConfigModal">
+        <div class="momo-dialog momo-dialog--lg ios-sheet bg-white rounded-4xl max-w-xl w-full max-h-[85vh] flex flex-col macaron-shadow-lg border border-orange-100 overflow-hidden" @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
 
           <!-- Modal Header -->
-          <div class="p-6 border-b border-orange-100 flex items-center justify-between bg-gradient-to-r from-orange-50/50 to-white">
-            <div>
-              <h3 class="text-base font-black text-slate-800 flex items-center gap-2">
-                服務項目與價格對照設定
-              </h3>
+          <div class="momo-dialog-header p-6 border-b border-orange-100 flex items-center justify-between bg-gradient-to-r from-orange-50/50 to-white">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="text-base font-black text-slate-800">服務項目與價格對照設定</h3>
+                <span v-if="serviceConfigHasChanges" class="momo-dialog-draft-badge">尚未儲存</span>
+              </div>
               <p class="text-[10px] text-slate-400 font-semibold mt-1">此設定將影響自動定價、預估時長與時間產值分析</p>
             </div>
-            <button @click="closeServiceConfigModal" class="text-slate-400 hover:text-slate-600 font-black text-sm p-1.5 rounded-full hover:bg-orange-50 transition-colors">
-              ✕
-            </button>
+            <button @click="closeServiceConfigModal" class="momo-dialog-close" aria-label="關閉服務定價"><span aria-hidden="true">×</span></button>
           </div>
 
           <!-- Modal Body (Scrollable) -->
-          <div class="p-6 overflow-y-auto space-y-4 flex-grow max-h-[50vh]">
+          <div class="momo-dialog-body p-6 overflow-y-auto space-y-4 flex-grow max-h-[50vh]">
 
             <div class="overflow-x-auto rounded-3xl border border-orange-100/50">
               <table class="w-full text-left border-collapse">
@@ -4025,7 +4036,7 @@
           </div>
 
           <!-- Modal Footer -->
-          <div class="ios-action-bar p-6 border-t border-orange-100 bg-orange-50/20 flex items-center justify-between">
+          <div class="momo-dialog-footer ios-action-bar p-6 border-t border-orange-100 bg-orange-50/20 flex items-center justify-between">
             <button @click="resetServicesConfigToDefault" class="text-[10px] font-bold text-slate-400 hover:text-rose-500 transition-colors">
               重設預設值
             </button>
@@ -4046,9 +4057,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.11-safety-workspace-2"></script>
+  <script src="/assets/momo-core.js?v=2026.07.11-dialog-system-4"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.11-safety-workspace-2"></script>
+  <script src="/assets/momo-app.js?v=2026.07.11-dialog-system-4"></script>
 </body>
 </html>
