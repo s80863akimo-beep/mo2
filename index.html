@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.11-dialog-system-4">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.12-header-toolbar-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.11-dialog-system-4">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.12-header-toolbar-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -67,36 +67,30 @@
       <!-- Compact mobile header -->
       <div class="mobile-header-content hidden max-w-7xl mx-auto">
         <div class="mobile-header-brand">
-          <div class="flex items-center gap-2 min-w-0">
-            <img src="/icons/momo-logo-mark.png" alt="摸摸頭 logo" class="momo-header-logo w-7 h-7 shrink-0 rounded-xl object-cover shadow-sm rotate-3">
-            <div class="min-w-0">
-              <div class="flex items-center gap-1.5 min-w-0">
-                <h1 class="text-sm font-black text-slate-800 tracking-tight truncate">摸摸頭</h1>
-                <span class="w-2 h-2 rounded-full ring-2 shrink-0" :class="online ? 'bg-emerald-500 ring-emerald-50' : 'bg-rose-500 ring-rose-50'" :aria-label="online ? '已連線' : '離線模式'" :title="online ? '已連線' : '離線模式'"></span>
-                <span v-if="homeAttentionSummary.total" class="h-4 min-w-4 px-1 rounded-full bg-amber-50 border border-amber-100 text-amber-700 text-[9px] font-black flex items-center justify-center">{{ homeAttentionSummary.total }}</span>
-              </div>
-              <p class="text-[8px] leading-tight font-black text-slate-400 truncate">{{ homeAttentionSummary.total ? homeAttentionSummary.total + ' 待處理' : '狀態正常' }}</p>
-            </div>
-          </div>
+          <img src="/icons/momo-logo-mark.png" alt="摸摸頭 logo" class="momo-header-logo mobile-header-logo w-7 h-7 shrink-0 object-cover">
+          <h1 class="text-sm font-black text-slate-800 truncate">摸摸頭</h1>
         </div>
         <div class="mobile-header-controls">
-          <div class="momo-header-pill mobile-month-selector flex items-center bg-white/90 px-0.5 border border-slate-200 shadow-sm">
-            <button type="button" @click="shiftMonth(-1)" class="w-8 min-h-[38px] rounded-full text-slate-500 font-black" aria-label="上一個月">‹</button>
-            <button type="button" @click="toggleAnnualView" class="flex-1 min-h-[38px] text-xs font-black text-slate-700 whitespace-nowrap" title="點擊切換全年／月份">
+          <div class="momo-header-pill mobile-month-selector flex items-center px-0.5">
+            <button type="button" @click="shiftMonth(-1)" class="mobile-month-nav-button" aria-label="上一個月">‹</button>
+            <button type="button" @click="toggleAnnualView" class="mobile-month-label flex-1 text-xs font-black whitespace-nowrap" title="點擊切換全年／月份">
               {{ selectedMonth === 'All' ? selectedYear + ' 全年' : selectedYear + '/' + selectedMonth }}
             </button>
-            <button type="button" @click="shiftMonth(1)" class="w-8 min-h-[38px] rounded-full text-slate-500 font-black" aria-label="下一個月">›</button>
+            <button type="button" @click="shiftMonth(1)" class="mobile-month-nav-button" aria-label="下一個月">›</button>
           </div>
-          <button @click="syncFromApi()" :disabled="syncing"
-                  :class="{ 'is-syncing': syncing }"
+          <button @click="syncFromApi()" :disabled="syncing || !online"
+                  :class="'is-' + headerSyncState"
                   :aria-busy="syncing ? 'true' : 'false'"
-                  :title="calendarSyncCaption || '同步行事曆'"
-                  aria-label="同步行事曆"
-                  class="momo-sync-button mobile-sync-button jelly-btn rounded-2xl bg-white text-slate-700 text-xs font-black flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50">
-            <svg :class="{ 'animate-spin': syncing }" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992M2.985 19.644v-4.992h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182V4.356"/></svg>
-            <span>{{ syncing ? '同步中' : '同步' }}</span>
+                  :title="headerSyncTitle"
+                  :aria-label="headerSyncTitle"
+                  class="momo-header-icon-button momo-sync-button mobile-sync-button jelly-btn">
+            <svg v-if="headerSyncState === 'success'" class="momo-sync-state-icon" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5"/></svg>
+            <svg v-else-if="headerSyncState === 'error'" class="momo-sync-state-icon" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7.75v5.5M12 16.5h.01"/></svg>
+            <svg v-else-if="headerSyncState === 'offline'" class="momo-sync-state-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M8.5 8.5a9.6 9.6 0 017.8.8M5.1 12.1a7.2 7.2 0 012.1-1.3M10.7 14.7a2.8 2.8 0 013.9.1M12 19h.01"/></svg>
+            <svg v-else :class="{ 'animate-spin': syncing }" class="momo-sync-state-icon" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7v5h-5M4 17v-5h5M6.1 9a7 7 0 0111.8-2L20 9M4 15l2.1 2a7 7 0 0011.8-2"/></svg>
+            <span class="sr-only">{{ headerSyncLabel }}</span>
           </button>
-          <button @click="showMobileTools = true" :class="{ 'ring-2 ring-rose-100': showMobileTools }" class="mobile-tools-button jelly-btn rounded-full bg-white border border-slate-200 text-slate-500 flex items-center justify-center shadow-sm" aria-label="開啟更多工具">
+          <button @click="showMobileTools = true" :aria-pressed="showMobileTools ? 'true' : 'false'" class="momo-header-icon-button mobile-tools-button jelly-btn" aria-label="開啟更多工具">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
           </button>
         </div>
@@ -104,49 +98,42 @@
 
       <div class="desktop-header-content max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
         <!-- Brand -->
-        <div class="flex items-center gap-2 sm:gap-3">
-          <img src="/icons/momo-logo-mark.png" alt="摸摸頭 logo" class="momo-header-logo w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl object-cover shadow-sm sm:shadow-md transform rotate-3 select-none">
-          <div>
-            <h1 class="text-lg sm:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-1">
-              摸摸頭
-            </h1>
-            <p class="text-[10px] sm:text-xs font-semibold text-macaron-peach-500 tracking-wide">今日總覽 · {{ homeAttentionSummary.total ? homeAttentionSummary.total + ' 筆待處理' : '營運狀態正常' }}</p>
-          </div>
+        <div class="desktop-header-brand flex items-center gap-2">
+          <img src="/icons/momo-logo-mark.png" alt="摸摸頭 logo" class="momo-header-logo desktop-header-logo w-9 h-9 object-cover select-none">
+          <h1 class="text-lg font-black text-slate-800">摸摸頭</h1>
         </div>
 
         <!-- Filters & Control Actions -->
         <div class="flex flex-wrap items-center gap-2 sm:gap-3 justify-center">
 
           <!-- Month/Year Selector -->
-          <div class="momo-header-pill flex items-center bg-white/70 rounded-full p-1 border border-slate-200 macaron-shadow-sm">
-            <button type="button" @click="shiftMonth(-1)" class="w-9 h-9 rounded-full hover:bg-orange-50 text-slate-500 text-lg font-black" aria-label="上一個月">‹</button>
-            <button type="button" @click="toggleAnnualView" class="min-w-[126px] px-3 py-1.5 text-sm font-black text-slate-700" title="點擊切換全年／月份">
+          <div class="momo-header-pill desktop-month-selector flex items-center p-1">
+            <button type="button" @click="shiftMonth(-1)" class="desktop-month-nav-button" aria-label="上一個月">‹</button>
+            <button type="button" @click="toggleAnnualView" class="desktop-month-label min-w-[126px] px-3 py-1.5 text-sm font-black" title="點擊切換全年／月份">
               {{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年' : selectedMonth + ' 月' }}
             </button>
-            <button type="button" @click="shiftMonth(1)" class="w-9 h-9 rounded-full hover:bg-orange-50 text-slate-500 text-lg font-black" aria-label="下一個月">›</button>
+            <button type="button" @click="shiftMonth(1)" class="desktop-month-nav-button" aria-label="下一個月">›</button>
           </div>
 
           <!-- Actions -->
           <div class="flex items-center gap-2">
             <!-- Sync Calendar Button & Last Sync Time -->
-            <div class="relative flex flex-col items-center">
+            <div class="relative flex items-center">
               <button
                 @click="syncFromApi()"
-                :disabled="syncing"
-                :class="{ 'is-syncing': syncing }"
+                :disabled="syncing || !online"
+                :class="'is-' + headerSyncState"
                 :aria-busy="syncing ? 'true' : 'false'"
-                :title="calendarSyncCaption || '同步行事曆'"
-                class="momo-sync-button jelly-btn bg-white border border-slate-200 text-slate-700 text-sm font-extrabold px-4 py-2.5 rounded-full flex items-center gap-2 shadow-sm disabled:opacity-50"
+                :title="headerSyncTitle"
+                :aria-label="headerSyncTitle"
+                class="momo-sync-button desktop-sync-button jelly-btn"
               >
-                <!-- Sync Icon (SVG) -->
-                <svg :class="{'animate-spin': syncing}" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"></path>
-                </svg>
-                <span>{{ syncing ? '同步中...' : '同步' }}</span>
+                <svg v-if="headerSyncState === 'success'" class="momo-sync-state-icon" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5"/></svg>
+                <svg v-else-if="headerSyncState === 'error'" class="momo-sync-state-icon" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7.75v5.5M12 16.5h.01"/></svg>
+                <svg v-else-if="headerSyncState === 'offline'" class="momo-sync-state-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M8.5 8.5a9.6 9.6 0 017.8.8M5.1 12.1a7.2 7.2 0 012.1-1.3M10.7 14.7a2.8 2.8 0 013.9.1M12 19h.01"/></svg>
+                <svg v-else :class="{ 'animate-spin': syncing }" class="momo-sync-state-icon" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7v5h-5M4 17v-5h5M6.1 9a7 7 0 0111.8-2L20 9M4 15l2.1 2a7 7 0 0011.8-2"/></svg>
+                <span>{{ headerSyncLabel }}</span>
               </button>
-              <span v-if="calendarSyncCaption" class="absolute top-full mt-0.5 left-1/2 -translate-x-1/2 text-[9px] text-slate-400 font-semibold whitespace-nowrap select-none">
-                {{ calendarSyncCaption }}
-              </span>
             </div>
 
             <!-- Service Pricing Settings Button -->
@@ -206,6 +193,9 @@
                   <button @click="activeTab = 'safety'; showDataTools = false; runSystemStatusCheck(false)" class="text-left w-full px-4 py-2.5 text-sm font-black rounded-2xl hover:bg-sky-50 text-sky-700 flex items-center gap-2">
                     開啟資料安全頁
                   </button>
+                  <button v-if="authConfig.configured" @click="authUser ? signOutSupabase() : (showAuthSheet = true); showDataTools = false" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-violet-50 text-violet-700 flex items-center gap-2">
+                    {{ authUser ? '雲端帳號登出' : '登入雲端帳號' }}
+                  </button>
                   <button @click="exportBackup" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-slate-700 flex items-center gap-2 transition-colors">
                     匯出備份 (JSON)
                   </button>
@@ -249,25 +239,6 @@
 
           </div>
         </div>
-      </div>
-      <div class="momo-status-row desktop-status-row max-w-7xl mx-auto mt-1 flex justify-center sm:justify-end gap-2 text-[9px] font-black">
-        <button v-if="authConfig.configured" @click="authUser ? signOutSupabase() : (showAuthSheet = true)" class="px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">
-          {{ authUser ? '🔐 ' + authUser.email + ' · 登出' : '🔓 登入雲端' }}
-        </button>
-        <span class="px-2 py-0.5 rounded-full" :class="online ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'">
-          {{ online ? '● 已連線' : '● 離線模式' }}
-        </span>
-        <button v-if="homeAttentionSummary.total" @click="activeTab = 'dashboard'" class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
-          待處理 {{ homeAttentionSummary.total }}
-        </button>
-        <button v-if="syncReport || syncIssueSummary.total || priceMatchWorkbenchRows.length" @click="goToSafetySync('all')" class="px-2 py-0.5 rounded-full" :class="syncIssueSummary.total || priceMatchWorkbenchRows.length ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-600'">
-          {{ priceMatchWorkbenchRows.length ? `價目未匹配 ${priceMatchWorkbenchRows.length}` : syncIssueSummary.total ? `同步異常 ${syncIssueSummary.total}` : '同步正常' }}
-        </button>
-        <span v-if="authUser" class="px-2 py-0.5 rounded-full" :class="cloudStatus === 'error' ? 'bg-rose-50 text-rose-600' : cloudStatus === 'conflict' ? 'bg-amber-50 text-amber-700' : cloudMigrationNeeded ? 'bg-amber-50 text-amber-700' : 'bg-violet-50 text-violet-600'">
-          {{ cloudStatus === 'syncing' ? '雲端同步中' : cloudStatus === 'conflict' ? '等待處理衝突' : cloudMigrationNeeded ? '待首次搬移' : cloudReady ? '雲端已連接' : '雲端準備中' }}
-        </span>
-        <button v-if="!isStandalone" @click="showIosGuide = true" class="px-2 py-0.5 rounded-full bg-sky-50 text-sky-600">加入 iPhone 主畫面</button>
-        <span v-else class="px-2 py-0.5 rounded-full bg-sky-50 text-sky-600">主畫面 App 模式</span>
       </div>
     </header>
 
@@ -4057,9 +4028,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.11-dialog-system-4"></script>
+  <script src="/assets/momo-core.js?v=2026.07.12-header-toolbar-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.11-dialog-system-4"></script>
+  <script src="/assets/momo-app.js?v=2026.07.12-header-toolbar-1"></script>
 </body>
 </html>

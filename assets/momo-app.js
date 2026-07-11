@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.11-dialog-system-4';
+    const APP_VERSION = '2026.07.12-header-toolbar-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -109,6 +109,8 @@
           showDataTools: false,
           showMobileTools: false,
           syncing: false,
+          headerSyncFeedback: 'idle',
+          headerSyncFeedbackTimer: null,
           apiBaseUrl: '',
           authLoading: true,
           authConfig: {
@@ -377,6 +379,30 @@
           if (this.calendarAutoSyncMessage) return this.calendarAutoSyncMessage;
           if (this.lastSyncTime) return `最後同步：${this.lastSyncTime}`;
           return '尚未同步行事曆';
+        },
+        headerSyncState() {
+          if (!this.online) return 'offline';
+          if (this.syncing) return 'syncing';
+          if (this.headerSyncFeedback === 'success') return 'success';
+          if (this.syncError) return 'error';
+          return 'idle';
+        },
+        headerSyncLabel() {
+          return {
+            offline: '離線',
+            syncing: '同步中',
+            success: '已同步',
+            error: '同步失敗',
+            idle: '同步'
+          }[this.headerSyncState] || '同步';
+        },
+        headerSyncTitle() {
+          if (this.headerSyncState === 'offline') return '目前離線，恢復網路後即可同步行事曆';
+          if (this.headerSyncState === 'error') {
+            const detail = this.syncError?.message ? `：${this.syncError.message}` : '';
+            return `${this.syncError?.title || '行事曆同步失敗'}${detail}`;
+          }
+          return this.calendarSyncCaption || '同步行事曆';
         },
         syncIssueItems() {
           const issues = Array.isArray(this.syncReport?.issues) ? [...this.syncReport.issues] : [];
@@ -2775,6 +2801,7 @@
         if (this.cloudVersionPollTimer) clearInterval(this.cloudVersionPollTimer);
         if (this.cloudSyncTimer) clearTimeout(this.cloudSyncTimer);
         if (this.calendarAutoSyncTimer) clearTimeout(this.calendarAutoSyncTimer);
+        if (this.headerSyncFeedbackTimer) clearTimeout(this.headerSyncFeedbackTimer);
         if (this.pwaAutoCheckTimer) clearTimeout(this.pwaAutoCheckTimer);
         if (this.pwaAutoCheckInterval) clearInterval(this.pwaAutoCheckInterval);
         if (this.iosViewportResizeHandler && window.visualViewport) window.visualViewport.removeEventListener('resize', this.iosViewportResizeHandler);
@@ -5761,6 +5788,8 @@
           return options || {};
         },
         markCalendarSyncAttempt(options = {}) {
+          if (this.headerSyncFeedbackTimer) clearTimeout(this.headerSyncFeedbackTimer);
+          this.headerSyncFeedback = 'idle';
           this.persistCalendarAutoSyncState({
             period: this.calendarAutoSyncPeriod(),
             lastAttemptAt: new Date().toISOString(),
@@ -5781,8 +5810,17 @@
           });
           this.calendarAutoSyncStatus = 'synced';
           this.calendarAutoSyncMessage = options.automatic ? `行事曆已自動更新 ${timeText}` : `行事曆已更新 ${timeText}`;
+          if (this.headerSyncFeedbackTimer) clearTimeout(this.headerSyncFeedbackTimer);
+          this.headerSyncFeedback = 'success';
+          this.headerSyncFeedbackTimer = setTimeout(() => {
+            this.headerSyncFeedback = 'idle';
+            this.headerSyncFeedbackTimer = null;
+          }, 1800);
         },
         markCalendarSyncFailure(error, options = {}) {
+          if (this.headerSyncFeedbackTimer) clearTimeout(this.headerSyncFeedbackTimer);
+          this.headerSyncFeedback = 'idle';
+          this.headerSyncFeedbackTimer = null;
           this.persistCalendarAutoSyncState({
             period: this.calendarAutoSyncPeriod(),
             lastAttemptAt: new Date().toISOString(),
