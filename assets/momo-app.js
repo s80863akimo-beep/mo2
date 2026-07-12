@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.12-settings-reorg-1';
+    const APP_VERSION = '2026.07.12-mobile-nav-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -94,6 +94,18 @@
             { id: 'report', label: '報表' },
             { id: 'safety', label: '安全' }
           ],
+          mobilePrimaryTabs: [
+            { id: 'dashboard', label: '總覽' },
+            { id: 'orders', label: '業績' },
+            { id: 'expenses', label: '支出' }
+          ],
+          mobileMoreTabs: [
+            { id: 'inventory', label: '庫存管理', description: '補貨與安全庫存' },
+            { id: 'crm', label: '顧客 CRM', description: '顧客紀錄與配方' },
+            { id: 'report', label: '報表', description: '月結與營運分析' },
+            { id: 'safety', label: '資料安全', description: '異常、備份與還原' }
+          ],
+          showMobileMorePages: false,
           orders: [],
           expenses: [],
           inventory: [],
@@ -892,6 +904,12 @@
             title: errorCount ? `${errorCount} 個錯誤需要修正` : warningCount ? `${warningCount} 個提醒需要確認` : '資料健康正常',
             detail: errorCount || warningCount ? '先處理紅色錯誤，再看黃色提醒。' : '目前沒有阻擋營運的資料問題。'
           };
+        },
+        mobileMoreActive() {
+          return this.showMobileMorePages || this.mobileMoreTabs.some(tab => tab.id === this.activeTab);
+        },
+        mobileMoreHasAttention() {
+          return this.lowStockItems.length > 0 || this.healthIssueSummary.total > 0;
         },
         dataSafetyCards() {
           return [
@@ -2707,6 +2725,7 @@
       },
       watch: {
         activeTab(newVal) {
+          this.showMobileMorePages = false;
           if (newVal === 'safety' && this.cloudReady && this.authUser && this.cloudBackupStatus === 'idle') {
             this.fetchCloudBackupList({ silent: true });
           }
@@ -2776,7 +2795,8 @@
 
         // iOS 鍵盤彈起時隱藏浮動導航，避免跑位遮住輸入框
         if (window.visualViewport) {
-          const nav = () => document.querySelector('.floating-nav');
+          const nav = () => [...document.querySelectorAll('.floating-nav')]
+            .find(element => window.getComputedStyle(element).display !== 'none');
           this.iosViewportResizeHandler = () => {
             if (this.iosViewportRaf) cancelAnimationFrame(this.iosViewportRaf);
             this.iosViewportRaf = requestAnimationFrame(() => {
