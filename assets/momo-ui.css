@@ -4750,4 +4750,234 @@
       }
     }
 
+    /* Settings belongs to configuration only; diagnostics stay in the safety workspace. */
+    body.momo-polish .momo-settings-menu {
+      width: 320px !important;
+      border-radius: 8px !important;
+      background: #F8FAFC !important;
+      box-shadow: 0 20px 48px -28px rgba(15, 23, 42, 0.42) !important;
+    }
+
+    body.momo-polish .momo-settings-menu-header {
+      padding: 0.75rem 0.875rem;
+      border-bottom: 1px solid #E2E8F0;
+      background: #FFFFFF;
+    }
+
+    body.momo-polish .momo-settings-sheet {
+      border: 1px solid #E2E8F0 !important;
+      border-bottom: 0 !important;
+      border-radius: 8px 8px 0 0 !important;
+      background: #F8FAFC !important;
+      box-shadow: 0 -18px 48px -28px rgba(15, 23, 42, 0.42) !important;
+    }
+
+    body.momo-polish .momo-settings-header {
+      min-height: 64px;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #E2E8F0;
+      background: #FFFFFF;
+    }
+
+    body.momo-polish .momo-settings-close {
+      display: inline-flex;
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      min-height: 40px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      background: #F8FAFC;
+      color: #64748B;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    body.momo-polish .momo-settings-close:hover {
+      border-color: #CBD5E1;
+      background: #FFFFFF;
+      color: #334155;
+    }
+
+    body.momo-polish .momo-settings-body {
+      padding: 0.875rem 0.75rem calc(1rem + env(safe-area-inset-bottom));
+    }
+
+    body.momo-polish .momo-settings-section-label {
+      padding: 0 0.25rem 0.5rem;
+      color: #94A3B8;
+      font-size: 0.625rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .momo-settings-group {
+      overflow: hidden;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      background: #FFFFFF;
+    }
+
+    body.momo-polish .momo-settings-group--menu {
+      margin: 0.5rem;
+    }
+
+    body.momo-polish .momo-settings-row {
+      display: flex;
+      width: 100%;
+      min-height: 64px;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem 0.875rem;
+      border: 0;
+      background: #FFFFFF;
+      color: #334155;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    body.momo-polish button.momo-settings-row:hover,
+    body.momo-polish .momo-settings-details > summary:hover {
+      background: #F8FAFC;
+    }
+
+    body.momo-polish .momo-settings-group > .momo-settings-details,
+    body.momo-polish .momo-settings-details + .momo-settings-details {
+      border-top: 1px solid #E2E8F0;
+    }
+
+    body.momo-polish .momo-settings-details > summary {
+      list-style: none;
+    }
+
+    body.momo-polish .momo-settings-details > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    body.momo-polish .momo-settings-icon {
+      display: inline-flex;
+      width: 36px;
+      height: 36px;
+      flex: 0 0 36px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: #F1F5F9;
+      color: #526174;
+    }
+
+    body.momo-polish .momo-settings-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    body.momo-polish .momo-settings-copy {
+      display: flex;
+      min-width: 0;
+      flex: 1 1 auto;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    body.momo-polish .momo-settings-title {
+      color: #273444;
+      font-size: 0.8125rem;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    body.momo-polish .momo-settings-description {
+      overflow: hidden;
+      color: #94A3B8;
+      font-size: 0.625rem;
+      font-weight: 700;
+      line-height: 1.3;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .momo-settings-chevron {
+      flex: 0 0 auto;
+      color: #CBD5E1;
+      font-size: 1.125rem;
+      font-weight: 800;
+      transition: transform 0.15s ease;
+    }
+
+    body.momo-polish .momo-settings-details[open] > summary .momo-settings-chevron {
+      transform: rotate(90deg);
+    }
+
+    body.momo-polish .momo-settings-detail-body {
+      padding: 0.75rem 0.875rem 0.875rem;
+      border-top: 1px solid #E2E8F0;
+      background: #F8FAFC;
+    }
+
+    body.momo-polish .momo-settings-account-text {
+      overflow: hidden;
+      margin-bottom: 0.625rem;
+      color: #64748B;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      line-height: 1.45;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .momo-settings-detail-body > .momo-settings-account-text:last-child {
+      margin-bottom: 0;
+    }
+
+    body.momo-polish .momo-settings-primary-action,
+    body.momo-polish .momo-settings-secondary-action,
+    body.momo-polish .momo-settings-export-action {
+      min-height: 42px;
+      border-radius: 8px;
+      font-size: 0.6875rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .momo-settings-primary-action {
+      border: 1px solid #D95F54;
+      background: #D95F54;
+      color: #FFFFFF;
+    }
+
+    body.momo-polish .momo-settings-secondary-action,
+    body.momo-polish .momo-settings-export-action {
+      border: 1px solid #DCE3EA;
+      background: #FFFFFF;
+      color: #475569;
+    }
+
+    body.momo-polish .momo-settings-secondary-action--danger {
+      border-color: #FECDD3;
+      background: #FFF1F2;
+      color: #BE123C;
+    }
+
+    body.momo-polish .momo-settings-primary-action:hover {
+      border-color: #C95148;
+      background: #C95148;
+    }
+
+    body.momo-polish .momo-settings-secondary-action:hover,
+    body.momo-polish .momo-settings-export-action:hover {
+      border-color: #CBD5E1;
+      background: #FFFFFF;
+      color: #1F2937;
+    }
+
+    body.momo-polish .momo-settings-row:focus-visible,
+    body.momo-polish .momo-settings-details > summary:focus-visible,
+    body.momo-polish .momo-settings-close:focus-visible,
+    body.momo-polish .momo-settings-primary-action:focus-visible,
+    body.momo-polish .momo-settings-secondary-action:focus-visible,
+    body.momo-polish .momo-settings-export-action:focus-visible {
+      outline: 2px solid rgba(217, 95, 84, 0.5);
+      outline-offset: -2px;
+    }
+
     [v-cloak] { display: none !important; }

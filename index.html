@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.12-header-toolbar-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.12-settings-reorg-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.12-header-toolbar-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.12-settings-reorg-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -90,7 +90,7 @@
             <svg v-else :class="{ 'animate-spin': syncing }" class="momo-sync-state-icon" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7v5h-5M4 17v-5h5M6.1 9a7 7 0 0111.8-2L20 9M4 15l2.1 2a7 7 0 0011.8-2"/></svg>
             <span class="sr-only">{{ headerSyncLabel }}</span>
           </button>
-          <button @click="showMobileTools = true" :aria-pressed="showMobileTools ? 'true' : 'false'" class="momo-header-icon-button mobile-tools-button jelly-btn" aria-label="開啟更多工具">
+          <button @click="showMobileTools = true" :aria-pressed="showMobileTools ? 'true' : 'false'" class="momo-header-icon-button mobile-tools-button jelly-btn" aria-label="開啟設定">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
           </button>
         </div>
@@ -136,103 +136,64 @@
               </button>
             </div>
 
-            <!-- Service Pricing Settings Button -->
-            <button
-              @click="openServiceConfigModal"
-              class="momo-header-button jelly-btn bg-white border border-slate-200 text-slate-700 text-xs font-black px-3.5 py-2 rounded-full flex items-center gap-1.5 shadow-sm"
-              title="服務項目定價與時長設定"
-            >
-              <!-- Settings Icon -->
-              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.99l1.005.831a1.125 1.125 0 01.26 1.43l-1.297 2.247a1.125 1.125 0 01-1.37.491l-1.216-.456c-.356-.133-.751-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.831a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.645-.869L9.59 3.94z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-              </svg>
-              <span>服務定價</span>
-            </button>
-
-            <!-- Data Management Dropdown Toggle -->
+            <!-- Settings Dropdown -->
             <div class="relative">
               <button
                 @click="showDataTools = !showDataTools"
                 class="momo-header-button jelly-btn bg-white border border-slate-200 text-slate-700 text-xs font-black px-3.5 py-2 rounded-full flex items-center gap-1.5 shadow-sm"
-                title="資料備份與還原"
+                title="設定"
+                aria-label="開啟設定"
               >
-                <!-- Database Icon -->
                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125m0-3.75v3.75m16.5 0v3.75m-16.5-3.75v3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125m0-3.75v3.75"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a1.7 1.7 0 00.34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 00-1.88-.34 1.7 1.7 0 00-1.04 1.56V20h-3v-.09a1.7 1.7 0 00-1.04-1.56 1.7 1.7 0 00-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 007 14.7a1.7 1.7 0 00-1.56-1.04H5v-3h.09A1.7 1.7 0 006.65 9.6a1.7 1.7 0 00-.34-1.88l-.06-.06 2.12-2.12.06.06a1.7 1.7 0 001.88.34A1.7 1.7 0 0011.35 4.4V4h3v.09a1.7 1.7 0 001.04 1.56 1.7 1.7 0 001.88-.34l.06-.06 2.12 2.12-.06.06a1.7 1.7 0 00-.34 1.88 1.7 1.7 0 001.56 1.04H20v3h-.09A1.7 1.7 0 0018.35 14z"></path>
                 </svg>
-                <span>資料管理</span>
+                <span>設定</span>
               </button>
 
-              <!-- Dropdown Menu -->
               <transition name="fade">
-                <div v-if="showDataTools" class="momo-header-menu absolute right-0 mt-2 w-56 bg-white rounded-3xl macaron-shadow-lg border border-slate-200 p-2 z-50 flex flex-col gap-1">
-                  <div class="momo-system-center rounded-2xl border border-slate-200 p-3 mb-1">
-                    <div class="flex items-start justify-between gap-2">
-                      <div class="min-w-0">
-                        <div class="text-xs font-black text-slate-800">系統狀態中心</div>
-                        <div class="mt-0.5 text-[10px] font-bold text-slate-400 truncate">{{ systemStatusDetail }}</div>
-                      </div>
-                      <span class="shrink-0 px-2 py-0.5 rounded-full border text-[9px] font-black" :class="statusToneClasses(systemStatusTone)">
-                        {{ systemStatusTitle }}
-                      </span>
-                    </div>
-                    <div class="mt-2 grid grid-cols-2 gap-1.5">
-                      <div v-for="item in systemStatusItems" :key="'desktop-' + item.key" class="momo-system-item rounded-xl border px-2 py-1.5">
-                        <div class="flex items-center gap-1.5">
-                          <span class="w-1.5 h-1.5 rounded-full" :class="statusToneClasses(item.tone, 'dot')"></span>
-                          <span class="text-[9px] font-black text-slate-400">{{ item.label }}</span>
-                        </div>
-                        <div class="mt-0.5 text-[10px] font-black text-slate-700 truncate">{{ item.value }}</div>
-                      </div>
-                    </div>
-                  <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="momo-system-action mt-2 w-full min-h-[34px] rounded-xl border text-[10px] font-black disabled:opacity-50">
-                    {{ safetyChecking || pwaCheckingUpdate ? '檢查中…' : '立即安全檢查' }}
-                  </button>
-                </div>
-                  <button @click="activeTab = 'safety'; showDataTools = false; runSystemStatusCheck(false)" class="text-left w-full px-4 py-2.5 text-sm font-black rounded-2xl hover:bg-sky-50 text-sky-700 flex items-center gap-2">
-                    開啟資料安全頁
-                  </button>
-                  <button v-if="authConfig.configured" @click="authUser ? signOutSupabase() : (showAuthSheet = true); showDataTools = false" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-violet-50 text-violet-700 flex items-center gap-2">
-                    {{ authUser ? '雲端帳號登出' : '登入雲端帳號' }}
-                  </button>
-                  <button @click="exportBackup" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-slate-700 flex items-center gap-2 transition-colors">
-                    匯出備份 (JSON)
-                  </button>
-                  <label class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-slate-700 flex items-center gap-2 cursor-pointer transition-colors">
-                    匯入還原 (JSON)
-                    <input type="file" @change="importBackup" accept=".json" class="hidden">
-                  </label>
-                  <div class="h-px bg-orange-100 my-1"></div>
-                  <button v-if="cloudMigrationNeeded" @click="migrateLocalDataToSupabase" :disabled="cloudStatus === 'syncing'" class="text-left w-full px-4 py-2.5 text-sm font-black rounded-2xl bg-violet-50 text-violet-700 flex items-center gap-2 disabled:opacity-50">
-                    首次搬移到 Supabase
-                  </button>
-                  <button v-if="authUser || authSession?.access_token" @click="reloadCloudData(true)" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-violet-50 text-violet-600 flex items-center gap-2 disabled:opacity-50">
-                    {{ cloudReady ? '重新載入雲端資料' : '重新連接並載入雲端' }}
-                  </button>
-                  <div class="px-4 py-1 text-[10px] font-bold text-slate-400">{{ cloudMessage }}</div>
-                  <button v-if="cloudReady" @click="createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-emerald-50 text-emerald-700 flex items-center gap-2 disabled:opacity-50">
-                    {{ backupStatus === 'saving' ? '備份建立中…' : '立即建立雲端備份' }}
-                  </button>
-                  <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-sky-50 text-sky-700 flex items-center gap-2 disabled:opacity-50">
-                    {{ safetyChecking || pwaCheckingUpdate ? '檢查中…' : '立即安全檢查' }}
-                  </button>
-                  <button @click="showOperationLogModal = true; showDataTools = false" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-amber-50 text-amber-700 flex items-center gap-2">
-                    查看操作紀錄
-                  </button>
-                  <div class="px-4 pb-1 text-[10px] font-bold" :class="integrityReport?.status === 'ok' ? 'text-emerald-600' : integrityReport ? 'text-amber-600' : 'text-slate-400'">
-                    {{ backupSummaryText }} · {{ integritySummaryText }}
+                <div v-if="showDataTools" class="momo-header-menu momo-settings-menu absolute right-0 mt-2 w-80 bg-white border border-slate-200 z-50 overflow-hidden">
+                  <div class="momo-settings-menu-header">
+                    <div class="text-sm font-black text-slate-800">設定</div>
+                    <div class="mt-0.5 text-[10px] font-bold text-slate-400">{{ lastSyncTime ? '最後同步 ' + lastSyncTime : '尚未同步行事曆' }}</div>
                   </div>
-                  <div class="h-px bg-orange-100 my-1"></div>
-                  <button @click="exportCSV" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-macaron-peach-500 flex items-center gap-2 transition-colors">
-                    匯出當期業績 (CSV)
-                  </button>
-                  <button @click="exportCrmCSV" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-slate-700 flex items-center gap-2 transition-colors">
-                    匯出 CRM 顧客 (CSV)
-                  </button>
-                  <button @click="exportExpensesCSV" class="text-left w-full px-4 py-2.5 text-sm font-semibold rounded-2xl hover:bg-orange-50 text-slate-700 flex items-center gap-2 transition-colors">
-                    匯出支出明細 (CSV)
-                  </button>
+                  <div class="momo-settings-group momo-settings-group--menu">
+                    <button @click="showDataTools = false; openServiceConfigModal()" class="momo-settings-row" type="button">
+                      <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="6" cy="7" r="3"></circle><circle cx="6" cy="17" r="3"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M8.7 8.4 20 3M8.7 15.6 20 21M8.7 8.4 12 10"></path></svg></span>
+                      <span class="momo-settings-copy"><span class="momo-settings-title">服務定價</span><span class="momo-settings-description">服務價格與預估時長</span></span>
+                      <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                    </button>
+
+                    <details class="momo-settings-details">
+                      <summary class="momo-settings-row">
+                        <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path stroke-linecap="round" d="M4.5 21a7.5 7.5 0 0115 0"></path></svg></span>
+                        <span class="momo-settings-copy"><span class="momo-settings-title">雲端帳號</span><span class="momo-settings-description">{{ authConfig.configured ? ((authUser || authSession?.access_token) ? '已登入' : '尚未登入') : '目前使用本機模式' }}</span></span>
+                        <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                      </summary>
+                      <div class="momo-settings-detail-body">
+                        <p v-if="authUser" class="momo-settings-account-text">{{ authUser.email }}</p>
+                        <p v-else-if="!authConfig.configured" class="momo-settings-account-text">正式站尚未啟用雲端帳號設定。</p>
+                        <div v-if="authConfig.configured" class="grid grid-cols-2 gap-2">
+                          <button v-if="authUser || authSession?.access_token" @click="showDataTools = false; reloadCloudData(true)" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="momo-settings-secondary-action disabled:opacity-40">{{ cloudReady ? '重新載入' : '連接雲端' }}</button>
+                          <button v-if="authUser || authSession?.access_token" @click="showDataTools = false; signOutSupabase()" class="momo-settings-secondary-action momo-settings-secondary-action--danger">登出</button>
+                          <button v-else @click="showDataTools = false; showAuthSheet = true" class="momo-settings-primary-action col-span-2">登入雲端</button>
+                        </div>
+                      </div>
+                    </details>
+
+                    <details class="momo-settings-details">
+                      <summary class="momo-settings-row">
+                        <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"></path></svg></span>
+                        <span class="momo-settings-copy"><span class="momo-settings-title">資料匯出</span><span class="momo-settings-description">業績、顧客與支出 CSV</span></span>
+                        <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                      </summary>
+                      <div class="momo-settings-detail-body grid grid-cols-3 gap-2">
+                        <button @click="showDataTools = false; exportCSV()" class="momo-settings-export-action">業績</button>
+                        <button @click="showDataTools = false; exportCrmCSV()" class="momo-settings-export-action">顧客</button>
+                        <button @click="showDataTools = false; exportExpensesCSV()" class="momo-settings-export-action">支出</button>
+                      </div>
+                    </details>
+                  </div>
                 </div>
               </transition>
             </div>
@@ -242,135 +203,72 @@
       </div>
     </header>
 
-    <!-- Mobile tools sheet -->
+    <!-- Mobile settings sheet -->
     <transition name="fade">
       <div v-if="showMobileTools" class="fixed inset-0 z-[80] flex items-end bg-slate-900/40 sm:hidden" @click="showMobileTools = false">
-        <div class="ios-sheet w-full max-h-[86dvh] overflow-y-auto rounded-t-3xl bg-white border border-orange-100 macaron-shadow-lg safe-pb" @click.stop>
+        <section class="momo-settings-sheet ios-sheet w-full max-h-[84dvh] overflow-y-auto bg-white safe-pb" role="dialog" aria-modal="true" aria-labelledby="mobile-settings-title" @click.stop>
           <div class="ios-sheet-handle"></div>
-          <div class="sticky top-0 z-10 bg-white px-5 py-4 border-b border-orange-100 flex items-center justify-between">
+          <div class="momo-settings-header sticky top-0 z-10 flex items-center justify-between">
             <div>
-              <h2 class="text-base font-black text-slate-800">工具與設定</h2>
-              <p class="mt-0.5 text-[10px] font-bold text-slate-400">
-                <span :class="online ? 'text-emerald-600' : 'text-rose-500'">{{ online ? '● 已連線' : '● 離線模式' }}</span>
-                <span v-if="lastSyncTime"> · 最後同步 {{ lastSyncTime }}</span>
-              </p>
+              <h2 id="mobile-settings-title" class="text-base font-black text-slate-800">設定</h2>
+              <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ lastSyncTime ? '最後同步 ' + lastSyncTime : '尚未同步行事曆' }}</p>
             </div>
-            <button @click="showMobileTools = false" class="w-10 h-10 rounded-full bg-slate-50 text-slate-500 font-black" aria-label="關閉工具面板">✕</button>
+            <button @click="showMobileTools = false" class="momo-settings-close" aria-label="關閉設定"><span aria-hidden="true">×</span></button>
           </div>
 
-          <div class="p-4 space-y-4">
-            <section class="space-y-2">
-              <div class="px-1 flex items-center justify-between">
-                <span class="text-[10px] font-black text-slate-400">系統狀態中心</span>
-                <span class="text-[10px] font-black" :class="systemStatusTone === 'ok' ? 'text-emerald-600' : systemStatusTone === 'error' ? 'text-rose-600' : 'text-amber-600'">
-                  {{ systemStatusTitle }}
-                </span>
-              </div>
-              <div class="momo-system-center rounded-[1.6rem] bg-white border border-slate-200 p-3 macaron-shadow">
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <div class="text-sm font-black text-slate-800">{{ systemStatusTitle }}</div>
-                    <p class="mt-1 text-[11px] font-bold text-slate-500 leading-relaxed">
-                      {{ systemStatusDetail }}
-                    </p>
-                  </div>
-                  <span class="shrink-0 px-2.5 py-1 rounded-full border text-[10px] font-black" :class="statusToneClasses(systemStatusTone)">
-                    {{ safetyChecking || pwaCheckingUpdate ? '檢查中' : safetySummaryText }}
-                  </span>
-                </div>
-                <div class="mt-3 grid grid-cols-2 gap-2">
-                  <div v-for="item in systemStatusItems" :key="'mobile-' + item.key" class="momo-system-item rounded-2xl border border-slate-200 bg-slate-50/70 p-2.5">
-                    <div class="flex items-center justify-between gap-2">
-                      <span class="text-[10px] font-black text-slate-400">{{ item.label }}</span>
-                      <span class="w-2 h-2 rounded-full" :class="statusToneClasses(item.tone, 'dot')"></span>
-                    </div>
-                    <div class="mt-1 text-xs font-black text-slate-800 truncate">{{ item.value }}</div>
-                    <div class="mt-0.5 text-[9px] font-bold text-slate-400 truncate">{{ item.detail }}</div>
+          <div class="momo-settings-body">
+            <div class="momo-settings-section-label">一般</div>
+            <div class="momo-settings-group">
+              <button @click="showMobileTools = false; openServiceConfigModal()" class="momo-settings-row" type="button">
+                <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="6" cy="7" r="3"></circle><circle cx="6" cy="17" r="3"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M8.7 8.4 20 3M8.7 15.6 20 21M8.7 8.4 12 10"></path></svg></span>
+                <span class="momo-settings-copy"><span class="momo-settings-title">服務定價</span><span class="momo-settings-description">服務價格與預估時長</span></span>
+                <span class="momo-settings-chevron" aria-hidden="true">›</span>
+              </button>
+
+              <details class="momo-settings-details">
+                <summary class="momo-settings-row">
+                  <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path stroke-linecap="round" d="M4.5 21a7.5 7.5 0 0115 0"></path></svg></span>
+                  <span class="momo-settings-copy"><span class="momo-settings-title">雲端帳號</span><span class="momo-settings-description">{{ authConfig.configured ? ((authUser || authSession?.access_token) ? '已登入' : '尚未登入') : '目前使用本機模式' }}</span></span>
+                  <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                </summary>
+                <div class="momo-settings-detail-body">
+                  <p v-if="authUser" class="momo-settings-account-text">{{ authUser.email }}</p>
+                  <p v-else-if="!authConfig.configured" class="momo-settings-account-text">正式站尚未啟用雲端帳號設定。</p>
+                  <div v-if="authConfig.configured" class="grid grid-cols-2 gap-2">
+                    <button v-if="authUser || authSession?.access_token" @click="showMobileTools = false; reloadCloudData(true)" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="momo-settings-secondary-action disabled:opacity-40">{{ cloudReady ? '重新載入' : '連接雲端' }}</button>
+                    <button v-if="authUser || authSession?.access_token" @click="showMobileTools = false; signOutSupabase()" class="momo-settings-secondary-action momo-settings-secondary-action--danger">登出</button>
+                    <button v-else @click="showMobileTools = false; showAuthSheet = true" class="momo-settings-primary-action col-span-2">登入雲端</button>
                   </div>
                 </div>
-                <div v-if="safetyReport?.issues?.length" class="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-2">
-                  <div class="text-[10px] font-black text-slate-400">優先處理</div>
-                  <div class="mt-1 text-[11px] font-bold text-slate-600 leading-relaxed line-clamp-2">{{ safetyReport.issues[0].message }}</div>
-                </div>
-                <div class="mt-3 grid grid-cols-2 gap-2">
-                  <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="momo-system-action min-h-[48px] rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-black disabled:opacity-50">
-                    {{ safetyChecking || pwaCheckingUpdate ? '檢查中…' : '立即檢查' }}
-                  </button>
-                  <button @click="applyPwaUpdate" :disabled="!updateAvailable && !pendingServiceWorker" class="min-h-[48px] rounded-2xl bg-slate-900 text-white text-xs font-black disabled:opacity-30">
-                    {{ updateAvailable ? '套用新版' : '已是新版' }}
-                  </button>
-                  <button v-if="authUser || authSession?.access_token" @click="showMobileTools = false; reloadCloudData(true)" :disabled="cloudStatus === 'loading' || cloudStatus === 'syncing'" class="min-h-[52px] rounded-2xl bg-slate-900 text-white text-xs font-black disabled:opacity-50">
-                    {{ cloudReady ? '重載雲端' : '連接雲端' }}
-                  </button>
-                  <button v-else-if="authConfig.configured" @click="showMobileTools = false; showAuthSheet = true" class="min-h-[52px] rounded-2xl bg-slate-900 text-white text-xs font-black">登入雲端</button>
-                  <button v-else @click="showMobileTools = false; exportBackup()" class="min-h-[52px] rounded-2xl bg-slate-900 text-white text-xs font-black">匯出備份</button>
-                  <button v-if="cloudReady" @click="showMobileTools = false; createAutomaticBackup({ force: true, silent: false })" :disabled="backupStatus === 'saving'" class="min-h-[52px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black disabled:opacity-50">雲端備份</button>
-                  <button v-else-if="authConfig.configured" @click="showMobileTools = false; exportBackup()" class="min-h-[52px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">JSON 備份</button>
-                  <button v-else @click="showMobileTools = false; runIntegrityCheck(true)" class="min-h-[52px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black">檢查資料</button>
-                </div>
-                <p v-if="authUser" class="mt-2 px-1 text-[10px] font-bold text-slate-400 truncate">{{ cloudMessage }}</p>
-              </div>
+              </details>
 
-              <div class="px-1 text-[10px] font-black text-slate-400">常用操作</div>
-              <div class="grid grid-cols-2 gap-2">
-                <button @click="showMobileTools = false; openServiceConfigModal()" class="min-h-[50px] px-4 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-between text-left">
-                  <span class="text-xs font-black text-orange-700">服務定價</span>
-                  <span class="text-orange-300">›</span>
-                </button>
-                <button v-if="syncReport || syncIssueSummary.total || priceMatchWorkbenchRows.length" @click="showMobileTools = false; goToSafetySync(priceMatchWorkbenchRows.length ? 'pricing' : syncIssueSummary.backup ? 'backup' : 'all')" class="min-h-[50px] px-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-between text-left">
-                  <span class="text-xs font-black text-amber-700">同步檢查</span>
-                  <span class="text-amber-300">›</span>
-                </button>
-                <button @click="showMobileTools = false; activeTab = 'safety'; runSystemStatusCheck(false)" class="min-h-[50px] px-4 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-between text-left">
-                  <span class="text-xs font-black text-sky-700">資料安全</span>
-                  <span class="text-sky-300">›</span>
-                </button>
-                <button v-if="authConfig.configured" @click="showMobileTools = false; authUser ? signOutSupabase() : (showAuthSheet = true)" class="min-h-[50px] px-4 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-between text-left">
-                  <span class="text-xs font-black text-violet-700">{{ authUser ? '登出雲端' : '登入設定' }}</span>
-                  <span class="text-violet-300">›</span>
-                </button>
-                <button v-if="!isStandalone" @click="showMobileTools = false; showIosGuide = true" class="min-h-[50px] px-4 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-between text-left" :class="authConfig.configured ? 'col-span-2' : ''">
-                  <span class="text-xs font-black text-sky-700">加入 iPhone 主畫面</span>
-                  <span class="text-sky-300">›</span>
-                </button>
-              </div>
-            </section>
-
-            <section class="space-y-2">
-              <div class="px-1 text-[10px] font-black text-slate-400">報表匯出</div>
-              <div class="grid grid-cols-3 gap-2">
-                <button @click="showMobileTools = false; exportCSV()" class="min-h-[48px] rounded-2xl bg-white border border-slate-100 text-[11px] font-black text-slate-600">業績</button>
-                <button @click="showMobileTools = false; exportCrmCSV()" class="min-h-[48px] rounded-2xl bg-white border border-slate-100 text-[11px] font-black text-slate-600">顧客</button>
-                <button @click="showMobileTools = false; exportExpensesCSV()" class="min-h-[48px] rounded-2xl bg-white border border-slate-100 text-[11px] font-black text-slate-600">支出</button>
-              </div>
-            </section>
-
-            <details class="group rounded-[1.6rem] border border-slate-100 bg-white overflow-hidden">
-              <summary class="min-h-[54px] px-4 flex items-center justify-between cursor-pointer list-none">
-                <div>
-                  <div class="text-sm font-black text-slate-700">進階與維護</div>
-                  <div class="mt-0.5 text-[10px] font-bold text-slate-400">還原、檢查資料、清快取與操作紀錄</div>
+              <details class="momo-settings-details">
+                <summary class="momo-settings-row">
+                  <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"></path></svg></span>
+                  <span class="momo-settings-copy"><span class="momo-settings-title">資料匯出</span><span class="momo-settings-description">業績、顧客與支出 CSV</span></span>
+                  <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                </summary>
+                <div class="momo-settings-detail-body grid grid-cols-3 gap-2">
+                  <button @click="showMobileTools = false; exportCSV()" class="momo-settings-export-action">業績</button>
+                  <button @click="showMobileTools = false; exportCrmCSV()" class="momo-settings-export-action">顧客</button>
+                  <button @click="showMobileTools = false; exportExpensesCSV()" class="momo-settings-export-action">支出</button>
                 </div>
-                <span class="text-slate-300 group-open:rotate-90 transition-transform">›</span>
-              </summary>
-              <div class="px-3 pb-3 space-y-2">
-                <p class="px-1 text-[10px] font-bold" :class="integrityReport?.status === 'ok' ? 'text-emerald-600' : integrityReport ? 'text-amber-600' : 'text-slate-400'">{{ backupSummaryText }} · {{ integritySummaryText }}</p>
-                <div class="grid grid-cols-2 gap-2">
-                  <label class="min-h-[48px] rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black flex items-center justify-center cursor-pointer">
-                    匯入還原
-                    <input type="file" @change="showMobileTools = false; importBackup($event)" accept=".json" class="hidden">
-                  </label>
-                  <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="min-h-[48px] rounded-2xl bg-sky-50 border border-sky-100 text-sky-700 text-xs font-black disabled:opacity-50">安全檢查</button>
+              </details>
+
+              <details class="momo-settings-details">
+                <summary class="momo-settings-row">
+                  <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"></rect><path stroke-linecap="round" d="M10 18h4"></path></svg></span>
+                  <span class="momo-settings-copy"><span class="momo-settings-title">App 設定</span><span class="momo-settings-description">{{ isStandalone ? '已加入主畫面' : '加入 iPhone 主畫面' }}</span></span>
+                  <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                </summary>
+                <div class="momo-settings-detail-body">
+                  <button v-if="!isStandalone" @click="showMobileTools = false; showIosGuide = true" class="momo-settings-primary-action w-full">查看加入主畫面步驟</button>
+                  <p v-else class="momo-settings-account-text">目前已使用主畫面 App 模式。</p>
                 </div>
-                <button v-if="cloudMigrationNeeded" @click="showMobileTools = false; migrateLocalDataToSupabase()" :disabled="cloudStatus === 'syncing'" class="w-full min-h-[48px] rounded-2xl bg-violet-50 border border-violet-100 text-violet-700 text-xs font-black disabled:opacity-50">首次搬移到 Supabase</button>
-                <button @click="showMobileTools = false; showOperationLogModal = true" class="w-full min-h-[48px] rounded-2xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">查看操作紀錄</button>
-                <button @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" class="w-full min-h-[48px] rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-black disabled:opacity-50">
-                  {{ pwaClearingCache ? '清理中…' : '清除舊快取並重載' }}
-                </button>
-              </div>
-            </details>
+              </details>
+            </div>
           </div>
-        </div>
+        </section>
       </div>
     </transition>
 
@@ -3655,9 +3553,13 @@
                 <h3 class="text-base font-black text-slate-800">本機快照</h3>
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ backupSnapshotSummary.detail }}</p>
               </div>
-              <div class="flex gap-2">
+              <div class="flex flex-wrap gap-2">
                 <button @click="createLocalBackupSnapshot('manual', { silent: false, force: true })" class="min-h-[36px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black">新增</button>
                 <button @click="exportBackup" class="min-h-[36px] px-3 rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black">下載 JSON</button>
+                <label class="min-h-[36px] px-3 rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black inline-flex items-center justify-center cursor-pointer">
+                  匯入 JSON
+                  <input type="file" @change="importBackup" accept=".json" class="hidden">
+                </label>
               </div>
             </div>
 
@@ -3925,7 +3827,7 @@
 
     <!-- iOS home-screen guidance -->
     <transition name="fade">
-      <div v-if="showIosGuide" class="momo-dialog-overlay fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click="dismissIosGuide">
+      <div v-if="showIosGuide" class="momo-dialog-overlay fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click="dismissIosGuide">
         <div class="momo-dialog momo-dialog--sm ios-sheet bg-white rounded-3xl w-full max-w-sm macaron-shadow-lg border border-sky-100 overflow-hidden" @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
           <div class="momo-dialog-body p-5 space-y-4">
@@ -4028,9 +3930,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.12-header-toolbar-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.12-settings-reorg-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.12-header-toolbar-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.12-settings-reorg-1"></script>
 </body>
 </html>
