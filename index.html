@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.13-report-focus-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.13-safety-focus-4">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.13-report-focus-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.13-safety-focus-4">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -2942,8 +2942,8 @@
           <section class="safety-overview-panel momo-surface bg-white rounded-3xl sm:rounded-4xl border border-slate-200 macaron-shadow overflow-hidden">
             <div class="safety-overview-header p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div class="min-w-0">
-                <h2 class="text-lg sm:text-xl font-black text-slate-800">資料安全中心</h2>
-                <p class="text-[11px] font-bold text-slate-400 mt-0.5">資料、同步、備份與版本狀態</p>
+                <h2 class="text-lg sm:text-xl font-black text-slate-800">資料安全</h2>
+                <p class="text-[11px] font-bold text-slate-400 mt-0.5">先處理問題，維護工具需要時再展開</p>
               </div>
               <div class="safety-overview-actions flex items-center gap-2 shrink-0">
                 <span class="shrink-0 px-3 py-1 rounded-full border text-[11px] font-black" :class="statusToneClasses(healthIssueSummary.status === 'ok' ? 'ok' : healthIssueSummary.status === 'error' ? 'error' : 'warn')">
@@ -2955,13 +2955,13 @@
               </div>
             </div>
 
-            <div class="safety-status-grid grid grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
-              <div v-for="card in dataSafetyCards" :key="'safety-card-' + card.key" class="safety-status-card p-4 sm:p-5">
+            <div class="safety-status-grid grid grid-cols-3 divide-x divide-slate-100">
+              <div v-for="card in dataSafetyCards.filter(item => ['snapshot', 'cloud_backup', 'storage'].includes(item.key))" :key="'safety-card-' + card.key" class="safety-status-card p-4 sm:p-5">
                 <div class="flex items-center justify-between gap-2">
                   <div class="text-[10px] font-black text-slate-400">{{ card.label }}</div>
                   <span class="w-2 h-2 rounded-full" :class="statusToneClasses(card.tone, 'dot')"></span>
                 </div>
-                <div class="mt-1 text-lg sm:text-xl font-black text-slate-800 truncate">{{ card.value }}</div>
+                <div class="mt-1 text-base sm:text-xl font-black text-slate-800 leading-tight">{{ card.value }}</div>
                 <div class="mt-1 text-[10px] font-bold text-slate-400 line-clamp-2">{{ card.detail }}</div>
               </div>
             </div>
@@ -2980,7 +2980,7 @@
           <section class="safety-attention-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
             <div class="safety-panel-header px-4 py-4 sm:px-6 border-b border-slate-100 flex items-center justify-between gap-3">
               <div class="min-w-0">
-                <h3 class="text-base font-black text-slate-800">立即處理</h3>
+                <h3 class="text-base font-black text-slate-800">需要處理</h3>
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">錯誤優先，其次確認提醒</p>
               </div>
               <span class="px-2.5 py-1 rounded-full text-[10px] font-black" :class="healthIssueSummary.status === 'ok' ? 'bg-emerald-50 text-emerald-700' : healthIssueSummary.status === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'">
@@ -3011,29 +3011,40 @@
                 </button>
               </div>
             </div>
-            <div v-if="healthIssueRows.length > 5" class="safety-issue-footer px-4 py-3 sm:px-6 border-t border-slate-100 text-center">
+            <div v-if="healthIssueRows.length > 3" class="safety-issue-footer px-4 py-3 sm:px-6 border-t border-slate-100 text-center">
               <button @click="safetyShowAllIssues = !safetyShowAllIssues" class="min-h-[36px] px-4 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-black">
                 {{ safetyShowAllIssues ? '收合問題清單' : `查看全部 ${Math.min(healthIssueRows.length, 50)} 項` }}
               </button>
             </div>
           </section>
 
-          <section class="safety-sync-panel safety-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
-            <div class="safety-panel-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div class="safety-section-heading">
+            <h3 class="text-base sm:text-lg font-black text-slate-800">資料維護</h3>
+            <p class="mt-0.5 text-[10px] font-bold text-slate-400">同步、價目、備份與 App 工具</p>
+          </div>
+
+          <section class="safety-sync-panel safety-maintenance-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <button type="button" @click="toggleSafetyMaintenanceSection('sync')"
+                    class="safety-maintenance-summary w-full px-4 py-4 sm:px-6 flex items-center justify-between gap-3 text-left"
+                    :aria-expanded="safetyMaintenanceSection === 'sync'" aria-controls="safety-maintenance-sync">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                  <h3 class="text-base font-black text-slate-800">同步與價目檢查</h3>
+                  <span class="block text-base font-black text-slate-800">同步與價目</span>
                   <span class="px-2 py-0.5 rounded-full border text-[9px] font-black"
                         :class="syncError || syncIssueSummary.errors ? 'border-rose-100 bg-rose-50 text-rose-700' : syncIssueSummary.total || priceMatchWorkbenchRows.length ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700'">
                     {{ syncError ? '同步失敗' : syncIssueSummary.total || priceMatchWorkbenchRows.length ? '需確認' : '同步正常' }}
                   </span>
                 </div>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">
+                <span class="block text-[10px] font-bold text-slate-400 mt-0.5">
                   {{ syncReport?.period || '尚未同步' }} · 異常 {{ syncIssueSummary.total }} 筆 · 價目未匹配 {{ priceMatchWorkbenchRows.length }} 項
                   <span v-if="syncReport?.syncedAt"> · 最後同步 {{ formatDateTime(syncReport.syncedAt) }}</span>
-                </p>
+                </span>
               </div>
-              <div class="safety-sync-actions grid grid-cols-2 gap-2 lg:w-[250px]">
+              <span class="safety-maintenance-chevron" :class="safetyMaintenanceSection === 'sync' ? 'is-open' : ''" aria-hidden="true">›</span>
+            </button>
+
+            <div v-if="safetyMaintenanceSection === 'sync'" id="safety-maintenance-sync" class="safety-maintenance-body border-t border-slate-100">
+              <div class="safety-maintenance-actions px-4 py-3 sm:px-6 grid grid-cols-2 gap-2 border-b border-slate-100">
                 <button @click="openSyncIssueModal(priceMatchWorkbenchRows.length ? 'pricing' : 'all')"
                          class="min-h-[38px] rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black">
                   查看異常
@@ -3043,7 +3054,6 @@
                   {{ syncing ? '同步中…' : '重新同步' }}
                 </button>
               </div>
-            </div>
 
             <div class="safety-sync-metrics grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
               <div class="safety-sync-metric p-4">
@@ -3111,14 +3121,25 @@
               <div class="text-sm font-black text-emerald-700">目前沒有同步或價目表問題</div>
               <p class="mt-1 text-xs font-bold text-slate-400">行事曆服務名稱、金額付款、鎖帳衝突與備份狀態目前正常。</p>
             </div>
+            </div>
           </section>
 
-          <div class="safety-section-heading">
-            <h3 class="text-base sm:text-lg font-black text-slate-800">備份與還原</h3>
-            <p class="mt-0.5 text-[10px] font-bold text-slate-400">正式雲端備份與裝置內保護快照</p>
-          </div>
+          <section class="safety-backup-panel safety-maintenance-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <button type="button" @click="toggleSafetyMaintenanceSection('backup')"
+                    class="safety-maintenance-summary w-full px-4 py-4 sm:px-6 flex items-center justify-between gap-3 text-left"
+                    :aria-expanded="safetyMaintenanceSection === 'backup'" aria-controls="safety-maintenance-backup">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="block text-base font-black text-slate-800">備份與還原</span>
+                  <span class="px-2 py-0.5 rounded-full border text-[9px] font-black" :class="statusToneClasses(cloudBackupSummary.status)">{{ cloudBackupSummary.title }}</span>
+                </div>
+                <span class="block mt-0.5 text-[10px] font-bold text-slate-400">{{ cloudBackupSummary.detail }} · 本機 {{ backupSnapshotRows.length }} 份快照</span>
+              </div>
+              <span class="safety-maintenance-chevron" :class="safetyMaintenanceSection === 'backup' ? 'is-open' : ''" aria-hidden="true">›</span>
+            </button>
 
-          <section class="safety-cloud-panel safety-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <div v-if="safetyMaintenanceSection === 'backup'" id="safety-maintenance-backup" class="safety-maintenance-body border-t border-slate-100">
+          <section class="safety-cloud-panel safety-maintenance-subsection">
             <div class="safety-panel-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -3225,7 +3246,7 @@
             </div>
           </section>
 
-          <section class="safety-local-panel safety-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+          <section class="safety-local-panel safety-maintenance-subsection border-t border-slate-100">
             <div class="safety-panel-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div class="min-w-0">
                 <h3 class="text-base font-black text-slate-800">本機快照</h3>
@@ -3278,16 +3299,20 @@
               </div>
             </div>
           </section>
+            </div>
+          </section>
 
-          <details class="safety-advanced-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
-            <summary class="safety-advanced-summary min-h-[56px] px-4 py-3 sm:px-6 cursor-pointer flex items-center justify-between gap-3">
+          <section class="safety-advanced-panel safety-maintenance-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <button type="button" @click="toggleSafetyMaintenanceSection('advanced')"
+                    class="safety-maintenance-summary safety-advanced-summary w-full min-h-[56px] px-4 py-3 sm:px-6 flex items-center justify-between gap-3 text-left"
+                    :aria-expanded="safetyMaintenanceSection === 'advanced'" aria-controls="safety-maintenance-advanced">
               <div class="min-w-0">
-                <h3 class="text-sm sm:text-base font-black text-slate-800">進階工具</h3>
-                <p class="mt-0.5 text-[10px] font-bold text-slate-400">操作紀錄、App 快取與備份規則</p>
+                <span class="block text-sm sm:text-base font-black text-slate-800">App 與紀錄</span>
+                <span class="block mt-0.5 text-[10px] font-bold text-slate-400">{{ pwaStatus }} · v{{ appVersion }} · 操作紀錄與快取</span>
               </div>
-              <span class="safety-advanced-chevron text-slate-400" aria-hidden="true">›</span>
-            </summary>
-            <div class="safety-advanced-body border-t border-slate-100">
+              <span class="safety-maintenance-chevron" :class="safetyMaintenanceSection === 'advanced' ? 'is-open' : ''" aria-hidden="true">›</span>
+            </button>
+            <div v-if="safetyMaintenanceSection === 'advanced'" id="safety-maintenance-advanced" class="safety-advanced-body border-t border-slate-100">
               <div class="safety-advanced-actions grid grid-cols-2 gap-2 p-4 sm:px-6">
                 <button @click="showOperationLogModal = true" class="min-h-[42px] rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-black">操作紀錄</button>
                 <button @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" class="min-h-[42px] rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-black disabled:opacity-50">
@@ -3309,7 +3334,7 @@
                 </div>
               </div>
             </div>
-          </details>
+          </section>
         </div>
 
       </transition>
@@ -3664,9 +3689,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.13-report-focus-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.13-safety-focus-4"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.13-report-focus-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.13-safety-focus-4"></script>
 </body>
 </html>

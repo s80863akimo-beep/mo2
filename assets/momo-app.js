@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.13-report-focus-1';
+    const APP_VERSION = '2026.07.13-safety-focus-4';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -183,6 +183,7 @@
           integrityReport: safeParse(localStorage.getItem('momo_integrity_report'), null),
           safetyReport: safeParse(localStorage.getItem('momo_safety_report'), null),
           safetyChecking: false,
+          safetyMaintenanceSection: '',
           safetyShowAllIssues: false,
           safetyShowAllCloudBackups: false,
           safetyShowAllLocalSnapshots: false,
@@ -895,7 +896,7 @@
           return rows.sort((a, b) => (order[a.severity] ?? 9) - (order[b.severity] ?? 9));
         },
         visibleHealthIssueRows() {
-          return this.healthIssueRows.slice(0, this.safetyShowAllIssues ? 50 : 5);
+          return this.healthIssueRows.slice(0, this.safetyShowAllIssues ? 50 : 3);
         },
         healthIssueSummary() {
           const errorCount = this.healthIssueRows.filter(issue => issue.severity === 'error').length;
@@ -2778,6 +2779,7 @@
             this.crmShowMoreFilters = false;
           }
           if (newVal !== 'safety') {
+            this.safetyMaintenanceSection = '';
             this.safetyShowAllIssues = false;
             this.safetyShowAllCloudBackups = false;
             this.safetyShowAllLocalSnapshots = false;
@@ -4929,11 +4931,13 @@
         handleHealthIssue(issue) {
           if (!issue) return;
           if (issue.code === 'backup_due' || issue.code === 'backup_error' || issue.code === 'cloud_backup_empty' || issue.code === 'cloud_backup_missing_today') {
+            this.safetyMaintenanceSection = 'backup';
             this.handleBackupReminderAction();
             return;
           }
           if (['cloud_backup_error', 'cloud_backup_less_than_local', 'cloud_backup_volume_drop', 'cloud_backup_count_drop'].includes(issue.code)) {
             this.activeTab = 'safety';
+            this.safetyMaintenanceSection = 'backup';
             this.fetchCloudBackupList({ silent: false });
             return;
           }
@@ -5319,8 +5323,20 @@
         isBackupIssueType(type) {
           return /^cloud_backup_|^backup_/.test(String(type || ''));
         },
+        toggleSafetyMaintenanceSection(section) {
+          const allowed = ['sync', 'backup', 'advanced'];
+          const next = allowed.includes(section) ? section : '';
+          const activeSection = this.safetyMaintenanceSection === next ? '' : next;
+          this.safetyMaintenanceSection = activeSection;
+          if (activeSection !== 'sync') this.syncIssueFilter = 'all';
+          if (activeSection !== 'backup') {
+            this.safetyShowAllCloudBackups = false;
+            this.safetyShowAllLocalSnapshots = false;
+          }
+        },
         async handleBackupSyncIssue(issue = {}) {
           this.showSyncIssueModal = false;
+          this.safetyMaintenanceSection = 'backup';
           if (['cloud_backup_error', 'cloud_backup_count_drop', 'cloud_backup_volume_drop', 'cloud_backup_less_than_local'].includes(issue.type)) {
             this.activeTab = 'safety';
             await this.fetchCloudBackupList({ silent: false });
@@ -5335,6 +5351,7 @@
         goToSafetySync(filter = 'all') {
           this.activeTab = 'safety';
           this.syncIssueFilter = filter || 'all';
+          this.safetyMaintenanceSection = filter === 'backup' ? 'backup' : 'sync';
           this.showMobileTools = false;
           this.scrollToTopForNavigation();
         },

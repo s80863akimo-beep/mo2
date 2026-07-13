@@ -4002,7 +4002,7 @@
       }
     }
 
-    /* Safety: issues first, backups second, advanced tools last */
+    /* Safety: status, action queue, then on-demand maintenance */
     body.momo-polish .momo-safety-page {
       display: flex;
       min-width: 0;
@@ -4018,6 +4018,7 @@
     body.momo-polish .safety-overview-panel,
     body.momo-polish .safety-panel,
     body.momo-polish .safety-attention-panel,
+    body.momo-polish .safety-maintenance-panel,
     body.momo-polish .safety-advanced-panel {
       border-color: var(--momo-line) !important;
       border-radius: 8px !important;
@@ -4053,7 +4054,7 @@
 
     body.momo-polish .safety-status-card {
       min-width: 0;
-      min-height: 92px;
+      min-height: 88px;
       border: 0 !important;
       background: var(--momo-surface) !important;
     }
@@ -4173,6 +4174,63 @@
       padding: 0.25rem 0.25rem 0;
     }
 
+    body.momo-polish .safety-maintenance-summary {
+      min-height: 66px;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: var(--momo-surface) !important;
+      color: var(--momo-ink);
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .safety-maintenance-summary:hover {
+      background: #FAFBFC !important;
+    }
+
+    body.momo-polish .safety-maintenance-summary:focus-visible {
+      outline: 2px solid rgba(222, 90, 82, 0.35);
+      outline-offset: -2px;
+    }
+
+    body.momo-polish .safety-maintenance-chevron {
+      display: inline-flex;
+      width: 28px;
+      height: 28px;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--momo-line);
+      border-radius: 50%;
+      background: var(--momo-surface-muted);
+      color: var(--momo-muted);
+      font-size: 1.15rem;
+      transition: transform 0.18s ease;
+    }
+
+    body.momo-polish .safety-maintenance-chevron.is-open {
+      transform: rotate(90deg);
+    }
+
+    body.momo-polish .safety-maintenance-body,
+    body.momo-polish .safety-maintenance-subsection {
+      min-width: 0;
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface);
+    }
+
+    body.momo-polish .safety-maintenance-actions {
+      display: flex !important;
+      justify-content: flex-end;
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted);
+    }
+
+    body.momo-polish .safety-maintenance-actions button {
+      width: min(100%, 136px);
+      border-radius: 6px !important;
+      box-shadow: none !important;
+    }
+
     body.momo-polish .safety-backup-row {
       min-height: 72px;
       border-color: var(--momo-line) !important;
@@ -4185,34 +4243,6 @@
 
     body.momo-polish .safety-backup-row button {
       border-color: var(--momo-line) !important;
-    }
-
-    body.momo-polish .safety-advanced-panel > summary {
-      list-style: none;
-      border-radius: 8px !important;
-      background: var(--momo-surface) !important;
-    }
-
-    body.momo-polish .safety-advanced-panel > summary::-webkit-details-marker {
-      display: none;
-    }
-
-    body.momo-polish .safety-advanced-chevron {
-      display: inline-flex;
-      width: 26px;
-      height: 26px;
-      flex: 0 0 auto;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid var(--momo-line);
-      border-radius: 50%;
-      background: var(--momo-surface-muted);
-      font-size: 1.15rem;
-      transition: transform 0.18s ease;
-    }
-
-    body.momo-polish .safety-advanced-panel[open] .safety-advanced-chevron {
-      transform: rotate(90deg);
     }
 
     body.momo-polish .safety-advanced-body,
@@ -4256,25 +4286,26 @@
       }
 
       body.momo-polish .safety-status-grid {
-        display: flex !important;
-        grid-template-columns: none !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         gap: 1px !important;
-        overflow-x: auto;
-        scrollbar-width: none;
-        scroll-snap-type: x proximity;
-      }
-
-      body.momo-polish .safety-status-grid::-webkit-scrollbar {
-        display: none;
+        overflow: visible;
       }
 
       body.momo-polish .safety-status-card {
-        min-width: 146px;
-        min-height: 88px;
-        flex: 0 0 146px;
-        padding: 0.75rem 0.875rem !important;
+        min-width: 0;
+        min-height: 84px;
+        padding: 0.75rem !important;
         border: 0 !important;
-        scroll-snap-align: start;
+      }
+
+      body.momo-polish .safety-status-card > div:nth-child(2) {
+        overflow-wrap: anywhere;
+        font-size: 0.875rem !important;
+      }
+
+      body.momo-polish .safety-status-card > div:nth-child(3) {
+        font-size: 0.5625rem !important;
       }
 
       body.momo-polish .safety-storage-meter {
@@ -4341,6 +4372,21 @@
 
       body.momo-polish .safety-price-row button {
         width: 100%;
+      }
+
+      body.momo-polish .safety-maintenance-summary {
+        min-height: 64px;
+        padding: 0.75rem 0.875rem !important;
+      }
+
+      body.momo-polish .safety-maintenance-actions {
+        padding: 0.75rem 0.875rem !important;
+      }
+
+      body.momo-polish .safety-maintenance-actions button {
+        width: auto;
+        min-width: 0;
+        flex: 1 1 0;
       }
 
       body.momo-polish .safety-section-heading {
