@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.13-safety-focus-4">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.13-daily-forms-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.13-safety-focus-4">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.13-daily-forms-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -1072,15 +1072,15 @@
           <!-- Closeout bottom sheet -->
           <transition name="fade">
             <div v-if="showCloseoutSheet" class="momo-dialog-overlay closeout-sheet-overlay fixed inset-0 z-[70] bg-slate-900/40 flex items-end sm:items-center justify-center sm:p-4" @click="showCloseoutSheet = false">
-              <div class="momo-dialog momo-dialog--md closeout-sheet-panel ios-sheet w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden safe-pb" @click.stop>
+              <div class="momo-dialog momo-dialog--md momo-form-dialog daily-form-dialog closeout-sheet-panel ios-sheet w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden safe-pb" @click.stop>
                 <div class="ios-sheet-handle sm:hidden"></div>
-                <div class="momo-dialog-header px-4 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
-                  <div><h3 class="text-base font-black text-slate-800">每日打烊對帳</h3><p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ selectedCloseoutDateLabel }}</p></div>
-                  <button @click="showCloseoutSheet = false" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉每日打烊"><span aria-hidden="true">×</span></button>
+                <div class="momo-dialog-header daily-form-header px-4 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+                  <div><h3 class="text-base font-black text-slate-800">每日打烊對帳</h3><p class="momo-dialog-subtitle">{{ selectedCloseoutDateLabel }} · 核對現金後鎖帳</p></div>
+                  <button type="button" @click="showCloseoutSheet = false" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉每日打烊"><span aria-hidden="true">×</span></button>
                 </div>
-                <div class="momo-dialog-body closeout-sheet-body ios-sheet-body p-4 space-y-4 max-h-[75vh] overflow-y-auto">
-                  <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">打烊日期</span><input type="date" v-model="closeoutDate" @change="loadCloseoutFormForDate" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-black"></label>
-                  <div class="p-4 rounded-xl bg-slate-900 text-white">
+                <div class="momo-dialog-body daily-form-body closeout-sheet-body ios-sheet-body p-4 space-y-4 max-h-[75vh] overflow-y-auto">
+                  <label class="daily-form-field block"><span class="daily-form-label block text-[10px] font-black text-slate-400 mb-1">打烊日期</span><input type="date" v-model="closeoutDate" @change="loadCloseoutFormForDate" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-black"></label>
+                  <div class="daily-form-summary p-4 rounded-xl bg-slate-900 text-white">
                     <div class="flex items-center justify-between gap-3">
                       <div><div class="text-[10px] font-black text-white/50">應有現金</div><div class="text-3xl font-black">NT$ {{ formatNumber(selectedCloseout.actualCashIn) }}</div></div>
                       <div class="text-right"><div class="text-[10px] text-white/50 font-black">服務營收</div><div class="text-sm font-black">NT$ {{ formatNumber(selectedCloseout.serviceRevenue) }}</div></div>
@@ -1093,22 +1093,18 @@
                     <div class="rounded-xl bg-sky-50 border border-sky-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值扣款</div><div class="text-sm font-black text-sky-700">NT$ {{ formatNumber(selectedCloseout.prepaidOut) }}</div></div>
                     <div class="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值進帳</div><div class="text-sm font-black text-emerald-700">NT$ {{ formatNumber(selectedCloseout.prepaidIn) }}</div></div>
                   </div>
-                  <label class="block">
-                    <span class="block text-[10px] font-black text-slate-400 mb-1">實際盤點現金</span>
+                  <label class="daily-form-field block">
+                    <span class="daily-form-label block text-[10px] font-black text-slate-400 mb-1">實際盤點現金</span>
                     <div class="grid grid-cols-[1fr_auto] gap-2">
                       <input type="number" inputmode="numeric" v-model.number="closeoutCashCount" placeholder="輸入現金總額" class="jelly-input w-full min-h-[50px] rounded-xl border border-slate-200 px-4 text-lg font-black">
                       <button type="button" @click="setCloseoutCashToExpected" class="min-h-[50px] px-3 rounded-xl bg-slate-100 text-slate-700 text-[11px] font-black">帶入</button>
                     </div>
                   </label>
-                  <div v-if="todayCloseoutDifference !== null" class="rounded-2xl px-4 py-3 text-sm font-black flex justify-between border"
+                  <div v-if="todayCloseoutDifference !== null" class="daily-form-status rounded-2xl px-4 py-3 text-sm font-black flex justify-between border" aria-live="polite"
                        :class="todayCloseoutDifference === 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'">
                     <span>{{ todayCloseoutDifference === 0 ? '帳實相符' : '帳實差額需確認' }}</span><span>{{ todayCloseoutDifference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutDifference) }}</span>
                   </div>
-                  <label class="block"><span class="block text-[10px] font-black text-slate-400 mb-1">打烊備註</span><input type="text" v-model="closeoutNote" placeholder="差額原因、找零或臨時採買" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-semibold"></label>
-                  <div class="momo-dialog-action-bar ios-action-bar">
-                    <button @click="copyCloseoutDraftSummary" class="mb-2 w-full min-h-[46px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-black">複製目前摘要</button>
-                    <button @click="completeCloseoutFromSheet" class="ios-primary-action w-full min-h-[52px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ selectedCloseoutRecord ? '更新打烊紀錄' : '完成打烊並鎖帳' }}</button>
-                  </div>
+                  <label class="daily-form-field block"><span class="daily-form-label block text-[10px] font-black text-slate-400 mb-1">打烊備註</span><input type="text" v-model="closeoutNote" placeholder="差額原因、找零或臨時採買" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-semibold"></label>
                   <details class="rounded-xl border border-slate-100 bg-white overflow-hidden">
                     <summary class="min-h-[42px] px-3 cursor-pointer flex items-center justify-between text-xs font-black text-slate-600"><span>查看金流明細</span><span>展開</span></summary>
                     <div class="p-3 grid grid-cols-2 gap-2 border-t border-slate-100">
@@ -1120,8 +1116,12 @@
                     </div>
                   </details>
                   <div v-if="selectedCloseoutRecord" class="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] font-black text-amber-700">{{ selectedCloseoutDateLabel }} 已鎖帳；新增、修改、刪除該日業績與支出會被擋下。</div>
-                  <button v-if="selectedCloseoutRecord" @click="copyCloseoutSummary" class="w-full min-h-[46px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-black">複製打烊摘要</button>
-                  <button v-if="selectedCloseoutRecord" @click="unlockCloseoutDate(closeoutDate)" class="w-full min-h-[46px] rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-sm font-black">解除此日鎖帳</button>
+                  <button v-if="selectedCloseoutRecord" type="button" @click="copyCloseoutSummary" class="w-full min-h-[46px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-black">複製打烊摘要</button>
+                  <button v-if="selectedCloseoutRecord" type="button" @click="unlockCloseoutDate(closeoutDate)" class="w-full min-h-[46px] rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-sm font-black">解除此日鎖帳</button>
+                  <div class="momo-dialog-action-bar daily-form-actions daily-form-actions--split ios-action-bar">
+                    <button type="button" @click="completeCloseoutFromSheet" class="daily-form-primary ios-primary-action w-full min-h-[52px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ selectedCloseoutRecord ? '更新打烊紀錄' : '完成打烊並鎖帳' }}</button>
+                    <button type="button" @click="copyCloseoutDraftSummary" class="daily-form-secondary ios-secondary-action min-h-[46px] rounded-xl border text-sm font-black">複製摘要</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1168,25 +1168,25 @@
             <div v-if="showMobileAddOrderForm"
                  class="momo-dialog-overlay fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6"
                  @click="showMobileAddOrderForm = false">
-            <div class="momo-dialog momo-dialog--md momo-form-dialog ios-sheet bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb"
+            <div class="momo-dialog momo-dialog--md momo-form-dialog daily-form-dialog ios-sheet bg-white w-full max-w-xl rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg safe-pb"
                  @click.stop>
               <div class="ios-sheet-handle lg:hidden"></div>
-              <div class="momo-dialog-header">
+              <div class="momo-dialog-header daily-form-header">
                 <div>
-                  <h3 class="font-black text-slate-800 text-lg">快速收款</h3>
-                  <p class="momo-dialog-subtitle">新增服務業績與付款方式</p>
+                  <h3 class="font-black text-slate-800 text-lg">新增業績</h3>
+                  <p class="momo-dialog-subtitle">服務、金額與付款方式</p>
                 </div>
                 <button type="button" @click="showMobileAddOrderForm = false" class="momo-dialog-close" aria-label="關閉新增業績"><span aria-hidden="true">×</span></button>
               </div>
-              <form @submit.prevent="addOrder" class="momo-dialog-body momo-dialog-form space-y-3.5">
-                <div>
-                  <label class="block text-[11px] font-black text-slate-400 mb-1">日期</label>
+              <form @submit.prevent="addOrder" class="momo-dialog-body momo-dialog-form daily-form-body space-y-4">
+                <div class="daily-form-field">
+                  <label class="daily-form-label block text-[11px] font-black text-slate-400 mb-1">日期</label>
                   <input type="date" v-model="newOrder.date" required
                          class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
                 </div>
-                <div class="grid grid-cols-3 gap-2">
+                <div class="daily-form-field grid grid-cols-3 gap-2">
                   <div class="col-span-2">
-                    <label class="block text-[11px] font-black text-slate-400 mb-1">顧客</label>
+                    <label class="daily-form-label block text-[11px] font-black text-slate-400 mb-1">顧客</label>
                     <input ref="customerNameInput" type="text" v-model="newOrder.customerName" required placeholder="如: 怡君" list="existing-customers"
                            autocapitalize="words" autocorrect="off" autocomplete="off" spellcheck="false"
                            class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
@@ -1203,7 +1203,7 @@
                     </label>
                   </div>
                   <div>
-                    <label class="block text-[11px] font-black text-slate-400 mb-1">性別</label>
+                    <label class="daily-form-label block text-[11px] font-black text-slate-400 mb-1">性別</label>
                     <select v-model="newOrder.gender" required
                             class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-3 py-2.5 text-sm font-semibold text-slate-700">
                       <option value="女">女</option>
@@ -1211,8 +1211,8 @@
                     </select>
                   </div>
                 </div>
-                <div>
-                  <label class="block text-[11px] font-black text-slate-400 mb-1">服務</label>
+                <div class="daily-form-field">
+                  <label class="daily-form-label block text-[11px] font-black text-slate-400 mb-1">服務</label>
                   <input type="text" v-model="newOrder.serviceName" required placeholder="如: 洗+剪" list="common-services"
                          autocorrect="off" autocapitalize="none" autocomplete="off" spellcheck="false"
                          class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
@@ -1227,15 +1227,15 @@
                     </button>
                   </div>
                 </div>
-                <div class="grid grid-cols-1 gap-3">
+                <div class="daily-form-field grid grid-cols-1 gap-3">
                   <div>
-                    <label class="block text-[11px] font-black text-slate-400 mb-1">金額</label>
+                    <label class="daily-form-label block text-[11px] font-black text-slate-400 mb-1">金額</label>
                     <input type="number" v-model.number="newOrder.amount" required min="0" placeholder="金額"
                            inputmode="decimal"
                            class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
                   </div>
                   <div>
-                    <label class="block text-[11px] font-black text-slate-400 mb-1">付款</label>
+                    <label class="daily-form-label block text-[11px] font-black text-slate-400 mb-1">付款方式</label>
                     <div class="grid grid-cols-2 gap-1.5">
                       <button v-for="method in paymentMethods" :key="method" type="button" @click="newOrder.paymentMethod = method"
                               class="min-h-[38px] rounded-xl border px-2 text-[11px] font-black"
@@ -1266,17 +1266,17 @@
                     <option value="轉帳">轉帳</option>
                   </select>
                 </div>
-                <div v-if="newOrderWarningsPreview.length" class="rounded-2xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] font-black text-amber-700 space-y-1">
+                <div v-if="newOrderWarningsPreview.length" class="daily-form-status rounded-2xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] font-black text-amber-700 space-y-1" aria-live="polite">
                   <div v-for="warning in newOrderWarningsPreview" :key="warning">{{ warning }}</div>
                 </div>
-                <div class="momo-dialog-action-bar ios-action-bar">
-                  <label class="mb-2 flex items-center justify-between gap-3 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2 text-[11px] font-black text-slate-500">
-                    <span>寫入後繼續新增下一筆</span>
+                <div class="momo-dialog-action-bar daily-form-actions ios-action-bar">
+                  <label class="daily-form-continue mb-2 flex items-center justify-between gap-3 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2 text-[11px] font-black text-slate-500">
+                    <span>新增後繼續下一筆</span>
                     <input type="checkbox" v-model="continueAddingOrders" class="w-5 h-5 rounded border-slate-200">
                   </label>
                   <button type="submit"
-                          class="ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
-                    寫入業績
+                          class="daily-form-primary ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
+                    新增業績
                   </button>
                 </div>
               </form>
@@ -1602,18 +1602,18 @@
             <div v-if="showExpenseForm"
                  class="momo-dialog-overlay fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6"
                  @click="showExpenseForm = false">
-            <div class="momo-dialog momo-dialog--md momo-form-dialog expense-form-sheet ios-sheet bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb"
+            <div class="momo-dialog momo-dialog--md momo-form-dialog daily-form-dialog expense-form-sheet ios-sheet bg-white w-full max-w-xl rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg safe-pb"
                  @click.stop>
               <div class="ios-sheet-handle lg:hidden"></div>
-              <div class="momo-dialog-header">
+              <div class="momo-dialog-header daily-form-header">
                 <div>
-                  <h3 class="font-black text-slate-800 text-lg">新增支出紀錄</h3>
-                  <p class="momo-dialog-subtitle">記錄成本、薪資與臨時採買</p>
+                  <h3 class="font-black text-slate-800 text-lg">新增支出</h3>
+                  <p class="momo-dialog-subtitle">日期、分類、金額與備註</p>
                 </div>
                 <button type="button" @click="showExpenseForm = false" class="momo-dialog-close" aria-label="關閉新增支出"><span aria-hidden="true">×</span></button>
               </div>
 
-              <div class="momo-dialog-body momo-dialog-scroll space-y-4">
+              <form @submit.prevent="addExpense" class="momo-dialog-body momo-dialog-scroll daily-form-body space-y-4">
 
               <!-- 一鍵匯入薪水 -->
               <div class="expense-salary-card bg-gradient-to-r from-macaron-peach-50 to-macaron-soft rounded-2xl p-4 border border-macaron-peach-200 space-y-2">
@@ -1635,11 +1635,10 @@
                   <button type="button" @click="importMomoSalary"
                           :disabled="selectedMonth === 'All' || kpis.momoSalary === 0"
                           class="expense-salary-import-button momo-danger-action jelly-btn bg-rose-50 border border-rose-100 text-rose-700 text-xs font-black px-4 py-2.5 rounded-2xl shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
-                    寫入支出 →
+                    匯入薪資
                   </button>
                 </div>
               </div>
-              <form @submit.prevent="addExpense" class="space-y-4">
                 <div class="expense-form-templates rounded-2xl border border-slate-200 bg-slate-50/60 p-3">
                   <div class="flex items-center justify-between mb-2">
                     <label class="block text-xs font-black text-slate-500 uppercase">常用支出模板</label>
@@ -1654,38 +1653,37 @@
                     </button>
                   </div>
                 </div>
-                <div>
-                  <label class="block text-xs font-black text-slate-400 uppercase mb-1">日期</label>
+                <div class="daily-form-field">
+                  <label class="daily-form-label block text-xs font-black text-slate-400 uppercase mb-1">日期</label>
                   <input type="date" v-model="newExpense.date" required
                          class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
                 </div>
-                <div>
-                  <label class="block text-xs font-black text-slate-400 uppercase mb-1">支出分類</label>
+                <div class="daily-form-field">
+                  <label class="daily-form-label block text-xs font-black text-slate-400 uppercase mb-1">支出分類</label>
                   <select v-model="newExpense.category" required
                           class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-3 py-2.5 text-sm font-semibold text-slate-700">
                     <option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option>
                   </select>
                 </div>
-                <div>
-                  <label class="block text-xs font-black text-slate-400 uppercase mb-1">支出金額 (NT$)</label>
+                <div class="daily-form-field">
+                  <label class="daily-form-label block text-xs font-black text-slate-400 uppercase mb-1">支出金額 (NT$)</label>
                   <input type="number" v-model.number="newExpense.amount" required min="0" placeholder="金額"
                          inputmode="decimal"
                          class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
                 </div>
-                <div>
-                  <label class="block text-xs font-black text-slate-400 uppercase mb-1">備註說明</label>
+                <div class="daily-form-field">
+                  <label class="daily-form-label block text-xs font-black text-slate-400 uppercase mb-1">備註說明</label>
                   <input type="text" v-model="newExpense.notes" placeholder="例如：進貨護髮膜一套"
                          autocorrect="on" autocapitalize="sentences"
                          class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
                 </div>
-                <div class="momo-dialog-action-bar ios-action-bar">
+                <div class="momo-dialog-action-bar daily-form-actions ios-action-bar">
                   <button type="submit"
-                          class="expense-submit-button ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
-                    寫入支出資料庫
+                          class="daily-form-primary expense-submit-button ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
+                    新增支出
                   </button>
                 </div>
               </form>
-              </div>
             </div>
             </div>
             </transition>
@@ -3689,9 +3687,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.13-safety-focus-4"></script>
+  <script src="/assets/momo-core.js?v=2026.07.13-daily-forms-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.13-safety-focus-4"></script>
+  <script src="/assets/momo-app.js?v=2026.07.13-daily-forms-1"></script>
 </body>
 </html>
