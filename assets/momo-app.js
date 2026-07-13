@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.12-mobile-nav-1';
+    const APP_VERSION = '2026.07.13-expense-crm-refine-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -292,6 +292,7 @@
           crmSortMode: 'lastDate',
           crmViewMode: 'customers',
           crmShowInsights: false,
+          crmShowMoreFilters: false,
           crmVisibleLimit: 40,
           expandedCrmCustomerName: null,
           mergeTargetByCustomer: {},
@@ -1157,7 +1158,7 @@
             .filter(expense => expense.category === '材料費')
             .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
           const avg = count ? Math.round(total / count) : 0;
-          const tone = ratio > 55 && revenue > 0 ? 'warn' : 'ok';
+          const tone = count === 0 ? 'empty' : ratio > 55 && revenue > 0 ? 'warn' : 'ok';
           return {
             revenue,
             total,
@@ -1168,7 +1169,9 @@
             avg,
             anomalies: [],
             tone,
-            message: revenue > 0
+            message: count === 0
+              ? '本期尚無支出紀錄'
+              : revenue > 0
               ? `支出占營業額 ${ratio}%${tone === 'warn' ? '，可留意本月支出' : ''}`
               : '尚無營業額可比較'
           };
@@ -1725,6 +1728,27 @@
             { value: 'needsTopup', label: '餘額偏低' },
             { value: 'noFormula', label: '未建配方' }
           ];
+        },
+        crmPrimaryFilters() {
+          const shortLabels = {
+            all: '全部',
+            stable: '穩定',
+            upcoming: '快到',
+            overdue: '超期'
+          };
+          return this.crmFilters
+            .filter(filter => Object.prototype.hasOwnProperty.call(shortLabels, filter.value))
+            .map(filter => ({ ...filter, shortLabel: shortLabels[filter.value] }));
+        },
+        crmSecondaryFilters() {
+          const primaryValues = new Set(this.crmPrimaryFilters.map(filter => filter.value));
+          return this.crmFilters.filter(filter => !primaryValues.has(filter.value));
+        },
+        crmSecondaryFilterActive() {
+          return this.crmSecondaryFilters.some(filter => filter.value === this.crmFilterMode);
+        },
+        crmSecondaryFilterLabel() {
+          return this.crmSecondaryFilters.find(filter => filter.value === this.crmFilterMode)?.label || '';
         },
 
         crmStats() {
@@ -2732,6 +2756,7 @@
           if (newVal !== 'crm') {
             this.expandedCrmCustomerName = null;
             this.crmShowInsights = false;
+            this.crmShowMoreFilters = false;
           }
           if (newVal !== 'safety') {
             this.safetyShowAllIssues = false;
@@ -2752,6 +2777,7 @@
           if (newVal !== 'customers') {
             this.expandedCrmCustomerName = null;
             this.crmShowInsights = false;
+            this.crmShowMoreFilters = false;
           }
         },
         'newOrder.customerName'(newVal) {

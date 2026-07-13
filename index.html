@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.12-mobile-nav-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.13-expense-crm-refine-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.12-mobile-nav-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.13-expense-crm-refine-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -1523,10 +1523,17 @@
         <div v-else-if="activeTab === 'expenses'" key="expenses" class="momo-expenses-page momo-list-page space-y-6">
           <!-- 當期支出摘要 -->
           <section class="momo-surface expense-summary-panel bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
-            <div class="momo-section-header expense-summary-header px-5 py-3 border-b border-orange-50">
-              <h3 class="font-black text-slate-700 text-sm">{{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }} 支出摘要</h3>
+            <div class="momo-section-header expense-summary-header px-5 py-3 border-b border-orange-50 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h3 class="font-black text-slate-700 text-sm">{{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }} 支出</h3>
+                <p class="mt-0.5 text-[10px] font-bold text-slate-400 truncate">{{ expenseHealthSummary.message }}</p>
+              </div>
+              <span class="expense-summary-status shrink-0 text-[10px] font-black px-2.5 py-1 rounded-full"
+                    :class="expenseHealthSummary.tone === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
+                {{ expenseHealthSummary.tone === 'empty' ? '未記錄' : expenseHealthSummary.tone === 'ok' ? '正常' : '偏高' }}
+              </span>
             </div>
-            <div class="expense-summary-grid grid grid-cols-3 divide-x divide-orange-50">
+            <div class="expense-summary-grid grid divide-x divide-orange-50">
               <div class="expense-summary-metric expense-summary-metric--primary px-3 sm:px-5 py-4 min-w-0">
                 <div class="text-[10px] font-black text-slate-400">當期支出</div>
                 <div class="mt-1 text-base sm:text-xl font-black text-rose-500 whitespace-nowrap">NT$ {{ formatNumber(expensesSummary.total) }}</div>
@@ -1536,28 +1543,25 @@
                 <div class="mt-1 text-base sm:text-xl font-black text-slate-800">{{ expensesSummary.count }} <span class="text-xs text-slate-400">筆</span></div>
               </div>
               <div class="expense-summary-metric px-3 sm:px-5 py-4 min-w-0">
-                <div class="text-[10px] font-black text-slate-400">最高分類</div>
-                <div class="mt-1 text-sm sm:text-lg font-black text-slate-800 truncate">{{ expensesSummary.topCategory }}</div>
-                <div class="text-[9px] font-bold text-slate-400">NT$ {{ formatNumber(expensesSummary.topCategoryAmount) }}</div>
+                <div class="text-[10px] font-black text-slate-400">支出率</div>
+                <div class="mt-1 text-base sm:text-xl font-black text-slate-800">{{ expenseHealthSummary.revenue ? expenseHealthSummary.ratio + '%' : '-' }}</div>
+              </div>
+              <div class="expense-summary-metric px-3 sm:px-5 py-4 min-w-0">
+                <div class="text-[10px] font-black text-slate-400">平均單筆</div>
+                <div class="mt-1 text-base sm:text-xl font-black text-slate-800 whitespace-nowrap">NT$ {{ formatNumber(expenseHealthSummary.avg) }}</div>
               </div>
             </div>
-          </section>
-
-          <section class="expense-health-section">
-            <div class="momo-surface expense-health-panel bg-white rounded-3xl border border-orange-50 macaron-shadow overflow-hidden">
-              <div class="momo-section-header expense-health-header px-4 py-3 border-b border-orange-50 flex items-center justify-between gap-3">
-                <div>
-                  <h3 class="text-sm font-black text-slate-800">支出概況</h3>
-                  <p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ expenseHealthSummary.message }}</p>
+            <div class="expense-summary-footer grid grid-cols-2 divide-x divide-orange-50 border-t border-orange-50">
+              <div class="expense-summary-detail min-w-0 px-3 sm:px-5 py-2.5">
+                <div class="text-[9px] font-black text-slate-400">最高分類</div>
+                <div class="mt-0.5 flex items-baseline gap-1.5 min-w-0">
+                  <span class="truncate text-[11px] font-black text-slate-700">{{ expensesSummary.topCategory }}</span>
+                  <span class="shrink-0 text-[10px] font-bold text-slate-400">NT$ {{ formatNumber(expensesSummary.topCategoryAmount) }}</span>
                 </div>
-                <span class="text-[10px] font-black px-2.5 py-1 rounded-full" :class="expenseHealthSummary.tone === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
-                  {{ expenseHealthSummary.tone === 'ok' ? '概況' : '偏高' }}
-                </span>
               </div>
-              <div class="expense-health-grid grid grid-cols-3 divide-x divide-orange-50">
-                <div class="expense-health-metric px-3 py-3"><div class="text-[9px] font-black text-slate-400">支出率</div><div class="text-sm font-black text-slate-800 mt-1">{{ expenseHealthSummary.revenue ? expenseHealthSummary.ratio + '%' : '-' }}</div></div>
-                <div class="expense-health-metric px-3 py-3"><div class="text-[9px] font-black text-slate-400">固定支出</div><div class="text-sm font-black text-slate-800 mt-1">NT$ {{ formatNumber(expenseHealthSummary.fixed) }}</div></div>
-                <div class="expense-health-metric px-3 py-3"><div class="text-[9px] font-black text-slate-400">平均單筆</div><div class="text-sm font-black text-slate-800 mt-1">NT$ {{ formatNumber(expenseHealthSummary.avg) }}</div></div>
+              <div class="expense-summary-detail min-w-0 px-3 sm:px-5 py-2.5">
+                <div class="text-[9px] font-black text-slate-400">固定支出</div>
+                <div class="mt-0.5 text-[11px] font-black text-slate-700 whitespace-nowrap">NT$ {{ formatNumber(expenseHealthSummary.fixed) }}</div>
               </div>
             </div>
           </section>
@@ -1569,7 +1573,7 @@
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">固定支出與常用項目</p>
               </div>
               <button @click="showExpenseForm = true" class="expense-manual-add-button momo-home-soft-button min-h-[38px] px-3 rounded-xl border border-slate-200 bg-white text-[11px] font-black text-slate-700 whitespace-nowrap">
-                手動新增
+                ＋ 自訂支出
               </button>
             </div>
             <div class="expense-template-grid p-3 sm:p-4 grid grid-cols-2 md:grid-cols-4 gap-2.5">
@@ -1577,17 +1581,16 @@
                       type="button"
                       @click="applyExpensePreset(template)"
                       class="expense-template-card text-left rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-[0_1px_0_rgba(15,23,42,0.03)] transition-colors">
-                <div class="flex items-start justify-between gap-2">
-                  <div class="min-w-0">
-                    <div class="text-sm font-black text-slate-800 truncate">{{ template.label }}</div>
-                    <div class="mt-0.5 text-[10px] font-black text-slate-400">{{ template.category }}</div>
-                  </div>
-                  <span class="shrink-0 rounded-full bg-slate-50 border border-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-500">
-                    {{ template.reuseLastAmount ? '上次' : '手填' }}
+                <span class="expense-template-copy min-w-0">
+                  <span class="expense-template-title text-sm font-black text-slate-800 truncate">{{ template.label }}</span>
+                  <span class="expense-template-meta mt-0.5 text-[10px] font-bold text-slate-400 truncate">
+                    {{ template.category }}<template v-if="Number(template.suggestedAmount) > 0"> · 沿用上次金額</template><template v-else-if="template.hint && template.hint !== template.category"> · {{ template.hint }}</template>
                   </span>
-                </div>
-                <div class="mt-2 text-xs font-black text-slate-700">{{ expenseTemplateAmountText(template) }}</div>
-                <div class="mt-0.5 text-[10px] font-bold text-slate-400 truncate">{{ expenseTemplateHintText(template) }}</div>
+                </span>
+                <span v-if="Number(template.suggestedAmount) > 0" class="expense-template-amount shrink-0 text-[10px] font-black text-slate-600">
+                  NT$ {{ formatNumber(template.suggestedAmount) }}
+                </span>
+                <span v-else class="expense-template-chevron shrink-0 text-slate-300" aria-hidden="true">›</span>
               </button>
             </div>
           </section>
@@ -2229,21 +2232,61 @@
                   <option value="name">姓名排序</option>
                 </select>
               </div>
-              <div class="crm-filter-row flex gap-2 overflow-x-auto pb-1">
-                <button v-for="filter in crmFilters" :key="filter.value" @click="crmFilterMode = filter.value"
-                        class="crm-filter-button whitespace-nowrap min-h-[36px] rounded-xl px-3 text-[11px] font-black border"
-                        :class="crmFilterMode === filter.value ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-orange-100'">
-                  {{ filter.label }}
+              <div class="crm-filter-controls">
+                <div class="crm-primary-filter-grid" role="group" aria-label="常用顧客篩選">
+                  <button v-for="filter in crmPrimaryFilters" :key="filter.value"
+                          @click="crmFilterMode = filter.value; crmShowMoreFilters = false"
+                          :aria-label="filter.label" :aria-pressed="crmFilterMode === filter.value"
+                          class="crm-filter-button min-h-[36px] rounded-xl px-2 text-[11px] font-black border"
+                          :class="crmFilterMode === filter.value ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-orange-100'">
+                    {{ filter.shortLabel }}
+                  </button>
+                </div>
+                <button @click="crmShowMoreFilters = !crmShowMoreFilters"
+                        :aria-expanded="crmShowMoreFilters"
+                        :aria-label="crmSecondaryFilterActive ? '更多篩選，目前：' + crmSecondaryFilterLabel : '更多篩選'"
+                        title="更多篩選"
+                        class="crm-more-filter-toggle relative min-h-[36px] w-10 border"
+                        :class="crmShowMoreFilters || crmSecondaryFilterActive ? 'is-active' : ''">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M7 14v6"></path>
+                  </svg>
+                  <span v-if="crmSecondaryFilterActive" class="crm-more-filter-dot" aria-hidden="true"></span>
                 </button>
               </div>
+              <transition name="fade">
+                <div v-if="crmShowMoreFilters" class="crm-secondary-filter-panel">
+                  <div class="crm-secondary-filter-header">
+                    <span>進階條件</span>
+                    <div class="flex items-center gap-1.5">
+                      <button v-if="crmSecondaryFilterActive"
+                              @click="crmFilterMode = 'all'; crmShowMoreFilters = false"
+                              class="crm-secondary-filter-clear">清除</button>
+                      <button @click="crmShowMoreFilters = false" class="crm-secondary-filter-close" aria-label="收合更多篩選">
+                        <span aria-hidden="true">×</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="crm-secondary-filter-grid">
+                    <button v-for="filter in crmSecondaryFilters" :key="filter.value"
+                            @click="crmFilterMode = filter.value; crmShowMoreFilters = false"
+                            :aria-pressed="crmFilterMode === filter.value"
+                            class="crm-secondary-filter-button"
+                            :class="crmFilterMode === filter.value ? 'is-active' : ''">
+                      <span>{{ filter.label }}</span>
+                      <svg v-if="crmFilterMode === filter.value" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5"></path></svg>
+                    </button>
+                  </div>
+                </div>
+              </transition>
               <div v-if="crmSearchQuery || crmFilterMode !== 'all'" class="crm-filter-result text-[10px] font-bold text-slate-400">
-                找到 {{ filteredCrmList.length }} 位顧客
+                找到 {{ filteredCrmList.length }} 位顧客<span v-if="crmSecondaryFilterActive"> · {{ crmSecondaryFilterLabel }}</span>
               </div>
             </section>
 
             <div v-if="filteredCrmList.length === 0" class="crm-empty-state momo-surface bg-white py-14 rounded-3xl text-center border border-orange-50 macaron-shadow">
               <div class="mt-2 text-sm font-black text-slate-500">找不到符合條件的顧客</div>
-              <button @click="crmSearchQuery = ''; crmFilterMode = 'all'" class="mt-3 text-xs font-black text-macaron-peach-500">清除搜尋與篩選</button>
+              <button @click="crmSearchQuery = ''; crmFilterMode = 'all'; crmShowMoreFilters = false" class="mt-3 text-xs font-black text-macaron-peach-500">清除搜尋與篩選</button>
             </div>
 
             <div v-else class="crm-customer-list momo-surface">
@@ -3986,9 +4029,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.12-mobile-nav-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.13-expense-crm-refine-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.12-mobile-nav-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.13-expense-crm-refine-1"></script>
 </body>
 </html>

@@ -1656,13 +1656,11 @@
     }
 
     body.momo-polish .expense-summary-panel,
-    body.momo-polish .expense-health-panel,
     body.momo-polish .expense-templates-panel {
       border-radius: 8px !important;
     }
 
     body.momo-polish .expense-summary-header,
-    body.momo-polish .expense-health-header,
     body.momo-polish .expense-templates-header {
       min-height: 52px;
       padding: 0.875rem 1rem !important;
@@ -1684,19 +1682,24 @@
     }
 
     body.momo-polish .expense-summary-header h3,
-    body.momo-polish .expense-health-header h3,
     body.momo-polish .expense-templates-header h3 {
       color: var(--momo-ink) !important;
     }
 
-    body.momo-polish .expense-summary-grid,
-    body.momo-polish .expense-health-grid {
+    body.momo-polish .expense-summary-status {
+      border: 1px solid currentColor;
+      border-radius: 999px !important;
+      opacity: 0.9;
+    }
+
+    body.momo-polish .expense-summary-grid {
+      grid-template-columns: minmax(190px, 1.35fr) repeat(3, minmax(0, 1fr));
       gap: 1px;
       background: var(--momo-line);
     }
 
     body.momo-polish .expense-summary-metric {
-      min-height: 108px;
+      min-height: 88px;
       padding: 1rem !important;
       border: 0 !important;
       background: var(--momo-surface) !important;
@@ -1714,19 +1717,20 @@
       font-variant-numeric: tabular-nums;
     }
 
-    body.momo-polish .expense-health-section {
-      border: 0 !important;
-      background: transparent !important;
+    body.momo-polish .expense-summary-footer {
+      gap: 1px;
+      border-color: var(--momo-line) !important;
+      background: var(--momo-line);
     }
 
-    body.momo-polish .expense-health-metric {
-      min-height: 72px;
+    body.momo-polish .expense-summary-detail {
+      min-height: 50px;
       border: 0 !important;
-      background: var(--momo-surface) !important;
+      background: var(--momo-surface-muted);
     }
 
-    body.momo-polish .expense-health-metric > div:last-child {
-      color: var(--momo-ink) !important;
+    body.momo-polish .expense-summary-detail span:last-child,
+    body.momo-polish .expense-summary-detail > div:last-child {
       font-variant-numeric: tabular-nums;
     }
 
@@ -1740,13 +1744,18 @@
     }
 
     body.momo-polish .expense-template-grid {
-      grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
       gap: 0.5rem !important;
       padding: 0.875rem 1rem !important;
     }
 
     body.momo-polish .expense-template-card {
-      min-height: 88px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      min-width: 0;
+      min-height: 68px;
+      align-items: center;
+      gap: 0.625rem;
       padding: 0.75rem !important;
       border-color: var(--momo-line) !important;
       border-radius: 8px !important;
@@ -1757,6 +1766,26 @@
     body.momo-polish .expense-template-card:hover {
       border-color: rgba(195, 77, 98, 0.42) !important;
       background: #FFFAFB !important;
+    }
+
+    body.momo-polish .expense-template-copy,
+    body.momo-polish .expense-template-title,
+    body.momo-polish .expense-template-meta {
+      display: block;
+      min-width: 0;
+    }
+
+    body.momo-polish .expense-template-amount {
+      padding: 0.25rem 0.4rem;
+      border-radius: 6px;
+      background: var(--momo-surface-muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .expense-template-chevron {
+      font-size: 1rem;
+      font-weight: 800;
     }
 
     body.momo-polish .expense-form-sheet {
@@ -1974,7 +2003,6 @@
       }
 
       body.momo-polish .expense-summary-header,
-      body.momo-polish .expense-health-header,
       body.momo-polish .expense-templates-header {
         min-height: 48px;
         padding: 0.75rem 0.875rem !important;
@@ -1989,46 +2017,46 @@
       }
 
       body.momo-polish .expense-summary-metric {
-        min-height: 88px;
+        min-height: 76px;
         padding: 0.75rem 0.875rem !important;
       }
 
       body.momo-polish .expense-summary-metric--primary {
-        grid-column: 1 / -1;
-        min-height: 96px;
+        grid-column: auto;
       }
 
       body.momo-polish .expense-summary-metric > div:nth-child(2) {
-        font-size: 1.25rem !important;
+        font-size: 1.05rem !important;
       }
 
-      body.momo-polish .expense-health-header p {
+      body.momo-polish .expense-summary-header p {
         max-width: 230px;
       }
 
-      body.momo-polish .expense-health-metric {
-        min-height: 64px;
+      body.momo-polish .expense-summary-detail {
+        min-height: 48px;
         padding: 0.625rem 0.75rem !important;
       }
 
       body.momo-polish .expense-template-grid {
-        display: flex !important;
-        grid-template-columns: none !important;
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         gap: 0.5rem !important;
-        overflow-x: auto;
         padding: 0.75rem 0.875rem !important;
-        scroll-snap-type: x proximity;
-        scrollbar-width: none;
-      }
-
-      body.momo-polish .expense-template-grid::-webkit-scrollbar {
-        display: none;
       }
 
       body.momo-polish .expense-template-card {
-        min-width: 142px;
-        min-height: 84px;
-        scroll-snap-align: start;
+        min-width: 0;
+        min-height: 66px;
+        padding: 0.625rem 0.75rem !important;
+      }
+
+      body.momo-polish .expense-template-title {
+        font-size: 0.75rem !important;
+      }
+
+      body.momo-polish .expense-template-meta {
+        font-size: 0.56rem !important;
       }
 
       body.momo-polish .expense-form-templates > .grid {
@@ -3285,16 +3313,46 @@
       border-radius: 50% !important;
     }
 
-    body.momo-polish .crm-filter-row {
-      scrollbar-width: none;
+    body.momo-polish .crm-filter-controls {
+      display: grid;
+      width: min(100%, 720px);
+      grid-template-columns: minmax(0, 1fr) 40px;
+      align-items: center;
+      gap: 0.5rem;
     }
 
-    body.momo-polish .crm-filter-row::-webkit-scrollbar {
-      display: none;
+    body.momo-polish .crm-primary-filter-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.5rem;
     }
 
     body.momo-polish .crm-filter-button {
+      min-width: 0;
       min-height: 36px !important;
+      overflow: hidden;
+      padding: 0 0.5rem !important;
+      border-color: var(--momo-line) !important;
+      border-radius: 6px !important;
+      background: var(--momo-surface-muted) !important;
+      color: var(--momo-muted) !important;
+      box-shadow: none !important;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .crm-filter-button.bg-slate-800 {
+      border-color: var(--momo-brand) !important;
+      background: var(--momo-brand) !important;
+      color: #FFFFFF !important;
+    }
+
+    body.momo-polish .crm-more-filter-toggle {
+      display: inline-flex;
+      width: 40px;
+      height: 36px;
+      align-items: center;
+      justify-content: center;
       border-color: var(--momo-line) !important;
       border-radius: 6px !important;
       background: var(--momo-surface-muted) !important;
@@ -3302,10 +3360,97 @@
       box-shadow: none !important;
     }
 
-    body.momo-polish .crm-filter-button.bg-slate-800 {
-      border-color: var(--momo-brand) !important;
-      background: var(--momo-brand) !important;
-      color: #FFFFFF !important;
+    body.momo-polish .crm-more-filter-toggle.is-active {
+      border-color: rgba(217, 95, 84, 0.32) !important;
+      background: var(--momo-brand-soft) !important;
+      color: var(--momo-brand) !important;
+    }
+
+    body.momo-polish .crm-more-filter-dot {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 6px;
+      height: 6px;
+      border: 1px solid #FFFFFF;
+      border-radius: 50%;
+      background: var(--momo-brand);
+    }
+
+    body.momo-polish .crm-secondary-filter-panel {
+      width: min(100%, 720px);
+      overflow: hidden;
+      border: 1px solid var(--momo-line);
+      border-radius: 8px;
+      background: var(--momo-surface-muted);
+    }
+
+    body.momo-polish .crm-secondary-filter-header {
+      display: flex;
+      min-height: 38px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.375rem 0.5rem 0.375rem 0.75rem;
+      border-bottom: 1px solid var(--momo-line);
+      color: var(--momo-muted);
+      font-size: 0.625rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .crm-secondary-filter-clear {
+      min-height: 30px;
+      padding: 0 0.5rem;
+      border-radius: 6px !important;
+      color: var(--momo-brand);
+      font-size: 0.625rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .crm-secondary-filter-close {
+      display: inline-flex;
+      width: 30px;
+      height: 30px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50% !important;
+      background: var(--momo-surface);
+      color: var(--momo-muted);
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    body.momo-polish .crm-secondary-filter-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--momo-line);
+    }
+
+    body.momo-polish .crm-secondary-filter-button {
+      display: flex;
+      min-width: 0;
+      min-height: 42px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0 0.75rem;
+      background: var(--momo-surface);
+      color: #526174;
+      font-size: 0.6875rem;
+      font-weight: 800;
+      text-align: left;
+    }
+
+    body.momo-polish .crm-secondary-filter-button span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .crm-secondary-filter-button.is-active {
+      background: var(--momo-brand-soft);
+      color: var(--momo-brand);
     }
 
     body.momo-polish .crm-customer-list {
@@ -3644,6 +3789,28 @@
         min-height: 42px !important;
         height: 42px !important;
         border-radius: 8px !important;
+      }
+
+      body.momo-polish .crm-filter-controls,
+      body.momo-polish .crm-primary-filter-grid {
+        gap: 0.375rem;
+      }
+
+      body.momo-polish .crm-filter-button {
+        padding: 0 0.25rem !important;
+        font-size: 0.625rem !important;
+      }
+
+      body.momo-polish .crm-secondary-filter-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      body.momo-polish .crm-secondary-filter-button {
+        min-height: 40px;
+      }
+
+      body.momo-polish .crm-secondary-filter-button:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
       }
 
       body.momo-polish .crm-customer-summary {
