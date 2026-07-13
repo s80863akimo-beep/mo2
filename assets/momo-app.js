@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.13-expense-crm-refine-1';
+    const APP_VERSION = '2026.07.13-report-focus-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -210,7 +210,10 @@
           hoveredReportBar: null,
           hideEmptyMonths: false,
           reportBreakdownTab: 'income',
+          reportViewMode: 'monthly',
           reportAnalysisTab: 'trend',
+          reportShowPrepaidDetails: false,
+          reportShowYieldDetails: false,
           reportYieldSort: 'yield_desc',
           reportYieldMinCount: 3,
           appVersion: APP_VERSION,
@@ -1700,9 +1703,25 @@
             { value: 5, label: '至少 5 筆' }
           ];
         },
+        reportAnnualServiceOrders() {
+          return (this.orders || []).filter(order => {
+            if (!order?.date || !String(order.date).startsWith(`${this.selectedYear}-`)) return false;
+            return this.isOrderActive(order)
+              && !this.isCorrectionSlip(order)
+              && order.customerName
+              && !this.isBlockedSlot(order.customerName)
+              && order.paymentMethod !== '儲值進帳';
+          });
+        },
+        reportAnnualServiceYieldRows() {
+          return this.buildServiceYieldRows(this.reportAnnualServiceOrders);
+        },
+        reportAnnualYieldSummary() {
+          return this.buildYieldSummary(this.reportAnnualServiceYieldRows, this.reportAnnualServiceOrders);
+        },
         reportServiceYieldRows() {
           const minCount = Math.max(1, Number(this.reportYieldMinCount) || 1);
-          const rows = this.serviceYieldRows
+          const rows = this.reportAnnualServiceYieldRows
             .filter(item => (Number(item.count) || 0) >= minCount)
             .map(item => ({ ...item }));
           const sorters = {
@@ -2762,6 +2781,10 @@
             this.safetyShowAllIssues = false;
             this.safetyShowAllCloudBackups = false;
             this.safetyShowAllLocalSnapshots = false;
+          }
+          if (newVal !== 'report') {
+            this.reportShowPrepaidDetails = false;
+            this.reportShowYieldDetails = false;
           }
         },
         crmSearchQuery() {
@@ -7788,6 +7811,13 @@
         },
 
         // --- 損益報表 ---
+        setReportViewMode(mode) {
+          const nextMode = mode === 'annual' ? 'annual' : 'monthly';
+          if (nextMode === this.reportViewMode) return;
+          this.reportViewMode = nextMode;
+          this.reportShowPrepaidDetails = false;
+          this.reportShowYieldDetails = false;
+        },
         prevReportYear() {
           const y = parseInt(this.selectedYear) - 1;
           this.selectedYear = String(y);
@@ -8024,7 +8054,7 @@
             row.confidenceLabel,
             row.timeBasisLabel
           ]);
-          this.downloadCSV(`MOMO服務時間產值排行_${this.selectedYear}-${this.selectedMonth}.csv`, headers, rows);
+          this.downloadCSV(`MOMO服務時間產值排行_${this.selectedYear}-年度.csv`, headers, rows);
           this.showToast('服務時間產值排行 CSV 已匯出');
         },
 
