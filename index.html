@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.13-settings-pricing-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.14-safety-maintenance-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.13-settings-pricing-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.14-safety-maintenance-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -3044,8 +3044,8 @@
           </section>
 
           <div class="safety-section-heading">
-            <h3 class="text-base sm:text-lg font-black text-slate-800">資料維護</h3>
-            <p class="mt-0.5 text-[10px] font-bold text-slate-400">同步、價目、備份與 App 工具</p>
+            <h3 class="text-base sm:text-lg font-black text-slate-800">異常工作台</h3>
+            <p class="mt-0.5 text-[10px] font-bold text-slate-400">同步與價目問題集中處理</p>
           </div>
 
           <section class="safety-sync-panel safety-maintenance-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
@@ -3149,21 +3149,46 @@
             </div>
           </section>
 
-          <section class="safety-backup-panel safety-maintenance-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
-            <button type="button" @click="toggleSafetyMaintenanceSection('backup')"
+          <div class="safety-section-heading">
+            <h3 class="text-base sm:text-lg font-black text-slate-800">資料維護</h3>
+            <p class="mt-0.5 text-[10px] font-bold text-slate-400">備份、還原、雲端快照與系統資訊</p>
+          </div>
+
+          <section class="safety-backup-panel safety-maintenance-panel safety-maintenance-hub momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <button type="button" @click="toggleSafetyMaintenanceSection('maintenance')"
                     class="safety-maintenance-summary w-full px-4 py-4 sm:px-6 flex items-center justify-between gap-3 text-left"
-                    :aria-expanded="safetyMaintenanceSection === 'backup'" aria-controls="safety-maintenance-backup">
+                    :aria-expanded="safetyMaintenanceSection === 'maintenance'" aria-controls="safety-maintenance-hub">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="block text-base font-black text-slate-800">備份與還原</span>
+                  <span class="block text-base font-black text-slate-800">資料維護</span>
                   <span class="px-2 py-0.5 rounded-full border text-[9px] font-black" :class="statusToneClasses(cloudBackupSummary.status)">{{ cloudBackupSummary.title }}</span>
+                  <span class="px-2 py-0.5 rounded-full border text-[9px] font-black" :class="updateAvailable ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-slate-200 bg-slate-50 text-slate-500'">
+                    {{ updateAvailable ? '有新版' : '版本正常' }}
+                  </span>
                 </div>
-                <span class="block mt-0.5 text-[10px] font-bold text-slate-400">{{ cloudBackupSummary.detail }} · 本機 {{ backupSnapshotRows.length }} 份快照</span>
+                <span class="safety-maintenance-summary-detail block mt-0.5 text-[10px] font-bold text-slate-400">
+                  本機 {{ backupSnapshotRows.length }} 份快照 · {{ pwaStatusText }} · v{{ appVersion }}
+                </span>
               </div>
-              <span class="safety-maintenance-chevron" :class="safetyMaintenanceSection === 'backup' ? 'is-open' : ''" aria-hidden="true">›</span>
+              <span class="safety-maintenance-chevron" :class="safetyMaintenanceSection === 'maintenance' ? 'is-open' : ''" aria-hidden="true">›</span>
             </button>
 
-            <div v-if="safetyMaintenanceSection === 'backup'" id="safety-maintenance-backup" class="safety-maintenance-body border-t border-slate-100">
+            <div v-if="safetyMaintenanceSection === 'maintenance'" id="safety-maintenance-hub" class="safety-maintenance-body border-t border-slate-100">
+              <div class="safety-maintenance-tabs" role="tablist" aria-label="資料維護內容">
+                <button id="safety-maintenance-tab-backup" type="button" role="tab" aria-controls="safety-maintenance-panel-backup"
+                        @click="setSafetyMaintenanceView('backup')" :aria-selected="safetyMaintenanceView === 'backup'"
+                        :class="{ 'is-active': safetyMaintenanceView === 'backup' }">
+                  備份與還原
+                </button>
+                <button id="safety-maintenance-tab-system" type="button" role="tab" aria-controls="safety-maintenance-panel-system"
+                        @click="setSafetyMaintenanceView('system')" :aria-selected="safetyMaintenanceView === 'system'"
+                        :class="{ 'is-active': safetyMaintenanceView === 'system' }">
+                  系統資訊
+                </button>
+              </div>
+
+              <div v-if="safetyMaintenanceView === 'backup'" id="safety-maintenance-panel-backup" class="safety-maintenance-view"
+                   role="tabpanel" aria-labelledby="safety-maintenance-tab-backup">
           <section class="safety-cloud-panel safety-maintenance-subsection">
             <div class="safety-panel-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div class="min-w-0">
@@ -3324,26 +3349,7 @@
               </div>
             </div>
           </section>
-            </div>
-          </section>
 
-          <section class="safety-advanced-panel safety-maintenance-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
-            <button type="button" @click="toggleSafetyMaintenanceSection('advanced')"
-                    class="safety-maintenance-summary safety-advanced-summary w-full min-h-[56px] px-4 py-3 sm:px-6 flex items-center justify-between gap-3 text-left"
-                    :aria-expanded="safetyMaintenanceSection === 'advanced'" aria-controls="safety-maintenance-advanced">
-              <div class="min-w-0">
-                <span class="block text-sm sm:text-base font-black text-slate-800">App 與紀錄</span>
-                <span class="block mt-0.5 text-[10px] font-bold text-slate-400">{{ pwaStatus }} · v{{ appVersion }} · 操作紀錄與快取</span>
-              </div>
-              <span class="safety-maintenance-chevron" :class="safetyMaintenanceSection === 'advanced' ? 'is-open' : ''" aria-hidden="true">›</span>
-            </button>
-            <div v-if="safetyMaintenanceSection === 'advanced'" id="safety-maintenance-advanced" class="safety-advanced-body border-t border-slate-100">
-              <div class="safety-advanced-actions grid grid-cols-2 gap-2 p-4 sm:px-6">
-                <button @click="showOperationLogModal = true" class="min-h-[42px] rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-black">操作紀錄</button>
-                <button @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" class="min-h-[42px] rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-black disabled:opacity-50">
-                  {{ pwaClearingCache ? '清理中…' : '清除 App 舊快取' }}
-                </button>
-              </div>
               <div class="safety-backup-policy grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 border-t border-slate-100">
                 <div class="p-4">
                   <div class="text-xs font-black text-slate-700">自動快照</div>
@@ -3356,6 +3362,38 @@
                 <div class="p-4">
                   <div class="text-xs font-black text-slate-700">保留規則</div>
                   <p class="mt-1 text-[11px] font-bold text-slate-400 leading-relaxed">本機保留 10 份；雲端保留近 14 天及每月最後一份。</p>
+                </div>
+              </div>
+
+              </div>
+
+              <div v-else id="safety-maintenance-panel-system" class="safety-system-view" role="tabpanel" aria-labelledby="safety-maintenance-tab-system">
+                <div class="safety-system-status-grid grid grid-cols-1 sm:grid-cols-2">
+                  <div v-for="item in systemStatusItems.filter(row => ['version', 'cloud'].includes(row.key))"
+                       :key="'safety-system-' + item.key" class="safety-system-status-item">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="text-[10px] font-black text-slate-400">{{ item.label }}</span>
+                      <span class="w-2 h-2 rounded-full" :class="statusToneClasses(item.tone, 'dot')"></span>
+                    </div>
+                    <div class="mt-1 text-base font-black text-slate-800">{{ item.value }}</div>
+                    <div class="mt-1 text-[10px] font-bold text-slate-400 leading-relaxed">{{ item.detail }}</div>
+                  </div>
+                </div>
+
+                <div class="safety-system-actions grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button type="button" @click="updateAvailable ? applyPwaUpdate() : checkPwaUpdate(true)" :disabled="pwaCheckingUpdate"
+                          class="safety-system-action safety-system-action--primary disabled:opacity-50">
+                    {{ updateAvailable ? '套用 App 更新' : pwaCheckingUpdate ? '檢查中…' : '檢查 App 更新' }}
+                  </button>
+                  <button type="button" @click="showOperationLogModal = true" class="safety-system-action">查看操作紀錄</button>
+                  <button type="button" @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" class="safety-system-action disabled:opacity-50">
+                    {{ pwaClearingCache ? '清理中…' : '清除 App 舊快取' }}
+                  </button>
+                </div>
+
+                <div class="safety-system-note">
+                  <div class="text-xs font-black text-slate-700">維護原則</div>
+                  <p class="mt-1 text-[11px] font-bold text-slate-400 leading-relaxed">版本與連線狀態只提供檢查；清除舊快取不會刪除業績、顧客或備份資料。</p>
                 </div>
               </div>
             </div>
@@ -3719,9 +3757,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.13-settings-pricing-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.14-safety-maintenance-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.13-settings-pricing-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.14-safety-maintenance-1"></script>
 </body>
 </html>

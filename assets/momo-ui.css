@@ -4222,6 +4222,105 @@
       background: var(--momo-surface);
     }
 
+    body.momo-polish .safety-maintenance-hub .safety-maintenance-summary {
+      min-height: 72px;
+    }
+
+    body.momo-polish .safety-maintenance-summary-detail {
+      overflow-wrap: anywhere;
+    }
+
+    body.momo-polish .safety-maintenance-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+      padding: 0.625rem 1rem;
+      border-bottom: 1px solid var(--momo-line);
+      background: var(--momo-surface-muted);
+    }
+
+    body.momo-polish .safety-maintenance-tabs button {
+      min-width: 0;
+      min-height: 38px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--momo-muted);
+      font-size: 0.6875rem;
+      font-weight: 900;
+      box-shadow: none;
+    }
+
+    body.momo-polish .safety-maintenance-tabs button:hover {
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--momo-ink);
+    }
+
+    body.momo-polish .safety-maintenance-tabs button:focus-visible {
+      outline: 2px solid rgba(222, 90, 82, 0.35);
+      outline-offset: -2px;
+    }
+
+    body.momo-polish .safety-maintenance-tabs button.is-active {
+      border-color: var(--momo-line);
+      background: var(--momo-surface);
+      color: var(--momo-brand);
+      box-shadow: 0 1px 2px rgba(35, 45, 55, 0.06);
+    }
+
+    body.momo-polish .safety-maintenance-view,
+    body.momo-polish .safety-system-view {
+      min-width: 0;
+      background: var(--momo-surface);
+    }
+
+    body.momo-polish .safety-system-status-grid {
+      gap: 1px;
+      background: var(--momo-line);
+    }
+
+    body.momo-polish .safety-system-status-item {
+      min-width: 0;
+      min-height: 104px;
+      padding: 1rem 1.5rem;
+      background: var(--momo-surface);
+    }
+
+    body.momo-polish .safety-system-status-item > div:nth-child(2) {
+      overflow-wrap: anywhere;
+    }
+
+    body.momo-polish .safety-system-actions {
+      padding: 0.875rem 1.5rem;
+      border-top: 1px solid var(--momo-line);
+      background: var(--momo-surface-muted);
+    }
+
+    body.momo-polish .safety-system-action {
+      min-width: 0;
+      min-height: 42px;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--momo-line);
+      border-radius: 6px;
+      background: var(--momo-surface);
+      color: var(--momo-ink);
+      font-size: 0.6875rem;
+      font-weight: 900;
+      box-shadow: none;
+    }
+
+    body.momo-polish .safety-system-action--primary {
+      border-color: var(--momo-brand) !important;
+      background: var(--momo-brand) !important;
+      color: #FFFFFF !important;
+    }
+
+    body.momo-polish .safety-system-note {
+      padding: 0.875rem 1.5rem 1rem;
+      border-top: 1px solid var(--momo-line);
+      background: var(--momo-surface);
+    }
+
     body.momo-polish .safety-maintenance-actions {
       display: flex !important;
       justify-content: flex-end;
@@ -4381,6 +4480,48 @@
       body.momo-polish .safety-maintenance-summary {
         min-height: 64px;
         padding: 0.75rem 0.875rem !important;
+      }
+
+      body.momo-polish .safety-maintenance-hub .safety-maintenance-summary {
+        min-height: 76px;
+      }
+
+      body.momo-polish .safety-maintenance-summary-detail {
+        display: -webkit-box !important;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
+      body.momo-polish .safety-maintenance-tabs {
+        padding: 0.5rem 0.875rem;
+      }
+
+      body.momo-polish .safety-maintenance-tabs button {
+        min-height: 40px;
+        font-size: 0.75rem;
+      }
+
+      body.momo-polish .safety-system-status-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      body.momo-polish .safety-system-status-item {
+        min-height: 92px;
+        padding: 0.875rem;
+      }
+
+      body.momo-polish .safety-system-actions {
+        grid-template-columns: 1fr !important;
+        padding: 0.75rem 0.875rem;
+      }
+
+      body.momo-polish .safety-system-action {
+        min-height: 42px;
+      }
+
+      body.momo-polish .safety-system-note {
+        padding: 0.875rem;
       }
 
       body.momo-polish .safety-maintenance-actions {
