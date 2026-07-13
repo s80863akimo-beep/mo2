@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v95-daily-forms';
-const APP_VERSION = '2026.07.13-daily-forms-1';
+const CACHE_NAME = 'momohair-shell-v96-settings-pricing';
+const APP_VERSION = '2026.07.13-settings-pricing-1';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,

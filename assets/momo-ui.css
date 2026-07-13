@@ -5204,12 +5204,18 @@
     /* Settings belongs to configuration only; diagnostics stay in the safety workspace. */
     body.momo-polish .momo-settings-menu {
       width: 320px !important;
+      max-height: min(76dvh, 620px);
       border-radius: 8px !important;
       background: #F8FAFC !important;
       box-shadow: 0 20px 48px -28px rgba(15, 23, 42, 0.42) !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
     }
 
     body.momo-polish .momo-settings-menu-header {
+      position: sticky;
+      z-index: 4;
+      top: 0;
       padding: 0.75rem 0.875rem;
       border-bottom: 1px solid #E2E8F0;
       background: #FFFFFF;
@@ -5254,6 +5260,10 @@
 
     body.momo-polish .momo-settings-body {
       padding: 0.875rem 0.75rem calc(1rem + env(safe-area-inset-bottom));
+    }
+
+    body.momo-polish .momo-settings-body--menu {
+      padding: 0.625rem;
     }
 
     body.momo-polish .momo-settings-section-label {
@@ -5348,6 +5358,17 @@
       white-space: nowrap;
     }
 
+    body.momo-polish .momo-settings-value {
+      flex: 0 0 auto;
+      padding: 0.2rem 0.4rem;
+      border-radius: 6px;
+      background: #F1F5F9;
+      color: #64748B;
+      font-size: 0.625rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
     body.momo-polish .momo-settings-chevron {
       flex: 0 0 auto;
       color: #CBD5E1;
@@ -5358,6 +5379,53 @@
 
     body.momo-polish .momo-settings-details[open] > summary .momo-settings-chevron {
       transform: rotate(90deg);
+    }
+
+    body.momo-polish .momo-settings-advanced {
+      margin-top: 0.625rem;
+      overflow: hidden;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      background: #FFFFFF;
+    }
+
+    body.momo-polish .momo-settings-advanced > summary {
+      list-style: none;
+    }
+
+    body.momo-polish .momo-settings-advanced > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    body.momo-polish .momo-settings-advanced-summary {
+      display: flex;
+      min-height: 56px;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem 0.875rem;
+      background: #FFFFFF;
+      cursor: pointer;
+    }
+
+    body.momo-polish .momo-settings-advanced-summary:hover {
+      background: #F8FAFC;
+    }
+
+    body.momo-polish .momo-settings-advanced[open] > .momo-settings-advanced-summary {
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    body.momo-polish .momo-settings-advanced[open] > .momo-settings-advanced-summary .momo-settings-chevron {
+      transform: rotate(90deg);
+    }
+
+    body.momo-polish .momo-settings-advanced-body {
+      padding: 0.5rem;
+      background: #F8FAFC;
+    }
+
+    body.momo-polish .momo-settings-advanced-body .momo-settings-group > .momo-settings-details:first-child {
+      border-top: 0;
     }
 
     body.momo-polish .momo-settings-detail-body {
@@ -5429,6 +5497,424 @@
     body.momo-polish .momo-settings-export-action:focus-visible {
       outline: 2px solid rgba(217, 95, 84, 0.5);
       outline-offset: -2px;
+    }
+
+    /* Service pricing: searchable rows with explicit save state. */
+    body.momo-polish .service-config-dialog {
+      max-height: min(90dvh, 860px);
+    }
+
+    body.momo-polish .service-config-header {
+      min-height: 72px;
+    }
+
+    body.momo-polish .service-config-state-badge {
+      display: inline-flex;
+      min-height: 22px;
+      align-items: center;
+      padding: 0 0.5rem;
+      border: 1px solid;
+      border-radius: 999px;
+      font-size: 0.625rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .service-config-state-badge.is-dirty {
+      border-color: #FDE68A;
+      background: #FFFBEB;
+      color: #A16207;
+    }
+
+    body.momo-polish .service-config-state-badge.is-saved {
+      border-color: #A7F3D0;
+      background: #ECFDF5;
+      color: #047857;
+    }
+
+    body.momo-polish .service-config-body {
+      min-height: 0;
+      padding: 1rem 1.25rem !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      scrollbar-gutter: stable;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    body.momo-polish .service-config-toolbar {
+      position: sticky;
+      z-index: 2;
+      top: -1rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.5rem;
+      margin: -1rem -1.25rem 0;
+      padding: 0.875rem 1.25rem;
+      border-bottom: 1px solid #E2E8F0;
+      background: rgba(255, 255, 255, 0.97);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+    }
+
+    body.momo-polish .service-config-search {
+      display: block;
+      min-width: 0;
+    }
+
+    body.momo-polish .service-config-search input {
+      width: 100%;
+      min-height: 42px !important;
+      padding: 0 0.75rem;
+      border: 1px solid #DCE3EA !important;
+      border-radius: 8px !important;
+      background: #F8FAFC !important;
+      color: #334155;
+      font-size: 0.8125rem;
+      font-weight: 700;
+    }
+
+    body.momo-polish .service-config-search input:focus {
+      border-color: rgba(217, 95, 84, 0.58) !important;
+      background: #FFFFFF !important;
+      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.11) !important;
+      outline: 0;
+    }
+
+    body.momo-polish .service-config-add-button {
+      min-height: 42px;
+      padding: 0 0.875rem;
+      border: 1px solid #D95F54;
+      border-radius: 8px;
+      background: #D95F54;
+      color: #FFFFFF;
+      font-size: 0.75rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .service-config-table-shell {
+      margin-top: 0.875rem;
+      overflow: hidden;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      background: #FFFFFF;
+    }
+
+    body.momo-polish table.service-config-table {
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    body.momo-polish .service-config-table thead {
+      background: #F8FAFC;
+    }
+
+    body.momo-polish .service-config-table th {
+      height: 38px;
+      padding: 0 0.625rem !important;
+      border-bottom: 1px solid #E2E8F0;
+      color: #64748B;
+      font-size: 0.625rem;
+      font-weight: 900;
+      text-align: left;
+    }
+
+    body.momo-polish .service-config-table th:nth-child(1) {
+      width: auto !important;
+    }
+
+    body.momo-polish .service-config-table th:nth-child(2) {
+      width: 126px !important;
+    }
+
+    body.momo-polish .service-config-table th:nth-child(3) {
+      width: 112px !important;
+    }
+
+    body.momo-polish .service-config-table th:nth-child(4) {
+      width: 64px !important;
+    }
+
+    body.momo-polish .service-config-table td {
+      padding: 0.375rem 0.375rem !important;
+      border-bottom: 1px solid #EEF2F6;
+      vertical-align: middle;
+    }
+
+    body.momo-polish .service-config-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    body.momo-polish .service-config-table input {
+      width: 100%;
+      min-width: 0;
+      min-height: 40px !important;
+      padding: 0 0.625rem !important;
+      border: 1px solid transparent !important;
+      border-radius: 6px !important;
+      background: transparent !important;
+      color: #334155;
+      box-shadow: none !important;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    body.momo-polish .service-config-table input:focus {
+      border-color: rgba(217, 95, 84, 0.42) !important;
+      background: #FFFFFF !important;
+      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.09) !important;
+      outline: 0;
+    }
+
+    body.momo-polish .service-config-table td:nth-child(2) input,
+    body.momo-polish .service-config-table td:nth-child(3) input {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    body.momo-polish .service-config-remove-button {
+      width: 100%;
+      min-height: 36px;
+      padding: 0 0.375rem;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: #BE5A69;
+      font-size: 0.6875rem;
+      font-weight: 800;
+    }
+
+    body.momo-polish .service-config-remove-button:hover {
+      border-color: #FECDD3;
+      background: #FFF1F2;
+      color: #BE123C;
+    }
+
+    body.momo-polish .service-config-empty {
+      margin-top: 0.875rem;
+      padding: 2rem 1rem;
+      border: 1px dashed #CBD5E1;
+      border-radius: 8px;
+      background: #F8FAFC;
+      color: #64748B;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    body.momo-polish .service-config-advanced {
+      margin-top: 0.875rem;
+      overflow: hidden;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      background: #FFFFFF;
+    }
+
+    body.momo-polish .service-config-advanced > summary {
+      display: flex;
+      min-height: 44px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0 0.75rem;
+      color: #475569;
+      font-size: 0.6875rem;
+      font-weight: 900;
+      list-style: none;
+      cursor: pointer;
+    }
+
+    body.momo-polish .service-config-advanced > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    body.momo-polish .service-config-advanced-hint {
+      color: #94A3B8;
+      font-size: 0.625rem;
+      font-weight: 700;
+    }
+
+    body.momo-polish .service-config-advanced-body {
+      padding: 0.75rem;
+      border-top: 1px solid #E2E8F0;
+      background: #F8FAFC;
+    }
+
+    body.momo-polish .service-config-advanced-body button {
+      min-height: 40px;
+      padding: 0 0.75rem;
+      border: 1px solid #FECDD3;
+      border-radius: 8px;
+      background: #FFFFFF;
+      color: #BE123C;
+      font-size: 0.6875rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .service-config-footer {
+      display: flex;
+      min-height: 72px;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom)) !important;
+      border-top-color: #E2E8F0 !important;
+      background: #FFFFFF !important;
+    }
+
+    body.momo-polish .service-config-save-status {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.5rem;
+      color: #64748B;
+      font-size: 0.6875rem;
+      font-weight: 800;
+    }
+
+    body.momo-polish .service-config-save-status::before {
+      width: 8px;
+      height: 8px;
+      flex: 0 0 8px;
+      border-radius: 50%;
+      background: #10B981;
+      content: "";
+    }
+
+    body.momo-polish .service-config-save-status.is-dirty {
+      color: #A16207;
+    }
+
+    body.momo-polish .service-config-save-status.is-dirty::before {
+      background: #F59E0B;
+    }
+
+    body.momo-polish .service-config-footer-actions {
+      display: grid;
+      grid-template-columns: auto minmax(112px, auto);
+      gap: 0.5rem;
+    }
+
+    body.momo-polish .service-config-footer-actions button {
+      min-height: 46px !important;
+      padding: 0 1rem !important;
+      border-radius: 8px !important;
+      font-size: 0.75rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .service-config-save-button:disabled {
+      border-color: #CBD5E1 !important;
+      background: #E2E8F0 !important;
+      color: #64748B !important;
+      cursor: default;
+      opacity: 1;
+    }
+
+    @media (max-width: 767px) {
+      body.momo-polish .service-config-dialog {
+        max-height: 94dvh !important;
+      }
+
+      body.momo-polish .service-config-header {
+        min-height: 66px;
+      }
+
+      body.momo-polish .service-config-body {
+        padding: 0.875rem 1rem !important;
+      }
+
+      body.momo-polish .service-config-toolbar {
+        top: -0.875rem;
+        margin: -0.875rem -1rem 0;
+        padding: 0.75rem 1rem;
+      }
+
+      body.momo-polish .service-config-search input {
+        font-size: 16px !important;
+      }
+
+      body.momo-polish table.service-config-table,
+      body.momo-polish .service-config-table tbody {
+        display: block;
+        width: 100% !important;
+      }
+
+      body.momo-polish .service-config-table thead {
+        display: none;
+      }
+
+      body.momo-polish .service-config-table tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+        gap: 0.625rem;
+        padding: 0.75rem;
+        border-bottom: 1px solid #E2E8F0;
+      }
+
+      body.momo-polish .service-config-table tr:last-child {
+        border-bottom: 0;
+      }
+
+      body.momo-polish .service-config-table td,
+      body.momo-polish .service-config-table td:nth-child(1),
+      body.momo-polish .service-config-table td:nth-child(2),
+      body.momo-polish .service-config-table td:nth-child(3),
+      body.momo-polish .service-config-table td:nth-child(4) {
+        display: block;
+        width: auto !important;
+        padding: 0 !important;
+        border: 0;
+      }
+
+      body.momo-polish .service-config-table td:nth-child(1) {
+        grid-column: 1 / -1;
+      }
+
+      body.momo-polish .service-config-table td::before {
+        display: block;
+        margin-bottom: 0.25rem;
+        color: #64748B;
+        content: attr(data-label);
+        font-size: 0.625rem;
+        font-weight: 900;
+      }
+
+      body.momo-polish .service-config-table td:nth-child(4)::before {
+        visibility: hidden;
+      }
+
+      body.momo-polish .service-config-dialog .service-config-table input {
+        min-height: 44px !important;
+        padding: 0 0.625rem !important;
+        border-color: #DCE3EA !important;
+        background: #FBFCFD !important;
+        font-size: 16px !important;
+      }
+
+      body.momo-polish .service-config-dialog .service-config-remove-button {
+        min-height: 44px;
+        border-color: #FECDD3;
+        background: #FFF7F7;
+        font-size: 0.6875rem !important;
+      }
+
+      body.momo-polish .service-config-footer {
+        min-height: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.625rem;
+        padding: 0.625rem 1rem calc(0.625rem + env(safe-area-inset-bottom)) !important;
+      }
+
+      body.momo-polish .service-config-footer-actions {
+        grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      }
+
+      body.momo-polish .service-config-save-status {
+        min-height: 20px;
+      }
     }
 
     /* Mobile navigation keeps daily work direct and moves low-frequency pages into one chooser. */

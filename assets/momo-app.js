@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.13-daily-forms-1';
+    const APP_VERSION = '2026.07.13-settings-pricing-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -248,6 +248,7 @@
           showServiceConfigModal: false,
           servicesConfig: [],
           tempServicesConfig: [],
+          serviceConfigSearchQuery: '',
           crmNotesTimer: null,
 
           // Toast state
@@ -2765,6 +2766,12 @@
         },
         serviceConfigHasChanges() {
           return JSON.stringify(this.tempServicesConfig || []) !== JSON.stringify(this.servicesConfig || []);
+        },
+        filteredTempServicesConfigRows() {
+          const query = String(this.serviceConfigSearchQuery || '').trim().toLowerCase();
+          return (this.tempServicesConfig || [])
+            .map((service, index) => ({ service, index }))
+            .filter(row => !query || String(row.service?.name || '').toLowerCase().includes(query));
         }
       },
       watch: {
@@ -5392,6 +5399,7 @@
             return;
           }
           this.tempServicesConfig = JSON.parse(JSON.stringify(this.servicesConfig || []));
+          this.serviceConfigSearchQuery = '';
           const key = this.normalizeSyncServiceKey(serviceName);
           const exists = this.tempServicesConfig.some(service => this.normalizeSyncServiceKey(service.name) === key);
           if (!exists) {
@@ -5401,6 +5409,7 @@
               price: Number(row.price) || 0
             });
           }
+          this.serviceConfigSearchQuery = serviceName;
           this.showServiceConfigModal = true;
           this.showSyncIssueModal = false;
           this.showToast(exists ? '此服務已在價目表中' : '已加入價目表，請補上定價與時長');
@@ -7779,6 +7788,7 @@
         // Dictionary Modal Methods
         openServiceConfigModal(seedService = null) {
           this.tempServicesConfig = JSON.parse(JSON.stringify(this.servicesConfig));
+          this.serviceConfigSearchQuery = '';
           const serviceName = String(seedService?.serviceName || seedService?.name || '').trim();
           if (serviceName) {
             const key = this.normalizeSyncServiceKey(serviceName);
@@ -7790,6 +7800,7 @@
                 price: Number(seedService.price) || 0
               });
             }
+            this.serviceConfigSearchQuery = serviceName;
           }
           this.showSyncIssueModal = false;
           this.showServiceConfigModal = true;
@@ -7799,32 +7810,36 @@
             this.showConfirm('價目表有尚未儲存的修改，確定要放棄並關閉嗎？', () => {
               this.showServiceConfigModal = false;
               this.tempServicesConfig = JSON.parse(JSON.stringify(this.servicesConfig || []));
+              this.serviceConfigSearchQuery = '';
             });
             return;
           }
           this.showServiceConfigModal = false;
+          this.serviceConfigSearchQuery = '';
         },
         addTempService() {
-          this.tempServicesConfig.push({ name: '', duration: 60, price: 1000 });
+          this.serviceConfigSearchQuery = '';
+          this.tempServicesConfig.unshift({ name: '', duration: 60, price: 1000 });
         },
         removeTempService(index) {
           this.tempServicesConfig.splice(index, 1);
         },
         resetServicesConfigToDefault() {
           this.showConfirm('確定要將所有服務項目重設為系統預設值嗎？目前的自訂定價與時長將被覆蓋。', () => {
+            this.serviceConfigSearchQuery = '';
             this.tempServicesConfig = JSON.parse(JSON.stringify(defaultServicesConfig));
           });
         },
         saveServicesConfig() {
           // Filter out items with empty names
           const filtered = this.tempServicesConfig.filter(s => s.name && s.name.trim());
-          this.servicesConfig = filtered;
+          this.servicesConfig = JSON.parse(JSON.stringify(filtered));
+          this.tempServicesConfig = JSON.parse(JSON.stringify(filtered));
           localStorage.setItem('momo_servicesConfig', JSON.stringify(this.servicesConfig));
           localStorage.setItem('momo_servicesConfigUpdatedAt', new Date().toISOString());
           this.queueCloudSync();
           this.recordOperation('service_config_update', '更新服務定價', `服務項目 ${this.servicesConfig.length} 項`);
-          this.showToast('🍬 服務定價對照設定已更新！');
-          this.showServiceConfigModal = false;
+          this.showToast('服務價目表已儲存');
         },
 
         // --- 損益報表 ---

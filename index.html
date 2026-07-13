@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.13-daily-forms-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.13-settings-pricing-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.13-daily-forms-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.13-settings-pricing-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -157,12 +157,24 @@
                     <div class="text-sm font-black text-slate-800">設定</div>
                     <div class="mt-0.5 text-[10px] font-bold text-slate-400">{{ lastSyncTime ? '最後同步 ' + lastSyncTime : '尚未同步行事曆' }}</div>
                   </div>
-                  <div class="momo-settings-group momo-settings-group--menu">
+                  <div class="momo-settings-body momo-settings-body--menu">
+                    <div class="momo-settings-section-label">常用設定</div>
+                    <div class="momo-settings-group">
                     <button @click="showDataTools = false; openServiceConfigModal()" class="momo-settings-row" type="button">
                       <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="6" cy="7" r="3"></circle><circle cx="6" cy="17" r="3"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M8.7 8.4 20 3M8.7 15.6 20 21M8.7 8.4 12 10"></path></svg></span>
-                      <span class="momo-settings-copy"><span class="momo-settings-title">服務定價</span><span class="momo-settings-description">服務價格與預估時長</span></span>
+                      <span class="momo-settings-copy"><span class="momo-settings-title">服務價目表</span><span class="momo-settings-description">價格、標準時間與同步計價</span></span>
+                      <span class="momo-settings-value">{{ servicesConfig.length }} 項</span>
                       <span class="momo-settings-chevron" aria-hidden="true">›</span>
                     </button>
+                    </div>
+
+                    <details class="momo-settings-advanced">
+                      <summary class="momo-settings-advanced-summary">
+                        <span class="momo-settings-copy"><span class="momo-settings-title">進階設定</span><span class="momo-settings-description">雲端帳號與資料匯出</span></span>
+                        <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                      </summary>
+                      <div class="momo-settings-advanced-body">
+                        <div class="momo-settings-group">
 
                     <details class="momo-settings-details">
                       <summary class="momo-settings-row">
@@ -193,6 +205,9 @@
                         <button @click="showDataTools = false; exportExpensesCSV()" class="momo-settings-export-action">支出</button>
                       </div>
                     </details>
+                        </div>
+                      </div>
+                    </details>
                   </div>
                 </div>
               </transition>
@@ -217,13 +232,23 @@
           </div>
 
           <div class="momo-settings-body">
-            <div class="momo-settings-section-label">一般</div>
+            <div class="momo-settings-section-label">常用設定</div>
             <div class="momo-settings-group">
               <button @click="showMobileTools = false; openServiceConfigModal()" class="momo-settings-row" type="button">
                 <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="6" cy="7" r="3"></circle><circle cx="6" cy="17" r="3"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M8.7 8.4 20 3M8.7 15.6 20 21M8.7 8.4 12 10"></path></svg></span>
-                <span class="momo-settings-copy"><span class="momo-settings-title">服務定價</span><span class="momo-settings-description">服務價格與預估時長</span></span>
+                <span class="momo-settings-copy"><span class="momo-settings-title">服務價目表</span><span class="momo-settings-description">價格、標準時間與同步計價</span></span>
+                <span class="momo-settings-value">{{ servicesConfig.length }} 項</span>
                 <span class="momo-settings-chevron" aria-hidden="true">›</span>
               </button>
+            </div>
+
+            <details class="momo-settings-advanced">
+              <summary class="momo-settings-advanced-summary">
+                <span class="momo-settings-copy"><span class="momo-settings-title">進階設定</span><span class="momo-settings-description">雲端帳號、資料匯出與 App</span></span>
+                <span class="momo-settings-chevron" aria-hidden="true">›</span>
+              </summary>
+              <div class="momo-settings-advanced-body">
+                <div class="momo-settings-group">
 
               <details class="momo-settings-details">
                 <summary class="momo-settings-row">
@@ -266,7 +291,9 @@
                   <p v-else class="momo-settings-account-text">目前已使用主畫面 App 模式。</p>
                 </div>
               </details>
-            </div>
+                </div>
+              </div>
+            </details>
           </div>
         </section>
       </div>
@@ -3605,51 +3632,55 @@
 
     <!-- Service Config Modal - Extracted out of nav to fix iOS Safari bounding-box position:fixed context issue -->
     <transition name="fade">
-      <div v-if="showServiceConfigModal" class="momo-dialog-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click="closeServiceConfigModal">
-        <div class="momo-dialog momo-dialog--lg ios-sheet bg-white rounded-4xl max-w-xl w-full max-h-[85vh] flex flex-col macaron-shadow-lg border border-orange-100 overflow-hidden" @click.stop>
+      <div v-if="showServiceConfigModal" class="momo-dialog-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-sm" @click="closeServiceConfigModal">
+        <div class="momo-dialog momo-dialog--lg momo-form-dialog service-config-dialog ios-sheet bg-white max-w-xl w-full flex flex-col macaron-shadow-lg border border-orange-100 overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="service-config-title" @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
 
-          <!-- Modal Header -->
-          <div class="momo-dialog-header p-6 border-b border-orange-100 flex items-center justify-between bg-gradient-to-r from-orange-50/50 to-white">
+          <div class="momo-dialog-header service-config-header p-6 border-b border-orange-100 flex items-center justify-between">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
-                <h3 class="text-base font-black text-slate-800">服務項目與價格對照設定</h3>
-                <span v-if="serviceConfigHasChanges" class="momo-dialog-draft-badge">尚未儲存</span>
+                <h3 id="service-config-title" class="text-base font-black text-slate-800">服務價目表</h3>
+                <span class="service-config-state-badge" :class="serviceConfigHasChanges ? 'is-dirty' : 'is-saved'" aria-live="polite">
+                  {{ serviceConfigHasChanges ? '尚未儲存' : '已儲存' }}
+                </span>
               </div>
-              <p class="text-[10px] text-slate-400 font-semibold mt-1">此設定將影響自動定價、預估時長與時間產值分析</p>
+              <p class="momo-dialog-subtitle">{{ tempServicesConfig.length }} 項服務 · 影響同步計價與時間產值</p>
             </div>
-            <button @click="closeServiceConfigModal" class="momo-dialog-close" aria-label="關閉服務定價"><span aria-hidden="true">×</span></button>
+            <button type="button" @click="closeServiceConfigModal" class="momo-dialog-close" aria-label="關閉服務價目表"><span aria-hidden="true">×</span></button>
           </div>
 
-          <!-- Modal Body (Scrollable) -->
-          <div class="momo-dialog-body p-6 overflow-y-auto space-y-4 flex-grow max-h-[50vh]">
+          <div class="momo-dialog-body service-config-body overflow-y-auto">
+            <div class="service-config-toolbar">
+              <label class="service-config-search">
+                <span class="sr-only">搜尋服務項目</span>
+                <input type="search" v-model.trim="serviceConfigSearchQuery" placeholder="搜尋服務項目" autocomplete="off" aria-label="搜尋服務項目">
+              </label>
+              <button type="button" @click="addTempService" class="service-config-add-button">新增服務</button>
+            </div>
 
-            <div class="overflow-x-auto rounded-3xl border border-orange-100/50">
-              <table class="w-full text-left border-collapse">
+            <div v-if="filteredTempServicesConfigRows.length" class="service-config-table-shell">
+              <table class="service-config-table w-full text-left border-collapse">
                 <thead>
-                  <tr class="bg-orange-50/40 text-slate-500 text-[10px] font-black border-b border-orange-100">
-                    <th class="py-2.5 px-3">服務項目名稱</th>
-                    <th class="py-2.5 px-2 w-[100px] text-center">時長 (分鐘)</th>
-                    <th class="py-2.5 px-2 w-[110px] text-center">定價 (NT$)</th>
-                    <th class="py-2.5 px-3 w-[50px] text-center">操作</th>
+                  <tr>
+                    <th>服務項目</th>
+                    <th>定價 (NT$)</th>
+                    <th>標準時間</th>
+                    <th><span class="sr-only">操作</span></th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-orange-50 text-xs font-semibold text-slate-700">
-                  <tr v-for="(s, index) in tempServicesConfig" :key="index" class="hover:bg-orange-50/20">
-                    <td class="py-1.5 px-2">
-                      <input type="text" v-model="s.name" placeholder="如: 洗+剪"
-                             class="w-full bg-transparent border-0 focus:bg-white focus:ring-1 focus:ring-macaron-peach-300 rounded px-2 py-1 text-xs font-bold text-slate-700">
+                <tbody>
+                  <tr v-for="row in filteredTempServicesConfigRows" :key="row.index">
+                    <td data-label="服務項目">
+                      <input type="text" v-model="row.service.name" placeholder="例如：洗+剪" autocomplete="off" aria-label="服務項目名稱">
                     </td>
-                    <td class="py-1.5 px-1">
-                      <input type="number" v-model.number="s.duration" min="0" placeholder="分"
-                             class="w-full bg-transparent border-0 focus:bg-white focus:ring-1 focus:ring-macaron-peach-300 rounded px-2 py-1 text-xs font-bold text-slate-800 text-center">
+                    <td data-label="定價 (NT$)">
+                      <input type="number" v-model.number="row.service.price" min="0" inputmode="decimal" placeholder="價格" aria-label="定價">
                     </td>
-                    <td class="py-1.5 px-1">
-                      <input type="number" v-model.number="s.price" min="0" placeholder="價格"
-                             class="w-full bg-transparent border-0 focus:bg-white focus:ring-1 focus:ring-macaron-peach-300 rounded px-2 py-1 text-xs font-black text-slate-800 text-right">
+                    <td data-label="標準時間 (分鐘)">
+                      <input type="number" v-model.number="row.service.duration" min="0" inputmode="numeric" placeholder="分鐘" aria-label="標準時間（分鐘）">
                     </td>
-                    <td class="py-1.5 px-3 text-center">
-                      <button @click="removeTempService(index)" class="text-rose-400 hover:text-rose-600 p-1 rounded-full hover:bg-rose-50 transition-colors">
+                    <td data-label="操作">
+                      <button type="button" @click="removeTempService(row.index)" class="service-config-remove-button" :aria-label="'刪除 ' + (row.service.name || '未命名服務')">
                         刪除
                       </button>
                     </td>
@@ -3657,25 +3688,26 @@
                 </tbody>
               </table>
             </div>
+            <div v-else class="service-config-empty">找不到符合的服務項目</div>
 
-            <!-- Add New Item Row Button -->
-            <button @click="addTempService" class="w-full py-2 rounded-2xl border-2 border-dashed border-macaron-peach-200 text-macaron-peach-500 hover:bg-orange-50/50 font-black text-[11px] transition-all flex items-center justify-center gap-1.5">
-              新增自訂服務項目
-            </button>
-
+            <details class="service-config-advanced">
+              <summary><span>進階操作</span><span class="service-config-advanced-hint">重設系統預設值</span></summary>
+              <div class="service-config-advanced-body">
+                <button type="button" @click="resetServicesConfigToDefault">重設為系統預設價目</button>
+              </div>
+            </details>
           </div>
 
-          <!-- Modal Footer -->
-          <div class="momo-dialog-footer ios-action-bar p-6 border-t border-orange-100 bg-orange-50/20 flex items-center justify-between">
-            <button @click="resetServicesConfigToDefault" class="text-[10px] font-bold text-slate-400 hover:text-rose-500 transition-colors">
-              重設預設值
-            </button>
-            <div class="flex items-center gap-2">
-              <button @click="closeServiceConfigModal" class="ios-secondary-action px-4 py-2 rounded-xl border border-orange-200 bg-white hover:bg-orange-50/50 text-slate-600 text-xs font-bold transition-all">
-                取消
+          <div class="momo-dialog-footer service-config-footer ios-action-bar border-t">
+            <div class="service-config-save-status" :class="serviceConfigHasChanges ? 'is-dirty' : 'is-saved'" aria-live="polite">
+              {{ serviceConfigHasChanges ? '有尚未儲存的修改' : '目前設定已儲存' }}
+            </div>
+            <div class="service-config-footer-actions">
+              <button type="button" @click="closeServiceConfigModal" class="ios-secondary-action">
+                關閉
               </button>
-              <button @click="saveServicesConfig" class="ios-primary-action px-5 py-2 rounded-xl bg-slate-900 text-white text-xs font-black shadow-md transition-all">
-                儲存定價設定
+              <button type="button" @click="saveServicesConfig" :disabled="!serviceConfigHasChanges" class="ios-primary-action service-config-save-button">
+                {{ serviceConfigHasChanges ? '儲存變更' : '已儲存' }}
               </button>
             </div>
           </div>
@@ -3687,9 +3719,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.13-daily-forms-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.13-settings-pricing-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.13-daily-forms-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.13-settings-pricing-1"></script>
 </body>
 </html>
