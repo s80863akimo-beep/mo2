@@ -1500,6 +1500,75 @@
       background: var(--momo-surface-muted) !important;
     }
 
+    body.momo-polish .orders-day-heading {
+      flex-wrap: wrap;
+      row-gap: 0.35rem;
+    }
+
+    body.momo-polish .orders-day-chevron {
+      width: 12px;
+      flex: 0 0 12px;
+      text-align: center;
+    }
+
+    body.momo-polish .orders-date-badge,
+    body.momo-polish .orders-weekday-badge,
+    body.momo-polish .orders-lock-badge,
+    body.momo-polish .orders-exclusion-badge {
+      display: inline-flex;
+      min-height: 26px;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      border: 1px solid;
+      border-radius: 6px;
+      padding: 0 0.5rem;
+      font-size: 0.625rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    }
+
+    body.momo-polish .orders-date-badge {
+      border-color: #D8DEE6;
+      background: #F7F9FB;
+      color: #475569;
+      font-variant-numeric: tabular-nums;
+    }
+
+    body.momo-polish .orders-weekday-badge.is-weekday {
+      border-color: #BCDDE2;
+      background: #F0F8F9;
+      color: #1F747B;
+    }
+
+    body.momo-polish .orders-weekday-badge.is-weekend {
+      border-color: #F3C7C0;
+      background: #FFF5F3;
+      color: #C4554C;
+    }
+
+    body.momo-polish .orders-lock-badge {
+      border-color: #EED28F;
+      background: #FFF9E9;
+      color: #8A6509;
+    }
+
+    body.momo-polish .orders-status-icon {
+      width: 12px;
+      height: 12px;
+      flex: 0 0 12px;
+    }
+
+    body.momo-polish .orders-day-total {
+      color: #D7674E !important;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
     body.momo-polish .orders-table-shell {
       border-color: var(--momo-line) !important;
       border-radius: 8px !important;
@@ -1587,6 +1656,114 @@
       border-color: #F4D18B;
       background: #FFF8E7;
       color: #946200;
+    }
+
+    body.momo-polish .orders-payment-badge {
+      display: inline-flex;
+      min-height: 26px;
+      max-width: 100%;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0 0.5rem;
+      border: 1px solid;
+      border-radius: 6px;
+      font-size: 0.625rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    }
+
+    body.momo-polish .orders-payment-icon {
+      width: 13px;
+      height: 13px;
+      flex: 0 0 13px;
+    }
+
+    body.momo-polish .orders-payment-badge.is-cash {
+      border-color: #BFDCCB;
+      background: #F1F8F4;
+      color: #347052;
+    }
+
+    body.momo-polish .orders-payment-badge.is-transfer {
+      border-color: #C9D5ED;
+      background: #F3F6FC;
+      color: #4A6292;
+    }
+
+    body.momo-polish .orders-payment-badge.is-prepaid {
+      border-color: #B9DDE1;
+      background: #EFF8F9;
+      color: #23747B;
+    }
+
+    body.momo-polish .orders-payment-badge.is-mixed {
+      border-color: #EAD09C;
+      background: #FFF8EA;
+      color: #8A650F;
+    }
+
+    body.momo-polish .orders-payment-badge.is-topup {
+      border-color: #DECBE6;
+      background: #FAF5FC;
+      color: #82558D;
+    }
+
+    body.momo-polish .orders-payment-badge.is-other {
+      border-color: #D8DEE6;
+      background: #F7F9FB;
+      color: #64748B;
+    }
+
+    body.momo-polish .orders-payment-channel {
+      margin-left: 0.05rem;
+      padding-left: 0.35rem;
+      border-left: 1px solid currentColor;
+      opacity: 0.72;
+    }
+
+    body.momo-polish .orders-exclusion-badge {
+      min-height: 24px;
+      border-color: #DECBE6;
+      background: #FAF5FC;
+      color: #82558D;
+    }
+
+    body.momo-polish .orders-payment-breakdown {
+      display: inline-flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.2rem;
+      color: #7C651E;
+      font-size: 0.625rem;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .orders-payment-breakdown > span {
+      display: inline-flex;
+      min-height: 24px;
+      align-items: center;
+      gap: 0.2rem;
+      padding: 0 0.4rem;
+      border: 1px solid #E8D9AF;
+      border-radius: 6px;
+      background: #FFFBF0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    body.momo-polish .orders-payment-breakdown b {
+      color: #A07617;
+      font-weight: 900;
+    }
+
+    body.momo-polish .orders-mobile-payment-note {
+      display: flex;
+      justify-content: flex-end;
     }
 
     body.momo-polish .orders-mobile-titleline > div:first-child {
@@ -1714,6 +1891,22 @@
       body.momo-polish .orders-day-header {
         min-height: 50px !important;
         padding: 0.625rem 0.75rem 0.625rem 0.875rem !important;
+        gap: 0.5rem;
+      }
+
+      body.momo-polish .orders-day-heading {
+        gap: 0.35rem !important;
+      }
+
+      body.momo-polish .orders-date-badge,
+      body.momo-polish .orders-weekday-badge,
+      body.momo-polish .orders-lock-badge {
+        min-height: 25px;
+        padding: 0 0.4rem;
+      }
+
+      body.momo-polish .orders-day-totals {
+        gap: 0.35rem !important;
       }
 
       body.momo-polish .orders-mobile-button {
@@ -1725,6 +1918,32 @@
         min-height: 25px;
         gap: 0.3rem;
         padding: 0 0.45rem;
+      }
+
+      body.momo-polish .orders-payment-badge {
+        min-height: 24px;
+        gap: 0.3rem;
+        padding: 0 0.4rem;
+      }
+
+      body.momo-polish .orders-payment-breakdown {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        white-space: normal;
+      }
+    }
+
+    @media (max-width: 360px) {
+      body.momo-polish .orders-day-count {
+        display: none;
+      }
+
+      body.momo-polish .orders-day-header {
+        align-items: flex-start !important;
+      }
+
+      body.momo-polish .orders-day-totals {
+        padding-top: 0.3rem;
       }
     }
 

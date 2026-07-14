@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.14-order-category-tags-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.14-order-status-tags-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.14-order-category-tags-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.14-order-status-tags-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -1213,6 +1213,33 @@
               <symbol id="orders-category-correction" viewBox="0 0 24 24">
                 <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path>
               </symbol>
+              <symbol id="orders-status-calendar" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path>
+              </symbol>
+              <symbol id="orders-status-lock" viewBox="0 0 24 24">
+                <rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </symbol>
+              <symbol id="orders-status-excluded" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"></circle><path d="M8 12h8"></path>
+              </symbol>
+              <symbol id="orders-payment-cash" viewBox="0 0 24 24">
+                <rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 10h.01"></path><path d="M18 14h.01"></path>
+              </symbol>
+              <symbol id="orders-payment-transfer" viewBox="0 0 24 24">
+                <path d="m3 9 9-6 9 6"></path><path d="M5 10v8"></path><path d="M9 10v8"></path><path d="M15 10v8"></path><path d="M19 10v8"></path><path d="M3 18h18"></path><path d="M2 22h20"></path>
+              </symbol>
+              <symbol id="orders-payment-prepaid" viewBox="0 0 24 24">
+                <path d="M20 7V5a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v12H5a3 3 0 0 1-3-3V6"></path><path d="M16 13h2"></path>
+              </symbol>
+              <symbol id="orders-payment-mixed" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="3"></rect><path d="M12 3v18"></path><path d="m8 8-2 2 2 2"></path><path d="m16 16 2-2-2-2"></path>
+              </symbol>
+              <symbol id="orders-payment-topup" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path>
+              </symbol>
+              <symbol id="orders-payment-other" viewBox="0 0 24 24">
+                <path d="M4 2v20l2-2 2 2 2-2 2 2 2-2 2 2 2-2 2 2V2l-2 2-2-2-2 2-2-2-2 2-2-2-2 2z"></path><path d="M8 9h8"></path><path d="M8 13h6"></path>
+              </symbol>
             </defs>
           </svg>
 
@@ -1460,18 +1487,24 @@
                 <button type="button" @click="toggleOrderDate(group.date)"
                      class="orders-day-header w-full flex items-center justify-between rounded-2xl px-3 sm:px-4 py-2.5 border border-orange-100/35 transition-all text-left"
                      :style="getDayHeatStyle(group.dayTotal)">
-                  <div class="flex items-center gap-2 min-w-0">
-                    <span class="text-slate-400 font-black transition-transform" :class="{ '-rotate-90': collapsedOrderDates[group.date] }">⌄</span>
-                    <span class="text-sm font-black text-slate-700">{{ group.date }}</span>
-                    <span class="text-xs font-bold px-2 py-0.5 rounded-full"
-                          :class="group.weekday === '週六' || group.weekday === '週日' ? 'bg-macaron-rose/20 text-rose-600' : 'bg-macaron-sky/30 text-sky-700'">
+                  <div class="orders-day-heading flex items-center gap-2 min-w-0">
+                    <span class="orders-day-chevron text-slate-400 font-black transition-transform" :class="{ '-rotate-90': collapsedOrderDates[group.date] }">⌄</span>
+                    <span class="orders-date-badge">
+                      <svg class="orders-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#orders-status-calendar"></use></svg>
+                      <span>{{ group.date }}</span>
+                    </span>
+                    <span class="orders-weekday-badge"
+                          :class="group.weekday === '週六' || group.weekday === '週日' ? 'is-weekend' : 'is-weekday'">
                       {{ group.weekday }}
                     </span>
-                    <span v-if="isDateLocked(group.date)" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">已鎖帳</span>
+                    <span v-if="isDateLocked(group.date)" class="orders-lock-badge">
+                      <svg class="orders-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#orders-status-lock"></use></svg>
+                      <span>已鎖帳</span>
+                    </span>
                   </div>
-                  <div class="flex items-center gap-2 shrink-0">
-                    <span class="text-[10px] font-bold text-slate-400">{{ group.orders.length }} 筆</span>
-                    <span class="text-sm font-black text-macaron-peach-500">
+                  <div class="orders-day-totals flex items-center gap-2 shrink-0">
+                    <span class="orders-day-count text-[10px] font-bold text-slate-400">{{ group.orders.length }} 筆</span>
+                    <span class="orders-day-total text-sm font-black text-macaron-peach-500">
                       NT$ {{ formatNumber(group.dayTotal) }}
                     </span>
                   </div>
@@ -1507,13 +1540,23 @@
                                 <span>更正單</span>
                               </span>
                               <span class="orders-service-name">{{ order.serviceName }}</span>
-                              <span v-if="order.paymentMethod === '儲值進帳'" class="text-[9px] font-black text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-md">不列入營業額</span>
-                              <span v-if="order.paymentMethod === '現金＋儲值扣款'" class="text-[9px] font-black text-amber-700">現 {{ formatNumber(getMixedCashAmount(order)) }}／儲 {{ formatNumber(getMixedPrepaidAmount(order)) }}</span>
+                              <span v-if="order.paymentMethod === '儲值進帳'" class="orders-exclusion-badge" title="儲值進帳不列入服務營業額">
+                                <svg class="orders-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#orders-status-excluded"></use></svg>
+                                <span>不列營收</span>
+                              </span>
+                              <span v-if="order.paymentMethod === '現金＋儲值扣款'" class="orders-payment-breakdown" :title="'現金 NT$ ' + formatNumber(getMixedCashAmount(order)) + '／儲值扣款 NT$ ' + formatNumber(getMixedPrepaidAmount(order))">
+                                <span><b>現</b>{{ formatNumber(getMixedCashAmount(order)) }}</span>
+                                <span><b>儲</b>{{ formatNumber(getMixedPrepaidAmount(order)) }}</span>
+                              </span>
                             </div>
                           </td>
                           <td class="py-3 px-3 text-right font-black">NT$ {{ formatNumber(order.amount) }}</td>
                           <td class="py-3 px-3">
-                            <span class="inline-flex items-center text-xs font-black px-2 py-1 rounded-lg" :class="paymentBadgeClass(order.paymentMethod)">{{ order.paymentMethod }}<template v-if="order.paymentMethod === '儲值進帳'"> · {{ getTopupChannel(order) }}</template></span>
+                            <span class="orders-payment-badge" :class="'is-' + getPaymentInfo(order.paymentMethod).key" :title="'付款方式：' + order.paymentMethod">
+                              <svg class="orders-payment-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#orders-payment-' + getPaymentInfo(order.paymentMethod).key"></use></svg>
+                              <span>{{ getPaymentInfo(order.paymentMethod).label }}</span>
+                              <span v-if="order.paymentMethod === '儲值進帳'" class="orders-payment-channel">{{ getTopupChannel(order) }}</span>
+                            </span>
                           </td>
                           <td class="py-3 px-2 text-center text-slate-300">
                             <svg class="w-4 h-4 mx-auto transition-transform" :class="{ 'rotate-180': expandedOrderId === order.id }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
@@ -1573,11 +1616,25 @@
                         </div>
                         <div class="shrink-0 text-right">
                           <div class="text-sm font-black text-slate-800 tabular-nums">NT$ {{ formatNumber(order.amount) }}</div>
-                          <span class="mt-0.5 inline-flex items-center text-[9px] font-black px-1.5 py-0.5 rounded-md" :class="paymentBadgeClass(order.paymentMethod)">{{ order.paymentMethod }}<template v-if="order.paymentMethod === '儲值進帳'"> · {{ getTopupChannel(order) }}</template></span>
+                          <span class="orders-payment-badge mt-1" :class="'is-' + getPaymentInfo(order.paymentMethod).key" :title="'付款方式：' + order.paymentMethod">
+                            <svg class="orders-payment-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#orders-payment-' + getPaymentInfo(order.paymentMethod).key"></use></svg>
+                            <span>{{ getPaymentInfo(order.paymentMethod).label }}</span>
+                            <span v-if="order.paymentMethod === '儲值進帳'" class="orders-payment-channel">{{ getTopupChannel(order) }}</span>
+                          </span>
                         </div>
                       </div>
-                      <div v-if="order.paymentMethod === '儲值進帳'" class="mt-1.5 text-[9px] font-black text-purple-600">不列入營業額</div>
-                      <div v-if="order.paymentMethod === '現金＋儲值扣款'" class="mt-1.5 text-[10px] font-black text-amber-700">現金 NT$ {{ formatNumber(getMixedCashAmount(order)) }} · 儲值扣款 NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</div>
+                      <div v-if="order.paymentMethod === '儲值進帳'" class="orders-mobile-payment-note mt-2">
+                        <span class="orders-exclusion-badge" title="儲值進帳不列入服務營業額">
+                          <svg class="orders-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#orders-status-excluded"></use></svg>
+                          <span>不列營收</span>
+                        </span>
+                      </div>
+                      <div v-if="order.paymentMethod === '現金＋儲值扣款'" class="orders-mobile-payment-note mt-2">
+                        <span class="orders-payment-breakdown">
+                          <span><b>現金</b>NT$ {{ formatNumber(getMixedCashAmount(order)) }}</span>
+                          <span><b>儲值</b>NT$ {{ formatNumber(getMixedPrepaidAmount(order)) }}</span>
+                        </span>
+                      </div>
                     </button>
                     <div v-if="expandedOrderId === order.id" class="orders-mobile-editor p-3.5 pt-0 border-t border-slate-100 bg-slate-50/60 space-y-3">
                       <div class="grid grid-cols-3 gap-2 pt-3">
@@ -3873,9 +3930,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.14-order-category-tags-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.14-order-status-tags-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.14-order-category-tags-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.14-order-status-tags-1"></script>
 </body>
 </html>

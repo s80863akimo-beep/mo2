@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v99-order-category-tags';
-const APP_VERSION = '2026.07.14-order-category-tags-1';
+const CACHE_NAME = 'momohair-shell-v100-order-status-tags';
+const APP_VERSION = '2026.07.14-order-status-tags-1';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,

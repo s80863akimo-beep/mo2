@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.14-order-category-tags-1';
+    const APP_VERSION = '2026.07.14-order-status-tags-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -5752,6 +5752,18 @@
           return map[cat] || map['洗護其他'];
         },
 
+        // 付款標籤只負責顯示，原始付款方式仍保留給對帳與計價邏輯使用。
+        getPaymentInfo(method) {
+          const map = {
+            '現金': { key: 'cash', label: '現金' },
+            '轉帳': { key: 'transfer', label: '轉帳' },
+            '儲值扣款': { key: 'prepaid', label: '儲值扣款' },
+            '現金＋儲值扣款': { key: 'mixed', label: '混合付款' },
+            '儲值進帳': { key: 'topup', label: '儲值進帳' }
+          };
+          return map[method] || { key: 'other', label: method || '未分類' };
+        },
+
         // 服務名稱分類（同步資料有 category 欄位，手動新增的用此方法補充）
         classifyCategory(serviceName) {
           if (!serviceName) return '洗護其他';
@@ -9005,16 +9017,6 @@
         },
         ledgerKindLabel(kind) {
           return ({ topup: '儲值進帳', debit: '服務扣款', adjustment: '帳務調整', reversal: '沖銷' })[kind] || '帳務異動';
-        },
-        paymentBadgeClass(method) {
-          switch (method) {
-            case '現金': return 'bg-emerald-50 text-emerald-700';
-            case '轉帳': return 'bg-indigo-50 text-indigo-700';
-            case '儲值扣款': return 'bg-sky-50 text-sky-700';
-            case '現金＋儲值扣款': return 'bg-amber-50 text-amber-700';
-            case '儲值進帳': return 'bg-purple-50 text-purple-700';
-            default: return 'bg-slate-50 text-slate-600';
-          }
         },
         getRankBg(idx) {
           switch (idx) {
