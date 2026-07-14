@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.14-risk-dialogs-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.14-order-category-tags-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.14-risk-dialogs-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.14-order-category-tags-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -1196,6 +1196,25 @@
 
         <!-- Tab 2: Orders -->
         <div v-else-if="activeTab === 'orders'" key="orders" class="momo-orders-page momo-list-page space-y-6">
+          <svg class="absolute w-0 h-0 overflow-hidden" aria-hidden="true" focusable="false">
+            <defs>
+              <symbol id="orders-category-cut" viewBox="0 0 24 24">
+                <circle cx="6" cy="7" r="3"></circle><path d="M8.12 8.12 12 12"></path><path d="M20 4 8.12 15.88"></path><circle cx="6" cy="17" r="3"></circle><path d="m14.8 14.8 5.2 5.2"></path>
+              </symbol>
+              <symbol id="orders-category-perm" viewBox="0 0 24 24">
+                <path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5s2.5 2 5 2 2.5-2 5-2c1.3 0 1.9.5 2.5 1"></path><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2c1.3 0 1.9.5 2.5 1"></path><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2c1.3 0 1.9.5 2.5 1"></path>
+              </symbol>
+              <symbol id="orders-category-color" viewBox="0 0 24 24">
+                <path d="m9.06 11.9 8.07-8.07a2.85 2.85 0 1 1 4.04 4.03l-8.08 8.08"></path><path d="M7.07 14c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.5-2 2 1.08 1.1 2.49 2 4 2 2.76 0 5-2.24 5-5a2 2 0 0 0-2-2z"></path>
+              </symbol>
+              <symbol id="orders-category-care" viewBox="0 0 24 24">
+                <path d="M7 16.3c2.2 0 4-1.8 4-4 0-1.5-2-4.6-4-6.8-2 2.2-4 5.3-4 6.8 0 2.2 1.8 4 4 4z"></path><path d="M12.5 6.3c1.5-1.8 3-4 3-4s5.5 6.3 5.5 9.8a5.5 5.5 0 0 1-9.8 3.4"></path>
+              </symbol>
+              <symbol id="orders-category-correction" viewBox="0 0 24 24">
+                <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path>
+              </symbol>
+            </defs>
+          </svg>
 
           <!-- A. 當期業績摘要 -->
           <div class="momo-surface orders-summary-panel bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
@@ -1478,10 +1497,16 @@
                           <td class="py-3 px-3 font-extrabold">{{ order.customerName }}</td>
                           <td class="py-3 px-2 text-xs text-slate-400">{{ order.gender }}</td>
                           <td class="py-3 px-3">
-                            <div class="flex items-center gap-2">
-                              <span class="text-[10px] font-black px-1.5 py-0.5 rounded-lg shrink-0" :style="{ backgroundColor: getCategoryInfo(order).bg, color: getCategoryInfo(order).color }">{{ getCategoryInfo(order).label }}</span>
-                              <span v-if="isCorrectionSlip(order)" class="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-md shrink-0">更正單</span>
-                              <span>{{ order.serviceName }}</span>
+                            <div class="orders-service-line flex items-center gap-2">
+                              <span v-if="!isCorrectionSlip(order)" class="orders-category-badge" :class="'is-' + getCategoryInfo(order).key" :title="'服務分類：' + getCategoryInfo(order).label">
+                                <svg class="orders-category-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#orders-category-' + getCategoryInfo(order).key"></use></svg>
+                                <span>{{ getCategoryInfo(order).label }}</span>
+                              </span>
+                              <span v-else class="orders-category-badge is-correction" title="更正單">
+                                <svg class="orders-category-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#orders-category-correction"></use></svg>
+                                <span>更正單</span>
+                              </span>
+                              <span class="orders-service-name">{{ order.serviceName }}</span>
                               <span v-if="order.paymentMethod === '儲值進帳'" class="text-[9px] font-black text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-md">不列入營業額</span>
                               <span v-if="order.paymentMethod === '現金＋儲值扣款'" class="text-[9px] font-black text-amber-700">現 {{ formatNumber(getMixedCashAmount(order)) }}／儲 {{ formatNumber(getMixedPrepaidAmount(order)) }}</span>
                             </div>
@@ -1533,10 +1558,16 @@
                     <button type="button" @click="toggleOrderEditor(order.id)" class="orders-mobile-button w-full px-3 py-2.5 text-left">
                       <div class="flex items-center justify-between gap-3">
                         <div class="min-w-0">
-                          <div class="flex items-center gap-1.5 min-w-0">
+                          <div class="orders-mobile-titleline flex items-center gap-1.5 min-w-0">
                             <div class="text-sm font-black text-slate-800 truncate">{{ order.customerName }}</div>
-                            <span class="text-[9px] font-black px-1.5 py-0.5 rounded-md shrink-0" :style="{ backgroundColor: getCategoryInfo(order).bg, color: getCategoryInfo(order).color }">{{ getCategoryInfo(order).label }}</span>
-                            <span v-if="isCorrectionSlip(order)" class="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-md shrink-0">更正單</span>
+                            <span v-if="!isCorrectionSlip(order)" class="orders-category-badge" :class="'is-' + getCategoryInfo(order).key" :title="'服務分類：' + getCategoryInfo(order).label">
+                              <svg class="orders-category-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#orders-category-' + getCategoryInfo(order).key"></use></svg>
+                              <span>{{ getCategoryInfo(order).label }}</span>
+                            </span>
+                            <span v-else class="orders-category-badge is-correction" title="更正單">
+                              <svg class="orders-category-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#orders-category-correction"></use></svg>
+                              <span>更正單</span>
+                            </span>
                           </div>
                           <div class="mt-0.5 text-[11px] font-semibold text-slate-400 truncate">{{ order.serviceName }}</div>
                         </div>
@@ -3842,9 +3873,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.14-risk-dialogs-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.14-order-category-tags-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.14-risk-dialogs-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.14-order-category-tags-1"></script>
 </body>
 </html>

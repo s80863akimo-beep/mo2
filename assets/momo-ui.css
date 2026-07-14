@@ -1521,6 +1521,78 @@
       background: #FAFBFC !important;
     }
 
+    body.momo-polish .orders-service-line {
+      min-width: 0;
+      flex-wrap: wrap;
+      row-gap: 0.35rem;
+    }
+
+    body.momo-polish .orders-service-name {
+      min-width: 0;
+      color: #334155;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    body.momo-polish .orders-category-badge {
+      display: inline-flex;
+      min-width: 0;
+      min-height: 26px;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0 0.55rem;
+      border: 1px solid;
+      border-radius: 6px;
+      font-size: 0.625rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    }
+
+    body.momo-polish .orders-category-icon {
+      width: 13px;
+      height: 13px;
+      flex: 0 0 13px;
+    }
+
+    body.momo-polish .orders-category-badge.is-cut {
+      border-color: #F4C7C2;
+      background: #FFF6F4;
+      color: #C95148;
+    }
+
+    body.momo-polish .orders-category-badge.is-perm {
+      border-color: #B9DEDF;
+      background: #EFF8F8;
+      color: #187B81;
+    }
+
+    body.momo-polish .orders-category-badge.is-color {
+      border-color: #E3CDE9;
+      background: #FAF4FC;
+      color: #8B4F9A;
+    }
+
+    body.momo-polish .orders-category-badge.is-care {
+      border-color: #C9E1D2;
+      background: #F1F8F4;
+      color: #47765E;
+    }
+
+    body.momo-polish .orders-category-badge.is-correction {
+      border-color: #F4D18B;
+      background: #FFF8E7;
+      color: #946200;
+    }
+
+    body.momo-polish .orders-mobile-titleline > div:first-child {
+      min-width: 0;
+    }
+
     body.momo-polish .orders-ledger-table .orders-editor-row {
       background: var(--momo-surface-muted) !important;
     }
@@ -1647,6 +1719,12 @@
       body.momo-polish .orders-mobile-button {
         min-height: 66px !important;
         padding: 0.75rem !important;
+      }
+
+      body.momo-polish .orders-category-badge {
+        min-height: 25px;
+        gap: 0.3rem;
+        padding: 0 0.45rem;
       }
     }
 

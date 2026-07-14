@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.14-risk-dialogs-1';
+    const APP_VERSION = '2026.07.14-order-category-tags-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -5739,15 +5739,15 @@
             '--orders-day-strength': (0.4 + ratio * 0.6).toFixed(2)
           };
         },
-        // 取得訂單的類別顯示資訊（色標、簡稱）
+        // 取得訂單的類別顯示資訊。
         getCategoryInfo(order) {
           const cat = order.category || this.classifyCategory(order.serviceName);
           const map = {
-            '剪髮':    { label: '剪', color: '#E8635A', bg: '#FFF0EE' },
-            '燙髮':    { label: '燙', color: '#3AABB0', bg: '#E8F8F8' },
-            '染髮':    { label: '染', color: '#AA55EE', bg: '#F5E8FF' },
-            '洗護其他': { label: '護', color: '#E07040', bg: '#FFF0E8' },
-            '更正': { label: '更', color: '#B45309', bg: '#FEF3C7' }
+            '剪髮': { key: 'cut', label: '剪髮' },
+            '燙髮': { key: 'perm', label: '燙髮' },
+            '染髮': { key: 'color', label: '染髮' },
+            '洗護其他': { key: 'care', label: '洗護' },
+            '更正': { key: 'correction', label: '更正' }
           };
           return map[cat] || map['洗護其他'];
         },
