@@ -6305,4 +6305,852 @@
       }
     }
 
+    /* Risk dialogs: scan the impact first, then act on a specific item. */
+    body.momo-polish .sync-review-dialog,
+    body.momo-polish .cloud-restore-dialog {
+      max-height: min(90dvh, 820px);
+    }
+
+    body.momo-polish .sync-review-titleline,
+    body.momo-polish .cloud-restore-titleline {
+      display: flex;
+      min-width: 0;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    body.momo-polish .sync-review-status,
+    body.momo-polish .cloud-restore-risk-badge {
+      display: inline-flex;
+      min-height: 22px;
+      align-items: center;
+      padding: 0 0.5rem;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-size: 0.625rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .sync-review-status.is-error {
+      border-color: #FECDD3;
+      background: #FFF1F2;
+      color: #BE123C;
+    }
+
+    body.momo-polish .sync-review-status.is-warning {
+      border-color: #FDE68A;
+      background: #FFFBEB;
+      color: #A16207;
+    }
+
+    body.momo-polish .sync-review-status.is-ok {
+      border-color: #A7F3D0;
+      background: #ECFDF5;
+      color: #047857;
+    }
+
+    body.momo-polish .sync-review-overview {
+      display: grid;
+      flex: 0 0 auto;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-bottom: 1px solid #E2E8F0;
+      background: #F8FAFC;
+    }
+
+    body.momo-polish .sync-review-metric {
+      min-width: 0;
+      padding: 0.75rem 1rem;
+      border-right: 1px solid #E2E8F0;
+    }
+
+    body.momo-polish .sync-review-metric:last-child {
+      border-right: 0;
+    }
+
+    body.momo-polish .sync-review-metric span,
+    body.momo-polish .sync-review-metric strong {
+      display: block;
+      min-width: 0;
+    }
+
+    body.momo-polish .sync-review-metric span {
+      overflow: hidden;
+      color: #64748B;
+      font-size: 0.625rem;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .sync-review-metric strong {
+      margin-top: 0.15rem;
+      color: #172033;
+      font-size: 1.125rem;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    body.momo-polish .sync-review-metric.is-alert strong {
+      color: #E11D48;
+    }
+
+    body.momo-polish .sync-review-metric.is-warning strong {
+      color: #B45309;
+    }
+
+    body.momo-polish .sync-review-metric.is-pricing strong {
+      color: #C2410C;
+    }
+
+    body.momo-polish .sync-review-filterbar {
+      display: flex;
+      min-width: 0;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem 1.25rem;
+      border-bottom: 1px solid #E2E8F0;
+      background: #FFFFFF;
+    }
+
+    body.momo-polish .sync-review-filter-label {
+      flex: 0 0 auto;
+      color: #94A3B8;
+      font-size: 0.625rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .sync-review-filters {
+      display: flex;
+      min-width: 0;
+      flex: 1 1 auto;
+      gap: 0.375rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    body.momo-polish .sync-review-filters::-webkit-scrollbar {
+      display: none;
+    }
+
+    body.momo-polish .sync-review-filter {
+      display: inline-flex;
+      min-height: 34px;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0 0.7rem;
+      border: 1px solid #DCE3EA;
+      border-radius: 8px;
+      background: #FFFFFF;
+      color: #64748B;
+      font-size: 0.6875rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .sync-review-filter span {
+      color: #94A3B8;
+      font-variant-numeric: tabular-nums;
+    }
+
+    body.momo-polish .sync-review-filter.is-active {
+      border-color: #172033;
+      background: #172033;
+      color: #FFFFFF;
+    }
+
+    body.momo-polish .sync-review-filter.is-active span {
+      color: #CBD5E1;
+    }
+
+    body.momo-polish .sync-review-dialog .momo-dialog-body {
+      background: #F8FAFC;
+    }
+
+    body.momo-polish .sync-review-workbench {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #FED7AA;
+      background: #FFF7ED;
+    }
+
+    body.momo-polish .sync-review-section-head,
+    body.momo-polish .sync-review-workbench-row,
+    body.momo-polish .sync-review-item-layout {
+      display: flex;
+      min-width: 0;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    body.momo-polish .sync-review-workbench-list {
+      display: grid;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    body.momo-polish .sync-review-workbench-row {
+      align-items: center;
+      padding: 0.75rem;
+      border: 1px solid #FED7AA;
+      border-radius: 8px;
+      background: #FFFFFF;
+    }
+
+    body.momo-polish .sync-review-list {
+      display: grid;
+      gap: 0.625rem;
+      padding: 0.75rem 1.25rem 1rem;
+    }
+
+    body.momo-polish .sync-review-item {
+      position: relative;
+      min-width: 0;
+      padding: 0.875rem 1rem;
+      border: 1px solid #E2E8F0;
+      border-left-width: 3px;
+      border-radius: 8px;
+      background: #FFFFFF;
+    }
+
+    body.momo-polish .sync-review-item.is-error {
+      border-left-color: #F43F5E;
+    }
+
+    body.momo-polish .sync-review-item.is-warning {
+      border-left-color: #F59E0B;
+    }
+
+    body.momo-polish .sync-review-item-meta {
+      display: flex;
+      min-width: 0;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    body.momo-polish .sync-review-severity {
+      display: inline-flex;
+      min-height: 20px;
+      align-items: center;
+      padding: 0 0.45rem;
+      border-radius: 999px;
+      font-size: 0.5625rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .sync-review-message {
+      margin-top: 0.35rem;
+      color: #172033;
+      font-size: 0.8125rem;
+      font-weight: 900;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    body.momo-polish .sync-review-detail,
+    body.momo-polish .sync-review-unmatched {
+      margin-top: 0.3rem;
+      color: #64748B;
+      font-size: 0.625rem;
+      font-weight: 700;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    body.momo-polish .sync-review-unmatched {
+      color: #B45309;
+    }
+
+    body.momo-polish .sync-review-primary-action,
+    body.momo-polish .sync-review-secondary-action,
+    body.momo-polish .sync-review-retry,
+    body.momo-polish .sync-review-done {
+      display: inline-flex;
+      min-height: 38px;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      padding: 0 0.85rem;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-size: 0.6875rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .sync-review-primary-action,
+    body.momo-polish .sync-review-done {
+      border-color: #172033;
+      background: #172033;
+      color: #FFFFFF;
+    }
+
+    body.momo-polish .sync-review-secondary-action,
+    body.momo-polish .sync-review-retry {
+      border-color: #DCE3EA;
+      background: #FFFFFF;
+      color: #475569;
+    }
+
+    body.momo-polish .sync-review-secondary-action.is-backup {
+      border-color: #A7F3D0;
+      background: #ECFDF5;
+      color: #047857;
+    }
+
+    body.momo-polish .sync-review-empty {
+      padding: 3rem 1.25rem;
+      text-align: center;
+    }
+
+    body.momo-polish .sync-review-footer {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom));
+    }
+
+    body.momo-polish .sync-review-footer-count {
+      min-width: 0;
+      color: #94A3B8;
+      font-size: 0.625rem;
+      font-weight: 800;
+    }
+
+    body.momo-polish .sync-review-footer-count strong {
+      color: #475569;
+    }
+
+    body.momo-polish .sync-review-footer-actions {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 0.5rem;
+    }
+
+    body.momo-polish .sync-review-retry:disabled {
+      cursor: wait;
+      opacity: 0.45;
+    }
+
+    body.momo-polish .cloud-restore-body {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      background: #F8FAFC;
+    }
+
+    body.momo-polish .cloud-restore-guard {
+      display: grid;
+      min-width: 0;
+      grid-template-columns: minmax(0, 1fr) minmax(165px, 0.55fr);
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid #BAE6FD;
+      border-radius: 8px;
+      background: #F0F9FF;
+    }
+
+    body.momo-polish .cloud-restore-guard.is-error {
+      border-color: #FECDD3;
+      background: #FFF1F2;
+    }
+
+    body.momo-polish .cloud-restore-guard.is-warning {
+      border-color: #FDE68A;
+      background: #FFFBEB;
+    }
+
+    body.momo-polish .cloud-restore-guard.is-ok {
+      border-color: #A7F3D0;
+      background: #ECFDF5;
+    }
+
+    body.momo-polish .cloud-restore-eyebrow {
+      color: #64748B;
+      font-size: 0.625rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .cloud-restore-guard h4 {
+      margin: 0.25rem 0 0;
+      color: #172033;
+      font-size: 0.9375rem;
+      font-weight: 900;
+      line-height: 1.4;
+    }
+
+    body.momo-polish .cloud-restore-guard p {
+      margin: 0.35rem 0 0;
+      color: #64748B;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      line-height: 1.55;
+    }
+
+    body.momo-polish .cloud-restore-protection-note {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      justify-content: center;
+      padding-left: 1rem;
+      border-left: 1px solid rgba(100, 116, 139, 0.22);
+    }
+
+    body.momo-polish .cloud-restore-protection-note strong,
+    body.momo-polish .cloud-restore-protection-note span {
+      display: block;
+    }
+
+    body.momo-polish .cloud-restore-protection-note strong {
+      color: #334155;
+      font-size: 0.6875rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .cloud-restore-protection-note span {
+      margin-top: 0.2rem;
+      color: #64748B;
+      font-size: 0.625rem;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    body.momo-polish .cloud-restore-comparison {
+      display: grid;
+      min-width: 0;
+      grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr);
+      align-items: stretch;
+      border: 1px solid #DCE3EA;
+      border-radius: 8px;
+      background: #FFFFFF;
+      overflow: hidden;
+    }
+
+    body.momo-polish .cloud-restore-total {
+      min-width: 0;
+      padding: 0.875rem 1rem;
+    }
+
+    body.momo-polish .cloud-restore-total.is-backup {
+      text-align: right;
+    }
+
+    body.momo-polish .cloud-restore-total span,
+    body.momo-polish .cloud-restore-total strong {
+      display: block;
+    }
+
+    body.momo-polish .cloud-restore-total span {
+      color: #64748B;
+      font-size: 0.625rem;
+      font-weight: 800;
+    }
+
+    body.momo-polish .cloud-restore-total strong {
+      margin-top: 0.2rem;
+      color: #172033;
+      font-size: 1.25rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+
+    body.momo-polish .cloud-restore-direction {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid #E2E8F0;
+      border-left: 1px solid #E2E8F0;
+      background: #F8FAFC;
+      color: #94A3B8;
+    }
+
+    body.momo-polish .cloud-restore-direction span {
+      font-size: 0.5625rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .cloud-restore-direction strong {
+      margin-top: 0.05rem;
+      color: #64748B;
+      font-size: 0.95rem;
+      line-height: 1;
+    }
+
+    body.momo-polish .cloud-restore-warning-section,
+    body.momo-polish .cloud-restore-detail-section {
+      min-width: 0;
+    }
+
+    body.momo-polish .cloud-restore-section-title {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+      color: #475569;
+      font-size: 0.6875rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .cloud-restore-section-title strong {
+      color: #94A3B8;
+      font-size: 0.625rem;
+      font-weight: 800;
+    }
+
+    body.momo-polish .cloud-restore-warning-list,
+    body.momo-polish .cloud-restore-table {
+      min-width: 0;
+      border: 1px solid #DCE3EA;
+      border-radius: 8px;
+      background: #FFFFFF;
+      overflow: hidden;
+    }
+
+    body.momo-polish .cloud-restore-warning {
+      display: grid;
+      min-width: 0;
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 0.75rem;
+      align-items: start;
+      padding: 0.75rem;
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    body.momo-polish .cloud-restore-warning:last-child {
+      border-bottom: 0;
+    }
+
+    body.momo-polish .cloud-restore-warning > span {
+      display: inline-flex;
+      min-height: 22px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-size: 0.5625rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .cloud-restore-warning.is-error > span {
+      background: #FFF1F2;
+      color: #BE123C;
+    }
+
+    body.momo-polish .cloud-restore-warning.is-warning > span {
+      background: #FFFBEB;
+      color: #A16207;
+    }
+
+    body.momo-polish .cloud-restore-warning p {
+      margin: 0;
+      color: #475569;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    body.momo-polish .cloud-restore-table-head,
+    body.momo-polish .cloud-restore-table-row {
+      display: grid;
+      min-width: 0;
+      grid-template-columns: minmax(84px, 1.3fr) repeat(3, minmax(58px, 1fr));
+    }
+
+    body.momo-polish .cloud-restore-table-head {
+      background: #F8FAFC;
+      color: #94A3B8;
+      font-size: 0.625rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .cloud-restore-table-row {
+      border-top: 1px solid #E2E8F0;
+      color: #64748B;
+      font-size: 0.6875rem;
+      font-weight: 800;
+    }
+
+    body.momo-polish .cloud-restore-table-head > div,
+    body.momo-polish .cloud-restore-table-row > div {
+      min-width: 0;
+      padding: 0.625rem 0.75rem;
+      overflow: hidden;
+      text-align: right;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .cloud-restore-table-head > div:first-child,
+    body.momo-polish .cloud-restore-table-row > div:first-child {
+      color: #334155;
+      text-align: left;
+    }
+
+    body.momo-polish .cloud-restore-table-row > div:nth-child(3) {
+      color: #172033;
+      font-weight: 900;
+    }
+
+    body.momo-polish .cloud-restore-table-row .is-negative {
+      color: #E11D48;
+      font-weight: 900;
+    }
+
+    body.momo-polish .cloud-restore-table-row .is-positive {
+      color: #047857;
+      font-weight: 900;
+    }
+
+    body.momo-polish .cloud-restore-confirm {
+      min-width: 0;
+      padding: 0.875rem 1rem;
+      border: 1px solid #DCE3EA;
+      border-radius: 8px;
+      background: #FFFFFF;
+    }
+
+    body.momo-polish .cloud-restore-confirm.is-ready {
+      border-color: #6EE7B7;
+      background: #F0FDF4;
+    }
+
+    body.momo-polish .cloud-restore-confirm.is-blocked {
+      border-color: #FECDD3;
+      background: #FFF1F2;
+    }
+
+    body.momo-polish .cloud-restore-confirm-copy {
+      display: flex;
+      min-width: 0;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    body.momo-polish .cloud-restore-confirm-copy div > span,
+    body.momo-polish .cloud-restore-confirm-copy div > strong {
+      display: block;
+    }
+
+    body.momo-polish .cloud-restore-confirm-copy div > span {
+      color: #64748B;
+      font-size: 0.625rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .cloud-restore-confirm-copy div > strong {
+      margin-top: 0.15rem;
+      color: #172033;
+      font-size: 0.75rem;
+      font-weight: 900;
+      line-height: 1.45;
+    }
+
+    body.momo-polish .cloud-restore-confirm-state {
+      display: inline-flex;
+      min-height: 22px;
+      flex: 0 0 auto;
+      align-items: center;
+      padding: 0 0.5rem;
+      border-radius: 999px;
+      background: #F1F5F9;
+      color: #64748B;
+      font-size: 0.5625rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .cloud-restore-confirm.is-ready .cloud-restore-confirm-state {
+      background: #D1FAE5;
+      color: #047857;
+    }
+
+    body.momo-polish .cloud-restore-confirm-field {
+      display: block;
+      margin-top: 0.75rem;
+    }
+
+    body.momo-polish .cloud-restore-confirm-field > span {
+      display: block;
+      margin-bottom: 0.35rem;
+      color: #64748B;
+      font-size: 0.625rem;
+      font-weight: 800;
+    }
+
+    body.momo-polish .cloud-restore-confirm-field input {
+      width: 100%;
+      min-height: 46px;
+      padding: 0 0.875rem;
+      color: #172033;
+      font-size: 0.875rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .cloud-restore-blocked-copy {
+      margin: 0.6rem 0 0;
+      color: #BE123C;
+      font-size: 0.6875rem;
+      font-weight: 800;
+      line-height: 1.5;
+    }
+
+    body.momo-polish .cloud-restore-footer {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    body.momo-polish .cloud-restore-cancel,
+    body.momo-polish .cloud-restore-submit {
+      min-height: 54px;
+      border: 0;
+      background: #FFFFFF;
+      font-size: 0.8125rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .cloud-restore-cancel {
+      border-right: 1px solid #E2E8F0;
+      color: #64748B;
+    }
+
+    body.momo-polish .cloud-restore-submit {
+      background: #F8FAFC;
+      color: #94A3B8;
+    }
+
+    body.momo-polish .cloud-restore-submit.is-ready {
+      background: #D95F54;
+      color: #FFFFFF;
+    }
+
+    body.momo-polish .cloud-restore-submit.is-blocked {
+      background: #FFF1F2;
+      color: #BE123C;
+    }
+
+    @media (max-width: 639px) {
+      body.momo-polish .sync-review-overview {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      body.momo-polish .sync-review-metric:nth-child(2) {
+        border-right: 0;
+      }
+
+      body.momo-polish .sync-review-metric:nth-child(-n + 2) {
+        border-bottom: 1px solid #E2E8F0;
+      }
+
+      body.momo-polish .sync-review-filterbar {
+        padding: 0.55rem 1rem;
+      }
+
+      body.momo-polish .sync-review-filter-label {
+        display: none;
+      }
+
+      body.momo-polish .sync-review-workbench,
+      body.momo-polish .sync-review-list {
+        padding-right: 1rem;
+        padding-left: 1rem;
+      }
+
+      body.momo-polish .sync-review-section-head,
+      body.momo-polish .sync-review-workbench-row,
+      body.momo-polish .sync-review-item-layout {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      body.momo-polish .sync-review-primary-action,
+      body.momo-polish .sync-review-secondary-action {
+        width: 100%;
+      }
+
+      body.momo-polish .sync-review-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.45rem;
+        padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom));
+      }
+
+      body.momo-polish .sync-review-footer-count {
+        text-align: center;
+      }
+
+      body.momo-polish .sync-review-footer-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      body.momo-polish .sync-review-retry,
+      body.momo-polish .sync-review-done {
+        width: 100%;
+        min-height: 44px;
+      }
+
+      body.momo-polish .cloud-restore-body {
+        gap: 0.875rem;
+        padding: 0.875rem 1rem;
+      }
+
+      body.momo-polish .cloud-restore-guard {
+        display: block;
+        padding: 0.875rem;
+      }
+
+      body.momo-polish .cloud-restore-protection-note {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        padding-left: 0;
+        border-top: 1px solid rgba(100, 116, 139, 0.22);
+        border-left: 0;
+      }
+
+      body.momo-polish .cloud-restore-comparison {
+        grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr);
+      }
+
+      body.momo-polish .cloud-restore-total {
+        padding: 0.75rem;
+      }
+
+      body.momo-polish .cloud-restore-total strong {
+        font-size: 1.05rem;
+      }
+
+      body.momo-polish .cloud-restore-table-head,
+      body.momo-polish .cloud-restore-table-row {
+        grid-template-columns: minmax(70px, 1.25fr) repeat(3, minmax(48px, 1fr));
+        font-size: 0.625rem;
+      }
+
+      body.momo-polish .cloud-restore-table-head > div,
+      body.momo-polish .cloud-restore-table-row > div {
+        padding: 0.55rem 0.45rem;
+      }
+
+      body.momo-polish .cloud-restore-warning {
+        grid-template-columns: 52px minmax(0, 1fr);
+        gap: 0.6rem;
+        padding: 0.7rem;
+      }
+
+      body.momo-polish .cloud-restore-confirm {
+        padding: 0.8rem;
+      }
+    }
+
     [v-cloak] { display: none !important; }

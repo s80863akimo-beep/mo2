@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.14-safety-maintenance-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.14-risk-dialogs-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.14-safety-maintenance-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.14-risk-dialogs-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -340,81 +340,120 @@
     <!-- Sync Issue Inspection Modal -->
     <transition name="fade">
       <div v-if="showSyncIssueModal" class="momo-dialog-overlay fixed inset-0 z-[86] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click="showSyncIssueModal = false">
-        <div class="momo-dialog momo-dialog--xl ios-sheet w-full sm:max-w-3xl max-h-[86vh] bg-white rounded-t-3xl sm:rounded-3xl macaron-shadow-lg border border-amber-100 overflow-hidden flex flex-col" @click.stop>
+        <div class="momo-dialog momo-dialog--xl ios-sheet sync-review-dialog w-full sm:max-w-3xl max-h-[86vh] bg-white rounded-t-3xl sm:rounded-3xl macaron-shadow-lg border border-slate-200 overflow-hidden flex flex-col" @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
-          <div class="momo-dialog-header px-5 py-4 border-b border-amber-100 bg-amber-50/40 flex items-start justify-between gap-3">
+          <div class="momo-dialog-header sync-review-header px-5 py-4 flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <h3 class="text-base font-black text-slate-800">同步異常檢查</h3>
-              <p class="text-[10px] font-bold text-slate-500 mt-0.5">
-                {{ syncReport?.period || '尚未同步' }} · 異常 {{ syncIssueSummary.total }} 筆 · 價目未匹配 {{ priceMatchWorkbenchRows.length }} 項
+              <div class="sync-review-titleline">
+                <h3 class="text-base font-black text-slate-800">同步異常檢查</h3>
+                <span class="sync-review-status"
+                      :class="syncIssueSummary.errors ? 'is-error' : syncIssueSummary.total || priceMatchWorkbenchRows.length ? 'is-warning' : 'is-ok'">
+                  {{ syncIssueSummary.errors ? syncIssueSummary.errors + ' 筆錯誤' : syncIssueSummary.total || priceMatchWorkbenchRows.length ? '需要確認' : '同步正常' }}
+                </span>
+              </div>
+              <p class="momo-dialog-subtitle">
+                {{ syncReport?.period || '尚未同步' }}
+                <span v-if="syncReport?.syncedAt"> · {{ formatDateTime(syncReport.syncedAt) }}</span>
               </p>
             </div>
             <button @click="showSyncIssueModal = false" class="momo-dialog-close w-10 h-10 rounded-full bg-white text-slate-500 font-black" aria-label="關閉同步異常"><span aria-hidden="true">×</span></button>
           </div>
 
-          <div class="px-5 py-3 border-b border-amber-100 bg-white flex gap-2 overflow-x-auto">
-            <button v-for="filter in syncIssueFilters()" :key="'sync-filter-' + filter.key"
-                    @click="syncIssueFilter = filter.key"
-                    class="shrink-0 min-h-[34px] px-3 rounded-xl border text-[11px] font-black"
-                    :class="syncIssueFilter === filter.key ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200'">
-              {{ filter.label }} {{ filter.count }}
-            </button>
+          <div class="sync-review-overview" aria-label="同步異常摘要">
+            <div class="sync-review-metric" :class="syncIssueSummary.errors ? 'is-alert' : ''">
+              <span>錯誤</span>
+              <strong>{{ syncIssueSummary.errors }}</strong>
+            </div>
+            <div class="sync-review-metric" :class="syncIssueSummary.money ? 'is-alert' : ''">
+              <span>金額付款</span>
+              <strong>{{ syncIssueSummary.money }}</strong>
+            </div>
+            <div class="sync-review-metric" :class="syncIssueSummary.locked ? 'is-warning' : ''">
+              <span>鎖帳衝突</span>
+              <strong>{{ syncIssueSummary.locked }}</strong>
+            </div>
+            <div class="sync-review-metric" :class="priceMatchWorkbenchRows.length ? 'is-pricing' : ''">
+              <span>價目未匹配</span>
+              <strong>{{ priceMatchWorkbenchRows.length }}</strong>
+            </div>
+          </div>
+
+          <div class="sync-review-filterbar">
+            <span class="sync-review-filter-label">查看分類</span>
+            <div class="sync-review-filters" role="tablist" aria-label="同步異常分類">
+              <button v-for="filter in syncIssueFilters()" :key="'sync-filter-' + filter.key"
+                      @click="syncIssueFilter = filter.key"
+                      class="sync-review-filter"
+                      :class="syncIssueFilter === filter.key ? 'is-active' : ''"
+                      :aria-selected="syncIssueFilter === filter.key"
+                      role="tab">
+                {{ filter.label }} <span>{{ filter.count }}</span>
+              </button>
+            </div>
           </div>
 
           <div class="momo-dialog-body momo-dialog-list overflow-y-auto flex-1">
-            <div v-if="syncIssueFilter === 'pricing' && priceMatchWorkbenchRows.length" class="p-4 border-b border-orange-100 bg-orange-50/50">
-              <div class="flex items-center justify-between gap-3 mb-2">
-                <div>
-                  <div class="text-xs font-black text-orange-700">價目表未匹配工作台</div>
-                  <div class="text-[10px] font-bold text-orange-600 mt-0.5">加入後請補定價與標準時長，再重新同步確認。</div>
+            <section v-if="syncIssueFilter === 'pricing' && priceMatchWorkbenchRows.length" class="sync-review-workbench">
+              <div class="sync-review-section-head">
+                <div class="min-w-0">
+                  <div class="text-xs font-black text-slate-800">價目表未匹配工作台</div>
+                  <div class="text-[10px] font-bold text-slate-500 mt-0.5">先加入價目表並補齊定價、標準時長，再重新同步。</div>
                 </div>
-                <button @click="openServiceConfigModal()" class="min-h-[34px] px-3 rounded-xl bg-white border border-orange-100 text-orange-700 text-[11px] font-black">打開價目表</button>
+                <button @click="openServiceConfigModal()" class="sync-review-secondary-action">打開價目表</button>
               </div>
-              <div class="space-y-2">
-                <div v-for="row in priceMatchWorkbenchRows" :key="'modal-price-' + row.key" class="rounded-2xl bg-white border border-orange-100 px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="sync-review-workbench-list">
+                <div v-for="row in priceMatchWorkbenchRows" :key="'modal-price-' + row.key" class="sync-review-workbench-row">
                   <div class="min-w-0">
-                    <div class="text-xs font-black text-slate-800 truncate">{{ row.serviceName }}</div>
+                    <div class="text-xs font-black text-slate-800">{{ row.serviceName }}</div>
                     <div class="text-[10px] font-bold text-slate-400 mt-0.5">{{ row.count }} 筆 · 最近 {{ row.latestDate || '未記錄日期' }}</div>
                   </div>
-                  <button @click="addUnmatchedServiceToConfig(row)" class="min-h-[34px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black shrink-0">加入價目表</button>
+                  <button @click="addUnmatchedServiceToConfig(row)" class="sync-review-primary-action">加入價目表</button>
                 </div>
               </div>
-            </div>
+            </section>
 
-            <div v-if="!filteredSyncIssueItems.length" class="p-8 text-center text-sm font-bold text-slate-400">
-              {{ syncIssueItems.length ? '此分類目前沒有異常。' : '最近一次同步沒有逐筆異常。' }}
+            <div v-if="!filteredSyncIssueItems.length" class="sync-review-empty">
+              <div class="text-sm font-black text-slate-600">{{ syncIssueItems.length ? '此分類目前沒有異常' : '最近一次同步沒有逐筆異常' }}</div>
+              <p class="mt-1 text-[11px] font-bold text-slate-400">可切換其他分類，或重新同步取得最新結果。</p>
             </div>
-            <div v-else class="divide-y divide-slate-100">
-              <div v-for="issue in filteredSyncIssueItems" :key="issue.id" class="px-5 py-3">
-                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+            <div v-else class="sync-review-list">
+              <article v-for="issue in filteredSyncIssueItems" :key="issue.id"
+                       class="sync-review-item"
+                       :class="issue.severity === 'error' ? 'is-error' : 'is-warning'">
+                <div class="sync-review-item-layout">
                   <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="syncIssueSeverityClass(issue.severity)">
+                    <div class="sync-review-item-meta">
+                      <span class="sync-review-severity" :class="syncIssueSeverityClass(issue.severity)">
                         {{ issue.severity === 'error' ? '錯誤' : '提醒' }}
                       </span>
                       <span class="text-[10px] font-black text-slate-400">{{ syncIssueTypeLabel(issue.type) }}</span>
                       <span v-if="issue.date" class="text-[10px] font-bold text-slate-400">{{ issue.date }}</span>
                     </div>
-                    <div class="mt-1 text-sm font-black text-slate-800">{{ issue.message }}</div>
-                    <div class="mt-1 text-[10px] font-bold text-slate-400 leading-relaxed">
+                    <div class="sync-review-message">{{ issue.message }}</div>
+                    <div class="sync-review-detail">
                       <span v-if="issue.customerName">顧客：{{ issue.customerName }}</span>
                       <span v-if="issue.customerName && issue.serviceName"> · </span>
                       <span v-if="issue.serviceName">服務：{{ issue.serviceName }}</span>
                       <span v-if="issue.amount !== undefined"> · 金額 NT$ {{ formatNumber(issue.amount) }}</span>
                     </div>
-                    <div v-if="issue.unmatchedServices?.length" class="mt-1 text-[10px] font-bold text-amber-600">未匹配片段：{{ issue.unmatchedServices.join('、') }}</div>
+                    <div v-if="issue.unmatchedServices?.length" class="sync-review-unmatched">未匹配片段：{{ issue.unmatchedServices.join('、') }}</div>
                   </div>
-                  <button v-if="issue.type === 'unmatched_service_config'" @click="addUnmatchedServiceToConfig(issue)" class="min-h-[36px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black shrink-0">加入價目表</button>
-                  <button v-else-if="issue.orderId" @click="openOrderFromSyncIssue(issue)" class="min-h-[36px] px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-black shrink-0">查看訂單</button>
-                  <button v-else-if="isBackupIssueType(issue.type)" @click="handleBackupSyncIssue(issue)" class="min-h-[36px] px-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-black shrink-0">處理備份</button>
+                  <button v-if="issue.type === 'unmatched_service_config'" @click="addUnmatchedServiceToConfig(issue)" class="sync-review-primary-action">加入價目表</button>
+                  <button v-else-if="issue.orderId" @click="openOrderFromSyncIssue(issue)" class="sync-review-secondary-action">查看訂單</button>
+                  <button v-else-if="isBackupIssueType(issue.type)" @click="handleBackupSyncIssue(issue)" class="sync-review-secondary-action is-backup">處理備份</button>
                 </div>
-              </div>
+              </article>
             </div>
           </div>
 
-          <div class="momo-dialog-footer grid grid-cols-2 border-t border-amber-100 bg-white">
-            <button @click="retryCalendarSync" :disabled="syncing" class="min-h-[52px] text-amber-700 text-xs font-black border-r border-amber-100 disabled:opacity-50">{{ syncing ? '同步中…' : '重新同步' }}</button>
-            <button @click="showSyncIssueModal = false" class="min-h-[52px] text-slate-600 text-xs font-black">完成</button>
+          <div class="momo-dialog-footer sync-review-footer">
+            <div class="sync-review-footer-count">
+              目前顯示 <strong>{{ filteredSyncIssueItems.length }}</strong> 筆 · 全部 {{ syncIssueSummary.total }} 筆
+            </div>
+            <div class="sync-review-footer-actions">
+              <button @click="retryCalendarSync" :disabled="syncing" class="sync-review-retry">{{ syncing ? '同步中…' : '重新同步' }}</button>
+              <button @click="showSyncIssueModal = false" class="sync-review-done">完成</button>
+            </div>
           </div>
         </div>
       </div>
@@ -3540,80 +3579,126 @@
       <div v-if="showCloudRestoreModal"
            class="momo-dialog-overlay fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-3 sm:p-4 bg-slate-900/45 backdrop-blur-sm"
            @click="closeCloudRestoreModal">
-        <div class="momo-dialog momo-dialog--lg ios-sheet bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-2xl macaron-shadow-lg border border-sky-100 overflow-hidden"
+        <div class="momo-dialog momo-dialog--lg ios-sheet cloud-restore-dialog bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-2xl macaron-shadow-lg border border-slate-200 overflow-hidden"
              @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
-          <div class="momo-dialog-header p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between gap-3">
+          <div class="momo-dialog-header cloud-restore-header p-4 sm:p-5 flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2">
+              <div class="cloud-restore-titleline">
                 <h3 class="text-base sm:text-lg font-black text-slate-800">還原雲端備份</h3>
-                <span class="px-2 py-0.5 rounded-full text-[9px] font-black"
+                <span class="cloud-restore-risk-badge"
                       :class="cloudRestoreDraft?.preview?.riskTone === 'error' ? 'bg-rose-50 text-rose-700' : cloudRestoreDraft?.preview?.riskTone === 'warn' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'">
                   {{ cloudRestoreDraft?.preview?.riskLabel || '差異預覽' }}
                 </span>
               </div>
-              <p class="mt-1 text-[11px] font-bold text-slate-400">
+              <p class="momo-dialog-subtitle">
                 {{ cloudRestoreDraft?.backup?.backupDate || '讀取中' }} · schema v{{ cloudRestoreDraft?.backup?.schemaVersion || dataSchemaVersion }} · {{ cloudRestoreDraft?.backup?.totalRecords || 0 }} 筆
               </p>
             </div>
             <button @click="closeCloudRestoreModal" :disabled="cloudBackupStatus === 'restoring'" class="momo-dialog-close w-9 h-9 rounded-full bg-slate-50 text-slate-500 font-black disabled:opacity-30" aria-label="關閉還原備份"><span aria-hidden="true">×</span></button>
           </div>
 
-          <div class="momo-dialog-body max-h-[70vh] overflow-y-auto p-4 sm:p-5 space-y-4">
-            <div class="rounded-2xl bg-sky-50 border border-sky-100 px-3 py-3">
-              <div class="text-xs font-black text-sky-800">還原前保護</div>
-              <p class="mt-1 text-[11px] font-bold text-sky-700 leading-relaxed">
-                系統會先建立本機保護快照，再覆蓋目前裝置上的業績、CRM、儲值帳本、支出、庫存、打烊與價目表資料。
-              </p>
-            </div>
-
-            <div v-if="cloudRestoreDraft?.preview?.warnings?.length" class="space-y-2">
-              <div v-for="warning in cloudRestoreDraft.preview.warnings" :key="'restore-warning-' + warning.code + '-' + warning.message"
-                   class="rounded-2xl px-3 py-2 border"
-                   :class="warning.severity === 'error' ? 'bg-rose-50 border-rose-100 text-rose-700' : 'bg-amber-50 border-amber-100 text-amber-700'">
-                <div class="text-[10px] font-black">{{ warning.severity === 'error' ? '高風險' : '提醒' }}</div>
-                <div class="mt-0.5 text-xs font-bold leading-relaxed">{{ warning.message }}</div>
+          <div class="momo-dialog-body momo-dialog-list cloud-restore-body overflow-y-auto">
+            <section class="cloud-restore-guard"
+                     :class="cloudRestoreDraft?.preview?.riskTone === 'error' ? 'is-error' : cloudRestoreDraft?.preview?.riskTone === 'warn' ? 'is-warning' : 'is-ok'">
+              <div class="min-w-0">
+                <div class="cloud-restore-eyebrow">還原影響</div>
+                <h4>
+                  {{ cloudRestoreDraft?.preview?.riskTone === 'error' ? '備份內容不完整，已停止還原' : cloudRestoreDraft?.preview?.riskTone === 'warn' ? '還原後部分資料可能減少' : '差異已檢查，可進行還原' }}
+                </h4>
+                <p>目前裝置的業績、CRM、儲值帳本、支出、庫存、打烊與價目表會被備份內容取代。</p>
               </div>
-            </div>
-
-            <div class="border border-slate-200 rounded-2xl overflow-hidden">
-              <div class="grid grid-cols-4 bg-slate-50 text-[10px] font-black text-slate-400">
-                <div class="px-3 py-2">資料</div>
-                <div class="px-3 py-2 text-right">目前</div>
-                <div class="px-3 py-2 text-right">備份</div>
-                <div class="px-3 py-2 text-right">差異</div>
+              <div class="cloud-restore-protection-note">
+                <strong>已啟用還原前保護</strong>
+                <span>執行前會先建立一份本機快照。</span>
               </div>
-              <div v-for="row in cloudRestoreDraft?.preview?.rows || []" :key="'restore-diff-' + row.key" class="grid grid-cols-4 border-t border-slate-100 text-xs">
-                <div class="px-3 py-2 font-black text-slate-700">{{ row.label }}</div>
-                <div class="px-3 py-2 text-right font-bold text-slate-500">{{ formatNumber(row.local) }}</div>
-                <div class="px-3 py-2 text-right font-bold text-slate-700">{{ formatNumber(row.backup) }}</div>
-                <div class="px-3 py-2 text-right font-black" :class="row.delta < 0 ? 'text-rose-600' : row.delta > 0 ? 'text-emerald-600' : 'text-slate-400'">
-                  {{ restoreDiffText(row.delta) }}
+            </section>
+
+            <section class="cloud-restore-comparison" aria-label="核心資料筆數比較">
+              <div class="cloud-restore-total">
+                <span>目前核心資料</span>
+                <strong>{{ formatNumber(cloudRestoreDraft?.preview?.localTotal || 0) }}</strong>
+              </div>
+              <div class="cloud-restore-direction">
+                <span>還原後</span>
+                <strong aria-hidden="true">→</strong>
+              </div>
+              <div class="cloud-restore-total is-backup">
+                <span>備份核心資料</span>
+                <strong :class="(cloudRestoreDraft?.preview?.backupTotal || 0) < (cloudRestoreDraft?.preview?.localTotal || 0) ? 'text-rose-600' : 'text-slate-800'">
+                  {{ formatNumber(cloudRestoreDraft?.preview?.backupTotal || 0) }}
+                </strong>
+              </div>
+            </section>
+
+            <section v-if="cloudRestoreDraft?.preview?.warnings?.length" class="cloud-restore-warning-section">
+              <div class="cloud-restore-section-title">
+                <span>還原前提醒</span>
+                <strong>{{ cloudRestoreDraft.preview.warnings.length }} 項</strong>
+              </div>
+              <div class="cloud-restore-warning-list">
+                <div v-for="warning in cloudRestoreDraft.preview.warnings" :key="'restore-warning-' + warning.code + '-' + warning.message"
+                     class="cloud-restore-warning"
+                     :class="warning.severity === 'error' ? 'is-error' : 'is-warning'">
+                  <span>{{ warning.severity === 'error' ? '高風險' : '提醒' }}</span>
+                  <p>{{ warning.message }}</p>
                 </div>
               </div>
-            </div>
+            </section>
 
-            <label class="block">
-              <span class="block text-[10px] font-black text-slate-400 mb-1">輸入備份日期才可還原</span>
-              <input v-model.trim="cloudRestoreConfirmText"
-                     :placeholder="cloudRestoreDraft?.backup?.backupDate || 'YYYY-MM-DD'"
-                     class="jelly-input w-full min-h-[48px] rounded-2xl border border-slate-200 px-4 text-sm font-black text-slate-800"
-                     autocomplete="off">
-              <span class="block mt-1 text-[10px] font-bold text-slate-400">請輸入：{{ cloudRestoreDraft?.backup?.backupDate || '備份日期' }}</span>
-            </label>
+            <section class="cloud-restore-detail-section">
+              <div class="cloud-restore-section-title">
+                <span>資料差異</span>
+                <strong>目前 → 備份</strong>
+              </div>
+              <div class="cloud-restore-table" role="table" aria-label="雲端備份資料差異">
+                <div class="cloud-restore-table-head" role="row">
+                  <div role="columnheader">資料</div>
+                  <div role="columnheader">目前</div>
+                  <div role="columnheader">備份</div>
+                  <div role="columnheader">差異</div>
+                </div>
+                <div v-for="row in cloudRestoreDraft?.preview?.rows || []" :key="'restore-diff-' + row.key" class="cloud-restore-table-row" role="row">
+                  <div role="cell">{{ row.label }}</div>
+                  <div role="cell">{{ formatNumber(row.local) }}</div>
+                  <div role="cell">{{ formatNumber(row.backup) }}</div>
+                  <div role="cell" :class="row.delta < 0 ? 'is-negative' : row.delta > 0 ? 'is-positive' : ''">{{ restoreDiffText(row.delta) }}</div>
+                </div>
+              </div>
+            </section>
+
+            <section class="cloud-restore-confirm" :class="cloudRestoreDraft?.preview?.riskTone === 'error' ? 'is-blocked' : cloudRestoreReadyToConfirm ? 'is-ready' : ''">
+              <div class="cloud-restore-confirm-copy">
+                <div>
+                  <span>最後確認</span>
+                  <strong>{{ cloudRestoreDraft?.preview?.riskTone === 'error' ? '此備份目前無法還原' : cloudRestoreReadyToConfirm ? '日期正確，可以還原' : '輸入備份日期解除確認按鈕' }}</strong>
+                </div>
+                <span v-if="cloudRestoreDraft?.preview?.riskTone !== 'error'" class="cloud-restore-confirm-state">{{ cloudRestoreReadyToConfirm ? '已確認' : '待輸入' }}</span>
+              </div>
+              <label v-if="cloudRestoreDraft?.preview?.riskTone !== 'error'" class="cloud-restore-confirm-field">
+                <span>請輸入 {{ cloudRestoreDraft?.backup?.backupDate || '備份日期' }}</span>
+                <input v-model.trim="cloudRestoreConfirmText"
+                       :placeholder="cloudRestoreDraft?.backup?.backupDate || 'YYYY-MM-DD'"
+                       :disabled="cloudBackupStatus === 'restoring'"
+                       class="jelly-input"
+                       aria-label="輸入備份日期確認還原"
+                       autocomplete="off">
+              </label>
+              <p v-else class="cloud-restore-blocked-copy">備份缺少必要資料，系統已停用還原。請改選其他雲端備份。</p>
+            </section>
           </div>
 
-          <div class="momo-dialog-footer grid grid-cols-2 border-t border-slate-100 bg-white">
+          <div class="momo-dialog-footer cloud-restore-footer">
             <button @click="closeCloudRestoreModal"
                     :disabled="cloudBackupStatus === 'restoring'"
-                    class="min-h-[54px] text-slate-500 text-sm font-black border-r border-slate-100 disabled:opacity-40">
+                    class="cloud-restore-cancel disabled:opacity-40">
               取消
             </button>
             <button @click="confirmCloudBackupRestore"
                     :disabled="!cloudRestoreReadyToConfirm || cloudBackupStatus === 'restoring'"
-                    class="min-h-[54px] text-sm font-black disabled:opacity-30"
-                    :class="cloudRestoreDraft?.preview?.riskTone === 'error' ? 'text-rose-600 bg-rose-50' : 'text-sky-700 bg-sky-50'">
-              {{ cloudBackupStatus === 'restoring' ? '還原中…' : '確認還原' }}
+                    class="cloud-restore-submit disabled:opacity-40"
+                    :class="cloudRestoreDraft?.preview?.riskTone === 'error' ? 'is-blocked' : cloudRestoreReadyToConfirm ? 'is-ready' : ''">
+              {{ cloudBackupStatus === 'restoring' ? '還原中…' : cloudRestoreDraft?.preview?.riskTone === 'error' ? '無法還原' : '確認還原' }}
             </button>
           </div>
         </div>
@@ -3757,9 +3842,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.14-safety-maintenance-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.14-risk-dialogs-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.14-safety-maintenance-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.14-risk-dialogs-1"></script>
 </body>
 </html>
