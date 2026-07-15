@@ -1511,9 +1511,9 @@
       text-align: center;
     }
 
-    body.momo-polish .orders-date-badge,
-    body.momo-polish .orders-weekday-badge,
-    body.momo-polish .orders-lock-badge,
+    body.momo-polish .ledger-date-badge,
+    body.momo-polish .ledger-weekday-badge,
+    body.momo-polish .ledger-lock-badge,
     body.momo-polish .orders-exclusion-badge {
       display: inline-flex;
       min-height: 26px;
@@ -1532,32 +1532,32 @@
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
     }
 
-    body.momo-polish .orders-date-badge {
+    body.momo-polish .ledger-date-badge {
       border-color: #D8DEE6;
       background: #F7F9FB;
       color: #475569;
       font-variant-numeric: tabular-nums;
     }
 
-    body.momo-polish .orders-weekday-badge.is-weekday {
+    body.momo-polish .ledger-weekday-badge.is-weekday {
       border-color: #BCDDE2;
       background: #F0F8F9;
       color: #1F747B;
     }
 
-    body.momo-polish .orders-weekday-badge.is-weekend {
+    body.momo-polish .ledger-weekday-badge.is-weekend {
       border-color: #F3C7C0;
       background: #FFF5F3;
       color: #C4554C;
     }
 
-    body.momo-polish .orders-lock-badge {
+    body.momo-polish .ledger-lock-badge {
       border-color: #EED28F;
       background: #FFF9E9;
       color: #8A6509;
     }
 
-    body.momo-polish .orders-status-icon {
+    body.momo-polish .ledger-status-icon {
       width: 12px;
       height: 12px;
       flex: 0 0 12px;
@@ -1898,9 +1898,9 @@
         gap: 0.35rem !important;
       }
 
-      body.momo-polish .orders-date-badge,
-      body.momo-polish .orders-weekday-badge,
-      body.momo-polish .orders-lock-badge {
+      body.momo-polish .ledger-date-badge,
+      body.momo-polish .ledger-weekday-badge,
+      body.momo-polish .ledger-lock-badge {
         min-height: 25px;
         padding: 0 0.4rem;
       }
@@ -2232,6 +2232,23 @@
       background: var(--momo-surface-muted) !important;
     }
 
+    body.momo-polish .expense-day-heading {
+      flex-wrap: wrap;
+      row-gap: 0.35rem;
+    }
+
+    body.momo-polish .expense-day-chevron {
+      width: 12px;
+      height: 12px;
+      flex: 0 0 12px;
+    }
+
+    body.momo-polish .expense-day-total {
+      color: #D94F63 !important;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
     body.momo-polish .expense-table-shell {
       border-color: var(--momo-line) !important;
       border-radius: 8px !important;
@@ -2404,11 +2421,34 @@
       body.momo-polish .expense-day-header {
         min-height: 50px !important;
         padding: 0.625rem 0.75rem 0.625rem 0.875rem !important;
+        gap: 0.5rem;
+      }
+
+      body.momo-polish .expense-day-heading {
+        gap: 0.35rem !important;
+      }
+
+      body.momo-polish .expense-day-totals {
+        gap: 0.35rem !important;
       }
 
       body.momo-polish .expense-mobile-button {
         min-height: 66px !important;
         padding: 0.75rem !important;
+      }
+    }
+
+    @media (max-width: 360px) {
+      body.momo-polish .expense-day-count {
+        display: none;
+      }
+
+      body.momo-polish .expense-day-header {
+        align-items: flex-start !important;
+      }
+
+      body.momo-polish .expense-day-totals {
+        padding-top: 0.3rem;
       }
     }
 
