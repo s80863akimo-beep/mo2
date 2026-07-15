@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.15-inventory-status-visuals-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.15-unified-workspace-visuals-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.15-inventory-status-visuals-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.15-unified-workspace-visuals-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -1038,36 +1038,36 @@
           </template>
 
           <!-- Daily-use only home workspace -->
-          <section class="momo-surface momo-today-overview momo-daily-home bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-            <div class="momo-section-header momo-today-overview-header px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-100 flex items-center justify-between gap-3">
-              <div class="min-w-0">
-                <h2 class="text-lg sm:text-xl font-black text-slate-800">今日總覽</h2>
-                <p class="text-[11px] font-bold text-slate-400 mt-0.5 truncate">{{ todayDateLabel }} · 只保留記帳、對帳、打烊</p>
+          <section class="momo-surface momo-page-overview momo-today-overview momo-daily-home bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+            <div class="momo-section-header momo-page-overview-header momo-today-overview-header px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-100 flex items-center justify-between gap-3">
+              <div class="momo-page-overview-copy min-w-0">
+                <h2 class="momo-page-title text-lg sm:text-xl font-black text-slate-800">今日總覽</h2>
+                <p class="momo-page-subtitle text-[11px] font-bold text-slate-400 mt-0.5 truncate">{{ todayDateLabel }} · 只保留記帳、對帳、打烊</p>
               </div>
-              <span class="today-status-pill text-[10px] font-black px-2.5 py-1 rounded-full whitespace-nowrap"
-                    :class="todayCloseoutRecord ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
+              <span class="today-status-pill momo-status-badge momo-status-tone text-[10px] font-black px-2.5 py-1 rounded-full whitespace-nowrap"
+                    :class="todayCloseoutRecord ? 'is-ok' : 'is-warn'">
                 {{ todayCloseoutRecord ? '已打烊' : '待打烊' }}
               </span>
             </div>
 
             <div class="p-4 sm:p-6 space-y-4">
-              <div class="momo-metric-grid grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div class="momo-metric-cell today-metric-card rounded-2xl bg-white border border-slate-200 p-3">
+              <div class="momo-metric-grid momo-page-metrics grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="momo-metric-cell momo-page-metric today-metric-card rounded-2xl bg-white border border-slate-200 p-3">
                   <div class="text-[10px] font-black text-slate-400">今日營收</div>
                   <div class="today-metric-value text-xl sm:text-2xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.serviceRevenue) }}</div>
                   <div class="text-[10px] font-bold text-slate-400 mt-1">{{ todayOrders.length }} 筆已記帳</div>
                 </div>
-                <div class="momo-metric-cell today-metric-card today-metric-card--cash rounded-2xl bg-white border border-slate-200 p-3">
+                <div class="momo-metric-cell momo-page-metric today-metric-card today-metric-card--cash rounded-2xl bg-white border border-slate-200 p-3">
                   <div class="text-[10px] font-black text-slate-400">應有現金</div>
                   <div class="today-metric-value text-xl sm:text-2xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div>
                   <div class="text-[10px] font-bold text-slate-400 mt-1">現金 + 現金儲值</div>
                 </div>
-                <div class="momo-metric-cell today-metric-card today-metric-card--expense rounded-2xl bg-white border border-slate-200 p-3">
+                <div class="momo-metric-cell momo-page-metric today-metric-card today-metric-card--expense rounded-2xl bg-white border border-slate-200 p-3">
                   <div class="text-[10px] font-black text-slate-400">今日支出</div>
                   <div class="today-metric-value text-xl sm:text-2xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.expenses) }}</div>
                   <div class="text-[10px] font-bold text-slate-400 mt-1">{{ todayCloseout.expenses ? '已扣淨收' : '尚無支出' }}</div>
                 </div>
-                <div class="momo-metric-cell today-metric-card rounded-2xl border p-3" :class="todayCloseout.netProfit >= 0 ? 'today-metric-card--closed bg-white border-slate-200' : 'today-metric-card--open bg-white border-slate-200'">
+                <div class="momo-metric-cell momo-page-metric today-metric-card rounded-2xl border p-3" :class="todayCloseout.netProfit >= 0 ? 'today-metric-card--closed bg-white border-slate-200' : 'today-metric-card--open bg-white border-slate-200'">
                   <div class="text-[10px] font-black text-slate-400">今日淨收</div>
                   <div class="today-metric-value text-xl sm:text-2xl font-black mt-1 text-slate-800">NT$ {{ formatNumber(todayCloseout.netProfit) }}</div>
                   <div class="text-[10px] font-bold text-slate-400 mt-1">營收 - 支出</div>
@@ -1122,7 +1122,7 @@
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <h2 class="text-base sm:text-lg font-black text-slate-800">需要處理</h2>
-                  <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="homeAttentionSummary.errors ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'">
+                  <span class="momo-status-badge momo-status-tone px-2 py-0.5 rounded-full text-[9px] font-black" :class="homeAttentionSummary.errors ? 'is-danger' : 'is-warn'">
                     {{ homeAttentionSummary.title }}
                   </span>
                 </div>
@@ -1145,7 +1145,7 @@
                       :class="item.severity === 'error' ? 'momo-home-list-item--error' : ''">
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="item.severity === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'">
+                    <span class="momo-status-badge momo-status-tone px-2 py-0.5 rounded-full text-[9px] font-black" :class="item.severity === 'error' ? 'is-danger' : 'is-warn'">
                       {{ item.severity === 'error' ? '需修正' : '需確認' }}
                     </span>
                     <span class="text-sm font-black text-slate-800 truncate">{{ item.title }}</span>
@@ -1271,24 +1271,27 @@
           </svg>
 
           <!-- A. 當期業績摘要 -->
-          <div class="momo-surface orders-summary-panel bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
-            <div class="momo-section-header orders-summary-header px-5 py-3 border-b border-orange-50 flex items-center justify-between">
-              <h3 class="font-black text-slate-700 text-sm">
-                {{ ordersCustomerHistoryId ? '顧客完整客史（全部年份）' : selectedYear + ' 年 ' + (selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月') + ' 業績摘要' }}
-              </h3>
+          <div class="momo-surface momo-page-overview orders-summary-panel bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
+            <div class="momo-section-header momo-page-overview-header orders-summary-header px-5 py-3 border-b border-orange-50 flex items-center justify-between">
+              <div class="momo-page-overview-copy min-w-0">
+                <h2 class="momo-page-title font-black text-slate-700 text-sm">業績</h2>
+                <p class="momo-page-subtitle mt-0.5 text-[10px] font-bold text-slate-400 truncate">
+                  {{ ordersCustomerHistoryId ? '顧客完整客史 · 全部年份' : selectedYear + ' 年 ' + (selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月') + ' · 服務紀錄與實收統計' }}
+                </p>
+              </div>
             </div>
-            <div class="orders-summary-grid grid grid-cols-3 divide-x divide-orange-50">
-              <div class="orders-summary-metric orders-summary-metric--primary px-3 sm:px-5 py-4 space-y-1 min-w-0">
+            <div class="orders-summary-grid momo-page-metrics grid grid-cols-3 divide-x divide-orange-50">
+              <div class="orders-summary-metric momo-page-metric orders-summary-metric--primary px-3 sm:px-5 py-4 space-y-1 min-w-0">
                 <div class="text-[10px] font-black text-slate-400 uppercase tracking-wider">當期總額</div>
                 <div class="text-base sm:text-xl font-black text-slate-800 tracking-tight whitespace-nowrap">NT$ {{ formatNumber(ordersSummary.total) }}</div>
                 <div class="text-[9px] text-slate-300 font-bold">排除儲值進帳</div>
               </div>
-              <div class="orders-summary-metric px-3 sm:px-5 py-4 space-y-1 min-w-0">
+              <div class="orders-summary-metric momo-page-metric px-3 sm:px-5 py-4 space-y-1 min-w-0">
                 <div class="text-[10px] font-black text-slate-400 uppercase tracking-wider">服務筆數</div>
                 <div class="text-base sm:text-xl font-black text-slate-800 tracking-tight">{{ ordersSummary.count }} <span class="text-xs font-semibold text-slate-400">筆</span></div>
                 <div class="text-[9px] text-slate-300 font-bold">當期來客總次數</div>
               </div>
-              <div class="orders-summary-metric px-3 sm:px-5 py-4 space-y-1 min-w-0">
+              <div class="orders-summary-metric momo-page-metric px-3 sm:px-5 py-4 space-y-1 min-w-0">
                 <div class="text-[10px] font-black text-slate-400 uppercase tracking-wider">平均客單價</div>
                 <div class="text-base sm:text-xl font-black text-slate-800 tracking-tight whitespace-nowrap">NT$ {{ formatNumber(ordersSummary.avg) }}</div>
                 <div class="text-[9px] text-slate-300 font-bold">每位客人均消金額</div>
@@ -1425,33 +1428,33 @@
 
             <!-- Orders Interactive Table - Daily Grouped Reconciliation -->
             <div class="orders-ledger bg-white/95 p-3.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50/70 macaron-shadow space-y-3.5">
-              <div class="orders-ledger-toolbar space-y-2.5 pb-3 border-b border-slate-100">
+              <div class="orders-ledger-toolbar momo-command-bar space-y-2.5 pb-3 border-b border-slate-100">
                 <!-- 第一列：標題、搜尋與新增 -->
-                <div class="flex items-start sm:items-center justify-between gap-3">
-                  <div class="min-w-0">
-                    <h3 class="font-black text-slate-800 text-base sm:text-lg flex items-center gap-2">
+                <div class="momo-command-heading flex items-start sm:items-center justify-between gap-3">
+                  <div class="momo-command-copy min-w-0">
+                    <h3 class="momo-command-title font-black text-slate-800 text-base sm:text-lg flex items-center gap-2">
                       業績明細
-                      <button v-if="ordersCustomerHistoryId" type="button" @click="closeCustomerHistory" class="rounded-lg bg-emerald-50 border border-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">完整客史 · 全部年份 ×</button>
+                      <button v-if="ordersCustomerHistoryId" type="button" @click="closeCustomerHistory" class="momo-status-badge momo-status-tone is-ok rounded-lg bg-emerald-50 border border-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">完整客史 · 全部年份 ×</button>
                     </h3>
-                    <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredOrders.length }} 筆 · NT$ {{ formatNumber(filteredOrdersTotal) }}</p>
+                    <p class="momo-command-subtitle mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredOrders.length }} 筆 · NT$ {{ formatNumber(filteredOrdersTotal) }}</p>
                   </div>
                   <button @click="showMobileAddOrderForm = true; $nextTick(() => { if ($refs.customerNameInput) $refs.customerNameInput.focus(); })"
-                          class="orders-add-button jelly-btn min-h-[34px] shrink-0 bg-slate-900 border border-slate-900 text-white text-[11px] font-black px-3.5 rounded-full shadow-sm">
+                          class="orders-add-button momo-command-primary jelly-btn min-h-[34px] shrink-0 bg-slate-900 border border-slate-900 text-white text-[11px] font-black px-3.5 rounded-full shadow-sm">
                     ＋ 新增
                   </button>
                 </div>
-                <div class="flex items-center gap-2 w-full">
-                    <div class="orders-search-shell relative flex-1 sm:w-56">
+                <div class="momo-command-search-row flex items-center gap-2 w-full">
+                    <div class="orders-search-shell momo-command-search relative flex-1 sm:w-56">
                       <input type="text" v-model="ordersSearchQuery" placeholder="搜尋顧客 / 服務"
                              autocorrect="off" autocapitalize="words" autocomplete="off"
-                             class="orders-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-9 pr-9 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
+                             class="orders-search-input momo-command-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-9 pr-9 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
                       <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
                       <button v-if="ordersSearchQuery" @click="ordersSearchQuery = ''"
                               class="absolute right-2.5 top-1/2 -translate-y-1/2 min-h-7 w-7 rounded-full text-slate-400 text-xs font-black">✕</button>
                     </div>
                 </div>
                 <!-- 第二列：進階篩選預設收合，手機記帳少一排干擾 -->
-                <details class="orders-filter-panel rounded-2xl bg-slate-50/45 border border-slate-100 px-3 py-2" :open="ordersFilterCategory !== 'All' || ordersFilterPayment !== 'All'">
+                <details class="orders-filter-panel momo-command-filter-panel rounded-2xl bg-slate-50/45 border border-slate-100 px-3 py-2" :open="ordersFilterCategory !== 'All' || ordersFilterPayment !== 'All'">
                   <summary class="cursor-pointer list-none text-[10px] font-black text-slate-400 flex items-center justify-between">
                     <span>{{ (ordersFilterCategory !== 'All' || ordersFilterPayment !== 'All') ? '篩選中' : '進階篩選' }}</span>
                     <span class="text-slate-300">{{ (ordersFilterCategory !== 'All' || ordersFilterPayment !== 'All') ? '收合' : '展開' }}</span>
@@ -1459,7 +1462,7 @@
                   <div class="mt-2 flex items-center gap-2">
                     <div class="grid grid-cols-2 gap-2 flex-1 sm:flex-none">
                       <select v-model="ordersFilterCategory"
-                              class="min-h-[38px] bg-white border border-orange-100 rounded-xl px-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-macaron-peach-300">
+                              class="momo-command-filter-control min-h-[38px] bg-white border border-orange-100 rounded-xl px-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-macaron-peach-300">
                         <option value="All">全部類別</option>
                         <option value="剪髮">剪髮</option>
                         <option value="燙髮">燙髮</option>
@@ -1468,7 +1471,7 @@
                         <option value="更正">更正</option>
                       </select>
                       <select v-model="ordersFilterPayment"
-                              class="min-h-[38px] bg-white border border-orange-100 rounded-xl px-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-macaron-peach-300">
+                              class="momo-command-filter-control min-h-[38px] bg-white border border-orange-100 rounded-xl px-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-macaron-peach-300">
                         <option value="All">全部付款</option>
                         <option value="現金">現金</option>
                         <option value="轉帳">轉帳</option>
@@ -1479,16 +1482,16 @@
                     </div>
                     <button v-if="ordersFilterActive"
                             @click="ordersSearchQuery = ''; ordersFilterCategory = 'All'; ordersFilterPayment = 'All'"
-                            class="shrink-0 min-h-[38px] text-[10px] font-black text-rose-500 bg-rose-50 border border-rose-100 px-3 rounded-xl jelly-btn">
+                            class="momo-command-filter-clear shrink-0 min-h-[38px] text-[10px] font-black text-rose-500 bg-rose-50 border border-rose-100 px-3 rounded-xl jelly-btn">
                       清除
                     </button>
                   </div>
                 </details>
                 <div class="orders-filter-status flex items-center justify-between gap-3 text-[11px] font-bold">
                   <div class="flex flex-wrap items-center gap-1.5">
-                    <span v-if="ordersSearchQuery" class="bg-orange-50 text-macaron-peach-500 px-2 py-1 rounded-lg">顧客：{{ ordersSearchQuery }}</span>
-                    <span v-if="ordersFilterCategory !== 'All'" class="bg-sky-50 text-sky-700 px-2 py-1 rounded-lg">{{ ordersFilterCategory }}</span>
-                    <span v-if="ordersFilterPayment !== 'All'" class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg">{{ ordersFilterPayment }}</span>
+                    <span v-if="ordersSearchQuery" class="momo-filter-chip is-brand bg-orange-50 text-macaron-peach-500 px-2 py-1 rounded-lg">顧客：{{ ordersSearchQuery }}</span>
+                    <span v-if="ordersFilterCategory !== 'All'" class="momo-filter-chip is-info bg-sky-50 text-sky-700 px-2 py-1 rounded-lg">{{ ordersFilterCategory }}</span>
+                    <span v-if="ordersFilterPayment !== 'All'" class="momo-filter-chip is-ok bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg">{{ ordersFilterPayment }}</span>
                     <span v-if="!ordersFilterActive" class="text-slate-400">共 {{ filteredOrders.length }} 筆</span>
                   </div>
                   <div v-if="ordersFilterActive" class="text-right shrink-0">
@@ -1729,31 +1732,31 @@
           </svg>
 
           <!-- 當期支出摘要 -->
-          <section class="momo-surface expense-summary-panel bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
-            <div class="momo-section-header expense-summary-header px-5 py-3 border-b border-orange-50 flex items-center justify-between gap-3">
-              <div class="min-w-0">
-                <h3 class="font-black text-slate-700 text-sm">{{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }} 支出</h3>
-                <p class="mt-0.5 text-[10px] font-bold text-slate-400 truncate">{{ expenseHealthSummary.message }}</p>
+          <section class="momo-surface momo-page-overview expense-summary-panel bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
+            <div class="momo-section-header momo-page-overview-header expense-summary-header px-5 py-3 border-b border-orange-50 flex items-center justify-between gap-3">
+              <div class="momo-page-overview-copy min-w-0">
+                <h2 class="momo-page-title font-black text-slate-700 text-sm">支出</h2>
+                <p class="momo-page-subtitle mt-0.5 text-[10px] font-bold text-slate-400 truncate">{{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年度' : selectedMonth + ' 月' }} · {{ expenseHealthSummary.message }}</p>
               </div>
-              <span class="expense-summary-status shrink-0 text-[10px] font-black px-2.5 py-1 rounded-full"
-                    :class="expenseHealthSummary.tone === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
+              <span class="expense-summary-status momo-status-badge momo-status-tone shrink-0 text-[10px] font-black px-2.5 py-1 rounded-full"
+                    :class="expenseHealthSummary.tone === 'empty' ? 'is-neutral' : expenseHealthSummary.tone === 'ok' ? 'is-ok' : 'is-warn'">
                 {{ expenseHealthSummary.tone === 'empty' ? '未記錄' : expenseHealthSummary.tone === 'ok' ? '正常' : '偏高' }}
               </span>
             </div>
-            <div class="expense-summary-grid grid divide-x divide-orange-50">
-              <div class="expense-summary-metric expense-summary-metric--primary px-3 sm:px-5 py-4 min-w-0">
+            <div class="expense-summary-grid momo-page-metrics grid divide-x divide-orange-50">
+              <div class="expense-summary-metric momo-page-metric expense-summary-metric--primary px-3 sm:px-5 py-4 min-w-0">
                 <div class="text-[10px] font-black text-slate-400">當期支出</div>
                 <div class="mt-1 text-base sm:text-xl font-black text-rose-500 whitespace-nowrap">NT$ {{ formatNumber(expensesSummary.total) }}</div>
               </div>
-              <div class="expense-summary-metric px-3 sm:px-5 py-4 min-w-0">
+              <div class="expense-summary-metric momo-page-metric px-3 sm:px-5 py-4 min-w-0">
                 <div class="text-[10px] font-black text-slate-400">支出筆數</div>
                 <div class="mt-1 text-base sm:text-xl font-black text-slate-800">{{ expensesSummary.count }} <span class="text-xs text-slate-400">筆</span></div>
               </div>
-              <div class="expense-summary-metric px-3 sm:px-5 py-4 min-w-0">
+              <div class="expense-summary-metric momo-page-metric px-3 sm:px-5 py-4 min-w-0">
                 <div class="text-[10px] font-black text-slate-400">支出率</div>
                 <div class="mt-1 text-base sm:text-xl font-black text-slate-800">{{ expenseHealthSummary.revenue ? expenseHealthSummary.ratio + '%' : '-' }}</div>
               </div>
-              <div class="expense-summary-metric px-3 sm:px-5 py-4 min-w-0">
+              <div class="expense-summary-metric momo-page-metric px-3 sm:px-5 py-4 min-w-0">
                 <div class="text-[10px] font-black text-slate-400">平均單筆</div>
                 <div class="mt-1 text-base sm:text-xl font-black text-slate-800 whitespace-nowrap">NT$ {{ formatNumber(expenseHealthSummary.avg) }}</div>
               </div>
@@ -1911,30 +1914,30 @@
 
             <!-- Expenses Table -->
             <div class="expense-ledger bg-white/95 p-3.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50/70 macaron-shadow space-y-3.5">
-              <div class="expense-ledger-toolbar space-y-2.5 pb-3 border-b border-slate-100">
-                <div class="flex items-start sm:items-center justify-between gap-3">
-                  <div class="min-w-0">
-                    <h3 class="font-black text-slate-800 text-base sm:text-lg flex items-center gap-2">
+              <div class="expense-ledger-toolbar momo-command-bar space-y-2.5 pb-3 border-b border-slate-100">
+                <div class="momo-command-heading flex items-start sm:items-center justify-between gap-3">
+                  <div class="momo-command-copy min-w-0">
+                    <h3 class="momo-command-title font-black text-slate-800 text-base sm:text-lg flex items-center gap-2">
                       支出明細
                     </h3>
-                    <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredExpenses.length }} 筆 · NT$ {{ formatNumber(filteredExpensesTotal) }}</p>
+                    <p class="momo-command-subtitle mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredExpenses.length }} 筆 · NT$ {{ formatNumber(filteredExpensesTotal) }}</p>
                   </div>
-                  <button @click="showExpenseForm = true" class="expense-add-button momo-danger-action jelly-btn min-h-[34px] shrink-0 px-3.5 rounded-full bg-rose-50 border border-rose-100 text-rose-700 text-[11px] font-black shadow-sm">＋ 新增支出</button>
+                  <button @click="showExpenseForm = true" class="expense-add-button momo-command-primary jelly-btn min-h-[34px] shrink-0 px-3.5 rounded-full bg-rose-50 border border-rose-100 text-rose-700 text-[11px] font-black shadow-sm">＋ 新增支出</button>
                 </div>
-                <div class="flex items-center gap-2">
-                    <div class="expense-search-shell relative flex-1 sm:w-56">
+                <div class="momo-command-search-row flex items-center gap-2">
+                    <div class="expense-search-shell momo-command-search relative flex-1 sm:w-56">
                       <input type="text" v-model="expenseSearchQuery" placeholder="搜尋備註或分類..."
-                             class="compact-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-9 pr-9 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
+                             class="compact-search-input momo-command-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-9 pr-9 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
                       <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
                       <button v-if="expenseSearchQuery" @click="expenseSearchQuery = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 min-h-7 w-7 rounded-full text-xs text-slate-400 font-black">✕</button>
                     </div>
                 </div>
                 <div class="expense-filter-row flex items-center gap-2">
-                  <select v-model="expenseFilterCategory" class="expense-filter-select min-h-[38px] flex-1 sm:flex-none bg-slate-50/60 border border-slate-100 rounded-xl px-3 text-xs font-bold text-slate-600">
+                  <select v-model="expenseFilterCategory" class="expense-filter-select momo-command-filter-control min-h-[38px] flex-1 sm:flex-none bg-slate-50/60 border border-slate-100 rounded-xl px-3 text-xs font-bold text-slate-600">
                     <option value="All">全部分類</option>
                     <option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option>
                   </select>
-                  <button v-if="expenseFilterActive" @click="expenseSearchQuery = ''; expenseFilterCategory = 'All'" class="min-h-[38px] px-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-[10px] font-black">清除</button>
+                  <button v-if="expenseFilterActive" @click="expenseSearchQuery = ''; expenseFilterCategory = 'All'" class="momo-command-filter-clear min-h-[38px] px-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-500 text-[10px] font-black">清除</button>
                   <div class="ml-auto text-right text-[11px] font-bold">
                     <span class="text-slate-400">{{ filteredExpenses.length }} 筆</span>
                     <span v-if="expenseFilterActive" class="ml-1 text-rose-500 font-black">· 小計 NT$ {{ formatNumber(filteredExpensesTotal) }}</span>
@@ -2089,20 +2092,23 @@
             </defs>
           </svg>
 
-          <section class="inventory-overview-panel momo-surface bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
-            <div class="inventory-overview-header momo-section-header px-5 py-3 border-b border-orange-50">
-              <h3 class="font-black text-slate-700 text-sm">庫存總覽</h3>
+          <section class="inventory-overview-panel momo-surface momo-page-overview bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
+            <div class="inventory-overview-header momo-section-header momo-page-overview-header px-5 py-3 border-b border-orange-50">
+              <div class="momo-page-overview-copy min-w-0">
+                <h2 class="momo-page-title font-black text-slate-700 text-sm">庫存</h2>
+                <p class="momo-page-subtitle mt-0.5 text-[10px] font-bold text-slate-400">數量、安全庫存與補貨狀態</p>
+              </div>
             </div>
-            <div class="inventory-overview-grid grid grid-cols-3 divide-x divide-orange-50">
-              <div class="inventory-overview-metric px-3 sm:px-5 py-4">
+            <div class="inventory-overview-grid momo-page-metrics grid grid-cols-3 divide-x divide-orange-50">
+              <div class="inventory-overview-metric momo-page-metric px-3 sm:px-5 py-4">
                 <div class="inventory-overview-label text-[10px] font-black text-slate-400"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-item-package"></use></svg><span>商品品項</span></div>
                 <div class="mt-1 text-base sm:text-xl font-black text-slate-800">{{ inventorySummary.items }} <span class="text-xs text-slate-400">項</span></div>
               </div>
-              <div class="inventory-overview-metric px-3 sm:px-5 py-4">
+              <div class="inventory-overview-metric momo-page-metric px-3 sm:px-5 py-4">
                 <div class="inventory-overview-label text-[10px] font-black text-slate-400"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-summary-units"></use></svg><span>庫存總量</span></div>
                 <div class="mt-1 text-base sm:text-xl font-black text-sky-700">{{ inventorySummary.units }} <span class="text-xs text-slate-400">件</span></div>
               </div>
-              <div class="inventory-overview-metric px-3 sm:px-5 py-4" :class="inventorySummary.low + inventorySummary.out ? 'has-alert' : 'is-clear'">
+              <div class="inventory-overview-metric momo-page-metric px-3 sm:px-5 py-4" :class="inventorySummary.low + inventorySummary.out ? 'has-alert' : 'is-clear'">
                 <div class="inventory-overview-label text-[10px] font-black text-slate-400"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="inventorySummary.low + inventorySummary.out ? '#inventory-status-low' : '#inventory-status-ok'"></use></svg><span>需要補貨</span></div>
                 <div class="mt-1 text-base sm:text-xl font-black" :class="inventorySummary.low + inventorySummary.out ? 'text-rose-600' : 'text-emerald-600'">{{ inventorySummary.low + inventorySummary.out }} <span class="text-xs text-slate-400">項</span></div>
                 <div v-if="inventorySummary.out" class="text-[9px] font-bold text-rose-400">其中 {{ inventorySummary.out }} 項缺貨</div>
@@ -2136,7 +2142,7 @@
                       <div class="mt-0.5 text-[10px] font-bold text-slate-500">目前 {{ item.stock || 0 }} 件 · 安全 {{ inventorySafetyStock(item) }} 件</div>
                     </div>
                   </div>
-                  <span class="inventory-status-badge inventory-status-tone shrink-0" :class="'is-' + getInventoryStatus(item).key">
+                  <span class="inventory-status-badge momo-status-badge momo-status-tone has-icon inventory-status-tone shrink-0" :class="'is-' + getInventoryStatus(item).key">
                     <svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#inventory-status-' + getInventoryStatus(item).key"></use></svg>
                     <span>{{ getInventoryStatus(item).label }}</span>
                   </span>
@@ -2210,26 +2216,26 @@
 
             <!-- Inventory Table -->
             <div class="inventory-ledger bg-white/95 p-3.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50/70 macaron-shadow space-y-3.5">
-              <div class="inventory-ledger-toolbar momo-surface space-y-2.5 pb-3 border-b border-slate-100">
-                <div class="flex items-start sm:items-center justify-between gap-3">
-                  <div class="min-w-0">
-                    <h3 class="font-black text-slate-800 text-base sm:text-lg">庫存商品</h3>
-                    <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredInventory.length }} 項 · 共 {{ inventorySummary.units }} 件</p>
+              <div class="inventory-ledger-toolbar momo-surface momo-command-bar space-y-2.5 pb-3 border-b border-slate-100">
+                <div class="momo-command-heading flex items-start sm:items-center justify-between gap-3">
+                  <div class="momo-command-copy min-w-0">
+                    <h3 class="momo-command-title font-black text-slate-800 text-base sm:text-lg">庫存商品</h3>
+                    <p class="momo-command-subtitle mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredInventory.length }} 項 · 共 {{ inventorySummary.units }} 件</p>
                   </div>
-                  <button @click="showInventoryForm = true" class="inventory-add-button momo-info-action jelly-btn min-h-[34px] shrink-0 px-3.5 rounded-full bg-sky-50 border border-sky-100 text-sky-700 text-[11px] font-black shadow-sm">＋ 新增商品</button>
+                  <button @click="showInventoryForm = true" class="inventory-add-button momo-command-primary jelly-btn min-h-[34px] shrink-0 px-3.5 rounded-full bg-sky-50 border border-sky-100 text-sky-700 text-[11px] font-black shadow-sm">＋ 新增商品</button>
                 </div>
-                <div class="flex items-center gap-2">
-                    <div class="inventory-search-shell relative flex-1 sm:w-56">
+                <div class="momo-command-search-row flex items-center gap-2">
+                    <div class="inventory-search-shell momo-command-search relative flex-1 sm:w-56">
                       <input type="text" v-model="inventorySearchQuery" placeholder="搜尋商品或備註..."
-                             class="inventory-search-input compact-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-9 pr-9 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
+                             class="inventory-search-input compact-search-input momo-command-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-9 pr-9 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
                       <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
                       <button v-if="inventorySearchQuery" @click="inventorySearchQuery = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 min-h-7 w-7 rounded-full text-xs text-slate-400 font-black">✕</button>
                     </div>
                 </div>
                 <div class="inventory-filter-row grid grid-cols-3 gap-1.5">
-                  <button @click="inventoryFilterMode = 'all'" :class="['is-all', { 'is-active': inventoryFilterMode === 'all' }]" class="inventory-filter-button inventory-status-tone min-h-[34px] rounded-xl border text-[10px] font-black"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-item-package"></use></svg><span>全部</span><span class="inventory-filter-count">{{ inventory.length }}</span></button>
-                  <button @click="inventoryFilterMode = 'low'" :class="['is-low', { 'is-active': inventoryFilterMode === 'low' }]" class="inventory-filter-button inventory-status-tone min-h-[34px] rounded-xl border text-[10px] font-black"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-status-low"></use></svg><span>低庫存</span><span class="inventory-filter-count">{{ inventorySummary.low }}</span></button>
-                  <button @click="inventoryFilterMode = 'out'" :class="['is-out', { 'is-active': inventoryFilterMode === 'out' }]" class="inventory-filter-button inventory-status-tone min-h-[34px] rounded-xl border text-[10px] font-black"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-status-out"></use></svg><span>缺貨</span><span class="inventory-filter-count">{{ inventorySummary.out }}</span></button>
+                  <button @click="inventoryFilterMode = 'all'" :class="['is-all', { 'is-active': inventoryFilterMode === 'all' }]" class="inventory-filter-button momo-command-filter-button inventory-status-tone min-h-[34px] rounded-xl border text-[10px] font-black"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-item-package"></use></svg><span>全部</span><span class="inventory-filter-count">{{ inventory.length }}</span></button>
+                  <button @click="inventoryFilterMode = 'low'" :class="['is-low', { 'is-active': inventoryFilterMode === 'low' }]" class="inventory-filter-button momo-command-filter-button inventory-status-tone min-h-[34px] rounded-xl border text-[10px] font-black"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-status-low"></use></svg><span>低庫存</span><span class="inventory-filter-count">{{ inventorySummary.low }}</span></button>
+                  <button @click="inventoryFilterMode = 'out'" :class="['is-out', { 'is-active': inventoryFilterMode === 'out' }]" class="inventory-filter-button momo-command-filter-button inventory-status-tone min-h-[34px] rounded-xl border text-[10px] font-black"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-status-out"></use></svg><span>缺貨</span><span class="inventory-filter-count">{{ inventorySummary.out }}</span></button>
                 </div>
               </div>
 
@@ -2265,7 +2271,7 @@
                           <div class="min-w-0 flex-1">
                             <input type="text" v-model="inventoryEditDraft(item).name"
                                    class="w-full bg-transparent border-0 focus:bg-white focus:ring-1 focus:ring-macaron-peach-300 rounded px-1.5 py-1 text-sm font-extrabold text-slate-700">
-                            <span class="inventory-status-badge inventory-status-tone mt-1" :class="'is-' + getInventoryStatus(item).key"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#inventory-status-' + getInventoryStatus(item).key"></use></svg><span>{{ getInventoryStatus(item).label }}</span></span>
+                            <span class="inventory-status-badge momo-status-badge momo-status-tone has-icon inventory-status-tone mt-1" :class="'is-' + getInventoryStatus(item).key"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#inventory-status-' + getInventoryStatus(item).key"></use></svg><span>{{ getInventoryStatus(item).label }}</span></span>
                           </div>
                         </div>
                       </td>
@@ -2338,7 +2344,7 @@
                       </div>
                       <div class="shrink-0 text-right">
                         <div class="inventory-mobile-stock text-lg font-black tabular-nums" :class="item.stock === 0 ? 'text-rose-600' : isInventoryLow(item) ? 'text-amber-600' : 'text-slate-800'">{{ item.stock }} <span>件</span></div>
-                        <span class="inventory-status-badge inventory-status-tone mt-0.5" :class="'is-' + getInventoryStatus(item).key"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#inventory-status-' + getInventoryStatus(item).key"></use></svg><span>{{ getInventoryStatus(item).label }}</span></span>
+                        <span class="inventory-status-badge momo-status-badge momo-status-tone has-icon inventory-status-tone mt-0.5" :class="'is-' + getInventoryStatus(item).key"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#inventory-status-' + getInventoryStatus(item).key"></use></svg><span>{{ getInventoryStatus(item).label }}</span></span>
                       </div>
                     </button>
 
@@ -2381,31 +2387,31 @@
 
         <!-- Tab 5: CRM 與儲值帳本 -->
         <div v-else-if="activeTab === 'crm'" key="crm" class="momo-list-page momo-crm-page">
-          <section class="crm-overview-panel momo-surface bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
-            <div class="crm-overview-header p-4 sm:p-6 border-b border-orange-100/40">
+          <section class="crm-overview-panel momo-surface momo-page-overview bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
+            <div class="crm-overview-header momo-page-overview-header p-4 sm:p-6 border-b border-orange-100/40">
               <div class="flex items-start justify-between gap-3">
-                <div>
-                  <h3 class="font-black text-slate-800 text-lg sm:text-xl">顧客 CRM</h3>
-                  <p class="text-[11px] sm:text-xs text-slate-400 font-semibold mt-1">客史、配方與儲值帳本</p>
+                <div class="momo-page-overview-copy min-w-0">
+                  <h2 class="momo-page-title font-black text-slate-800 text-lg sm:text-xl">顧客 CRM</h2>
+                  <p class="momo-page-subtitle text-[11px] sm:text-xs text-slate-400 font-semibold mt-1">客史、配方與儲值帳本</p>
                 </div>
                 <div class="crm-overview-actions flex items-center gap-2 shrink-0">
-                  <button @click="exportCrmCSV" class="crm-export-button min-h-[40px] px-3 rounded-xl bg-white border border-orange-100 text-[11px] font-black text-slate-500">匯出</button>
+                  <button @click="exportCrmCSV" class="crm-export-button momo-command-secondary min-h-[40px] px-3 rounded-xl bg-white border border-orange-100 text-[11px] font-black text-slate-500">匯出</button>
                 </div>
               </div>
-              <div class="crm-overview-grid grid grid-cols-4 mt-4">
-                <div class="crm-overview-metric px-3 py-3">
+              <div class="crm-overview-grid momo-page-metrics grid grid-cols-2 sm:grid-cols-4 mt-4">
+                <div class="crm-overview-metric momo-page-metric px-3 py-3">
                   <div class="text-[9px] font-black text-slate-400">顧客</div>
                   <div class="text-lg font-black text-slate-800">{{ crmStats.totalCustomers }}</div>
                 </div>
-                <div class="crm-overview-metric px-3 py-3">
+                <div class="crm-overview-metric momo-page-metric px-3 py-3">
                   <div class="text-[9px] font-black text-slate-400">有配方</div>
                   <div class="text-lg font-black text-violet-700">{{ crmStats.formulaCount }}</div>
                 </div>
-                <div class="crm-overview-metric px-3 py-3">
+                <div class="crm-overview-metric momo-page-metric px-3 py-3">
                   <div class="text-[9px] font-black text-slate-400">餘額偏低</div>
                   <div class="text-lg font-black text-amber-700">{{ crmStats.lowPrepaidCustomers }}</div>
                 </div>
-                <div class="crm-overview-metric px-3 py-3">
+                <div class="crm-overview-metric momo-page-metric px-3 py-3">
                   <div class="text-[9px] font-black text-slate-400">儲值餘額</div>
                   <div class="text-xs sm:text-lg font-black text-emerald-700">NT$ {{ formatNumber(crmStats.prepaidLiability) }}</div>
                 </div>
@@ -2482,25 +2488,25 @@
               </div>
             </section>
 
-            <section class="crm-directory-toolbar momo-surface bg-white rounded-3xl border border-orange-50 macaron-shadow p-3 sm:p-4 space-y-3">
-              <div class="crm-directory-heading flex items-center justify-between gap-3">
-                <div>
-                  <h3 class="text-sm sm:text-base font-black text-slate-800">顧客名單</h3>
-                  <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredCrmList.length }} 位顧客</p>
+            <section class="crm-directory-toolbar momo-surface momo-command-bar bg-white rounded-3xl border border-orange-50 macaron-shadow p-3 sm:p-4 space-y-3">
+              <div class="crm-directory-heading momo-command-heading flex items-center justify-between gap-3">
+                <div class="momo-command-copy min-w-0">
+                  <h3 class="momo-command-title text-sm sm:text-base font-black text-slate-800">顧客名單</h3>
+                  <p class="momo-command-subtitle mt-0.5 text-[10px] font-bold text-slate-400">{{ filteredCrmList.length }} 位顧客</p>
                 </div>
-                <button @click="crmShowInsights = !crmShowInsights" :aria-expanded="crmShowInsights" class="crm-directory-insights min-h-[36px] px-3 rounded-xl border text-[11px] font-black"
+                <button @click="crmShowInsights = !crmShowInsights" :aria-expanded="crmShowInsights" class="crm-directory-insights momo-command-secondary min-h-[36px] px-3 rounded-xl border text-[11px] font-black"
                         :class="crmShowInsights ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200'">
                   {{ crmShowInsights ? '收合分析' : '回流分析' }}
                 </button>
               </div>
-              <div class="crm-directory-controls flex flex-col sm:flex-row gap-2">
-                <div class="crm-search-shell relative flex-1">
+              <div class="crm-directory-controls momo-command-search-row flex flex-col sm:flex-row gap-2">
+                <div class="crm-search-shell momo-command-search relative flex-1">
                   <input type="text" v-model="crmSearchQuery" placeholder="搜尋顧客、服務或配方..."
-                         class="crm-search-input compact-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-10 pr-10 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
+                         class="crm-search-input compact-search-input momo-command-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-10 pr-10 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
                   <span class="crm-search-marker absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true"></span>
                   <button v-if="crmSearchQuery" @click="crmSearchQuery = ''" aria-label="清除顧客搜尋" class="crm-search-clear absolute right-2.5 top-1/2 -translate-y-1/2 min-h-8 w-8 text-slate-400 font-black text-sm">×</button>
                 </div>
-                <select v-model="crmSortMode" aria-label="顧客排序" class="crm-sort-select min-h-[44px] jelly-input bg-white border border-orange-100 rounded-2xl px-3 text-xs font-black text-slate-600 sm:w-44">
+                <select v-model="crmSortMode" aria-label="顧客排序" class="crm-sort-select momo-command-filter-control min-h-[44px] jelly-input bg-white border border-orange-100 rounded-2xl px-3 text-xs font-black text-slate-600 sm:w-44">
                   <option value="lastDate">最近來訪</option>
                   <option value="totalSpent">消費最高</option>
                   <option value="prepaidLow">儲值最低</option>
@@ -2513,7 +2519,7 @@
                   <button v-for="filter in crmPrimaryFilters" :key="filter.value"
                           @click="crmFilterMode = filter.value; crmShowMoreFilters = false"
                           :aria-label="filter.label" :aria-pressed="crmFilterMode === filter.value"
-                          class="crm-filter-button min-h-[36px] rounded-xl px-2 text-[11px] font-black border"
+                          class="crm-filter-button momo-command-filter-button min-h-[36px] rounded-xl px-2 text-[11px] font-black border"
                           :class="crmFilterMode === filter.value ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-orange-100'">
                     {{ filter.shortLabel }}
                   </button>
@@ -2522,7 +2528,7 @@
                         :aria-expanded="crmShowMoreFilters"
                         :aria-label="crmSecondaryFilterActive ? '更多篩選，目前：' + crmSecondaryFilterLabel : '更多篩選'"
                         title="更多篩選"
-                        class="crm-more-filter-toggle relative min-h-[36px] w-10 border"
+                        class="crm-more-filter-toggle momo-command-filter-button relative min-h-[36px] w-10 border"
                         :class="crmShowMoreFilters || crmSecondaryFilterActive ? 'is-active' : ''">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M7 14v6"></path>
@@ -2581,7 +2587,7 @@
                       <div class="flex flex-wrap items-center gap-1.5">
                         <h4 class="font-black text-slate-800 truncate">{{ cust.name }}</h4>
                         <span class="text-[9px] px-1.5 py-0.5 rounded-md font-black" :class="cust.gender === '男' ? 'bg-sky-50 text-sky-600' : 'bg-rose-50 text-rose-600'">{{ cust.gender }}</span>
-                        <span class="crm-customer-status text-[9px] font-black px-2 py-1 rounded-lg border shrink-0" :class="cust.statusClass">{{ cust.statusLabel }}</span>
+                        <span class="crm-customer-status momo-status-badge momo-status-tone text-[9px] font-black px-2 py-1 rounded-lg border shrink-0" :class="crmCustomerStatusTone(cust)">{{ cust.statusLabel }}</span>
                       </div>
                       <p class="mt-1 text-[11px] text-slate-400 font-bold truncate">
                         {{ cust.count }} 次消費 · {{ cust.count ? '最近 ' + cust.daysSinceLastVisit + ' 天前' : '尚無消費' }} · {{ cust.primaryService }}
@@ -2609,7 +2615,7 @@
                         <div class="text-[9px] font-black text-slate-400">顧客完整檔案</div>
                         <div class="mt-0.5 flex flex-wrap items-center gap-2">
                           <h3 class="text-base font-black text-slate-900 truncate">{{ cust.name }}</h3>
-                          <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="cust.statusClass">{{ cust.statusLabel }}</span>
+                          <span class="momo-status-badge momo-status-tone px-2 py-0.5 rounded-full text-[9px] font-black" :class="crmCustomerStatusTone(cust)">{{ cust.statusLabel }}</span>
                         </div>
                         <div class="mt-1 text-[10px] font-bold text-slate-400 truncate">ID {{ shortCustomerId(cust.id) }} · {{ cust.count }} 次消費 · 餘額 NT$ {{ formatNumber(cust.prepaidBalance) }}</div>
                       </div>
@@ -2883,10 +2889,10 @@
 
         <!-- Tab 6: 損益報表 -->
         <div v-else-if="activeTab === 'report'" key="report" class="momo-report-page momo-finance-report">
-          <div class="report-view-toolbar">
-            <div class="report-view-copy min-w-0">
-              <h2 class="text-lg font-black text-slate-800">報表</h2>
-              <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ reportViewMode === 'monthly' ? '當月對帳、月結與儲值帳本' : '年度損益、趨勢與服務產值' }}</p>
+          <div class="report-view-toolbar momo-surface momo-page-overview-toolbar momo-page-overview-header">
+            <div class="report-view-copy momo-page-overview-copy min-w-0">
+              <h2 class="momo-page-title text-lg font-black text-slate-800">報表</h2>
+              <p class="momo-page-subtitle mt-0.5 text-[10px] font-bold text-slate-400">{{ reportViewMode === 'monthly' ? '當月對帳、月結與儲值帳本' : '年度損益、趨勢與服務產值' }}</p>
             </div>
             <div class="report-view-switcher" role="tablist" aria-label="報表模式">
               <button type="button" @click="setReportViewMode('monthly')" class="report-view-button" :class="reportViewMode === 'monthly' ? 'is-active' : ''" :aria-selected="reportViewMode === 'monthly'">本月報表</button>
@@ -2894,11 +2900,11 @@
             </div>
           </div>
           <!-- Report header -->
-          <section v-if="reportViewMode === 'annual'" class="report-panel report-overview-panel report-annual-panel momo-surface bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
-            <div class="report-panel-header report-overview-header momo-section-header px-4 py-4 sm:px-6 flex items-center justify-between gap-3 border-b border-slate-100">
-              <div>
-                <h2 class="text-lg sm:text-xl font-black text-slate-800">年度損益</h2>
-                <p class="text-[10px] sm:text-xs font-bold text-slate-400 mt-0.5">年度分析 · 服務營業額不含儲值進帳</p>
+          <section v-if="reportViewMode === 'annual'" class="report-panel report-overview-panel report-annual-panel momo-surface momo-page-overview bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
+            <div class="report-panel-header report-overview-header momo-section-header momo-page-overview-header px-4 py-4 sm:px-6 flex items-center justify-between gap-3 border-b border-slate-100">
+              <div class="momo-page-overview-copy min-w-0">
+                <h2 class="momo-page-title text-lg sm:text-xl font-black text-slate-800">年度損益</h2>
+                <p class="momo-page-subtitle text-[10px] sm:text-xs font-bold text-slate-400 mt-0.5">年度分析 · 服務營業額不含儲值進帳</p>
               </div>
               <button @click="exportAnnualReport" class="report-secondary-button min-h-[42px] px-3 sm:px-4 rounded-xl border border-macaron-peach-200 bg-white text-macaron-peach-500 text-xs font-black">匯出 CSV</button>
             </div>
@@ -2907,23 +2913,23 @@
               <div class="text-center text-base font-black text-slate-800">{{ selectedYear }} 年</div>
               <button @click="nextReportYear" class="min-h-[52px] text-xl font-black text-slate-500 border-l border-slate-100" aria-label="下一年">›</button>
             </div>
-            <div class="report-overview-grid grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100">
-              <div class="report-overview-metric p-4">
+            <div class="report-overview-grid momo-page-metrics grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100">
+              <div class="report-overview-metric momo-page-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">營業額</div>
                 <div class="text-xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(annualSummary.totalRevenue) }}</div>
                 <div class="text-[9px] font-bold mt-1" :class="reportComparisons.revenue >= 0 ? 'text-emerald-600' : 'text-rose-500'">{{ reportComparisons.revenue >= 0 ? '↑' : '↓' }} {{ Math.abs(reportComparisons.revenue) }}% vs 去年</div>
               </div>
-              <div class="report-overview-metric p-4">
+              <div class="report-overview-metric momo-page-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">總支出</div>
                 <div class="text-xl font-black text-sky-600 mt-1">NT$ {{ formatNumber(annualSummary.totalExpenses) }}</div>
                 <div class="text-[9px] font-bold mt-1" :class="reportComparisons.expenses <= 0 ? 'text-emerald-600' : 'text-rose-500'">{{ reportComparisons.expenses >= 0 ? '↑' : '↓' }} {{ Math.abs(reportComparisons.expenses) }}% vs 去年</div>
               </div>
-              <div class="report-overview-metric p-4">
+              <div class="report-overview-metric momo-page-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">淨利</div>
                 <div class="text-xl font-black mt-1" :class="annualSummary.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'">NT$ {{ formatNumber(annualSummary.netProfit) }}</div>
                 <div class="text-[9px] font-bold mt-1 text-slate-400">營業額－全部支出</div>
               </div>
-              <div class="report-overview-metric p-4">
+              <div class="report-overview-metric momo-page-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">淨利率</div>
                 <div class="text-xl font-black mt-1" :class="annualSummary.totalRevenue > 0 && annualSummary.totalExpenses === 0 ? 'text-amber-700' : annualSummary.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'">{{ annualSummary.totalRevenue > 0 && annualSummary.totalExpenses === 0 ? '待確認' : annualSummary.profitMargin + '%' }}</div>
                 <div class="text-[9px] font-bold mt-1 text-slate-400">{{ annualSummary.totalRevenue > 0 && annualSummary.totalExpenses === 0 ? '尚無支出資料' : '淨利 ÷ 營業額' }}</div>
@@ -2959,7 +2965,7 @@
               <div>
                 <div class="flex flex-wrap items-center gap-2">
                   <h2 class="text-base sm:text-lg font-black text-slate-800">正式月結 · {{ monthlySettlementSummary.label }}</h2>
-                  <span class="report-settlement-status min-h-[26px] inline-flex items-center px-2.5 rounded-lg text-[10px] font-black" :class="monthlyReportCompleteness.className">{{ monthlyReportCompleteness.label }}</span>
+                  <span class="report-settlement-status momo-status-badge momo-status-tone min-h-[26px] inline-flex items-center px-2.5 rounded-lg text-[10px] font-black" :class="monthlyReportCompleteness.ready ? 'is-ok' : 'is-warn'">{{ monthlyReportCompleteness.label }}</span>
                 </div>
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">已打烊日期使用固定快照；未打烊日期暫算，不受畫面篩選影響</p>
               </div>
@@ -2992,7 +2998,7 @@
             <div class="report-completeness-grid grid grid-cols-2 lg:grid-cols-4">
               <div v-for="item in monthlyReportCompleteness.items" :key="'completeness-' + item.key" class="report-completeness-item px-4 py-3">
                 <div class="flex items-center gap-2">
-                  <span class="report-status-dot" :class="item.tone === 'good' ? 'bg-emerald-500' : item.tone === 'risk' ? 'bg-rose-500' : item.tone === 'warn' ? 'bg-amber-500' : 'bg-slate-400'"></span>
+                  <span class="report-status-dot momo-status-dot momo-status-tone" :class="statusToneClasses(item.tone, 'dot')"></span>
                   <div class="text-[9px] font-black text-slate-400">{{ item.label }}</div>
                 </div>
                 <div class="mt-1 text-sm font-black" :class="item.tone === 'risk' ? 'text-rose-600' : item.tone === 'warn' ? 'text-amber-700' : 'text-slate-700'">{{ item.value }}</div>
@@ -3005,8 +3011,8 @@
                 <div class="mt-0.5 text-[11px] font-bold text-slate-400">{{ monthlySettlementSummary.settlementBasis }}</div>
               </div>
               <div class="flex flex-wrap gap-1.5">
-                <span class="min-h-[28px] inline-flex items-center px-2.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-black">快照 {{ monthlySettlementSummary.snapshotDays }} 天</span>
-                <span class="min-h-[28px] inline-flex items-center px-2.5 rounded-lg bg-amber-50 text-amber-700 text-[10px] font-black">暫算 {{ monthlySettlementSummary.liveDays }} 天</span>
+                <span class="momo-status-badge momo-status-tone is-ok min-h-[28px] inline-flex items-center px-2.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-black">快照 {{ monthlySettlementSummary.snapshotDays }} 天</span>
+                <span class="momo-status-badge momo-status-tone is-warn min-h-[28px] inline-flex items-center px-2.5 rounded-lg bg-amber-50 text-amber-700 text-[10px] font-black">暫算 {{ monthlySettlementSummary.liveDays }} 天</span>
               </div>
             </div>
             <div v-if="monthlySettlementSummary.unclosedDates.length" class="report-unclosed-strip px-4 py-3 sm:px-6 border-t border-amber-100 bg-amber-50/70">
@@ -3026,7 +3032,7 @@
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">期初儲值餘額 + 本期進帳 - 本期扣款 + 調整 = 期末儲值餘額</p>
               </div>
               <div class="report-summary-actions flex items-center gap-2">
-                <span class="min-h-[30px] inline-flex items-center px-2.5 rounded-lg text-[10px] font-black" :class="monthlyPrepaidReconciliation.balanced ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'">
+                <span class="momo-status-badge momo-status-tone min-h-[30px] inline-flex items-center px-2.5 rounded-lg text-[10px] font-black" :class="monthlyPrepaidReconciliation.balanced ? 'is-ok' : 'is-danger'">
                   {{ monthlyPrepaidReconciliation.balanced ? '帳面平衡' : '需檢查' }}
                 </span>
                 <button v-if="monthlyPrepaidReconciliation.customerRows.length" type="button" @click="reportShowPrepaidDetails = !reportShowPrepaidDetails" class="report-detail-toggle min-h-[34px] px-3 border border-slate-200 bg-white text-slate-600 text-[10px] font-black">
@@ -3215,11 +3221,11 @@
 
         <!-- Tab 7: Data Safety -->
         <div v-else-if="activeTab === 'safety'" key="safety" class="momo-list-page momo-safety-page">
-          <section class="safety-overview-panel momo-surface bg-white rounded-3xl sm:rounded-4xl border border-slate-200 macaron-shadow overflow-hidden">
-            <div class="safety-overview-header p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div class="min-w-0">
-                <h2 class="text-lg sm:text-xl font-black text-slate-800">資料安全</h2>
-                <p class="text-[11px] font-bold text-slate-400 mt-0.5">先處理問題，維護工具需要時再展開</p>
+          <section class="safety-overview-panel momo-surface momo-page-overview bg-white rounded-3xl sm:rounded-4xl border border-slate-200 macaron-shadow overflow-hidden">
+            <div class="safety-overview-header momo-page-overview-header p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="momo-page-overview-copy min-w-0">
+                <h2 class="momo-page-title text-lg sm:text-xl font-black text-slate-800">資料安全</h2>
+                <p class="momo-page-subtitle text-[11px] font-bold text-slate-400 mt-0.5">先處理問題，維護工具需要時再展開</p>
               </div>
               <div class="safety-overview-actions flex items-center gap-2 shrink-0">
                 <span class="shrink-0 px-3 py-1 rounded-full border text-[11px] font-black" :class="statusToneClasses(healthIssueSummary.status === 'ok' ? 'ok' : healthIssueSummary.status === 'error' ? 'error' : 'warn')">
@@ -3231,8 +3237,8 @@
               </div>
             </div>
 
-            <div class="safety-status-grid grid grid-cols-3 divide-x divide-slate-100">
-              <div v-for="card in dataSafetyCards.filter(item => ['snapshot', 'cloud_backup', 'storage'].includes(item.key))" :key="'safety-card-' + card.key" class="safety-status-card p-4 sm:p-5">
+            <div class="safety-status-grid momo-page-metrics grid grid-cols-3 divide-x divide-slate-100">
+              <div v-for="card in dataSafetyCards.filter(item => ['snapshot', 'cloud_backup', 'storage'].includes(item.key))" :key="'safety-card-' + card.key" class="safety-status-card momo-page-metric p-4 sm:p-5">
                 <div class="flex items-center justify-between gap-2">
                   <div class="text-[10px] font-black text-slate-400">{{ card.label }}</div>
                   <span class="w-2 h-2 rounded-full" :class="statusToneClasses(card.tone, 'dot')"></span>
@@ -3259,7 +3265,7 @@
                 <h3 class="text-base font-black text-slate-800">需要處理</h3>
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">錯誤優先，其次確認提醒</p>
               </div>
-              <span class="px-2.5 py-1 rounded-full text-[10px] font-black" :class="healthIssueSummary.status === 'ok' ? 'bg-emerald-50 text-emerald-700' : healthIssueSummary.status === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'">
+              <span class="momo-status-badge momo-status-tone px-2.5 py-1 rounded-full text-[10px] font-black" :class="healthIssueSummary.status === 'ok' ? 'is-ok' : healthIssueSummary.status === 'error' ? 'is-danger' : 'is-warn'">
                 {{ healthIssueSummary.total ? `${healthIssueSummary.errorCount} 錯誤 · ${healthIssueSummary.warningCount} 提醒` : '正常' }}
               </span>
             </div>
@@ -3274,7 +3280,7 @@
                    :class="issue.severity === 'error' ? 'safety-issue-row--error' : 'safety-issue-row--warning'">
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="issue.severity === 'error' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'">
+                    <span class="momo-status-badge momo-status-tone px-2 py-0.5 rounded-full text-[9px] font-black" :class="issue.severity === 'error' ? 'is-danger' : 'is-warn'">
                       {{ issue.severity === 'error' ? '錯誤' : '提醒' }}
                     </span>
                     <span class="text-[10px] font-black text-slate-400">{{ issue.sourceLabel }}</span>
@@ -3306,8 +3312,8 @@
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="block text-base font-black text-slate-800">同步與價目</span>
-                  <span class="px-2 py-0.5 rounded-full border text-[9px] font-black"
-                        :class="syncError || syncIssueSummary.errors ? 'border-rose-100 bg-rose-50 text-rose-700' : syncIssueSummary.total || priceMatchWorkbenchRows.length ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700'">
+                  <span class="momo-status-badge momo-status-tone px-2 py-0.5 rounded-full border text-[9px] font-black"
+                        :class="syncError || syncIssueSummary.errors ? 'is-danger' : syncIssueSummary.total || priceMatchWorkbenchRows.length ? 'is-warn' : 'is-ok'">
                     {{ syncError ? '同步失敗' : syncIssueSummary.total || priceMatchWorkbenchRows.length ? '需確認' : '同步正常' }}
                   </span>
                 </div>
@@ -3413,7 +3419,7 @@
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="block text-base font-black text-slate-800">資料維護</span>
                   <span class="px-2 py-0.5 rounded-full border text-[9px] font-black" :class="statusToneClasses(cloudBackupSummary.status)">{{ cloudBackupSummary.title }}</span>
-                  <span class="px-2 py-0.5 rounded-full border text-[9px] font-black" :class="updateAvailable ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-slate-200 bg-slate-50 text-slate-500'">
+                  <span class="momo-status-badge momo-status-tone px-2 py-0.5 rounded-full border text-[9px] font-black" :class="updateAvailable ? 'is-warn' : 'is-neutral'">
                     {{ updateAvailable ? '有新版' : '版本正常' }}
                   </span>
                 </div>
@@ -4054,9 +4060,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.15-inventory-status-visuals-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.15-unified-workspace-visuals-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.15-inventory-status-visuals-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.15-unified-workspace-visuals-1"></script>
 </body>
 </html>

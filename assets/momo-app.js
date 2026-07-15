@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.15-inventory-status-visuals-1';
+    const APP_VERSION = '2026.07.15-unified-workspace-visuals-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -8473,14 +8473,28 @@
           }, 1000); // 1-second debounce
         },
 
+        crmCustomerStatusTone(customer = {}) {
+          const group = String(customer.returnGroup || '');
+          if (Number(customer.prepaidBalance) < 0 || group === 'dormant') return 'is-danger';
+          if (customer.prepaidLow || ['inactive', 'overdue'].includes(group)) return 'is-warn';
+          if (['upcoming', 'prepaidDormant'].includes(group)) return 'is-info';
+          if (group === 'stable') return 'is-ok';
+          return 'is-neutral';
+        },
         statusToneClasses(tone, type = 'pill') {
-          const map = {
-            ok: type === 'dot' ? 'bg-emerald-500' : 'bg-emerald-50 text-emerald-700 border-emerald-100',
-            warn: type === 'dot' ? 'bg-amber-400' : 'bg-amber-50 text-amber-700 border-amber-100',
-            error: type === 'dot' ? 'bg-rose-500' : 'bg-rose-50 text-rose-700 border-rose-100',
-            neutral: type === 'dot' ? 'bg-slate-300' : 'bg-slate-50 text-slate-600 border-slate-200'
+          const toneMap = {
+            ok: 'ok',
+            good: 'ok',
+            info: 'info',
+            warn: 'warn',
+            warning: 'warn',
+            error: 'danger',
+            risk: 'danger',
+            danger: 'danger',
+            neutral: 'neutral'
           };
-          return map[tone] || map.neutral;
+          const status = toneMap[tone] || 'neutral';
+          return `${type === 'dot' ? 'momo-status-dot' : 'momo-status-badge'} momo-status-tone is-${status}`;
         },
         buildDataSafetyReport() {
           const issues = [];
