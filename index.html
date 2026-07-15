@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.15-expense-date-tags-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.15-expense-category-icons-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.15-expense-date-tags-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.15-expense-category-icons-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -303,7 +303,15 @@
     <transition name="fade">
       <div v-if="toast.show" class="fixed top-6 sm:top-24 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full text-sm font-black macaron-shadow-lg flex items-center gap-2"
            :class="toast.type === 'success' ? 'bg-macaron-mint text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'">
-        <span class="w-2 h-2 rounded-full" :class="toast.type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+        <svg v-if="toast.type === 'success'" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <path d="m9 11 3 3L22 4"></path>
+        </svg>
+        <svg v-else class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 8v4"></path>
+          <path d="M12 16h.01"></path>
+        </svg>
         <span>{{ toast.message }}</span>
       </div>
     </transition>
@@ -500,7 +508,8 @@
               <!-- Left: Net Profit (Hero Metric) -->
               <div class="space-y-1">
                 <span class="text-[10px] sm:text-xs font-black text-slate-400 tracking-wider uppercase flex items-center gap-1.5 select-none">
-                  工作室淨利 🍀
+                  <svg class="w-3.5 h-3.5" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18"></path><path stroke-linecap="round" stroke-linejoin="round" d="m7 16 4-4 4 4 6-6"></path></svg>
+                  工作室淨利
                 </span>
                 <div class="flex flex-wrap items-baseline gap-2">
                   <span class="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight">
@@ -540,7 +549,14 @@
 
               <!-- Grid 2: MOMO Salary -->
               <div class="p-4 sm:p-5 flex flex-col justify-between space-y-1 border-t-0">
-                <div class="text-[10px] font-black text-macaron-peach-500 tracking-wider uppercase select-none">MOMO 薪水 👑</div>
+                <div class="flex items-center gap-1.5 text-[10px] font-black text-macaron-peach-500 tracking-wider uppercase select-none">
+                  <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
+                    <path d="M12 18V6"></path>
+                  </svg>
+                  <span>MOMO 薪水</span>
+                </div>
                 <div class="text-lg sm:text-xl font-black text-slate-800 tracking-tight truncate">NT$ {{ formatNumber(kpis.momoSalary) }}</div>
                 <p class="text-[9px] text-macaron-peach-400 font-semibold">營業額 * 45%</p>
               </div>
@@ -808,14 +824,21 @@
           <div class="bg-white p-4 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow hover-lift">
             <div class="flex items-center justify-between pb-3 border-b border-orange-50 mb-5">
               <h3 class="font-black text-slate-800 text-sm sm:text-lg flex items-center gap-2">
-                <span>🍩</span> 服務類別收入佔比
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-macaron-rose" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21.21 15.89A10 10 0 1 1 8.11 2.99"></path>
+                  <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                </svg>
+                <span>服務類別收入佔比</span>
               </h3>
               <span class="text-[10px] sm:text-xs text-slate-400 font-bold select-none">當期收入結構分析</span>
             </div>
 
             <!-- Empty State -->
             <div v-if="donutChartData.total === 0" class="text-center py-8 text-slate-400 text-sm font-medium select-none">
-              <span class="text-2xl animate-bounce-slow block mb-2">🍩</span>
+              <svg class="w-7 h-7 mx-auto mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21.21 15.89A10 10 0 1 1 8.11 2.99"></path>
+                <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+              </svg>
               本期尚無業績資料
             </div>
 
@@ -851,7 +874,7 @@
                   <!-- Color Dot -->
                   <div class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-sm"
                        :style="{ backgroundColor: seg.color + '30' }">
-                    {{ seg.emoji }}
+                    <svg class="w-4 h-4 text-slate-600" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 19V9"></path><path stroke-linecap="round" stroke-linejoin="round" d="M10 19V5"></path><path stroke-linecap="round" stroke-linejoin="round" d="M16 19v-7"></path><path stroke-linecap="round" stroke-linejoin="round" d="M22 19V3"></path></svg>
                   </div>
                   <div class="min-w-0">
                     <div class="flex items-center gap-1.5">
@@ -879,8 +902,9 @@
           <div class="lg:hidden flex bg-orange-100/30 p-1 rounded-full border border-orange-200/30 mb-2 max-w-md mx-auto">
             <button @click="mobileDashboardSubTab = 'payment'"
                     :class="mobileDashboardSubTab === 'payment' ? 'bg-white text-slate-800 shadow-sm border border-orange-100/50' : 'text-slate-500 hover:text-slate-700'"
-                    class="flex-1 py-2 text-xs font-black rounded-full transition-all jelly-btn text-center select-none">
-              💰 金流對帳
+                    class="flex-1 py-2 text-xs font-black rounded-full transition-all jelly-btn inline-flex items-center justify-center gap-1.5 select-none">
+              <svg class="w-3.5 h-3.5" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7V5a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v12H5a3 3 0 0 1-3-3V6"></path><path stroke-linecap="round" d="M16 13h2"></path></svg>
+              <span>金流對帳</span>
             </button>
             <button @click="mobileDashboardSubTab = 'customers'"
                     :class="mobileDashboardSubTab === 'customers' ? 'bg-white text-slate-800 shadow-sm border border-orange-100/50' : 'text-slate-500 hover:text-slate-700'"
@@ -889,8 +913,9 @@
             </button>
             <button @click="mobileDashboardSubTab = 'yield'"
                     :class="mobileDashboardSubTab === 'yield' ? 'bg-white text-slate-800 shadow-sm border border-orange-100/50' : 'text-slate-500 hover:text-slate-700'"
-                    class="flex-1 py-2 text-xs font-black rounded-full transition-all jelly-btn text-center select-none">
-              ⚡ 產值效率
+                    class="flex-1 py-2 text-xs font-black rounded-full transition-all jelly-btn inline-flex items-center justify-center gap-1.5 select-none">
+              <svg class="w-3.5 h-3.5" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m13 2-9 12h8l-1 8 9-12h-8z"></path></svg>
+              <span>產值效率</span>
             </button>
           </div>
 
@@ -901,7 +926,8 @@
                  class="bg-white p-4.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow space-y-3 sm:space-y-4 hover-lift">
               <div class="flex items-center justify-between pb-2 border-b border-orange-50">
                 <h3 class="font-black text-slate-800 text-base sm:text-lg flex items-center gap-2">
-                  <span>💰</span> 金流對帳區
+                  <svg class="w-4 h-4" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7V5a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v12H5a3 3 0 0 1-3-3V6"></path><path stroke-linecap="round" d="M16 13h2"></path></svg>
+                  金流對帳區
                 </h3>
                 <span class="text-[10px] sm:text-xs text-slate-400 font-bold">按付款類型彙整</span>
               </div>
@@ -910,7 +936,7 @@
                 <div v-for="(val, method) in paymentReconciliation" :key="method"
                      class="flex items-center justify-between p-2.5 sm:p-3 rounded-2xl bg-orange-50/40 border border-orange-100/20 hover:bg-orange-50/70 transition-colors">
                   <div class="flex items-center gap-2">
-                    <span class="text-base sm:text-lg">{{ getPaymentEmoji(method) }}</span>
+                    <svg class="w-4 h-4 text-slate-400" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle></svg>
                     <span class="text-xs sm:text-sm font-bold text-slate-700">{{ method }}</span>
                   </div>
                   <span class="font-extrabold text-slate-800 text-xs sm:text-sm">NT$ {{ formatNumber(val) }}</span>
@@ -962,7 +988,8 @@
                  class="bg-white p-4.5 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow space-y-3 sm:space-y-4 hover-lift">
               <div class="flex items-center justify-between pb-2 border-b border-orange-50">
                 <h3 class="font-black text-slate-800 text-base sm:text-lg flex items-center gap-2">
-                  <span>⚡</span> 服務項目每小時時間產值
+                  <svg class="w-4 h-4" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m13 2-9 12h8l-1 8 9-12h-8z"></path></svg>
+                  服務項目每小時時間產值
                 </h3>
                 <span class="text-[10px] sm:text-xs text-slate-400 font-bold">熱門服務效率榜</span>
               </div>
@@ -1675,6 +1702,32 @@
 
         <!-- Tab 3: Expenses -->
         <div v-else-if="activeTab === 'expenses'" key="expenses" class="momo-expenses-page momo-list-page space-y-6">
+          <svg class="absolute w-0 h-0 overflow-hidden" aria-hidden="true" focusable="false">
+            <defs>
+              <symbol id="expense-category-materials" viewBox="0 0 24 24">
+                <path d="m7.5 4.27 9 5.15"></path><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path>
+              </symbol>
+              <symbol id="expense-category-rent" viewBox="0 0 24 24">
+                <path d="m3 11 9-8 9 8"></path><path d="M5 10v10h14V10"></path><path d="M9 20v-6h6v6"></path>
+              </symbol>
+              <symbol id="expense-category-utilities" viewBox="0 0 24 24">
+                <path d="m13 2-9 12h8l-1 8 9-12h-8z"></path>
+              </symbol>
+              <symbol id="expense-category-marketing" viewBox="0 0 24 24">
+                <path d="m3 11 18-5v12L3 14z"></path><path d="M11.6 16.8 13 22H7l-1.5-7"></path><path d="M21 12h2"></path>
+              </symbol>
+              <symbol id="expense-category-salary" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 18V6"></path>
+              </symbol>
+              <symbol id="expense-category-other" viewBox="0 0 24 24">
+                <path d="M4 2v20l2-2 2 2 2-2 2 2 2-2 2 2 2-2 2 2V2l-2 2-2-2-2 2-2-2-2 2-2-2-2 2z"></path><path d="M8 9h8"></path><path d="M8 13h6"></path>
+              </symbol>
+              <symbol id="expense-empty-receipt" viewBox="0 0 24 24">
+                <path d="M4 2v20l2-2 2 2 2-2 2 2 2-2 2 2 2-2 2 2V2l-2 2-2-2-2 2-2-2-2 2-2-2-2 2z"></path><path d="M8 8h8"></path><path d="M8 12h8"></path><path d="M8 16h5"></path>
+              </symbol>
+            </defs>
+          </svg>
+
           <!-- 當期支出摘要 -->
           <section class="momo-surface expense-summary-panel bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
             <div class="momo-section-header expense-summary-header px-5 py-3 border-b border-orange-50 flex items-center justify-between gap-3">
@@ -1708,8 +1761,12 @@
             <div class="expense-summary-footer grid grid-cols-2 divide-x divide-orange-50 border-t border-orange-50">
               <div class="expense-summary-detail min-w-0 px-3 sm:px-5 py-2.5">
                 <div class="text-[9px] font-black text-slate-400">最高分類</div>
-                <div class="mt-0.5 flex items-baseline gap-1.5 min-w-0">
-                  <span class="truncate text-[11px] font-black text-slate-700">{{ expensesSummary.topCategory }}</span>
+                <div class="expense-summary-top-category mt-0.5 flex items-baseline gap-1.5 min-w-0">
+                  <span v-if="expensesSummary.topCategory && expensesSummary.topCategory !== '-'" class="expense-category-badge expense-category-tone" :class="'is-' + getExpenseCategoryInfo(expensesSummary.topCategory).key">
+                    <svg class="expense-category-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#expense-category-' + getExpenseCategoryInfo(expensesSummary.topCategory).key"></use></svg>
+                    <span>{{ getExpenseCategoryInfo(expensesSummary.topCategory).label }}</span>
+                  </span>
+                  <span v-else class="text-[11px] font-black text-slate-500">-</span>
                   <span class="shrink-0 text-[10px] font-bold text-slate-400">NT$ {{ formatNumber(expensesSummary.topCategoryAmount) }}</span>
                 </div>
               </div>
@@ -1734,7 +1791,11 @@
               <button v-for="template in expenseTemplateCards" :key="'page-template-' + template.label"
                       type="button"
                       @click="applyExpensePreset(template)"
-                      class="expense-template-card text-left rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-[0_1px_0_rgba(15,23,42,0.03)] transition-colors">
+                      class="expense-template-card expense-category-tone text-left rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-[0_1px_0_rgba(15,23,42,0.03)] transition-colors"
+                      :class="'is-' + getExpenseCategoryInfo(template.category).key">
+                <span class="expense-template-category-icon">
+                  <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#expense-category-' + getExpenseCategoryInfo(template.category).key"></use></svg>
+                </span>
                 <span class="expense-template-copy min-w-0">
                   <span class="expense-template-title text-sm font-black text-slate-800 truncate">{{ template.label }}</span>
                   <span class="expense-template-meta mt-0.5 text-[10px] font-bold text-slate-400 truncate">
@@ -1801,9 +1862,15 @@
                   <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <button v-for="template in expenseTemplateCards" :key="'form-template-' + template.label" type="button"
                             @click="applyExpensePreset(template, { openForm: false })"
-                            class="min-h-[54px] rounded-xl bg-white border border-slate-200 px-2.5 py-2 text-left">
-                      <div class="text-[11px] font-black text-slate-700 truncate">{{ template.label }}</div>
-                      <div class="mt-0.5 text-[9px] font-bold text-slate-400 truncate">{{ expenseTemplateAmountText(template) }}</div>
+                            class="expense-form-template-card expense-category-tone min-h-[54px] rounded-xl bg-white border border-slate-200 px-2.5 py-2 text-left"
+                            :class="'is-' + getExpenseCategoryInfo(template.category).key">
+                      <span class="expense-form-template-icon">
+                        <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#expense-category-' + getExpenseCategoryInfo(template.category).key"></use></svg>
+                      </span>
+                      <span class="min-w-0">
+                        <span class="block text-[11px] font-black text-slate-700 truncate">{{ template.label }}</span>
+                        <span class="block mt-0.5 text-[9px] font-bold text-slate-400 truncate">{{ expenseTemplateAmountText(template) }}</span>
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -1879,15 +1946,20 @@
               <div v-if="periodExpenses.length > 0" class="expense-category-strip flex gap-1.5 overflow-x-auto pb-1">
                 <button v-for="(amount, cat) in expenseBreakdown" v-show="amount > 0" :key="cat"
                      @click="expenseFilterCategory = expenseFilterCategory === cat ? 'All' : cat"
-                     :class="expenseFilterCategory === cat ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-slate-50/60 border-slate-100 text-slate-500'"
-                     class="expense-category-chip shrink-0 min-w-[92px] text-left px-2.5 py-2 rounded-xl border transition-all jelly-btn">
-                  <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider">{{ cat }}</span>
+                     :class="['is-' + getExpenseCategoryInfo(cat).key, { 'is-active': expenseFilterCategory === cat }]"
+                     class="expense-category-chip expense-category-tone shrink-0 min-w-[92px] text-left px-2.5 py-2 rounded-xl border transition-all jelly-btn">
+                  <span class="expense-category-chip-label">
+                    <svg class="expense-category-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#expense-category-' + getExpenseCategoryInfo(cat).key"></use></svg>
+                    <span>{{ getExpenseCategoryInfo(cat).label }}</span>
+                  </span>
                   <span class="block text-xs font-black mt-1">NT$ {{ formatNumber(amount) }}</span>
                 </button>
               </div>
 
               <div v-if="filteredExpenses.length === 0" class="expense-empty-state py-14 text-center rounded-3xl bg-orange-50/20">
-                <div class="text-3xl">🍀</div>
+                <span class="expense-empty-icon">
+                  <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#expense-empty-receipt"></use></svg>
+                </span>
                 <div class="mt-2 text-sm font-black text-slate-500">{{ expenseFilterActive ? '找不到符合條件的支出' : '本期沒有支出明細' }}</div>
                 <div class="mt-1 text-xs font-semibold text-slate-300">{{ expenseFilterActive ? '目前篩選沒有結果' : '本期尚無支出紀錄' }}</div>
               </div>
@@ -1920,7 +1992,12 @@
                     <tbody class="divide-y divide-orange-50">
                       <template v-for="expense in group.expenses" :key="expense.id">
                         <tr @click="toggleExpenseEditor(expense.id)" class="expense-table-row cursor-pointer hover:bg-orange-50/30">
-                          <td class="px-4 py-3"><span class="text-xs font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">{{ expense.category }}</span></td>
+                          <td class="px-4 py-3">
+                            <span class="expense-category-badge expense-category-tone" :class="'is-' + getExpenseCategoryInfo(expense.category).key">
+                              <svg class="expense-category-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#expense-category-' + getExpenseCategoryInfo(expense.category).key"></use></svg>
+                              <span>{{ getExpenseCategoryInfo(expense.category).label }}</span>
+                            </span>
+                          </td>
                           <td class="px-4 py-3 text-sm font-semibold text-slate-600">
                             <div class="flex items-center gap-2">
                               <span class="truncate">{{ expense.notes || '未填備註' }}</span>
@@ -1956,7 +2033,10 @@
                     <button type="button" @click="toggleExpenseEditor(expense.id)" class="expense-mobile-button w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left">
                       <div class="min-w-0">
                         <div class="flex items-center gap-1.5 min-w-0">
-                          <span class="text-[9px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md shrink-0">{{ expense.category }}</span>
+                          <span class="expense-category-badge expense-category-tone" :class="'is-' + getExpenseCategoryInfo(expense.category).key">
+                            <svg class="expense-category-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#expense-category-' + getExpenseCategoryInfo(expense.category).key"></use></svg>
+                            <span>{{ getExpenseCategoryInfo(expense.category).label }}</span>
+                          </span>
                           <span class="text-sm font-black text-slate-800 truncate">{{ expense.notes || '未填備註' }}</span>
                         </div>
                         <div class="mt-0.5 text-[11px] font-semibold text-slate-400 truncate">{{ expense.date }}</div>
@@ -3936,9 +4016,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.15-expense-date-tags-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.15-expense-category-icons-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.15-expense-date-tags-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.15-expense-category-icons-1"></script>
 </body>
 </html>

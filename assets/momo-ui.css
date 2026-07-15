@@ -2046,9 +2046,86 @@
       padding: 0.875rem 1rem !important;
     }
 
+    body.momo-polish .expense-category-tone {
+      --expense-category-border: #D8DEE6;
+      --expense-category-bg: #F7F9FB;
+      --expense-category-ink: #64748B;
+      --expense-category-strong: #A8B4C4;
+    }
+
+    body.momo-polish .expense-category-tone.is-materials {
+      --expense-category-border: #B9DEDF;
+      --expense-category-bg: #EFF8F8;
+      --expense-category-ink: #187B81;
+      --expense-category-strong: #68B8BC;
+    }
+
+    body.momo-polish .expense-category-tone.is-rent {
+      --expense-category-border: #C9D5ED;
+      --expense-category-bg: #F3F6FC;
+      --expense-category-ink: #4A6292;
+      --expense-category-strong: #8FA6D1;
+    }
+
+    body.momo-polish .expense-category-tone.is-utilities {
+      --expense-category-border: #EAD09C;
+      --expense-category-bg: #FFF8EA;
+      --expense-category-ink: #8A650F;
+      --expense-category-strong: #D7B15E;
+    }
+
+    body.momo-polish .expense-category-tone.is-marketing {
+      --expense-category-border: #F3C7C0;
+      --expense-category-bg: #FFF5F3;
+      --expense-category-ink: #C4554C;
+      --expense-category-strong: #DE8D84;
+    }
+
+    body.momo-polish .expense-category-tone.is-salary {
+      --expense-category-border: #BFDCCB;
+      --expense-category-bg: #F1F8F4;
+      --expense-category-ink: #347052;
+      --expense-category-strong: #81B397;
+    }
+
+    body.momo-polish .expense-category-tone.is-other {
+      --expense-category-border: #D8DEE6;
+      --expense-category-bg: #F7F9FB;
+      --expense-category-ink: #64748B;
+      --expense-category-strong: #A8B4C4;
+    }
+
+    body.momo-polish .expense-category-badge {
+      display: inline-flex;
+      min-height: 26px;
+      max-width: 100%;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0 0.5rem;
+      border: 1px solid var(--expense-category-border);
+      border-radius: 6px;
+      background: var(--expense-category-bg);
+      color: var(--expense-category-ink);
+      font-size: 0.625rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    }
+
+    body.momo-polish .expense-category-icon {
+      width: 13px;
+      height: 13px;
+      flex: 0 0 13px;
+    }
+
     body.momo-polish .expense-template-card {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: 32px minmax(0, 1fr) auto;
+      grid-template-areas: "icon copy action";
       min-width: 0;
       min-height: 68px;
       align-items: center;
@@ -2061,8 +2138,26 @@
     }
 
     body.momo-polish .expense-template-card:hover {
-      border-color: rgba(195, 77, 98, 0.42) !important;
-      background: #FFFAFB !important;
+      border-color: var(--expense-category-strong) !important;
+      background: var(--expense-category-bg) !important;
+    }
+
+    body.momo-polish .expense-template-category-icon {
+      grid-area: icon;
+      display: inline-flex;
+      width: 32px;
+      height: 32px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--expense-category-border);
+      border-radius: 7px;
+      background: var(--expense-category-bg);
+      color: var(--expense-category-ink);
+    }
+
+    body.momo-polish .expense-template-category-icon svg {
+      width: 16px;
+      height: 16px;
     }
 
     body.momo-polish .expense-template-copy,
@@ -2072,7 +2167,12 @@
       min-width: 0;
     }
 
+    body.momo-polish .expense-template-copy {
+      grid-area: copy;
+    }
+
     body.momo-polish .expense-template-amount {
+      grid-area: action;
       padding: 0.25rem 0.4rem;
       border-radius: 6px;
       background: var(--momo-surface-muted);
@@ -2081,6 +2181,7 @@
     }
 
     body.momo-polish .expense-template-chevron {
+      grid-area: action;
       font-size: 1rem;
       font-weight: 800;
     }
@@ -2114,9 +2215,35 @@
       background: var(--momo-surface-muted) !important;
     }
 
-    body.momo-polish .expense-form-templates button {
-      border-color: var(--momo-line) !important;
+    body.momo-polish .expense-form-template-card {
+      display: grid;
+      grid-template-columns: 27px minmax(0, 1fr);
+      align-items: center;
+      gap: 0.5rem;
+      border-color: var(--expense-category-border) !important;
       border-radius: 6px !important;
+    }
+
+    body.momo-polish .expense-form-template-card:hover {
+      border-color: var(--expense-category-strong) !important;
+      background: var(--expense-category-bg) !important;
+    }
+
+    body.momo-polish .expense-form-template-icon {
+      display: inline-flex;
+      width: 27px;
+      height: 27px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--expense-category-border);
+      border-radius: 6px;
+      background: var(--expense-category-bg);
+      color: var(--expense-category-ink);
+    }
+
+    body.momo-polish .expense-form-template-icon svg {
+      width: 14px;
+      height: 14px;
     }
 
     body.momo-polish .expense-ledger {
@@ -2184,23 +2311,48 @@
 
     body.momo-polish .expense-category-chip {
       min-width: 104px;
-      border-color: var(--momo-line) !important;
+      border-color: var(--expense-category-border) !important;
       border-radius: 8px !important;
-      background: var(--momo-surface) !important;
-      color: #526071 !important;
+      background: var(--expense-category-bg) !important;
+      color: var(--expense-category-ink) !important;
       box-shadow: none !important;
     }
 
-    body.momo-polish .expense-category-chip.bg-rose-50 {
-      border-color: rgba(195, 77, 98, 0.28) !important;
-      background: #FFF3F5 !important;
-      color: var(--momo-danger) !important;
+    body.momo-polish .expense-category-chip.is-active {
+      border-color: var(--expense-category-strong) !important;
+      box-shadow: inset 0 0 0 1px var(--expense-category-strong) !important;
+    }
+
+    body.momo-polish .expense-category-chip-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.625rem;
+      font-weight: 900;
+      line-height: 1;
     }
 
     body.momo-polish .expense-empty-state {
       border: 1px dashed var(--momo-line-strong);
       border-radius: 8px !important;
       background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .expense-empty-icon {
+      display: inline-flex;
+      width: 42px;
+      height: 42px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--momo-line);
+      border-radius: 8px;
+      background: var(--momo-surface);
+      color: #94A3B8;
+    }
+
+    body.momo-polish .expense-empty-icon svg {
+      width: 21px;
+      height: 21px;
     }
 
     body.momo-polish .expense-day-group {
@@ -2356,6 +2508,11 @@
         padding: 0.625rem 0.75rem !important;
       }
 
+      body.momo-polish .expense-summary-top-category {
+        flex-wrap: wrap;
+        row-gap: 0.2rem;
+      }
+
       body.momo-polish .expense-template-grid {
         display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -2365,8 +2522,35 @@
 
       body.momo-polish .expense-template-card {
         min-width: 0;
-        min-height: 66px;
+        min-height: 72px;
+        grid-template-columns: 28px minmax(0, 1fr);
+        grid-template-areas:
+          "icon copy"
+          "icon action";
+        column-gap: 0.5rem;
+        row-gap: 0.2rem;
         padding: 0.625rem 0.75rem !important;
+      }
+
+      body.momo-polish .expense-template-category-icon {
+        width: 28px;
+        height: 28px;
+      }
+
+      body.momo-polish .expense-template-category-icon svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      body.momo-polish .expense-template-amount {
+        justify-self: start;
+        padding: 0;
+        background: transparent;
+        font-size: 0.56rem !important;
+      }
+
+      body.momo-polish .expense-template-chevron {
+        display: none;
       }
 
       body.momo-polish .expense-template-title {
@@ -2393,6 +2577,11 @@
         min-width: 132px;
         min-height: 62px !important;
         scroll-snap-align: start;
+      }
+
+      body.momo-polish .expense-category-badge {
+        min-height: 25px;
+        padding: 0 0.4rem;
       }
 
       body.momo-polish .expense-ledger-toolbar {

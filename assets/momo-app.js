@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.15-expense-date-tags-1';
+    const APP_VERSION = '2026.07.15-expense-category-icons-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -21,27 +21,27 @@
       { title: '來吧 MOMO，今天繼續創造好作品', sub: '冷笑話：頭髮為什麼不會迷路？因為它有「髮」線導航。' },
       { title: '哈囉 MOMO，今天也照節奏走', sub: '冷知識：金髮的人平均有 14 萬根頭髮，黑髮約 10 萬根。' },
       { title: '今天天氣適合好好營業，MOMO', sub: '台式幽默：「我只是想修一下瀏海」——最後變全新造型的開場白。' },
-      { title: 'MOMO 駕到，誰與爭鋒！⚡', sub: '冷知識：每天掉 50~100 根頭髮是正常的，不用太擔心啦！' },
-      { title: '今天也要用剪刀征服全場，MOMO 💪', sub: '冷笑話：為什麼染髮要很久？因為顏色需要「深入髮」展。' },
-      { title: '美好的一天從打開營運總部開始 🌅', sub: '冷知識：頭髮在水中可以伸展到原長度的 130%！' },
-      { title: 'MOMO～今天也是被需要的一天呢 🥰', sub: '台式幽默：客人坐下第一句「我不知道要剪什麼」，設計師內心：我也不知道啊。' },
-      { title: '準備好了嗎？今天要爆單囉 MOMO！📈', sub: '冷知識：世界上最長的頭髮紀錄超過 5 公尺，來自中國！' },
-      { title: '每一剪都是藝術，MOMO 你是藝術家 🎨', sub: '冷笑話：頭髮說什麼讓吹風機感動？「你讓我飄飄然。」' },
-      { title: 'MOMO 今天心情怎麼樣？希望是開心的！🌈', sub: '冷知識：頭髮的主要成分是角蛋白，跟你的指甲成分一樣喔！' },
+      { title: 'MOMO 駕到，誰與爭鋒！', sub: '冷知識：每天掉 50~100 根頭髮是正常的，不用太擔心啦！' },
+      { title: '今天也要用剪刀征服全場，MOMO', sub: '冷笑話：為什麼染髮要很久？因為顏色需要「深入髮」展。' },
+      { title: '美好的一天從打開營運總部開始', sub: '冷知識：頭髮在水中可以伸展到原長度的 130%！' },
+      { title: 'MOMO～今天也是被需要的一天呢', sub: '台式幽默：客人坐下第一句「我不知道要剪什麼」，設計師內心：我也不知道啊。' },
+      { title: '準備好了嗎？今天要爆單囉 MOMO！', sub: '冷知識：世界上最長的頭髮紀錄超過 5 公尺，來自中國！' },
+      { title: '每一剪都是藝術，MOMO 你是藝術家', sub: '冷笑話：頭髮說什麼讓吹風機感動？「你讓我飄飄然。」' },
+      { title: 'MOMO 今天心情怎麼樣？希望是開心的！', sub: '冷知識：頭髮的主要成分是角蛋白，跟你的指甲成分一樣喔！' },
       { title: '今天的業績就交給穩定的 MOMO', sub: '台式幽默：「我要跟上次一樣就好」——但上次是另一位設計師剪的。' },
       { title: '陽光、微笑、好手藝——MOMO 三大法寶', sub: '冷知識：紅髮是最稀有的天然髮色，全球只有 1 到 2% 的人擁有。' },
-      { title: '嘿 MOMO！今天也要讓鏡子裡的客人驚豔 🪞', sub: '冷笑話：為什麼設計師從不遲到？因為他們總是很「剪」時。' },
-      { title: 'MOMO 的技術就是最好的行銷！💯', sub: '冷知識：健康的頭髮在乾燥狀態下，彈性可以伸展 20% 不斷裂。' },
-      { title: '今天也是讓人變漂亮的好日子 🌷', sub: '台式幽默：「幫我剪短一點就好」——短多少算短呢？一公分？十公分？' },
-      { title: 'MOMO～你的雙手就是魔法棒 🪄', sub: '冷知識：頭髮可以測出你過去幾個月攝取的物質，就像身體的日記本！' },
+      { title: '嘿 MOMO！今天也要讓鏡子裡的客人驚豔', sub: '冷笑話：為什麼設計師從不遲到？因為他們總是很「剪」時。' },
+      { title: 'MOMO 的技術就是最好的行銷！', sub: '冷知識：健康的頭髮在乾燥狀態下，彈性可以伸展 20% 不斷裂。' },
+      { title: '今天也是讓人變漂亮的好日子', sub: '台式幽默：「幫我剪短一點就好」——短多少算短呢？一公分？十公分？' },
+      { title: 'MOMO～你的雙手就是魔法棒', sub: '冷知識：頭髮可以測出你過去幾個月攝取的物質，就像身體的日記本！' },
       { title: '開工啦 MOMO，今天也把節奏顧好', sub: '冷笑話：為什麼護髮素很黏人？因為它離不開你的「髮」絲。' },
       { title: '每位客人離開時的笑容，都是 MOMO 的成績', sub: '冷知識：黑色是全球最常見的髮色，約 75 到 85% 的人是黑髮。' },
-      { title: 'MOMO 加油！月底薪水靠今天的你了 💸', sub: '台式幽默：設計師最怕聽到的話——「我朋友說這個顏色很好看」。' },
-      { title: '今天的 MOMO 也太好看了吧 😍', sub: '冷知識：一個人的頭髮全部接起來的長度，一輩子可以繞地球好幾圈！' },
-      { title: '技術好 + 態度讚 = MOMO 本人！💎', sub: '冷笑話：「你的頭髮會說話嗎？」「會啊，它每天都在跟我『髮』牢騷。」' },
-      { title: '客人開心、MOMO 開心、口袋也開心！🎉', sub: '冷知識：古埃及人用蜂蜜和蓖麻油做護髮，已經有 5000 年歷史了！' },
-      { title: 'MOMO 你知道嗎？你笑起來超好看的 😊', sub: '台式幽默：每個設計師心中都有一句話：「你確定要染這個顏色？」' },
-      { title: '今天也要元氣滿滿喔，MOMO！🍀', sub: '冷知識：頭髮的生長週期分三階段，一根頭髮可以生長 2~7 年才掉落！' }
+      { title: 'MOMO 加油！月底薪水靠今天的你了', sub: '台式幽默：設計師最怕聽到的話——「我朋友說這個顏色很好看」。' },
+      { title: '今天的 MOMO 也太好看了吧', sub: '冷知識：一個人的頭髮全部接起來的長度，一輩子可以繞地球好幾圈！' },
+      { title: '技術好 + 態度讚 = MOMO 本人！', sub: '冷笑話：「你的頭髮會說話嗎？」「會啊，它每天都在跟我『髮』牢騷。」' },
+      { title: '客人開心、MOMO 開心、口袋也開心！', sub: '冷知識：古埃及人用蜂蜜和蓖麻油做護髮，已經有 5000 年歷史了！' },
+      { title: 'MOMO 你知道嗎？你笑起來超好看的', sub: '台式幽默：每個設計師心中都有一句話：「你確定要染這個顏色？」' },
+      { title: '今天也要元氣滿滿喔，MOMO！', sub: '冷知識：頭髮的生長週期分三階段，一根頭髮可以生長 2~7 年才掉落！' }
     ];
 
     // 系統預設美髮服務對照字典
@@ -1627,11 +1627,11 @@
           const circumference = 2 * Math.PI * r;
 
           const meta = {
-            '剪髮':    { color: '#FFAAA6', emoji: '✂️' },
-            '燙髮':    { color: '#A8DADC', emoji: '🌀' },
-            '染髮':    { color: '#E8AEFF', emoji: '🎨' },
-            '洗護其他': { color: '#FFC5A3', emoji: '💆' },
-            '更正': { color: '#FBBF24', emoji: '↺' }
+            '剪髮':    { color: '#FFAAA6' },
+            '燙髮':    { color: '#A8DADC' },
+            '染髮':    { color: '#E8AEFF' },
+            '洗護其他': { color: '#FFC5A3' },
+            '更正': { color: '#FBBF24' }
           };
 
           let cumulative = 0;
@@ -2644,11 +2644,11 @@
           const total = Object.values(cats).reduce((s, v) => s + v, 0);
           const r = 55, circumference = 2 * Math.PI * r;
           const meta = {
-            '剪髮': { color: '#FFAAA6', emoji: '✂️' },
-            '燙髮': { color: '#A8DADC', emoji: '🌀' },
-            '染髮': { color: '#E8AEFF', emoji: '🎨' },
-            '洗護其他': { color: '#FFC5A3', emoji: '💆' },
-            '更正': { color: '#FBBF24', emoji: '↺' }
+            '剪髮': { color: '#FFAAA6' },
+            '燙髮': { color: '#A8DADC' },
+            '染髮': { color: '#E8AEFF' },
+            '洗護其他': { color: '#FFC5A3' },
+            '更正': { color: '#FBBF24' }
           };
           let cumulative = 0;
           const allSegments = Object.entries(cats).map(([cat, amount]) => {
@@ -2671,18 +2671,14 @@
             .forEach(e => { cats[e.category] = (cats[e.category] || 0) + (Number(e.amount) || 0); });
           const total = Object.values(cats).reduce((s, v) => s + v, 0);
           const r = 55, circumference = 2 * Math.PI * r;
-          const meta = {
-            '材料費': { color: '#A8DADC', emoji: '🧴' },
-            '房租':   { color: '#E8AEFF', emoji: '🏠' },
-            '水電費': { color: '#FFF5C0', emoji: '💡' },
-            '行銷費': { color: '#FFAAA6', emoji: '📣' },
-            '薪資':   { color: '#FFC5A3', emoji: '👑' },
-            '其他':   { color: '#D8F3DC', emoji: '📦' }
-          };
+          const meta = Object.fromEntries(this.expenseCategories.map(cat => {
+            const info = this.getExpenseCategoryInfo(cat);
+            return [cat, { color: info.chartColor }];
+          }));
           let cumulative = 0;
           const allSegments = Object.entries(cats).map(([cat, amount]) => {
             const ratio = total > 0 ? amount / total : 0;
-            return { cat, amount, ratio, percentage: Math.round(ratio * 100), ...(meta[cat] || { color: '#E2E8F0', emoji: '📦' }) };
+            return { cat, amount, ratio, percentage: Math.round(ratio * 100), ...(meta[cat] || { color: '#8793A3' }) };
           });
           const segments = allSegments.filter(s => s.amount > 0).map(s => {
             const length = s.ratio * circumference;
@@ -4143,7 +4139,7 @@
             this.deleteCloudRecord('closeouts', 'closeout_date', date);
             this.queueCloudSync();
             this.recordOperation('closeout_unlock', '解除鎖帳', date);
-            this.showToast(`🔓 已解除 ${date} 鎖帳`);
+            this.showToast(`已解除 ${date} 鎖帳`);
           });
         },
         async refreshPwaCacheStatus() {
@@ -4692,7 +4688,7 @@
             }
             this.queueCloudSync();
           } catch (e) {
-            this.showToast('❌ 儲存失敗！LocalStorage 容量已滿，請立即匯出備份', 'error');
+            this.showToast('儲存失敗！LocalStorage 容量已滿，請立即匯出備份', 'error');
           }
         },
         saveExpenses() {
@@ -4700,7 +4696,7 @@
             localStorage.setItem('momo_expenses', JSON.stringify(this.expenses));
             this.queueCloudSync();
           } catch (e) {
-            this.showToast('❌ 儲存失敗！LocalStorage 容量已滿，請立即匯出備份', 'error');
+            this.showToast('儲存失敗！LocalStorage 容量已滿，請立即匯出備份', 'error');
           }
         },
         saveInventory() {
@@ -4708,7 +4704,7 @@
             localStorage.setItem('momo_inventory', JSON.stringify(this.inventory));
             this.queueCloudSync();
           } catch (e) {
-            this.showToast('❌ 儲存失敗！LocalStorage 容量已滿，請立即匯出備份', 'error');
+            this.showToast('儲存失敗！LocalStorage 容量已滿，請立即匯出備份', 'error');
           }
         },
         saveServicesConfigOnly() {
@@ -5764,6 +5760,19 @@
           return map[method] || { key: 'other', label: method || '未分類' };
         },
 
+        // 支出分類的圖示、色系與報表色彩共用同一份對照。
+        getExpenseCategoryInfo(category) {
+          const map = {
+            '材料費': { key: 'materials', label: '材料費', chartColor: '#4F9FA4' },
+            '房租': { key: 'rent', label: '房租', chartColor: '#7184B4' },
+            '水電費': { key: 'utilities', label: '水電費', chartColor: '#C69A3E' },
+            '行銷費': { key: 'marketing', label: '行銷費', chartColor: '#D7675E' },
+            '薪資': { key: 'salary', label: '薪資', chartColor: '#4F8C6B' },
+            '其他': { key: 'other', label: '其他', chartColor: '#8793A3' }
+          };
+          return map[category] || { ...map['其他'], label: category || '其他' };
+        },
+
         // 服務名稱分類（同步資料有 category 欄位，手動新增的用此方法補充）
         classifyCategory(serviceName) {
           if (!serviceName) return '洗護其他';
@@ -6096,7 +6105,7 @@
             this.showAuthSheet = false;
             await this.initializeCloudData();
             this.scheduleInitialCalendarAutoSync();
-            this.showToast(this.cloudMigrationNeeded ? '🔐 登入成功，請執行首次資料搬移' : '🔐 雲端登入成功');
+            this.showToast(this.cloudMigrationNeeded ? '登入成功，請執行首次資料搬移' : '雲端登入成功');
           } catch (error) {
             this.authError = error.message || '登入失敗，請稍後再試';
             this.authForm.password = '';
@@ -7270,7 +7279,7 @@
           }
           // 全年模式下提示用戶選擇月份
           if (this.selectedMonth === 'All') {
-            if (!silent) this.showToast('📅 請先選擇特定月份再同步，全年模式下後端只會回傳當月資料', 'error', 5000);
+            if (!silent) this.showToast('請先選擇特定月份再同步，全年模式下後端只會回傳當月資料', 'error', 5000);
             return false;
           }
 
@@ -7457,7 +7466,7 @@
             serviceName = serviceName.trim().split(/\s+/).join(' + ');
 
             // 3. Gender determination: 只從姓名判斷，避免「男生短髮」污染女客性別
-            const isMale = /[先生哥男👦]/.test(rawName);
+            const isMale = /[先生哥男\u{1F466}]/u.test(rawName);
             const gender = isMale ? '男' : '女';
 
             // 4. Payment method: default "現金"
@@ -8145,7 +8154,7 @@
             });
             this.saveExpenses();
             this.showExpenseForm = false;
-            this.showToast(`👑 薪水 NT$ ${salary.toLocaleString()} 已寫入 ${parseInt(month)} 月支出！`);
+            this.showToast(`薪水 NT$ ${salary.toLocaleString()} 已寫入 ${parseInt(month)} 月支出！`);
           };
 
           if (existing) {
@@ -8322,7 +8331,7 @@
 
           this.saveExpenses();
           this.recordOperation('expense_create', '新增支出', `${expense.date} ${expense.category} · NT$ ${this.formatNumber(expense.amount)}`, { expenseId: id });
-          this.showToast('💸 支出新增成功！');
+          this.showToast('支出新增成功！');
 
           // Reset inputs except date
           this.newExpense.notes = '';
@@ -8370,7 +8379,7 @@
           });
 
           this.saveInventory();
-          this.showToast('📦 商品已建檔');
+          this.showToast('商品已建檔');
 
           this.newInventory.name = '';
           this.newInventory.stock = null;
@@ -9003,17 +9012,6 @@
           const days = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
           const d = new Date(dateStr + 'T00:00:00');
           return days[d.getDay()];
-        },
-        getPaymentEmoji(method) {
-          switch (method) {
-            case '現金': return '💵';
-            case '轉帳': return '🏦';
-            case 'LinePay': return '🟢';
-            case '儲值扣款': return '➖';
-            case '現金＋儲值扣款': return '💵➖';
-            case '儲值進帳': return '➕';
-            default: return '💰';
-          }
         },
         ledgerKindLabel(kind) {
           return ({ topup: '儲值進帳', debit: '服務扣款', adjustment: '帳務調整', reversal: '沖銷' })[kind] || '帳務異動';
