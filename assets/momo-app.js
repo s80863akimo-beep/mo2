@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.15-expense-category-icons-1';
+    const APP_VERSION = '2026.07.15-inventory-status-visuals-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -2899,6 +2899,10 @@
         inventorySafetyStock(item = {}) {
           const value = Number(item.minStock);
           return Number.isFinite(value) && value > 0 ? Math.round(value) : 3;
+        },
+        inventoryStockPercent(item = {}) {
+          const stock = Math.max(0, Number(item.stock) || 0);
+          return Math.min(100, Math.round((stock / this.inventorySafetyStock(item)) * 100));
         },
         isInventoryLow(item = {}) {
           const stock = Number(item.stock) || 0;
@@ -8442,9 +8446,9 @@
         },
         getInventoryStatus(item) {
           const stock = Number(item.stock) || 0;
-          if (stock === 0) return { label: '缺貨', badge: 'bg-rose-100 text-rose-700', dot: 'bg-rose-500' };
-          if (this.isInventoryLow(item)) return { label: '低庫存', badge: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' };
-          return { label: '庫存正常', badge: 'bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500' };
+          if (stock === 0) return { key: 'out', label: '缺貨' };
+          if (this.isInventoryLow(item)) return { key: 'low', label: '低庫存' };
+          return { key: 'ok', label: '庫存正常' };
         },
         deleteInventoryItem(id) {
           this.showConfirm('確定要刪除此庫存品項嗎？', () => {

@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.15-expense-category-icons-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.15-inventory-status-visuals-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.15-expense-category-icons-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.15-inventory-status-visuals-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -2069,21 +2069,41 @@
 
         <!-- Tab 4: Inventory -->
         <div v-else-if="activeTab === 'inventory'" key="inventory" class="momo-list-page momo-inventory-page">
+          <svg class="absolute w-0 h-0 overflow-hidden" aria-hidden="true" focusable="false">
+            <defs>
+              <symbol id="inventory-item-package" viewBox="0 0 24 24">
+                <path d="m7.5 4.27 9 5.15"></path><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path>
+              </symbol>
+              <symbol id="inventory-summary-units" viewBox="0 0 24 24">
+                <path d="m12 2 9 5-9 5-9-5z"></path><path d="m3 12 9 5 9-5"></path><path d="m3 17 9 5 9-5"></path>
+              </symbol>
+              <symbol id="inventory-status-ok" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.5 2.5L16 9"></path>
+              </symbol>
+              <symbol id="inventory-status-low" viewBox="0 0 24 24">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>
+              </symbol>
+              <symbol id="inventory-status-out" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"></circle><path d="m9 9 6 6"></path><path d="m15 9-6 6"></path>
+              </symbol>
+            </defs>
+          </svg>
+
           <section class="inventory-overview-panel momo-surface bg-white rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow overflow-hidden">
             <div class="inventory-overview-header momo-section-header px-5 py-3 border-b border-orange-50">
               <h3 class="font-black text-slate-700 text-sm">庫存總覽</h3>
             </div>
             <div class="inventory-overview-grid grid grid-cols-3 divide-x divide-orange-50">
               <div class="inventory-overview-metric px-3 sm:px-5 py-4">
-                <div class="text-[10px] font-black text-slate-400">商品品項</div>
+                <div class="inventory-overview-label text-[10px] font-black text-slate-400"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-item-package"></use></svg><span>商品品項</span></div>
                 <div class="mt-1 text-base sm:text-xl font-black text-slate-800">{{ inventorySummary.items }} <span class="text-xs text-slate-400">項</span></div>
               </div>
               <div class="inventory-overview-metric px-3 sm:px-5 py-4">
-                <div class="text-[10px] font-black text-slate-400">庫存總量</div>
+                <div class="inventory-overview-label text-[10px] font-black text-slate-400"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-summary-units"></use></svg><span>庫存總量</span></div>
                 <div class="mt-1 text-base sm:text-xl font-black text-sky-700">{{ inventorySummary.units }} <span class="text-xs text-slate-400">件</span></div>
               </div>
-              <div class="inventory-overview-metric px-3 sm:px-5 py-4">
-                <div class="text-[10px] font-black text-slate-400">需要補貨</div>
+              <div class="inventory-overview-metric px-3 sm:px-5 py-4" :class="inventorySummary.low + inventorySummary.out ? 'has-alert' : 'is-clear'">
+                <div class="inventory-overview-label text-[10px] font-black text-slate-400"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="inventorySummary.low + inventorySummary.out ? '#inventory-status-low' : '#inventory-status-ok'"></use></svg><span>需要補貨</span></div>
                 <div class="mt-1 text-base sm:text-xl font-black" :class="inventorySummary.low + inventorySummary.out ? 'text-rose-600' : 'text-emerald-600'">{{ inventorySummary.low + inventorySummary.out }} <span class="text-xs text-slate-400">項</span></div>
                 <div v-if="inventorySummary.out" class="text-[9px] font-bold text-rose-400">其中 {{ inventorySummary.out }} 項缺貨</div>
               </div>
@@ -2096,9 +2116,10 @@
                 <h3 class="font-black text-slate-700 text-sm">補貨清單</h3>
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">優先處理缺貨與低於安全庫存的品項</p>
               </div>
-              <button @click="inventoryFilterMode = inventoryReplenishmentItems.length ? 'low' : 'all'"
-                      class="inventory-replenishment-filter min-h-[34px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-[11px] font-black">
-                查看低庫存
+              <button v-if="inventoryReplenishmentItems.length" @click="inventoryFilterMode = 'low'"
+                      class="inventory-replenishment-filter min-h-[34px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-[11px] font-black inline-flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-status-low"></use></svg>
+                <span>查看待補貨</span>
               </button>
             </div>
             <div v-if="inventoryReplenishmentItems.length" class="inventory-replenishment-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -2106,12 +2127,21 @@
                    class="inventory-replenishment-item border p-3"
                    :class="(Number(item.stock) || 0) === 0 ? 'inventory-replenishment-item--out bg-rose-50/70 border-rose-100' : 'inventory-replenishment-item--low bg-amber-50/70 border-amber-100'">
                 <div class="flex items-start justify-between gap-2">
-                  <div class="min-w-0">
-                    <div class="text-sm font-black text-slate-800 truncate">{{ item.name }}</div>
-                    <div class="mt-1 text-[10px] font-bold text-slate-500">目前 {{ item.stock || 0 }} 件 · 安全 {{ inventorySafetyStock(item) }} 件</div>
+                  <div class="inventory-replenishment-product flex items-center gap-2 min-w-0">
+                    <span class="inventory-product-icon inventory-status-tone" :class="'is-' + getInventoryStatus(item).key">
+                      <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-item-package"></use></svg>
+                    </span>
+                    <div class="min-w-0">
+                      <div class="text-sm font-black text-slate-800 truncate">{{ item.name }}</div>
+                      <div class="mt-0.5 text-[10px] font-bold text-slate-500">目前 {{ item.stock || 0 }} 件 · 安全 {{ inventorySafetyStock(item) }} 件</div>
+                    </div>
                   </div>
-                  <span class="shrink-0 text-[10px] font-black px-2 py-1 rounded-lg" :class="getInventoryStatus(item).badge">{{ getInventoryStatus(item).label }}</span>
+                  <span class="inventory-status-badge inventory-status-tone shrink-0" :class="'is-' + getInventoryStatus(item).key">
+                    <svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#inventory-status-' + getInventoryStatus(item).key"></use></svg>
+                    <span>{{ getInventoryStatus(item).label }}</span>
+                  </span>
                 </div>
+                <div class="inventory-stock-meter inventory-status-tone mt-2.5" :class="'is-' + getInventoryStatus(item).key" aria-hidden="true"><span :style="{ width: inventoryStockPercent(item) + '%' }"></span></div>
                 <div class="inventory-replenishment-actions grid grid-cols-3 gap-1.5 mt-3">
                   <button @click="adjustStock(item, 1)" class="min-h-[34px] rounded-xl bg-white border border-orange-100 text-[11px] font-black text-slate-700">+1</button>
                   <button @click="adjustStock(item, 3)" class="min-h-[34px] rounded-xl bg-white border border-orange-100 text-[11px] font-black text-slate-700">+3</button>
@@ -2120,8 +2150,10 @@
               </div>
             </div>
             <div v-else class="inventory-replenishment-empty px-4 py-3 sm:px-5 flex items-center gap-3">
-              <span class="inventory-status-check shrink-0">✓</span>
-              <div><div class="text-sm font-black text-emerald-700">目前沒有需要補貨的品項</div><div class="text-[10px] font-bold text-slate-400 mt-0.5">所有商品都高於安全庫存</div></div>
+              <span class="inventory-status-check shrink-0" :class="inventorySummary.items ? 'is-ok' : 'is-empty'">
+                <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="inventorySummary.items ? '#inventory-status-ok' : '#inventory-item-package'"></use></svg>
+              </span>
+              <div><div class="text-sm font-black" :class="inventorySummary.items ? 'text-emerald-700' : 'text-slate-700'">{{ inventorySummary.items ? '目前沒有需要補貨的品項' : '尚未建立庫存商品' }}</div><div class="text-[10px] font-bold text-slate-400 mt-0.5">{{ inventorySummary.items ? '所有商品皆已達安全庫存' : '庫存清單目前為空' }}</div></div>
             </div>
           </section>
 
@@ -2146,17 +2178,19 @@
                          autocorrect="off" autocapitalize="none" autocomplete="off" spellcheck="false"
                           class="inventory-form-input w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
                 </div>
-                <div>
-                  <label class="block text-xs font-black text-slate-400 uppercase mb-1">目前庫存量</label>
-                  <input type="number" v-model.number="newInventory.stock" required min="0" placeholder="庫存數量"
-                         inputmode="numeric"
-                          class="inventory-form-input w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
-                </div>
-                <div>
-                  <label class="block text-xs font-black text-slate-400 uppercase mb-1">安全庫存</label>
-                  <input type="number" v-model.number="newInventory.minStock" required min="1" placeholder="低於幾件提醒"
-                         inputmode="numeric"
-                          class="inventory-form-input w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase mb-1">目前庫存量</label>
+                    <input type="number" v-model.number="newInventory.stock" required min="0" placeholder="庫存數量"
+                           inputmode="numeric"
+                            class="inventory-form-input w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase mb-1">安全庫存</label>
+                    <input type="number" v-model.number="newInventory.minStock" required min="1" placeholder="提醒數量"
+                           inputmode="numeric"
+                            class="inventory-form-input w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
+                  </div>
                 </div>
                 <div>
                   <label class="block text-xs font-black text-slate-400 uppercase mb-1">商品備註</label>
@@ -2193,9 +2227,9 @@
                     </div>
                 </div>
                 <div class="inventory-filter-row grid grid-cols-3 gap-1.5">
-                  <button @click="inventoryFilterMode = 'all'" :class="inventoryFilterMode === 'all' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50/70 text-slate-500 border-slate-100'" class="inventory-filter-button min-h-[34px] rounded-xl border text-[10px] font-black">全部 {{ inventory.length }}</button>
-                  <button @click="inventoryFilterMode = 'low'" :class="inventoryFilterMode === 'low' ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50/70 text-amber-700 border-amber-100'" class="inventory-filter-button min-h-[34px] rounded-xl border text-[10px] font-black">低庫存 {{ inventorySummary.low }}</button>
-                  <button @click="inventoryFilterMode = 'out'" :class="inventoryFilterMode === 'out' ? 'bg-rose-500 text-white border-rose-500' : 'bg-rose-50/70 text-rose-600 border-rose-100'" class="inventory-filter-button min-h-[34px] rounded-xl border text-[10px] font-black">缺貨 {{ inventorySummary.out }}</button>
+                  <button @click="inventoryFilterMode = 'all'" :class="['is-all', { 'is-active': inventoryFilterMode === 'all' }]" class="inventory-filter-button inventory-status-tone min-h-[34px] rounded-xl border text-[10px] font-black"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-item-package"></use></svg><span>全部</span><span class="inventory-filter-count">{{ inventory.length }}</span></button>
+                  <button @click="inventoryFilterMode = 'low'" :class="['is-low', { 'is-active': inventoryFilterMode === 'low' }]" class="inventory-filter-button inventory-status-tone min-h-[34px] rounded-xl border text-[10px] font-black"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-status-low"></use></svg><span>低庫存</span><span class="inventory-filter-count">{{ inventorySummary.low }}</span></button>
+                  <button @click="inventoryFilterMode = 'out'" :class="['is-out', { 'is-active': inventoryFilterMode === 'out' }]" class="inventory-filter-button inventory-status-tone min-h-[34px] rounded-xl border text-[10px] font-black"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-status-out"></use></svg><span>缺貨</span><span class="inventory-filter-count">{{ inventorySummary.out }}</span></button>
                 </div>
               </div>
 
@@ -2214,6 +2248,7 @@
                     <tr v-if="filteredInventory.length === 0">
                       <td colspan="4" class="text-center py-16 text-slate-400 font-medium bg-orange-50/10">
                         <div class="flex flex-col items-center justify-center gap-2 select-none">
+                          <span class="inventory-empty-icon"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-item-package"></use></svg></span>
                           <span class="text-sm font-bold text-slate-400">{{ inventory.length ? '找不到符合條件的商品' : '目前庫存內沒有任何商品' }}</span>
                           <span class="text-xs text-slate-300">{{ inventory.length ? '請更換搜尋內容或篩選狀態' : '點擊「新增商品」建立第一筆庫存' }}</span>
                         </div>
@@ -2225,8 +2260,14 @@
 
                       <!-- Name -->
                       <td class="py-3 px-4">
-                        <input type="text" v-model="inventoryEditDraft(item).name"
-                               class="w-full bg-transparent border-0 focus:bg-white focus:ring-1 focus:ring-macaron-peach-300 rounded px-1.5 py-1 text-sm font-extrabold text-slate-700">
+                        <div class="inventory-table-product flex items-start gap-2.5 min-w-0">
+                          <span class="inventory-product-icon inventory-status-tone shrink-0" :class="'is-' + getInventoryStatus(item).key"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-item-package"></use></svg></span>
+                          <div class="min-w-0 flex-1">
+                            <input type="text" v-model="inventoryEditDraft(item).name"
+                                   class="w-full bg-transparent border-0 focus:bg-white focus:ring-1 focus:ring-macaron-peach-300 rounded px-1.5 py-1 text-sm font-extrabold text-slate-700">
+                            <span class="inventory-status-badge inventory-status-tone mt-1" :class="'is-' + getInventoryStatus(item).key"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#inventory-status-' + getInventoryStatus(item).key"></use></svg><span>{{ getInventoryStatus(item).label }}</span></span>
+                          </div>
+                        </div>
                       </td>
 
                       <!-- Stock with quick adjustments -->
@@ -2245,12 +2286,8 @@
                           </button>
                           <button @click="adjustStock(item, 3)" class="h-7 px-2 rounded-full bg-white border border-orange-100 text-[10px] font-black text-slate-600 jelly-btn">+3</button>
                           <button @click="refillInventoryToSafety(item)" class="h-7 px-2 rounded-full bg-slate-900 text-white text-[10px] font-black jelly-btn">補到安全</button>
-                          <!-- Warning Icon if low stock -->
-                          <span v-if="isInventoryLow(item)" class="text-rose-500 font-extrabold text-xs" :title="`安全庫存 ${inventorySafetyStock(item)} 件`">
-                            低
-                          </span>
                         </div>
-                        <div class="mt-1 text-[9px] font-bold text-slate-400">安全 {{ inventorySafetyStock(item) }} 件</div>
+                        <div class="inventory-table-stock-meta mt-1.5 flex items-center justify-center gap-2"><span class="text-[9px] font-bold text-slate-400">安全 {{ inventorySafetyStock(item) }} 件</span><div class="inventory-stock-meter inventory-status-tone" :class="'is-' + getInventoryStatus(item).key" aria-hidden="true"><span :style="{ width: inventoryStockPercent(item) + '%' }"></span></div></div>
                       </td>
 
                       <!-- Notes -->
@@ -2282,6 +2319,7 @@
               <!-- Mobile inventory cards -->
               <div class="inventory-mobile-list lg:hidden">
                 <div v-if="filteredInventory.length === 0" class="inventory-empty-state py-10 text-center rounded-3xl bg-orange-50/20">
+                  <span class="inventory-empty-icon"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-item-package"></use></svg></span>
                   <div class="mt-2 text-sm font-black text-slate-500">{{ inventory.length ? '找不到符合條件的商品' : '目前沒有庫存商品' }}</div>
                   <div class="mt-1 text-xs font-semibold text-slate-300">{{ inventory.length ? '請更換搜尋內容或篩選狀態' : '點擊「新增商品」開始管理庫存' }}</div>
                 </div>
@@ -2291,21 +2329,21 @@
                        class="inventory-mobile-item rounded-xl border overflow-hidden shadow-[0_1px_0_rgba(15,23,42,0.03)]"
                        :class="item.stock === 0 ? 'inventory-mobile-item--out border-rose-100 bg-rose-50/15' : isInventoryLow(item) ? 'inventory-mobile-item--low border-amber-100 bg-amber-50/15' : 'inventory-mobile-item--ok border-slate-100 bg-white'">
                     <button type="button" @click="toggleInventoryEditor(item.id)" class="inventory-mobile-summary w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left">
-                      <div class="min-w-0">
-                        <div class="flex items-center gap-2">
-                          <span class="w-2 h-2 rounded-full shrink-0" :class="getInventoryStatus(item).dot"></span>
-                          <span class="text-sm font-black text-slate-800 truncate">{{ item.name }}</span>
+                      <div class="inventory-mobile-product flex items-center gap-2.5 min-w-0">
+                        <span class="inventory-product-icon inventory-status-tone shrink-0" :class="'is-' + getInventoryStatus(item).key"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#inventory-item-package"></use></svg></span>
+                        <div class="min-w-0">
+                          <div class="text-sm font-black text-slate-800 truncate">{{ item.name }}</div>
+                          <div class="mt-0.5 text-[11px] font-semibold text-slate-400 truncate">{{ item.notes || '未填備註' }}</div>
                         </div>
-                        <div class="mt-0.5 text-[11px] font-semibold text-slate-400 truncate">{{ item.notes || '未填備註' }} · 安全 {{ inventorySafetyStock(item) }}</div>
                       </div>
                       <div class="shrink-0 text-right">
-                        <div class="text-lg font-black tabular-nums" :class="item.stock === 0 ? 'text-rose-600' : isInventoryLow(item) ? 'text-amber-600' : 'text-slate-800'">{{ item.stock }}</div>
-                        <span class="mt-0.5 inline-flex text-[9px] font-black px-1.5 py-0.5 rounded-md" :class="getInventoryStatus(item).badge">{{ getInventoryStatus(item).label }}</span>
+                        <div class="inventory-mobile-stock text-lg font-black tabular-nums" :class="item.stock === 0 ? 'text-rose-600' : isInventoryLow(item) ? 'text-amber-600' : 'text-slate-800'">{{ item.stock }} <span>件</span></div>
+                        <span class="inventory-status-badge inventory-status-tone mt-0.5" :class="'is-' + getInventoryStatus(item).key"><svg class="inventory-status-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#inventory-status-' + getInventoryStatus(item).key"></use></svg><span>{{ getInventoryStatus(item).label }}</span></span>
                       </div>
                     </button>
 
                     <div class="inventory-mobile-quick px-3 pb-2.5 flex items-center justify-between">
-                      <span class="text-[10px] font-black text-slate-400">快速調整</span>
+                      <div class="inventory-mobile-meter min-w-0 flex-1 pr-3"><div class="flex items-center justify-between gap-2 text-[9px] font-black text-slate-400"><span>庫存進度</span><span class="shrink-0">安全 {{ inventorySafetyStock(item) }} 件</span></div><div class="inventory-stock-meter inventory-status-tone mt-1" :class="'is-' + getInventoryStatus(item).key" aria-hidden="true"><span :style="{ width: inventoryStockPercent(item) + '%' }"></span></div></div>
                       <div class="flex items-center gap-1.5">
                         <button @click="adjustStock(item, -1)" :disabled="item.stock <= 0" class="w-8 h-8 min-h-8 rounded-xl bg-white border border-slate-100 text-slate-600 text-base font-black shadow-sm disabled:opacity-35 jelly-btn" :aria-label="`${item.name} 庫存減一`">−</button>
                         <button @click="adjustStock(item, 1)" class="w-8 h-8 min-h-8 rounded-xl bg-slate-800 text-white text-base font-black shadow-sm jelly-btn" :aria-label="`${item.name} 庫存加一`">＋</button>
@@ -4016,9 +4054,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.15-expense-category-icons-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.15-inventory-status-visuals-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.15-expense-category-icons-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.15-inventory-status-visuals-1"></script>
 </body>
 </html>

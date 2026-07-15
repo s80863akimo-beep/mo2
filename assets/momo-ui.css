@@ -3360,6 +3360,101 @@
       margin-top: 0 !important;
     }
 
+    body.momo-polish .inventory-status-tone {
+      --inventory-status-border: #D8DEE6;
+      --inventory-status-bg: #F7F9FB;
+      --inventory-status-ink: #64748B;
+      --inventory-status-strong: #8793A3;
+    }
+
+    body.momo-polish .inventory-status-tone.is-all {
+      --inventory-status-border: #D5DBE3;
+      --inventory-status-bg: #F6F8FA;
+      --inventory-status-ink: #526071;
+      --inventory-status-strong: #526071;
+    }
+
+    body.momo-polish .inventory-status-tone.is-ok {
+      --inventory-status-border: #BCDCC9;
+      --inventory-status-bg: #F0F8F3;
+      --inventory-status-ink: #347052;
+      --inventory-status-strong: #5D9C79;
+    }
+
+    body.momo-polish .inventory-status-tone.is-low {
+      --inventory-status-border: #E8D09C;
+      --inventory-status-bg: #FFF8E9;
+      --inventory-status-ink: #8A650F;
+      --inventory-status-strong: #C69A3E;
+    }
+
+    body.momo-polish .inventory-status-tone.is-out {
+      --inventory-status-border: #F0C3BE;
+      --inventory-status-bg: #FFF3F1;
+      --inventory-status-ink: #BE4F47;
+      --inventory-status-strong: #D7675E;
+    }
+
+    body.momo-polish .inventory-status-badge {
+      display: inline-flex;
+      min-height: 24px;
+      max-width: 100%;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      padding: 0 0.45rem;
+      border: 1px solid var(--inventory-status-border);
+      border-radius: 6px;
+      background: var(--inventory-status-bg);
+      color: var(--inventory-status-ink);
+      font-size: 0.56rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .inventory-status-icon {
+      width: 12px;
+      height: 12px;
+      flex: 0 0 12px;
+    }
+
+    body.momo-polish .inventory-product-icon {
+      display: inline-flex;
+      width: 32px;
+      height: 32px;
+      flex: 0 0 32px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--inventory-status-border);
+      border-radius: 7px;
+      background: var(--inventory-status-bg);
+      color: var(--inventory-status-ink);
+    }
+
+    body.momo-polish .inventory-product-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    body.momo-polish .inventory-stock-meter {
+      width: 100%;
+      height: 5px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--inventory-status-bg);
+      box-shadow: inset 0 0 0 1px var(--inventory-status-border);
+    }
+
+    body.momo-polish .inventory-stock-meter > span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--inventory-status-strong);
+      transition: width 180ms ease;
+    }
+
     body.momo-polish .inventory-overview-panel,
     body.momo-polish .inventory-replenishment-panel {
       border-color: var(--momo-line) !important;
@@ -3396,18 +3491,47 @@
       font-variant-numeric: tabular-nums;
     }
 
+    body.momo-polish .inventory-overview-label {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.35rem;
+      line-height: 1.2;
+    }
+
+    body.momo-polish .inventory-overview-label svg {
+      width: 13px;
+      height: 13px;
+      flex: 0 0 13px;
+      color: #4F9FA4;
+    }
+
+    body.momo-polish .inventory-overview-metric:nth-child(2) .inventory-overview-label svg {
+      color: #7184B4;
+    }
+
+    body.momo-polish .inventory-overview-metric.has-alert .inventory-overview-label svg {
+      color: var(--momo-danger);
+    }
+
+    body.momo-polish .inventory-overview-metric.is-clear .inventory-overview-label svg {
+      color: var(--momo-success);
+    }
+
     body.momo-polish .inventory-replenishment-filter {
       min-height: 36px !important;
+      flex: 0 0 auto;
       border-color: #F1D9AE !important;
       border-radius: 8px !important;
       background: #FFF9EE !important;
       color: var(--momo-warning) !important;
+      white-space: nowrap;
       box-shadow: none !important;
     }
 
     body.momo-polish .inventory-replenishment-list {
       gap: 1px;
-      background: var(--momo-line);
+      background: var(--momo-surface);
     }
 
     body.momo-polish .inventory-replenishment-item {
@@ -3420,6 +3544,16 @@
 
     body.momo-polish .inventory-replenishment-item--out {
       border-left-color: var(--momo-danger) !important;
+    }
+
+    body.momo-polish .inventory-replenishment-product {
+      flex: 1 1 auto;
+    }
+
+    body.momo-polish .inventory-replenishment-item .inventory-product-icon {
+      width: 30px;
+      height: 30px;
+      flex-basis: 30px;
     }
 
     body.momo-polish .inventory-replenishment-actions button {
@@ -3442,15 +3576,25 @@
 
     body.momo-polish .inventory-status-check {
       display: inline-flex;
-      width: 26px;
-      height: 26px;
+      width: 34px;
+      height: 34px;
       align-items: center;
       justify-content: center;
-      border-radius: 50%;
-      background: #EAF7F1;
-      color: var(--momo-success);
-      font-size: 0.75rem;
-      font-weight: 900;
+      border: 1px solid #BCDCC9;
+      border-radius: 7px;
+      background: #F0F8F3;
+      color: #347052;
+    }
+
+    body.momo-polish .inventory-status-check.is-empty {
+      border-color: var(--momo-line);
+      background: var(--momo-surface);
+      color: #8793A3;
+    }
+
+    body.momo-polish .inventory-status-check svg {
+      width: 17px;
+      height: 17px;
     }
 
     body.momo-polish .inventory-form-sheet {
@@ -3533,30 +3677,39 @@
     }
 
     body.momo-polish .inventory-filter-button {
+      display: inline-flex;
       min-height: 38px !important;
-      border-color: var(--momo-line) !important;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      border-color: var(--inventory-status-border) !important;
       border-radius: 6px !important;
-      background: var(--momo-surface-muted) !important;
-      color: #64748B !important;
+      background: var(--inventory-status-bg) !important;
+      color: var(--inventory-status-ink) !important;
       box-shadow: none !important;
     }
 
-    body.momo-polish .inventory-filter-button.bg-slate-800 {
-      border-color: var(--momo-brand) !important;
-      background: var(--momo-brand) !important;
+    body.momo-polish .inventory-filter-button.is-active {
+      border-color: var(--inventory-status-strong) !important;
+      background: var(--inventory-status-strong) !important;
       color: #FFFFFF !important;
     }
 
-    body.momo-polish .inventory-filter-button.bg-amber-500 {
-      border-color: var(--momo-warning) !important;
-      background: var(--momo-warning) !important;
-      color: #FFFFFF !important;
+    body.momo-polish .inventory-filter-count {
+      display: inline-flex;
+      min-width: 19px;
+      height: 19px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 0.3rem;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.72);
+      color: currentColor;
+      font-variant-numeric: tabular-nums;
     }
 
-    body.momo-polish .inventory-filter-button.bg-rose-500 {
-      border-color: var(--momo-danger) !important;
-      background: var(--momo-danger) !important;
-      color: #FFFFFF !important;
+    body.momo-polish .inventory-filter-button.is-active .inventory-filter-count {
+      background: rgba(255, 255, 255, 0.18);
     }
 
     body.momo-polish .inventory-table-shell {
@@ -3606,6 +3759,28 @@
     body.momo-polish .inventory-stock-controls button.bg-slate-900 {
       border-color: var(--momo-ink) !important;
       background: var(--momo-ink) !important;
+    }
+
+    body.momo-polish .inventory-table-stock-meta .inventory-stock-meter {
+      width: 82px;
+      flex: 0 0 82px;
+    }
+
+    body.momo-polish .inventory-empty-icon {
+      display: inline-flex;
+      width: 42px;
+      height: 42px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--momo-line);
+      border-radius: 8px;
+      background: var(--momo-surface);
+      color: #8793A3;
+    }
+
+    body.momo-polish .inventory-empty-icon svg {
+      width: 21px;
+      height: 21px;
     }
 
     body.momo-polish .inventory-empty-state {
@@ -3661,6 +3836,20 @@
     body.momo-polish .inventory-mobile-summary {
       min-height: 64px;
       padding: 0.75rem 0.875rem 0.625rem 1rem !important;
+    }
+
+    body.momo-polish .inventory-mobile-product {
+      flex: 1 1 auto;
+    }
+
+    body.momo-polish .inventory-mobile-stock > span {
+      font-size: 0.56rem;
+      font-weight: 900;
+      color: #94A3B8;
+    }
+
+    body.momo-polish .inventory-mobile-meter {
+      max-width: 220px;
     }
 
     body.momo-polish .inventory-mobile-quick,
