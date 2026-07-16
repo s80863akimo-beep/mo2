@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-icons-quiet-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-home-quiet-2">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-icons-quiet-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-home-quiet-2">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -1096,7 +1096,7 @@
                     <div class="text-xs font-black text-slate-700">今日金流拆分</div>
                     <div class="text-[10px] font-bold text-slate-400">打烊核對用</div>
                   </div>
-                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div class="daily-payment-grid grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <div class="today-payment-chip rounded-xl bg-white border border-slate-200 px-3 py-2"><div class="text-[9px] font-black text-slate-400">現金</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(todayCloseout.cash) }}</div></div>
                     <div class="today-payment-chip rounded-xl bg-white border border-slate-200 px-3 py-2"><div class="text-[9px] font-black text-slate-400">轉帳</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(todayCloseout.transfer) }}</div></div>
                     <div class="today-payment-chip rounded-xl bg-white border border-slate-200 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值扣款</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(todayCloseout.prepaidOut) }}</div></div>
@@ -4161,9 +4161,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.16-icons-quiet-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.16-home-quiet-2"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.16-icons-quiet-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.16-home-quiet-2"></script>
 </body>
 </html>
