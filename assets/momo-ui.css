@@ -347,13 +347,6 @@
       transform: scale(0.98);
     }
 
-    body.momo-polish .momo-daily-home .daily-action-button--primary {
-      background: #111827 !important;
-      border-color: #111827 !important;
-      color: #ffffff !important;
-      box-shadow: 0 12px 28px -22px rgba(15, 23, 42, 0.7);
-    }
-
     body.momo-polish .momo-home-card {
       background: rgba(255, 255, 255, 0.97) !important;
       border-color: rgba(226, 232, 240, 0.82) !important;
@@ -1377,29 +1370,6 @@
     body.momo-polish .momo-primary-actions .daily-action-button:hover {
       border-color: var(--momo-line-strong) !important;
       background: var(--momo-surface-muted) !important;
-    }
-
-    body.momo-polish .momo-primary-actions .daily-action-button--primary {
-      border-color: var(--momo-success) !important;
-      background: var(--momo-success) !important;
-      color: #FFFFFF !important;
-    }
-
-    body.momo-polish .momo-primary-actions .daily-action-button--primary:hover {
-      border-color: var(--momo-success-hover) !important;
-      background: var(--momo-success-hover) !important;
-    }
-
-    body.momo-polish .momo-primary-actions .daily-action-button--primary.is-complete {
-      border-color: var(--momo-success-line) !important;
-      background: var(--momo-success-soft) !important;
-      color: var(--momo-success-ink) !important;
-    }
-
-    body.momo-polish .momo-primary-actions .daily-action-button--primary.is-complete:hover {
-      border-color: #B5C7BC !important;
-      background: #E5ECE8 !important;
-      color: var(--momo-success-hover) !important;
     }
 
     body.momo-polish .momo-home-list-item {
