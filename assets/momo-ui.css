@@ -9483,4 +9483,101 @@
       }
     }
 
+    /* Interaction close-out: draft safety, consistent feedback and empty states. */
+    body.momo-polish .momo-confirm-overlay {
+      z-index: 110 !important;
+    }
+
+    body.momo-polish .momo-dialog-state-badge.is-dirty {
+      border-color: #E8D19A;
+      background: #FFF9EA;
+      color: #805A12;
+    }
+
+    body.momo-polish .momo-feedback-state {
+      border-width: 1px;
+      border-style: solid;
+    }
+
+    body.momo-polish .momo-feedback-state.is-success {
+      border-color: var(--momo-success-line) !important;
+      background: var(--momo-success-soft) !important;
+      color: var(--momo-success-ink) !important;
+    }
+
+    body.momo-polish .momo-feedback-state.is-warning {
+      border-color: #E8D19A !important;
+      background: #FFF9EA !important;
+      color: #805A12 !important;
+    }
+
+    body.momo-polish .momo-feedback-state.is-info {
+      border-color: #C9D9EA !important;
+      background: #F5F9FC !important;
+      color: #365A78 !important;
+    }
+
+    body.momo-polish .momo-inline-empty {
+      display: flex;
+      min-width: 0;
+      min-height: 112px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      padding: 1.25rem 0.875rem !important;
+      color: #7A8797 !important;
+      text-align: center;
+    }
+
+    body.momo-polish .momo-inline-empty--dense {
+      min-height: 76px;
+      padding: 0.875rem 0.75rem !important;
+      font-size: var(--momo-type-note) !important;
+      font-weight: 700;
+      line-height: var(--momo-leading-note);
+    }
+
+    body.momo-polish .momo-inline-empty > svg {
+      width: 24px;
+      height: 24px;
+      margin: 0 0 0.25rem !important;
+      color: #94A3B8;
+    }
+
+    body.momo-polish .momo-inline-empty-title {
+      color: #526071;
+      font-size: var(--momo-type-body);
+      font-weight: 800;
+      line-height: 1.4;
+    }
+
+    body.momo-polish .momo-inline-empty-description {
+      max-width: 300px;
+      margin: 0;
+      color: #94A3B8;
+      font-size: var(--momo-type-note);
+      font-weight: 700;
+      line-height: var(--momo-leading-note);
+    }
+
+    body.momo-polish .momo-table-empty {
+      height: 112px;
+      padding: 1.5rem 1rem !important;
+      color: #7A8797 !important;
+      font-size: var(--momo-type-note) !important;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    body.momo-polish .momo-state-button[aria-busy="true"] {
+      pointer-events: none;
+    }
+
+    body.momo-polish .momo-form-primary.momo-state-button,
+    body.momo-polish .momo-form-warning.momo-state-button,
+    body.momo-polish .momo-form-danger.momo-state-button {
+      gap: 0.5rem;
+    }
+
     [v-cloak] { display: none !important; }

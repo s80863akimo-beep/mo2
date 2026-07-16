@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-home-quiet-2">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-interaction-states-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-home-quiet-2">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-interaction-states-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -850,12 +850,13 @@
             </div>
 
             <!-- Empty State -->
-            <div v-if="donutChartData.total === 0" class="text-center py-8 text-slate-400 text-sm font-medium select-none">
+            <div v-if="donutChartData.total === 0" class="momo-inline-empty select-none">
               <svg class="w-7 h-7 mx-auto mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21.21 15.89A10 10 0 1 1 8.11 2.99"></path>
                 <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
               </svg>
-              本期尚無業績資料
+              <div class="momo-inline-empty-title">本期尚無業績資料</div>
+              <p class="momo-inline-empty-description">新增業績後會顯示服務收入結構。</p>
             </div>
 
             <div v-else class="flex flex-col sm:flex-row items-center gap-6">
@@ -970,8 +971,9 @@
                 <span class="text-[10px] sm:text-xs text-slate-400 font-bold">消費金額最高</span>
               </div>
 
-              <div v-if="topCustomers.length === 0" class="text-center py-10 text-slate-400 text-sm font-medium">
-                本期尚無顧客消費紀錄
+              <div v-if="topCustomers.length === 0" class="momo-inline-empty">
+                <div class="momo-inline-empty-title">本期尚無顧客消費紀錄</div>
+                <p class="momo-inline-empty-description">有消費紀錄後會依金額顯示排行。</p>
               </div>
               <div v-else class="space-y-2.5 sm:space-y-3">
                 <div v-for="(cust, idx) in topCustomers" :key="cust.name"
@@ -1010,8 +1012,9 @@
                 <span class="text-[10px] sm:text-xs text-slate-400 font-bold">熱門服務效率榜</span>
               </div>
 
-              <div v-if="serviceYieldAnalysis.length === 0" class="text-center py-10 text-slate-400 text-sm font-medium">
-                此期間內無符合對照字典的服務項目
+              <div v-if="serviceYieldAnalysis.length === 0" class="momo-inline-empty">
+                <div class="momo-inline-empty-title">尚無可分析的服務產值</div>
+                <p class="momo-inline-empty-description">服務需先對應價目表時長，才會列入比較。</p>
               </div>
               <div v-else class="space-y-3">
                 <div class="grid grid-cols-2 gap-2">
@@ -1180,12 +1183,15 @@
 
           <!-- Closeout bottom sheet -->
           <transition name="fade">
-            <div v-if="showCloseoutSheet" class="momo-dialog-overlay closeout-sheet-overlay fixed inset-0 z-[70] bg-slate-900/40 flex items-end sm:items-center justify-center sm:p-4" @click="showCloseoutSheet = false">
+            <div v-if="showCloseoutSheet" class="momo-dialog-overlay closeout-sheet-overlay fixed inset-0 z-[70] bg-slate-900/40 flex items-end sm:items-center justify-center sm:p-4" @click="requestCloseCloseoutSheet">
               <div class="momo-dialog momo-dialog--md momo-form-dialog daily-form-dialog closeout-sheet-panel ios-sheet w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden safe-pb" role="dialog" aria-modal="true" aria-labelledby="closeout-dialog-title" @click.stop>
                 <div class="ios-sheet-handle sm:hidden"></div>
                 <div class="momo-dialog-header momo-form-header daily-form-header px-4 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
-                  <div><h3 id="closeout-dialog-title" class="text-base font-black text-slate-800">每日打烊對帳</h3><p class="momo-dialog-subtitle">{{ selectedCloseoutDateLabel }} · 核對現金後鎖帳</p></div>
-                  <button type="button" @click="showCloseoutSheet = false" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉每日打烊"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+                  <div>
+                    <div class="flex flex-wrap items-center gap-2"><h3 id="closeout-dialog-title" class="text-base font-black text-slate-800">每日打烊對帳</h3><span v-if="closeoutDraftDirty" class="momo-dialog-state-badge is-dirty">未儲存</span></div>
+                    <p class="momo-dialog-subtitle">{{ selectedCloseoutDateLabel }} · 核對現金後鎖帳</p>
+                  </div>
+                  <button type="button" @click="requestCloseCloseoutSheet" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉每日打烊"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
                 </div>
                 <div class="momo-dialog-body momo-form-body daily-form-body closeout-sheet-body ios-sheet-body p-4 space-y-4 max-h-[75vh] overflow-y-auto">
                   <label class="momo-form-field daily-form-field block"><span class="momo-form-label daily-form-label block text-[10px] font-black text-slate-400 mb-1">打烊日期</span><input type="date" v-model="closeoutDate" @change="loadCloseoutFormForDate" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-black"></label>
@@ -1210,7 +1216,7 @@
                     </div>
                   </label>
                   <div v-if="todayCloseoutDifference !== null" class="momo-feedback-state daily-form-status rounded-2xl px-4 py-3 text-sm font-black flex justify-between border" aria-live="polite"
-                       :class="todayCloseoutDifference === 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'">
+                       :class="todayCloseoutDifference === 0 ? 'is-success' : 'is-warning'">
                     <span>{{ todayCloseoutDifference === 0 ? '帳實相符' : '帳實差額需確認' }}</span><span>{{ todayCloseoutDifference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutDifference) }}</span>
                   </div>
                   <label class="momo-form-field daily-form-field block"><span class="momo-form-label daily-form-label block text-[10px] font-black text-slate-400 mb-1">打烊備註</span><input type="text" v-model="closeoutNote" placeholder="差額原因、找零或臨時採買" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-semibold"></label>
@@ -1224,12 +1230,12 @@
                       <div class="p-3 rounded-xl bg-slate-50 col-span-2"><div class="text-[10px] font-black text-slate-400">選定日支出</div><div class="text-base font-black text-slate-800">NT$ {{ formatNumber(selectedCloseout.expenses) }}</div></div>
                     </div>
                   </details>
-                  <div v-if="selectedCloseoutRecord" class="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] font-black text-amber-700">{{ selectedCloseoutDateLabel }} 已鎖帳；新增、修改、刪除該日業績與支出會被擋下。</div>
+                  <div v-if="selectedCloseoutRecord" class="momo-feedback-state is-warning rounded-xl px-3 py-2 text-[11px] font-black">{{ selectedCloseoutDateLabel }} 已鎖帳；新增、修改、刪除該日業績與支出會被擋下。</div>
                   <button v-if="selectedCloseoutRecord" type="button" @click="copyCloseoutSummary" class="momo-form-secondary closeout-secondary-action w-full min-h-[46px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-black">複製打烊摘要</button>
                   <button v-if="selectedCloseoutRecord" type="button" @click="unlockCloseoutDate(closeoutDate)" class="momo-form-warning w-full min-h-[46px] rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-sm font-black">解除此日鎖帳</button>
                 </div>
                 <div class="momo-dialog-footer momo-form-footer momo-dialog-action-bar momo-form-actions daily-form-actions daily-form-actions--split ios-action-bar">
-                  <button type="button" @click="completeCloseoutFromSheet" class="momo-form-primary daily-form-primary ios-primary-action w-full min-h-[52px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ selectedCloseoutRecord ? '更新打烊紀錄' : '完成打烊並鎖帳' }}</button>
+                  <button type="button" @click="completeCloseoutFromSheet" :disabled="formActionBusy.closeout" :aria-busy="formActionBusy.closeout ? 'true' : 'false'" class="momo-state-button momo-form-primary daily-form-primary ios-primary-action w-full min-h-[52px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ formActionBusy.closeout ? '儲存中…' : selectedCloseoutRecord ? '更新打烊紀錄' : '完成打烊並鎖帳' }}</button>
                   <button type="button" @click="copyCloseoutDraftSummary" class="momo-form-secondary daily-form-secondary ios-secondary-action min-h-[46px] rounded-xl border text-sm font-black">複製摘要</button>
                 </div>
               </div>
@@ -1325,16 +1331,16 @@
             <transition name="fade">
             <div v-if="showMobileAddOrderForm"
                  class="momo-dialog-overlay fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6"
-                 @click="showMobileAddOrderForm = false">
+                 @click="requestCloseOrderForm">
             <div class="momo-dialog momo-dialog--md momo-form-dialog daily-form-dialog ios-sheet bg-white w-full max-w-xl rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg safe-pb"
                  @click.stop>
               <div class="ios-sheet-handle lg:hidden"></div>
               <div class="momo-dialog-header momo-form-header daily-form-header">
                 <div>
-                  <h3 class="font-black text-slate-800 text-lg">新增業績</h3>
+                  <div class="flex flex-wrap items-center gap-2"><h3 class="font-black text-slate-800 text-lg">新增業績</h3><span v-if="newOrderDraftDirty" class="momo-dialog-state-badge is-dirty">未儲存</span></div>
                   <p class="momo-dialog-subtitle">服務、金額與付款方式</p>
                 </div>
-                <button type="button" @click="showMobileAddOrderForm = false" class="momo-dialog-close" aria-label="關閉新增業績"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+                <button type="button" @click="requestCloseOrderForm" class="momo-dialog-close" aria-label="關閉新增業績"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
               </div>
               <form @submit.prevent="addOrder" class="momo-dialog-body momo-dialog-form momo-form-body daily-form-body space-y-4">
                 <div class="daily-form-field">
@@ -1424,7 +1430,7 @@
                     <option value="轉帳">轉帳</option>
                   </select>
                 </div>
-                <div v-if="newOrderWarningsPreview.length" class="daily-form-status rounded-2xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] font-black text-amber-700 space-y-1" aria-live="polite">
+                <div v-if="newOrderWarningsPreview.length" class="momo-feedback-state is-warning daily-form-status rounded-2xl px-3 py-2 text-[11px] font-black space-y-1" aria-live="polite">
                   <div v-for="warning in newOrderWarningsPreview" :key="warning">{{ warning }}</div>
                 </div>
                 <div class="momo-dialog-action-bar momo-form-actions daily-form-actions ios-action-bar">
@@ -1432,9 +1438,9 @@
                     <span>新增後繼續下一筆</span>
                     <input type="checkbox" v-model="continueAddingOrders" class="w-5 h-5 rounded border-slate-200">
                   </label>
-                  <button type="submit"
-                          class="momo-form-primary daily-form-primary ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
-                    新增業績
+                  <button type="submit" :disabled="formActionBusy.order" :aria-busy="formActionBusy.order ? 'true' : 'false'"
+                          class="momo-state-button momo-form-primary daily-form-primary ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
+                    {{ formActionBusy.order ? '新增中…' : '新增業績' }}
                   </button>
                 </div>
               </form>
@@ -1839,16 +1845,16 @@
             <transition name="fade">
             <div v-if="showExpenseForm"
                  class="momo-dialog-overlay fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6"
-                 @click="showExpenseForm = false">
+                 @click="requestCloseExpenseForm">
             <div class="momo-dialog momo-dialog--md momo-form-dialog daily-form-dialog expense-form-sheet ios-sheet bg-white w-full max-w-xl rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg safe-pb"
                  @click.stop>
               <div class="ios-sheet-handle lg:hidden"></div>
               <div class="momo-dialog-header momo-form-header daily-form-header">
                 <div>
-                  <h3 class="font-black text-slate-800 text-lg">新增支出</h3>
+                  <div class="flex flex-wrap items-center gap-2"><h3 class="font-black text-slate-800 text-lg">新增支出</h3><span v-if="newExpenseDraftDirty" class="momo-dialog-state-badge is-dirty">未儲存</span></div>
                   <p class="momo-dialog-subtitle">日期、分類、金額與備註</p>
                 </div>
-                <button type="button" @click="showExpenseForm = false" class="momo-dialog-close" aria-label="關閉新增支出"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+                <button type="button" @click="requestCloseExpenseForm" class="momo-dialog-close" aria-label="關閉新增支出"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
               </div>
 
               <form @submit.prevent="addExpense" class="momo-dialog-body momo-dialog-scroll momo-form-body daily-form-body space-y-4">
@@ -1922,9 +1928,9 @@
                          class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
                 </div>
                 <div class="momo-dialog-action-bar momo-form-actions daily-form-actions ios-action-bar">
-                  <button type="submit"
-                          class="momo-form-primary daily-form-primary expense-submit-button ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
-                    新增支出
+                  <button type="submit" :disabled="formActionBusy.expense" :aria-busy="formActionBusy.expense ? 'true' : 'false'"
+                          class="momo-state-button momo-form-primary daily-form-primary expense-submit-button ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
+                    {{ formActionBusy.expense ? '新增中…' : '新增支出' }}
                   </button>
                 </div>
               </form>
@@ -2191,15 +2197,15 @@
 
             <!-- Add Item Form -->
             <transition name="fade">
-            <div v-if="showInventoryForm" class="momo-dialog-overlay fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6" @click="showInventoryForm = false">
+            <div v-if="showInventoryForm" class="momo-dialog-overlay fixed inset-0 z-[55] flex items-end lg:items-center justify-center bg-slate-900/40 lg:p-6" @click="requestCloseInventoryForm">
             <div class="momo-dialog momo-dialog--md momo-form-dialog inventory-form-sheet ios-sheet bg-white w-full max-w-xl max-h-[90dvh] overflow-y-auto p-5 sm:p-6 rounded-t-3xl lg:rounded-4xl border border-orange-50 macaron-shadow-lg space-y-4 safe-pb" @click.stop>
               <div class="ios-sheet-handle lg:hidden"></div>
               <div class="momo-dialog-header momo-form-header">
                 <div>
-                  <h3 class="font-black text-slate-800 text-lg">新增庫存商品</h3>
+                  <div class="flex flex-wrap items-center gap-2"><h3 class="font-black text-slate-800 text-lg">新增庫存商品</h3><span v-if="newInventoryDraftDirty" class="momo-dialog-state-badge is-dirty">未儲存</span></div>
                   <p class="momo-dialog-subtitle">設定目前數量與補貨警戒值</p>
                 </div>
-                <button type="button" @click="showInventoryForm = false" class="momo-dialog-close" aria-label="關閉新增庫存"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+                <button type="button" @click="requestCloseInventoryForm" class="momo-dialog-close" aria-label="關閉新增庫存"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
               </div>
               <form @submit.prevent="addInventoryItem" class="momo-dialog-body momo-dialog-form momo-form-body space-y-4">
                 <div class="momo-form-field">
@@ -2228,9 +2234,9 @@
                           class="inventory-form-input w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
                 </div>
                 <div class="momo-dialog-action-bar momo-form-actions ios-action-bar">
-                  <button type="submit"
-                          class="momo-form-primary inventory-form-submit ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
-                    建立商品庫存
+                  <button type="submit" :disabled="formActionBusy.inventory" :aria-busy="formActionBusy.inventory ? 'true' : 'false'"
+                          class="momo-state-button momo-form-primary inventory-form-submit ios-primary-action jelly-btn w-full bg-slate-900 text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-sm">
+                    {{ formActionBusy.inventory ? '建立中…' : '建立商品庫存' }}
                   </button>
                 </div>
               </form>
@@ -2703,7 +2709,7 @@
                             <div class="text-xs font-black text-slate-700">消費時間線</div>
                             <button @click="openCustomerOrders(cust.id)" class="min-h-[30px] px-2.5 rounded-lg bg-white border border-orange-100 text-macaron-peach-500 text-[9px] font-black">完整客史</button>
                           </div>
-                          <div v-if="!cust.orderTimeline.length" class="px-3 py-4 text-xs font-bold text-slate-400">尚無服務紀錄</div>
+                          <div v-if="!cust.orderTimeline.length" class="momo-inline-empty momo-inline-empty--dense">尚無服務紀錄</div>
                           <div v-else class="divide-y divide-orange-100/70">
                             <div v-for="order in cust.orderTimeline" :key="'customer-timeline-' + order.id" class="px-3 py-2.5 flex justify-between gap-3">
                               <div class="min-w-0">
@@ -2728,7 +2734,7 @@
                             <div class="text-xs font-black text-slate-700">儲值歷程</div>
                             <div class="text-[9px] font-black text-emerald-700">餘額 NT$ {{ formatNumber(cust.prepaidBalance) }}</div>
                           </div>
-                          <div v-if="!cust.prepaidTimeline.length" class="px-3 py-4 text-xs font-bold text-slate-400">尚無儲值異動</div>
+                          <div v-if="!cust.prepaidTimeline.length" class="momo-inline-empty momo-inline-empty--dense">尚無儲值異動</div>
                           <div v-else class="divide-y divide-emerald-100/70">
                             <div v-for="entry in cust.prepaidTimeline" :key="'customer-prepaid-' + entry.id" class="px-3 py-2.5 flex justify-between gap-3">
                               <div class="min-w-0">
@@ -2744,7 +2750,7 @@
                       <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
                         <section class="rounded-2xl border border-sky-100 bg-sky-50/25 overflow-hidden">
                           <div class="px-3 py-2 border-b border-sky-100 bg-white/70 text-xs font-black text-slate-700">服務偏好排行</div>
-                          <div v-if="!cust.servicePreferenceRows.length" class="px-3 py-4 text-xs font-bold text-slate-400">尚無可分析服務</div>
+                          <div v-if="!cust.servicePreferenceRows.length" class="momo-inline-empty momo-inline-empty--dense">尚無可分析服務</div>
                           <div v-else class="divide-y divide-sky-100/70">
                             <div v-for="row in cust.servicePreferenceRows" :key="'customer-service-pref-' + row.serviceName" class="px-3 py-2.5">
                               <div class="flex items-center justify-between gap-3">
@@ -2763,7 +2769,7 @@
 
                         <section class="rounded-2xl border border-violet-100 bg-violet-50/25 overflow-hidden">
                           <div class="px-3 py-2 border-b border-violet-100 bg-white/70 text-xs font-black text-slate-700">配方紀錄時間線</div>
-                          <div v-if="!cust.formulaTimeline.length" class="px-3 py-4 text-xs font-bold text-slate-400">尚無配方或染燙護服務紀錄</div>
+                          <div v-if="!cust.formulaTimeline.length" class="momo-inline-empty momo-inline-empty--dense">尚無配方或染燙護服務紀錄</div>
                           <div v-else class="divide-y divide-violet-100/70">
                             <div v-for="item in cust.formulaTimeline" :key="'customer-formula-' + item.id" class="px-3 py-2.5">
                               <div class="flex items-center justify-between gap-2">
@@ -3113,7 +3119,7 @@
                 </tbody>
               </table>
             </div>
-            <div v-if="!monthlyPrepaidReconciliation.customerRows.length" class="report-prepaid-empty px-4 py-3 sm:px-6 border-t border-slate-100 text-[11px] font-bold text-slate-400">本月沒有儲值異動，帳面餘額維持不變。</div>
+            <div v-if="!monthlyPrepaidReconciliation.customerRows.length" class="report-prepaid-empty momo-inline-empty momo-inline-empty--dense border-t border-slate-100">本月沒有儲值異動，帳面餘額維持不變。</div>
             <div v-if="reportShowPrepaidDetails && monthlyPrepaidReconciliation.customerRows.length > 12" class="px-4 py-2 text-[10px] font-bold text-slate-400 border-t border-slate-100">
               另有 {{ monthlyPrepaidReconciliation.customerRows.length - 12 }} 位顧客，完整資料會包含在正式月結 CSV。
             </div>
@@ -3149,10 +3155,10 @@
               <div class="p-4"><div class="text-[10px] font-black text-slate-400">實際工時覆蓋</div><div class="mt-1 text-lg font-black" :class="reportAnnualYieldSummary.actualCoverage >= 80 ? 'text-emerald-700' : 'text-amber-700'">{{ reportAnnualYieldSummary.actualCoverage }}%</div></div>
             </div>
             <div v-else class="report-yield-body p-4 sm:p-6">
-              <div v-if="reportAnnualServiceYieldRows.length === 0" class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-8 text-center text-xs font-bold text-slate-400">
+              <div v-if="reportAnnualServiceYieldRows.length === 0" class="momo-inline-empty">
                 此期間沒有可分析的服務時長資料
               </div>
-              <div v-else-if="reportServiceYieldRows.length === 0" class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-8 text-center text-xs font-bold text-slate-400">
+              <div v-else-if="reportServiceYieldRows.length === 0" class="momo-inline-empty">
                 沒有符合目前最低筆數的服務，請降低樣本門檻。
               </div>
               <div v-else class="report-yield-list space-y-2.5">
@@ -3239,7 +3245,7 @@
                 <div class="flex items-center justify-between gap-3"><span class="text-sm font-black text-slate-700">{{ row.label }}</span><div class="text-right"><span class="text-sm font-black text-slate-800">NT$ {{ formatNumber(row.amount) }}</span><span class="ml-2 text-[10px] font-bold text-slate-400">{{ row.percentage }}%</span></div></div>
                 <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden mt-2"><div class="h-full rounded-full" :class="reportBreakdownTab === 'income' ? 'momo-revenue-bar' : 'bg-sky-400'" :style="{ width: row.percentage + '%' }"></div></div>
               </div>
-              <div v-if="!reportBreakdownRows.length" class="py-8 text-center text-xs font-bold text-slate-400">此年度尚無資料</div>
+              <div v-if="!reportBreakdownRows.length" class="momo-inline-empty">此年度尚無資料</div>
             </div>
           </section>
 
@@ -3258,7 +3264,7 @@
                     <td class="px-4 py-3 text-right text-sm font-black text-slate-600">{{ month.revenue ? Math.round(month.net / month.revenue * 100) : 0 }}%</td>
                     <td class="pr-3 text-right text-slate-300"><svg class="momo-ui-icon report-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></td>
                   </tr>
-                  <tr v-if="!reportMonthlyRows.length"><td colspan="6" class="px-4 py-10 text-center text-xs font-bold text-slate-400">此年度尚無損益資料</td></tr>
+                  <tr v-if="!reportMonthlyRows.length"><td colspan="6" class="momo-table-empty">此年度尚無損益資料</td></tr>
                 </tbody>
               </table>
             </div>
@@ -3862,7 +3868,7 @@
           </div>
           <div class="momo-dialog-footer momo-form-footer cloud-conflict-footer grid grid-cols-2 border-t border-amber-100 shrink-0 bg-white">
             <button @click="useCloudConflictVersion" :disabled="cloudStatus === 'syncing'" class="momo-form-secondary min-h-[54px] px-3 text-sky-700 text-xs font-black border-r border-amber-100">使用雲端版本</button>
-            <button @click="keepLocalConflictVersion" :disabled="cloudStatus === 'syncing'" :aria-busy="cloudStatus === 'syncing' ? 'true' : 'false'" class="momo-form-warning min-h-[54px] px-3 text-amber-700 text-xs font-black">
+            <button @click="keepLocalConflictVersion" :disabled="cloudStatus === 'syncing'" :aria-busy="cloudStatus === 'syncing' ? 'true' : 'false'" class="momo-state-button momo-form-warning min-h-[54px] px-3 text-amber-700 text-xs font-black">
               {{ cloudStatus === 'syncing' ? '正在覆蓋雲端…' : '保留本機並覆蓋全部' }}
             </button>
           </div>
@@ -3993,7 +3999,7 @@
             <button @click="confirmCloudBackupRestore"
                     :disabled="!cloudRestoreReadyToConfirm || cloudBackupStatus === 'restoring'"
                     :aria-busy="cloudBackupStatus === 'restoring' ? 'true' : 'false'"
-                    class="momo-form-primary cloud-restore-submit disabled:opacity-40"
+                    class="momo-state-button momo-form-primary cloud-restore-submit disabled:opacity-40"
                     :class="cloudRestoreDraft?.preview?.riskTone === 'error' ? 'is-blocked' : cloudRestoreReadyToConfirm ? 'is-ready' : ''">
               {{ cloudBackupStatus === 'restoring' ? '還原中…' : cloudRestoreDraft?.preview?.riskTone === 'error' ? '無法還原' : '確認還原' }}
             </button>
@@ -4005,7 +4011,7 @@
     <!-- 自訂確認對話框 Modal（取代瀏覽器原生 confirm，風格一致） -->
     <transition name="fade">
       <div v-if="confirmModal.show"
-           class="momo-dialog-overlay fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+           class="momo-dialog-overlay momo-confirm-overlay fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
            @click="closeConfirm">
         <div class="momo-dialog momo-dialog--sm momo-dialog--confirm momo-form-dialog ios-sheet bg-white rounded-3xl w-full max-w-sm macaron-shadow-lg border border-orange-100 overflow-hidden"
              :class="'is-' + confirmModal.tone" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message" @click.stop>
@@ -4032,7 +4038,7 @@
             <button @click="doConfirm"
                     :disabled="confirmModal.busy"
                     :aria-busy="confirmModal.busy ? 'true' : 'false'"
-                    class="min-h-[54px] px-3 text-sm font-black"
+                    class="momo-state-button min-h-[54px] px-3 text-sm font-black"
                     :class="confirmModal.tone === 'danger' ? 'momo-form-danger' : confirmModal.tone === 'info' ? 'momo-form-primary' : 'momo-form-warning'">
               {{ confirmModal.busy ? confirmModal.loadingLabel : confirmModal.confirmLabel }}
             </button>
@@ -4148,8 +4154,8 @@
               <button type="button" @click="closeServiceConfigModal" class="momo-form-secondary ios-secondary-action">
                 關閉
               </button>
-              <button type="button" @click="saveServicesConfig" :disabled="!serviceConfigHasChanges" class="momo-form-primary ios-primary-action service-config-save-button">
-                {{ serviceConfigHasChanges ? '儲存變更' : '已儲存' }}
+              <button type="button" @click="saveServicesConfig" :disabled="!serviceConfigHasChanges || formActionBusy.serviceConfig" :aria-busy="formActionBusy.serviceConfig ? 'true' : 'false'" class="momo-state-button momo-form-primary ios-primary-action service-config-save-button">
+                {{ formActionBusy.serviceConfig ? '儲存中…' : serviceConfigHasChanges ? '儲存變更' : '已儲存' }}
               </button>
             </div>
           </div>
@@ -4161,9 +4167,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.16-home-quiet-2"></script>
+  <script src="/assets/momo-core.js?v=2026.07.16-interaction-states-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.16-home-quiet-2"></script>
+  <script src="/assets/momo-app.js?v=2026.07.16-interaction-states-1"></script>
 </body>
 </html>

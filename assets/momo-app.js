@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.16-home-quiet-2';
+    const APP_VERSION = '2026.07.16-interaction-states-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -244,6 +244,13 @@
           expandedInventoryId: null,
           showCloseoutSheet: false,
           mobileDashboardSubTab: 'payment',
+          formActionBusy: {
+            order: false,
+            expense: false,
+            inventory: false,
+            closeout: false,
+            serviceConfig: false
+          },
 
           // Service Pricing Dict Configuration Modal
           showServiceConfigModal: false,
@@ -2771,6 +2778,41 @@
         serviceConfigHasChanges() {
           return JSON.stringify(this.tempServicesConfig || []) !== JSON.stringify(this.servicesConfig || []);
         },
+        newOrderDraftDirty() {
+          return Boolean(
+            String(this.newOrder.customerId || '').trim()
+            || String(this.newOrder.customerName || '').trim()
+            || String(this.newOrder.serviceName || '').trim()
+            || (this.newOrder.amount !== null && this.newOrder.amount !== '')
+            || (this.newOrder.cashAmount !== null && this.newOrder.cashAmount !== '')
+            || this.newOrder.createNewCustomer
+            || this.newOrder.paymentMethod !== '現金'
+            || this.newOrder.topupChannel !== '現金'
+          );
+        },
+        newExpenseDraftDirty() {
+          return Boolean(
+            (this.newExpense.amount !== null && this.newExpense.amount !== '')
+            || String(this.newExpense.notes || '').trim()
+          );
+        },
+        newInventoryDraftDirty() {
+          return Boolean(
+            String(this.newInventory.name || '').trim()
+            || (this.newInventory.stock !== null && this.newInventory.stock !== '')
+            || String(this.newInventory.notes || '').trim()
+            || Number(this.newInventory.minStock) !== 3
+          );
+        },
+        closeoutDraftDirty() {
+          const record = this.selectedCloseoutRecord;
+          const currentCount = this.closeoutCashCount === null || this.closeoutCashCount === ''
+            ? null
+            : Number(this.closeoutCashCount);
+          const savedCount = record ? Number(record.countedCash) : null;
+          return currentCount !== savedCount
+            || String(this.closeoutNote || '').trim() !== String(record?.note || '').trim();
+        },
         filteredTempServicesConfigRows() {
           const query = String(this.serviceConfigSearchQuery || '').trim().toLowerCase();
           return (this.tempServicesConfig || [])
@@ -3164,7 +3206,7 @@
             const servicesIncluded = this.applyBackupData(snapshot.payload);
             this.recordOperation('backup_snapshot_restore', '還原本機快照', `${this.formatDateTime(snapshot.createdAt)} · ${this.backupReasonLabel(snapshot.reason)}`, { snapshotId: snapshot.id, servicesIncluded });
             this.activeTab = 'safety';
-            this.showToast(servicesIncluded ? '本機快照已還原' : '本機快照已還原，但原快照不含價目表', servicesIncluded ? 'success' : 'error', 7000);
+            this.showToast(servicesIncluded ? '本機快照已還原' : '本機快照已還原，但原快照不含價目表', servicesIncluded ? 'success' : 'warning', 7000);
           }, { title: '還原本機快照', subtitle: '目前資料將由快照內容取代', tone: 'danger', confirmLabel: '確認還原', loadingLabel: '還原中…' });
         },
         deleteBackupSnapshot(snapshotId) {
@@ -3248,7 +3290,7 @@
             this.cloudBackupStatus = 'ready';
             this.runDataSafetyCheck(false);
             if (!silent) {
-              this.showToast(this.cloudBackups.length ? `已載入 ${this.cloudBackups.length} 份雲端備份` : '雲端目前沒有備份');
+              this.showToast(this.cloudBackups.length ? `已載入 ${this.cloudBackups.length} 份雲端備份` : '雲端目前沒有備份', this.cloudBackups.length ? 'success' : 'info');
             }
             return this.cloudBackupRows;
           } catch (error) {
@@ -3623,7 +3665,7 @@
         },
         cancelOrderDraft(order) {
           this.clearOrderDraft(order?.id);
-          this.showToast('已取消本次修正');
+          this.showToast('已取消本次修正', 'info');
         },
         orderDraftChangedFields(order) {
           const draft = this.orderEditDraft(order);
@@ -3696,7 +3738,7 @@
           );
           if (!changed.length) {
             this.clearOrderDraft(order.id);
-            this.showToast('沒有需要建立更正單的變更');
+            this.showToast('沒有需要建立更正單的變更', 'info');
             return true;
           }
 
@@ -3834,7 +3876,7 @@
           );
           if (!changed.length) {
             this.clearOrderDraft(order.id);
-            this.showToast('沒有需要儲存的修正');
+            this.showToast('沒有需要儲存的修正', 'info');
             return true;
           }
           Object.assign(order, normalizedDraft, { updatedAt: new Date().toISOString() });
@@ -3879,7 +3921,7 @@
         },
         cancelExpenseDraft(expense) {
           this.clearExpenseDraft(expense?.id);
-          this.showToast('已取消本次支出修正');
+          this.showToast('已取消本次支出修正', 'info');
         },
         expenseDraftHasChanges(expense) {
           const draft = this.expenseEditDraft(expense);
@@ -3909,7 +3951,7 @@
           );
           if (!changed.length) {
             this.clearExpenseDraft(expense.id);
-            this.showToast('沒有需要儲存的支出修正');
+            this.showToast('沒有需要儲存的支出修正', 'info');
             return true;
           }
           Object.assign(expense, normalized, { updatedAt: new Date().toISOString() });
@@ -3949,7 +3991,7 @@
         },
         cancelInventoryDraft(item) {
           this.clearInventoryDraft(item?.id);
-          this.showToast('已取消本次庫存修正');
+          this.showToast('已取消本次庫存修正', 'info');
         },
         inventoryDraftHasChanges(item) {
           const draft = this.inventoryEditDraft(item);
@@ -3977,7 +4019,7 @@
           );
           if (!changed.length) {
             this.clearInventoryDraft(item.id);
-            this.showToast('沒有需要儲存的庫存修正');
+            this.showToast('沒有需要儲存的庫存修正', 'info');
             return true;
           }
           Object.assign(item, normalized, { updatedAt: new Date().toISOString() });
@@ -4036,7 +4078,7 @@
           const id = cust?.id;
           if (!id || !this.crmEditDrafts[id]) return;
           this.clearCrmDraft(id);
-          this.showToast('已取消本次 CRM 修正');
+          this.showToast('已取消本次 CRM 修正', 'info');
         },
         clearCrmDraft(id) {
           if (!id || !this.crmEditDrafts[id]) return;
@@ -4205,7 +4247,7 @@
             }
 
             this.pwaStatus = navigator.serviceWorker.controller ? '已啟用' : '等待啟用';
-            if (manual) this.showToast('目前已是最新版');
+            if (manual) this.showToast('目前已是最新版', 'info');
             return false;
           } catch (error) {
             console.warn('PWA update check failed:', error);
@@ -4934,7 +4976,7 @@
           if (!issue) return;
           if (issue.tab === 'crm' && issue.customerId) {
             this.goToCustomerCRM(issue.customerId);
-            this.showToast('已跳到對應顧客 CRM');
+            this.showToast('已跳到對應顧客 CRM', 'info');
             return;
           }
           if (issue.tab === 'orders') {
@@ -4963,7 +5005,7 @@
           }
           this.activeTab = 'dashboard';
           this.scrollToTopForNavigation();
-          this.showToast('已回到今日總覽');
+          this.showToast('已回到今日總覽', 'info');
         },
         handleHealthIssue(issue) {
           if (!issue) return;
@@ -5022,7 +5064,7 @@
           this.newExpense.amount = amount > 0 ? amount : null;
           this.newExpense.notes = preset.notes || '';
           if (openForm) this.showExpenseForm = true;
-          this.showToast(`已帶入：${preset.label || preset.category}`);
+          this.showToast(`已帶入：${preset.label || preset.category}`, 'info');
         },
         expenseTemplateAmountText(template) {
           if (Number(template?.suggestedAmount) > 0) return `帶入 NT$ ${this.formatNumber(template.suggestedAmount)}`;
@@ -5053,7 +5095,7 @@
         saveSelectedCloseout() {
           if (this.closeoutCashCount === null || this.closeoutCashCount === '') {
             this.showToast('請先輸入實際盤點現金', 'error');
-            return;
+            return false;
           }
           const date = this.closeoutDate || new Date().toLocaleDateString('sv-SE');
           const totals = this.selectedCloseout;
@@ -5084,19 +5126,23 @@
           this.queueCloudSync();
           this.recordOperation('closeout_save', wasUpdate ? '更新打烊' : '完成打烊', `${date} 應有 NT$ ${this.formatNumber(totals.actualCashIn)} · 實點 NT$ ${this.formatNumber(this.closeoutCashCount)} · 差額 ${difference > 0 ? '+' : ''}NT$ ${this.formatNumber(difference)}`);
           this.showToast(difference === 0 ? `${date} 打烊完成，現金帳實相符` : `${date} 打烊已記錄，差額 NT$ ${this.formatNumber(difference)}`,
-            difference === 0 ? 'success' : 'error', 5000);
+            difference === 0 ? 'success' : 'warning', 5000);
+          return true;
         },
         saveTodayCloseout() {
           this.closeoutDate = new Date().toLocaleDateString('sv-SE');
           this.saveSelectedCloseout();
         },
-        completeCloseoutFromSheet() {
-          if (this.closeoutCashCount === null || this.closeoutCashCount === '') {
-            this.saveSelectedCloseout();
-            return;
+        async completeCloseoutFromSheet() {
+          if (this.formActionBusy.closeout) return;
+          this.formActionBusy.closeout = true;
+          await this.$nextTick();
+          try {
+            const saved = this.saveSelectedCloseout();
+            if (saved) this.showCloseoutSheet = false;
+          } finally {
+            this.formActionBusy.closeout = false;
           }
-          this.saveSelectedCloseout();
-          this.showCloseoutSheet = false;
         },
         buildCloseoutSummary(record = this.todayCloseoutRecord) {
           if (!record) return '';
@@ -5134,7 +5180,7 @@
         copyCloseoutSummary(record = null) {
           const text = this.buildCloseoutSummary(record || this.selectedCloseoutRecord || this.todayCloseoutRecord);
           if (!text) {
-            this.showToast('尚未建立此日期打烊摘要', 'error');
+            this.showToast('尚未建立此日期打烊摘要', 'warning');
             return;
           }
           this.copyTextToClipboard(text, '打烊摘要已複製');
@@ -5166,7 +5212,7 @@
         },
         setCloseoutCashToExpected() {
           this.closeoutCashCount = this.selectedCloseout.actualCashIn;
-          this.showToast('已帶入應有現金');
+          this.showToast('已帶入應有現金', 'info');
         },
         copyCloseoutDraftSummary() {
           this.copyTextToClipboard(this.buildCloseoutSummary(this.buildCloseoutDraftRecord()), '目前打烊摘要已複製');
@@ -5451,7 +5497,7 @@
           this.serviceConfigSearchQuery = serviceName;
           this.showServiceConfigModal = true;
           this.showSyncIssueModal = false;
-          this.showToast(exists ? '此服務已在價目表中' : '已加入價目表，請補上定價與時長');
+          this.showToast(exists ? '此服務已在價目表中' : '已加入價目表，請補上定價與時長', 'info');
         },
         openOrderFromSyncIssue(issue = {}) {
           this.showSyncIssueModal = false;
@@ -7834,7 +7880,7 @@
           this.showMobileAddOrderForm = true;
           this.activeTab = 'orders';
           this.ordersSearchQuery = cust.name;
-          this.showToast(`已帶入 ${cust.name}，可直接新增本次業績`);
+          this.showToast(`已帶入 ${cust.name}，可直接新增本次業績`, 'info');
           this.$nextTick(() => {
             if (this.$refs.customerNameInput) this.$refs.customerNameInput.focus();
           });
@@ -7853,7 +7899,7 @@
           this.showMobileAddOrderForm = true;
           this.activeTab = 'orders';
           this.ordersSearchQuery = cust.name;
-          this.showToast(`已帶入 ${cust.name}，請輸入本次儲值金額`);
+          this.showToast(`已帶入 ${cust.name}，請輸入本次儲值金額`, 'info');
           this.$nextTick(() => {
             if (this.$refs.customerNameInput) this.$refs.customerNameInput.focus();
           });
@@ -7871,6 +7917,77 @@
         closeCustomerHistory() {
           this.ordersCustomerHistoryId = null;
           this.ordersSearchQuery = '';
+        },
+
+        resetNewOrderDraft() {
+          Object.assign(this.newOrder, {
+            date: new Date().toLocaleDateString('sv-SE'),
+            customerId: '',
+            customerName: '',
+            createNewCustomer: false,
+            gender: '女',
+            serviceName: '',
+            amount: null,
+            paymentMethod: '現金',
+            cashAmount: null,
+            topupChannel: '現金'
+          });
+        },
+        resetNewExpenseDraft() {
+          Object.assign(this.newExpense, {
+            date: new Date().toLocaleDateString('sv-SE'),
+            category: '材料費',
+            amount: null,
+            notes: ''
+          });
+        },
+        resetNewInventoryDraft() {
+          Object.assign(this.newInventory, {
+            name: '',
+            stock: null,
+            minStock: 3,
+            notes: ''
+          });
+        },
+        requestCloseOrderForm() {
+          if (!this.newOrderDraftDirty) {
+            this.showMobileAddOrderForm = false;
+            return;
+          }
+          this.showConfirm('這筆業績尚未新增。確定要放棄目前輸入內容嗎？', () => {
+            this.resetNewOrderDraft();
+            this.showMobileAddOrderForm = false;
+          }, { title: '放棄業績草稿', subtitle: '尚未新增的內容將會清除', tone: 'warning', confirmLabel: '放棄草稿' });
+        },
+        requestCloseExpenseForm() {
+          if (!this.newExpenseDraftDirty) {
+            this.showExpenseForm = false;
+            return;
+          }
+          this.showConfirm('這筆支出尚未新增。確定要放棄目前輸入內容嗎？', () => {
+            this.resetNewExpenseDraft();
+            this.showExpenseForm = false;
+          }, { title: '放棄支出草稿', subtitle: '尚未新增的內容將會清除', tone: 'warning', confirmLabel: '放棄草稿' });
+        },
+        requestCloseInventoryForm() {
+          if (!this.newInventoryDraftDirty) {
+            this.showInventoryForm = false;
+            return;
+          }
+          this.showConfirm('這項商品尚未建立。確定要放棄目前輸入內容嗎？', () => {
+            this.resetNewInventoryDraft();
+            this.showInventoryForm = false;
+          }, { title: '放棄庫存草稿', subtitle: '尚未建立的內容將會清除', tone: 'warning', confirmLabel: '放棄草稿' });
+        },
+        requestCloseCloseoutSheet() {
+          if (!this.closeoutDraftDirty) {
+            this.showCloseoutSheet = false;
+            return;
+          }
+          this.showConfirm('打烊盤點尚未完成。確定要放棄目前輸入內容嗎？', () => {
+            this.loadCloseoutFormForDate();
+            this.showCloseoutSheet = false;
+          }, { title: '放棄打烊草稿', subtitle: '盤點現金與備註將恢復為上次紀錄', tone: 'warning', confirmLabel: '放棄草稿' });
         },
 
         // Dictionary Modal Methods
@@ -7918,7 +8035,11 @@
             this.tempServicesConfig = JSON.parse(JSON.stringify(defaultServicesConfig));
           }, { title: '重設服務價目表', subtitle: '自訂定價與標準時間將被覆蓋', tone: 'danger', confirmLabel: '重設預設值' });
         },
-        saveServicesConfig() {
+        async saveServicesConfig() {
+          if (!this.serviceConfigHasChanges || this.formActionBusy.serviceConfig) return;
+          this.formActionBusy.serviceConfig = true;
+          await this.$nextTick();
+          try {
           // Filter out items with empty names
           const filtered = this.tempServicesConfig.filter(s => s.name && s.name.trim());
           this.servicesConfig = JSON.parse(JSON.stringify(filtered));
@@ -7928,6 +8049,9 @@
           this.queueCloudSync();
           this.recordOperation('service_config_update', '更新服務定價', `服務項目 ${this.servicesConfig.length} 項`);
           this.showToast('服務價目表已儲存');
+          } finally {
+            this.formActionBusy.serviceConfig = false;
+          }
         },
 
         // --- 損益報表 ---
@@ -8309,7 +8433,11 @@
           }
           return warnings;
         },
-        createOrderFromForm() {
+        async createOrderFromForm() {
+          if (this.formActionBusy.order) return;
+          this.formActionBusy.order = true;
+          await this.$nextTick();
+          try {
           const totalAmount = Number(this.newOrder.amount) || 0;
           const cashAmount = Number(this.newOrder.cashAmount) || 0;
           const selectedCustomer = this.customerMap[this.newOrder.customerId];
@@ -8362,6 +8490,9 @@
             this.showMobileAddOrderForm = false;
           }
           this.activeTab = 'orders';
+          } finally {
+            this.formActionBusy.order = false;
+          }
         },
         deleteOrder(id) {
           const order = this.orders.find(o => o.id === id);
@@ -8397,7 +8528,11 @@
         },
 
         // --- Tab 3: Expenses CRUD ---
-        addExpense() {
+        async addExpense() {
+          if (this.formActionBusy.expense) return;
+          this.formActionBusy.expense = true;
+          await this.$nextTick();
+          try {
           if (!this.assertDateUnlocked(this.newExpense.date)) return;
           const id = 'exp_' + Math.random().toString(36).substr(2, 9);
           const expense = {
@@ -8417,6 +8552,9 @@
           this.newExpense.notes = '';
           this.newExpense.amount = null;
           this.showExpenseForm = false;
+          } finally {
+            this.formActionBusy.expense = false;
+          }
         },
         deleteExpense(id) {
           const expense = this.expenses.find(e => e.id === id);
@@ -8448,7 +8586,11 @@
         },
 
         // --- Tab 4: Inventory CRUD ---
-        addInventoryItem() {
+        async addInventoryItem() {
+          if (this.formActionBusy.inventory) return;
+          this.formActionBusy.inventory = true;
+          await this.$nextTick();
+          try {
           const id = 'inv_' + Math.random().toString(36).substr(2, 9);
           this.inventory.push({
             id,
@@ -8466,6 +8608,9 @@
           this.newInventory.minStock = 3;
           this.newInventory.notes = '';
           this.showInventoryForm = false;
+          } finally {
+            this.formActionBusy.inventory = false;
+          }
         },
         async adjustStock(item, diff) {
           this.clearInventoryDraft(item?.id);
@@ -8499,7 +8644,7 @@
           const current = Math.max(0, Math.round(Number(item.stock) || 0));
           const diff = target - current;
           if (diff === 0) {
-            this.showToast('庫存數量未變更');
+            this.showToast('庫存數量未變更', 'info');
             return;
           }
           this.adjustStock(item, diff);
