@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v120-startup-stability';
-const APP_VERSION = '2026.07.16-startup-stability-1';
+const CACHE_NAME = 'momohair-shell-v121-report-safety-list-density';
+const APP_VERSION = '2026.07.17-report-safety-list-density-1';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,

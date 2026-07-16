@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.16-startup-stability-1';
+    const APP_VERSION = '2026.07.17-report-safety-list-density-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 

@@ -1845,8 +1845,49 @@
       justify-content: flex-end;
     }
 
-    body.momo-polish .orders-mobile-titleline > div:first-child {
+    body.momo-polish .orders-mobile-summary-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    body.momo-polish .orders-mobile-main {
       min-width: 0;
+    }
+
+    body.momo-polish .orders-mobile-customer {
+      color: var(--momo-ink);
+      font-size: 0.875rem;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    body.momo-polish .orders-mobile-service-line {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.35rem;
+    }
+
+    body.momo-polish .orders-mobile-service-name {
+      min-width: 0;
+      color: var(--momo-muted);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    body.momo-polish .orders-mobile-value {
+      min-width: 94px;
+    }
+
+    body.momo-polish .orders-mobile-amount {
+      color: var(--momo-ink);
+      font-size: 0.875rem;
+      font-weight: 900;
+      line-height: 1.2;
     }
 
     body.momo-polish .orders-ledger-table .orders-editor-row {
@@ -1989,20 +2030,34 @@
       }
 
       body.momo-polish .orders-mobile-button {
-        min-height: 66px !important;
+        min-height: 68px !important;
         padding: 0.75rem !important;
       }
 
-      body.momo-polish .orders-category-badge {
-        min-height: 25px;
+      body.momo-polish .orders-mobile-service-line .orders-category-badge {
+        min-height: 22px;
         gap: 0.3rem;
-        padding: 0 0.45rem;
+        padding: 0 0.38rem;
+        font-size: 0.5625rem;
       }
 
-      body.momo-polish .orders-payment-badge {
-        min-height: 24px;
+      body.momo-polish .orders-mobile-service-line .orders-category-icon {
+        width: 11px;
+        height: 11px;
+        flex-basis: 11px;
+      }
+
+      body.momo-polish .orders-mobile-value .orders-payment-badge {
+        min-height: 22px;
         gap: 0.3rem;
-        padding: 0 0.4rem;
+        padding: 0 0.38rem;
+        font-size: 0.5625rem;
+      }
+
+      body.momo-polish .orders-mobile-value .orders-payment-icon {
+        width: 11px;
+        height: 11px;
+        flex-basis: 11px;
       }
 
       body.momo-polish .orders-payment-breakdown {
@@ -2918,6 +2973,102 @@
       font-variant-numeric: tabular-nums;
     }
 
+    body.momo-polish .report-settlement-details {
+      border-top: 1px solid var(--momo-line);
+      background: var(--momo-surface);
+    }
+
+    body.momo-polish .report-settlement-details-summary {
+      display: flex;
+      min-height: 54px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.7rem 1rem;
+      color: var(--momo-ink);
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+
+    body.momo-polish .report-settlement-details-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    body.momo-polish .report-settlement-details-summary:hover {
+      background: var(--momo-surface-muted);
+    }
+
+    body.momo-polish .report-settlement-details[open] > .report-settlement-details-summary {
+      border-bottom: 1px solid var(--momo-line);
+    }
+
+    body.momo-polish .report-settlement-details-copy {
+      display: flex;
+      min-width: 0;
+      align-items: baseline;
+      gap: 0.6rem;
+    }
+
+    body.momo-polish .report-settlement-details-title {
+      flex: 0 0 auto;
+      font-size: 0.75rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .report-settlement-details-subtitle {
+      overflow: hidden;
+      color: var(--momo-muted);
+      font-size: 0.625rem;
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .report-settlement-details-state {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 0.4rem;
+      color: #64748B;
+      font-size: 0.6875rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .report-settlement-details-chevron {
+      width: 15px;
+      height: 15px;
+      flex-basis: 15px;
+      transition: transform 0.18s ease;
+    }
+
+    body.momo-polish .report-settlement-details[open] .report-settlement-details-chevron {
+      transform: rotate(90deg);
+    }
+
+    body.momo-polish .report-basis-counts {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 0.65rem;
+      color: var(--momo-muted);
+      font-size: 0.6875rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .report-basis-counts span + span {
+      padding-left: 0.65rem;
+      border-left: 1px solid var(--momo-line-strong);
+    }
+
+    body.momo-polish .report-basis-counts strong {
+      color: var(--momo-ink);
+      font-variant-numeric: tabular-nums;
+      font-weight: 900;
+    }
+
     body.momo-polish .report-basis-row {
       border-color: var(--momo-line) !important;
       background: var(--momo-surface-muted) !important;
@@ -3105,7 +3256,7 @@
     body.momo-polish .report-operations-metric,
     body.momo-polish .report-completeness-item {
       min-width: 0;
-      min-height: 88px;
+      min-height: 78px;
       background: var(--momo-surface);
     }
 
@@ -3249,8 +3400,36 @@
       }
 
       body.momo-polish .report-operations-metric {
-        min-height: 82px;
+        min-height: 74px;
         padding: 0.75rem !important;
+      }
+
+      body.momo-polish .report-settlement-details-summary {
+        min-height: 52px;
+        gap: 0.625rem;
+        padding: 0.65rem 0.875rem;
+      }
+
+      body.momo-polish .report-settlement-details-copy {
+        display: block;
+      }
+
+      body.momo-polish .report-settlement-details-title,
+      body.momo-polish .report-settlement-details-subtitle {
+        display: block;
+      }
+
+      body.momo-polish .report-settlement-details-subtitle {
+        max-width: 12rem;
+        margin-top: 0.15rem;
+      }
+
+      body.momo-polish .report-settlement-details-state > span:nth-child(2) {
+        display: none;
+      }
+
+      body.momo-polish .report-basis-counts {
+        width: 100%;
       }
 
       body.momo-polish .report-completeness-grid {
@@ -4391,6 +4570,72 @@
       font-weight: 900;
     }
 
+    body.momo-polish .crm-customer-name-row {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    body.momo-polish .crm-customer-name-row h4 {
+      min-width: 0;
+    }
+
+    body.momo-polish .crm-customer-gender {
+      display: inline-flex;
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--momo-line);
+      border-radius: 5px;
+      background: var(--momo-surface-muted);
+      color: #64748B;
+      font-size: 0.5625rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    body.momo-polish .crm-customer-gender.is-male {
+      color: var(--momo-info-ink);
+    }
+
+    body.momo-polish .crm-customer-gender.is-female {
+      color: var(--momo-brand-ink);
+    }
+
+    body.momo-polish .crm-customer-meta {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.3rem;
+      color: var(--momo-muted);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .crm-customer-meta > span:not(:first-child)::before {
+      content: "·";
+      margin-right: 0.35rem;
+      color: #CBD5E1;
+    }
+
+    body.momo-polish .crm-customer-service {
+      min-width: 0;
+      color: #64748B;
+    }
+
+    body.momo-polish .crm-customer-tags > span {
+      border: 1px solid var(--momo-line) !important;
+      border-radius: 5px !important;
+      background: var(--momo-surface-muted) !important;
+      color: #64748B !important;
+    }
+
     body.momo-polish .crm-customer-financials {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4404,8 +4649,17 @@
       min-width: 0;
     }
 
-    body.momo-polish .crm-customer-metric > div:last-child {
+    body.momo-polish .crm-customer-metric-label {
+      color: var(--momo-muted);
+      font-size: 0.5625rem;
+      font-weight: 900;
+    }
+
+    body.momo-polish .crm-customer-metric-value {
       overflow: hidden;
+      margin-top: 0.125rem;
+      font-size: 0.75rem;
+      font-weight: 900;
       font-variant-numeric: tabular-nums;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -4705,8 +4959,8 @@
 
       body.momo-polish .crm-customer-summary {
         grid-template-columns: minmax(0, 1fr) 22px;
-        min-height: 94px;
-        gap: 0.5rem 0.75rem;
+        min-height: 86px;
+        gap: 0.3rem 0.75rem;
         padding: 0.75rem 0.875rem !important;
       }
 
@@ -4716,17 +4970,45 @@
       }
 
       body.momo-polish .crm-customer-avatar {
-        width: 36px;
-        height: 36px;
+        width: 34px;
+        height: 34px;
       }
 
       body.momo-polish .crm-customer-financials {
-        grid-column: 1 / -1;
+        display: flex;
+        grid-column: 1;
         grid-row: 2;
-        gap: 1rem;
-        padding: 0.55rem 0 0 3rem;
-        border-top: 1px solid var(--momo-line);
+        gap: 0.75rem;
+        padding: 0.25rem 0 0 2.75rem;
+        border-top: 0;
         border-left: 0;
+      }
+
+      body.momo-polish .crm-customer-metric {
+        display: inline-flex;
+        min-width: 0;
+        align-items: baseline;
+        gap: 0.25rem;
+      }
+
+      body.momo-polish .crm-customer-metric + .crm-customer-metric {
+        padding-left: 0.75rem;
+        border-left: 1px solid var(--momo-line);
+      }
+
+      body.momo-polish .crm-customer-metric-value {
+        margin-top: 0;
+        font-size: 0.6875rem;
+      }
+
+      body.momo-polish .crm-customer-meta {
+        gap: 0.25rem;
+        margin-top: 0.25rem;
+        font-size: 0.625rem;
+      }
+
+      body.momo-polish .crm-customer-meta > span:not(:first-child)::before {
+        margin-right: 0.25rem;
       }
 
       body.momo-polish .crm-customer-open {
@@ -4837,6 +5119,34 @@
       justify-content: flex-end;
     }
 
+    body.momo-polish .safety-overview-state,
+    body.momo-polish .safety-summary-state {
+      display: inline-flex;
+      min-width: 0;
+      align-items: center;
+      gap: 0.4rem;
+      color: #64748B;
+      font-size: 0.6875rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .safety-attention-count {
+      flex: 0 0 auto;
+      color: var(--momo-muted);
+      font-size: 0.6875rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .safety-attention-count.is-danger {
+      color: var(--momo-danger);
+    }
+
+    body.momo-polish .safety-attention-count.is-warning {
+      color: var(--momo-warning-ink);
+    }
+
     body.momo-polish .safety-check-button {
       border: 1px solid var(--momo-brand) !important;
       border-radius: 6px !important;
@@ -4852,7 +5162,8 @@
 
     body.momo-polish .safety-status-card {
       min-width: 0;
-      min-height: 88px;
+      min-height: 78px;
+      padding: 0.75rem 1rem !important;
       border: 0 !important;
       background: var(--momo-surface) !important;
     }
@@ -4908,7 +5219,8 @@
     }
 
     body.momo-polish .safety-empty-state {
-      min-height: 116px;
+      min-height: 96px;
+      padding: 1rem !important;
       background: var(--momo-surface-muted);
     }
 
@@ -4969,7 +5281,27 @@
     }
 
     body.momo-polish .safety-section-heading {
-      padding: 0.25rem 0.25rem 0;
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      padding: 0.125rem 0.25rem 0;
+    }
+
+    body.momo-polish .safety-section-heading h3 {
+      color: #64748B !important;
+      font-size: 0.75rem !important;
+    }
+
+    body.momo-polish .safety-section-heading p {
+      margin-top: 0 !important;
+    }
+
+    body.momo-polish .safety-maintenance-heading-row {
+      display: flex;
+      min-width: 0;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
     }
 
     body.momo-polish .safety-maintenance-summary {
@@ -5017,7 +5349,7 @@
     }
 
     body.momo-polish .safety-maintenance-hub .safety-maintenance-summary {
-      min-height: 72px;
+      min-height: 66px;
     }
 
     body.momo-polish .safety-maintenance-summary-detail {
@@ -5228,8 +5560,8 @@
 
       body.momo-polish .safety-status-card {
         min-width: 0;
-        min-height: 84px;
-        padding: 0.75rem !important;
+        min-height: 76px;
+        padding: 0.65rem !important;
         border: 0 !important;
       }
 
@@ -5314,7 +5646,7 @@
       }
 
       body.momo-polish .safety-maintenance-hub .safety-maintenance-summary {
-        min-height: 76px;
+        min-height: 68px;
       }
 
       body.momo-polish .safety-maintenance-summary-detail {

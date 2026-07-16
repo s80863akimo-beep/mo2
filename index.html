@@ -32,7 +32,7 @@
   <script src="/assets/vue.global.prod.js?v=2026.07.16-startup-stability-1"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-startup-stability-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.17-report-safety-list-density-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -1655,10 +1655,10 @@
                 <div v-show="!collapsedOrderDates[group.date]" class="orders-mobile-list lg:hidden space-y-1.5">
                   <div v-for="order in group.orders" :key="order.id" class="orders-mobile-card bg-white rounded-xl border border-slate-100 overflow-hidden shadow-[0_1px_0_rgba(15,23,42,0.03)]">
                     <button type="button" @click="toggleOrderEditor(order.id)" class="orders-mobile-button w-full px-3 py-2.5 text-left">
-                      <div class="flex items-center justify-between gap-3">
-                        <div class="min-w-0">
-                          <div class="orders-mobile-titleline flex items-center gap-1.5 min-w-0">
-                            <div class="text-sm font-black text-slate-800 truncate">{{ order.customerName }}</div>
+                      <div class="orders-mobile-summary-row">
+                        <div class="orders-mobile-main min-w-0">
+                          <div class="orders-mobile-customer truncate">{{ order.customerName }}</div>
+                          <div class="orders-mobile-service-line">
                             <span v-if="!isCorrectionSlip(order)" class="orders-category-badge" :class="'is-' + getCategoryInfo(order).key" :title="'服務分類：' + getCategoryInfo(order).label">
                               <svg class="orders-category-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#orders-category-' + getCategoryInfo(order).key"></use></svg>
                               <span>{{ getCategoryInfo(order).label }}</span>
@@ -1667,11 +1667,11 @@
                               <svg class="orders-category-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#orders-category-correction"></use></svg>
                               <span>更正單</span>
                             </span>
+                            <span class="orders-mobile-service-name truncate">{{ order.serviceName }}</span>
                           </div>
-                          <div class="mt-0.5 text-[11px] font-semibold text-slate-400 truncate">{{ order.serviceName }}</div>
                         </div>
-                        <div class="shrink-0 text-right">
-                          <div class="text-sm font-black text-slate-800 tabular-nums">NT$ {{ formatNumber(order.amount) }}</div>
+                        <div class="orders-mobile-value shrink-0 text-right">
+                          <div class="orders-mobile-amount tabular-nums">NT$ {{ formatNumber(order.amount) }}</div>
                           <span class="orders-payment-badge mt-1" :class="'is-' + getPaymentInfo(order.paymentMethod).key" :title="'付款方式：' + order.paymentMethod">
                             <svg class="orders-payment-icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use :href="'#orders-payment-' + getPaymentInfo(order.paymentMethod).key"></use></svg>
                             <span>{{ getPaymentInfo(order.paymentMethod).label }}</span>
@@ -2629,22 +2629,24 @@
                       {{ (cust.name || '?').slice(0, 1).toUpperCase() }}
                     </div>
                     <div class="min-w-0">
-                      <div class="flex flex-wrap items-center gap-1.5">
+                      <div class="crm-customer-name-row">
                         <h4 class="font-black text-slate-800 truncate">{{ cust.name }}</h4>
-                        <span class="text-[9px] px-1.5 py-0.5 rounded-md font-black" :class="cust.gender === '男' ? 'bg-sky-50 text-sky-600' : 'bg-rose-50 text-rose-600'">{{ cust.gender }}</span>
+                        <span class="crm-customer-gender" :class="cust.gender === '男' ? 'is-male' : 'is-female'">{{ cust.gender }}</span>
                         <span class="crm-customer-status momo-status-badge momo-status-tone text-[9px] font-black px-2 py-1 rounded-lg border shrink-0" :class="crmCustomerStatusTone(cust)">{{ cust.statusLabel }}</span>
                       </div>
-                      <p class="mt-1 text-[11px] text-slate-400 font-bold truncate">
-                        {{ cust.count }} 次消費 · {{ cust.count ? '最近 ' + cust.daysSinceLastVisit + ' 天前' : '尚無消費' }} · {{ cust.primaryService }}
-                      </p>
+                      <div class="crm-customer-meta">
+                        <span>{{ cust.count }} 次消費</span>
+                        <span>{{ cust.count ? '最近 ' + cust.daysSinceLastVisit + ' 天前' : '尚無消費' }}</span>
+                        <span class="crm-customer-service truncate">{{ cust.primaryService }}</span>
+                      </div>
                       <div v-if="cust.tags.length" class="crm-customer-tags mt-1 flex flex-wrap gap-1">
                         <span v-for="tag in cust.tags.slice(0, 2)" :key="tag" class="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600">{{ tag }}</span>
                       </div>
                     </div>
                   </div>
                   <div class="crm-customer-financials">
-                    <div class="crm-customer-metric"><div class="text-[9px] font-black text-slate-400">累計消費</div><div class="text-xs font-black text-slate-700">NT$ {{ formatNumber(cust.totalSpent) }}</div></div>
-                    <div class="crm-customer-metric"><div class="text-[9px] font-black text-slate-400">儲值餘額</div><div class="text-xs font-black" :class="cust.prepaidBalance > 0 ? 'text-emerald-700' : cust.prepaidBalance < 0 ? 'text-rose-600' : 'text-slate-500'">NT$ {{ formatNumber(cust.prepaidBalance) }}</div></div>
+                    <div class="crm-customer-metric"><div class="crm-customer-metric-label">累計</div><div class="crm-customer-metric-value text-slate-700">NT$ {{ formatNumber(cust.totalSpent) }}</div></div>
+                    <div class="crm-customer-metric"><div class="crm-customer-metric-label">儲值</div><div class="crm-customer-metric-value" :class="cust.prepaidBalance > 0 ? 'text-emerald-700' : cust.prepaidBalance < 0 ? 'text-rose-600' : 'text-slate-500'">NT$ {{ formatNumber(cust.prepaidBalance) }}</div></div>
                   </div>
                   <div class="crm-customer-preference min-w-0">
                     <div class="text-[9px] font-black text-slate-400">回流觀察</div>
@@ -3040,33 +3042,48 @@
               <div class="p-4"><div class="text-[10px] font-black text-slate-400">淨利</div><div class="text-xl font-black mt-1" :class="monthlySettlementSummary.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'">NT$ {{ formatNumber(monthlySettlementSummary.netProfit) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">營業額－支出</div></div>
               <div class="p-4"><div class="text-[10px] font-black text-slate-400">淨利率</div><div class="text-xl font-black mt-1" :class="monthlyReportCompleteness.expenseMissing ? 'text-amber-700' : monthlySettlementSummary.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'">{{ monthlyReportCompleteness.expenseMissing ? '待確認' : monthlySettlementSummary.profitMargin + '%' }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlyReportCompleteness.expenseMissing ? '本月支出為 0' : '淨利 ÷ 營業額' }}</div></div>
             </div>
-            <div class="report-cashflow-grid grid grid-cols-2 sm:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-slate-100 bg-slate-50/70">
-              <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">現金入帳</div><div class="text-sm font-black text-slate-700">NT$ {{ formatNumber(monthlySettlementSummary.cashIn) }}</div></div>
-              <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">轉帳入帳</div><div class="text-sm font-black text-indigo-700">NT$ {{ formatNumber(monthlySettlementSummary.transferIn) }}</div></div>
-              <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">儲值扣款</div><div class="text-sm font-black text-sky-700">NT$ {{ formatNumber(monthlySettlementSummary.prepaidOut) }}</div></div>
-              <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">儲值進帳</div><div class="text-sm font-black text-emerald-700">NT$ {{ formatNumber(monthlySettlementSummary.prepaidIn) }}</div></div>
-              <div class="px-4 py-3 col-span-2 sm:col-span-1"><div class="text-[9px] font-black text-slate-400">打烊狀態</div><div class="text-sm font-black" :class="monthlySettlementSummary.ready ? 'text-emerald-700' : 'text-amber-700'">{{ monthlySettlementSummary.ready ? '已完整' : `未打烊 ${monthlySettlementSummary.unclosedDates.length} 天` }}</div></div>
-            </div>
-            <div class="report-completeness-grid grid grid-cols-2 lg:grid-cols-4">
-              <div v-for="item in monthlyReportCompleteness.items" :key="'completeness-' + item.key" class="report-completeness-item px-4 py-3">
-                <div class="flex items-center gap-2">
-                  <span class="report-status-dot momo-status-dot momo-status-tone" :class="statusToneClasses(item.tone, 'dot')"></span>
-                  <div class="text-[9px] font-black text-slate-400">{{ item.label }}</div>
+            <details class="report-settlement-details">
+              <summary class="report-settlement-details-summary">
+                <span class="report-settlement-details-copy">
+                  <span class="report-settlement-details-title">金流與資料完整度</span>
+                  <span class="report-settlement-details-subtitle">現金、轉帳、儲值與月結口徑</span>
+                </span>
+                <span class="report-settlement-details-state">
+                  <span class="momo-status-dot" :class="statusToneClasses(monthlyReportCompleteness.ready ? 'ok' : 'warn', 'dot')"></span>
+                  <span>{{ monthlyReportCompleteness.ready ? '資料完整' : '有待確認項目' }}</span>
+                  <svg class="momo-ui-icon report-settlement-details-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                </span>
+              </summary>
+              <div class="report-settlement-details-body">
+                <div class="report-cashflow-grid grid grid-cols-2 sm:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-slate-100 bg-slate-50/70">
+                  <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">現金入帳</div><div class="text-sm font-black text-slate-700">NT$ {{ formatNumber(monthlySettlementSummary.cashIn) }}</div></div>
+                  <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">轉帳入帳</div><div class="text-sm font-black text-indigo-700">NT$ {{ formatNumber(monthlySettlementSummary.transferIn) }}</div></div>
+                  <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">儲值扣款</div><div class="text-sm font-black text-sky-700">NT$ {{ formatNumber(monthlySettlementSummary.prepaidOut) }}</div></div>
+                  <div class="px-4 py-3"><div class="text-[9px] font-black text-slate-400">儲值進帳</div><div class="text-sm font-black text-emerald-700">NT$ {{ formatNumber(monthlySettlementSummary.prepaidIn) }}</div></div>
+                  <div class="px-4 py-3 col-span-2 sm:col-span-1"><div class="text-[9px] font-black text-slate-400">打烊狀態</div><div class="text-sm font-black" :class="monthlySettlementSummary.ready ? 'text-emerald-700' : 'text-amber-700'">{{ monthlySettlementSummary.ready ? '已完整' : `未打烊 ${monthlySettlementSummary.unclosedDates.length} 天` }}</div></div>
                 </div>
-                <div class="mt-1 text-sm font-black" :class="item.tone === 'risk' ? 'text-rose-600' : item.tone === 'warn' ? 'text-amber-700' : 'text-slate-700'">{{ item.value }}</div>
-                <div class="mt-0.5 text-[9px] font-bold text-slate-400">{{ item.detail }}</div>
+                <div class="report-completeness-grid grid grid-cols-2 lg:grid-cols-4">
+                  <div v-for="item in monthlyReportCompleteness.items" :key="'completeness-' + item.key" class="report-completeness-item px-4 py-3">
+                    <div class="flex items-center gap-2">
+                      <span class="report-status-dot momo-status-dot momo-status-tone" :class="statusToneClasses(item.tone, 'dot')"></span>
+                      <div class="text-[9px] font-black text-slate-400">{{ item.label }}</div>
+                    </div>
+                    <div class="mt-1 text-sm font-black" :class="item.tone === 'risk' ? 'text-rose-600' : item.tone === 'warn' ? 'text-amber-700' : 'text-slate-700'">{{ item.value }}</div>
+                    <div class="mt-0.5 text-[9px] font-bold text-slate-400">{{ item.detail }}</div>
+                  </div>
+                </div>
+                <div class="report-basis-row px-4 py-3 sm:px-6 border-t border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div class="text-[10px] font-black text-slate-500">月結口徑</div>
+                    <div class="mt-0.5 text-[11px] font-bold text-slate-400">{{ monthlySettlementSummary.settlementBasis }}</div>
+                  </div>
+                  <div class="report-basis-counts">
+                    <span><strong>{{ monthlySettlementSummary.snapshotDays }}</strong> 天快照</span>
+                    <span><strong>{{ monthlySettlementSummary.liveDays }}</strong> 天暫算</span>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div class="report-basis-row px-4 py-3 sm:px-6 border-t border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <div class="text-[10px] font-black text-slate-500">月結口徑</div>
-                <div class="mt-0.5 text-[11px] font-bold text-slate-400">{{ monthlySettlementSummary.settlementBasis }}</div>
-              </div>
-              <div class="flex flex-wrap gap-1.5">
-                <span class="momo-status-badge momo-status-tone is-ok min-h-[28px] inline-flex items-center px-2.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-black">快照 {{ monthlySettlementSummary.snapshotDays }} 天</span>
-                <span class="momo-status-badge momo-status-tone is-warn min-h-[28px] inline-flex items-center px-2.5 rounded-lg bg-amber-50 text-amber-700 text-[10px] font-black">暫算 {{ monthlySettlementSummary.liveDays }} 天</span>
-              </div>
-            </div>
+            </details>
             <div v-if="monthlySettlementSummary.unclosedDates.length" class="report-unclosed-strip px-4 py-3 sm:px-6 border-t border-amber-100 bg-amber-50/70">
               <div class="text-[10px] font-black text-amber-700 mb-2">未打烊日期</div>
               <div class="flex flex-wrap gap-1.5">
@@ -3280,8 +3297,9 @@
                 <p class="momo-page-subtitle text-[11px] font-bold text-slate-400 mt-0.5">先處理問題，維護工具需要時再展開</p>
               </div>
               <div class="safety-overview-actions flex items-center gap-2 shrink-0">
-                <span class="shrink-0 px-3 py-1 rounded-full border text-[11px] font-black" :class="statusToneClasses(healthIssueSummary.status === 'ok' ? 'ok' : healthIssueSummary.status === 'error' ? 'error' : 'warn')">
-                  {{ healthIssueSummary.title }}
+                <span class="safety-overview-state">
+                  <span class="momo-status-dot" :class="statusToneClasses(healthIssueSummary.status === 'ok' ? 'ok' : healthIssueSummary.status === 'error' ? 'error' : 'warn', 'dot')"></span>
+                  <span>{{ healthIssueSummary.title }}</span>
                 </span>
                 <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" :aria-busy="safetyChecking || pwaCheckingUpdate ? 'true' : 'false'" class="momo-state-button safety-check-button min-h-[38px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black disabled:opacity-50">
                   {{ safetyChecking || pwaCheckingUpdate ? '檢查中…' : '重新檢查' }}
@@ -3317,7 +3335,7 @@
                 <h3 class="text-base font-black text-slate-800">需要處理</h3>
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">錯誤優先，其次確認提醒</p>
               </div>
-              <span class="momo-status-badge momo-status-tone px-2.5 py-1 rounded-full text-[10px] font-black" :class="healthIssueSummary.status === 'ok' ? 'is-ok' : healthIssueSummary.status === 'error' ? 'is-danger' : 'is-warn'">
+              <span class="safety-attention-count" :class="healthIssueSummary.status === 'error' ? 'is-danger' : healthIssueSummary.status === 'warning' ? 'is-warning' : ''">
                 {{ healthIssueSummary.total ? `${healthIssueSummary.errorCount} 錯誤 · ${healthIssueSummary.warningCount} 提醒` : '正常' }}
               </span>
             </div>
@@ -3367,11 +3385,11 @@
                     class="safety-maintenance-summary w-full px-4 py-4 sm:px-6 flex items-center justify-between gap-3 text-left"
                     :aria-expanded="safetyMaintenanceSection === 'sync'" aria-controls="safety-maintenance-sync">
               <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="safety-maintenance-heading-row">
                   <span class="block text-base font-black text-slate-800">同步與價目</span>
-                  <span class="momo-status-badge momo-status-tone px-2 py-0.5 rounded-full border text-[9px] font-black"
-                        :class="syncError || syncIssueSummary.errors ? 'is-danger' : syncIssueSummary.total || priceMatchWorkbenchRows.length ? 'is-warn' : 'is-ok'">
-                    {{ syncError ? '同步失敗' : syncIssueSummary.total || priceMatchWorkbenchRows.length ? '需確認' : '同步正常' }}
+                  <span class="safety-summary-state">
+                    <span class="momo-status-dot" :class="statusToneClasses(syncError || syncIssueSummary.errors ? 'error' : syncIssueSummary.total || priceMatchWorkbenchRows.length ? 'warn' : 'ok', 'dot')"></span>
+                    <span>{{ syncError ? '同步失敗' : syncIssueSummary.total || priceMatchWorkbenchRows.length ? '需確認' : '同步正常' }}</span>
                   </span>
                 </div>
                 <span class="block text-[10px] font-bold text-slate-400 mt-0.5">
@@ -3478,15 +3496,15 @@
                     class="safety-maintenance-summary w-full px-4 py-4 sm:px-6 flex items-center justify-between gap-3 text-left"
                     :aria-expanded="safetyMaintenanceSection === 'maintenance'" aria-controls="safety-maintenance-hub">
               <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="safety-maintenance-heading-row">
                   <span class="block text-base font-black text-slate-800">資料維護</span>
-                  <span class="px-2 py-0.5 rounded-full border text-[9px] font-black" :class="statusToneClasses(cloudBackupSummary.status)">{{ cloudBackupSummary.title }}</span>
-                  <span class="momo-status-badge momo-status-tone px-2 py-0.5 rounded-full border text-[9px] font-black" :class="updateAvailable ? 'is-warn' : 'is-neutral'">
-                    {{ updateAvailable ? '有新版' : '版本正常' }}
+                  <span class="safety-summary-state">
+                    <span class="momo-status-dot" :class="statusToneClasses(updateAvailable ? 'warn' : cloudBackupSummary.status, 'dot')"></span>
+                    <span>{{ updateAvailable ? '有新版' : cloudBackupSummary.title }}</span>
                   </span>
                 </div>
                 <span class="safety-maintenance-summary-detail block mt-0.5 text-[10px] font-bold text-slate-400">
-                  本機 {{ backupSnapshotRows.length }} 份快照 · {{ pwaStatusText }} · v{{ appVersion }}
+                  {{ cloudBackupSummary.title }} · 本機 {{ backupSnapshotRows.length }} 份快照 · {{ updateAvailable ? '版本待更新' : pwaStatusText }} · v{{ appVersion }}
                 </span>
               </div>
               <span class="safety-maintenance-chevron" :class="safetyMaintenanceSection === 'maintenance' ? 'is-open' : ''" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
@@ -4193,6 +4211,6 @@
   <script src="/assets/momo-core.js?v=2026.07.16-startup-stability-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.16-startup-stability-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.17-report-safety-list-density-1"></script>
 </body>
 </html>
