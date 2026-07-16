@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v108-pwa-recovery';
-const APP_VERSION = '2026.07.16-pwa-recovery-1';
+const CACHE_NAME = 'momohair-shell-v109-closeout-green';
+const APP_VERSION = '2026.07.16-closeout-green-1';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,

@@ -1319,14 +1319,26 @@
     }
 
     body.momo-polish .momo-primary-actions .daily-action-button--primary {
-      border-color: var(--momo-brand) !important;
-      background: var(--momo-brand) !important;
+      border-color: var(--momo-success) !important;
+      background: var(--momo-success) !important;
       color: #FFFFFF !important;
     }
 
     body.momo-polish .momo-primary-actions .daily-action-button--primary:hover {
-      border-color: var(--momo-brand-hover) !important;
-      background: var(--momo-brand-hover) !important;
+      border-color: #12684C !important;
+      background: #12684C !important;
+    }
+
+    body.momo-polish .momo-primary-actions .daily-action-button--primary.is-complete {
+      border-color: #BCDCC9 !important;
+      background: #F0F8F3 !important;
+      color: #347052 !important;
+    }
+
+    body.momo-polish .momo-primary-actions .daily-action-button--primary.is-complete:hover {
+      border-color: #A8CFB8 !important;
+      background: #E8F4ED !important;
+      color: #285E45 !important;
     }
 
     body.momo-polish .momo-home-list-item {

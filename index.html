@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-pwa-recovery-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-closeout-green-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-pwa-recovery-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-closeout-green-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -1114,7 +1114,8 @@
                     <span class="text-lg leading-none">－</span><span>新增支出</span>
                   </button>
                   <button @click="openCloseoutSheet()"
-                          class="daily-action-button daily-action-button--primary min-h-[58px] sm:min-h-[68px] rounded-2xl bg-slate-900 border border-slate-900 text-white text-xs font-black flex flex-col items-center justify-center gap-1">
+                          class="daily-action-button daily-action-button--primary min-h-[58px] sm:min-h-[68px] rounded-2xl bg-slate-900 border border-slate-900 text-white text-xs font-black flex flex-col items-center justify-center gap-1"
+                          :class="{ 'is-complete': todayCloseoutRecord }">
                     <span class="text-lg leading-none">✓</span><span>{{ todayCloseoutRecord ? '查看打烊' : '完成打烊' }}</span>
                   </button>
                 </div>
@@ -4161,9 +4162,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.16-pwa-recovery-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.16-closeout-green-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.16-pwa-recovery-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.16-closeout-green-1"></script>
 </body>
 </html>
