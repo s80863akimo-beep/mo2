@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-ios-type-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-icons-quiet-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-ios-type-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-icons-quiet-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -49,7 +49,7 @@
               <h2 class="mt-4 text-xl font-black text-slate-800">登入摸摸頭營運總部</h2>
               <p class="mt-1 text-xs font-bold text-slate-400">使用 Supabase Authentication 中建立的管理員帳號</p>
             </div>
-            <button v-if="!authConfig.required" type="button" @click="showAuthSheet = false" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-50 text-slate-500" aria-label="關閉登入"><span aria-hidden="true">×</span></button>
+            <button v-if="!authConfig.required" type="button" @click="showAuthSheet = false" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-50 text-slate-500" aria-label="關閉登入"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
           </div>
           <form class="mt-5 space-y-3" @submit.prevent="signInWithSupabase">
             <label class="block"><span class="block mb-1 text-[11px] font-black text-slate-500">Email</span><input v-model.trim="authForm.email" type="email" required autocomplete="username" class="w-full min-h-[46px] rounded-2xl border border-orange-100 px-4 text-sm font-semibold" placeholder="你的管理員 Email"></label>
@@ -72,11 +72,11 @@
         </div>
         <div class="mobile-header-controls">
           <div class="momo-header-pill mobile-month-selector flex items-center px-0.5">
-            <button type="button" @click="shiftMonth(-1)" class="mobile-month-nav-button" aria-label="上一個月">‹</button>
+            <button type="button" @click="shiftMonth(-1)" class="mobile-month-nav-button" aria-label="上一個月"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></button>
             <button type="button" @click="toggleAnnualView" class="mobile-month-label flex-1 text-xs font-black whitespace-nowrap" title="點擊切換全年／月份">
               {{ selectedMonth === 'All' ? selectedYear + ' 全年' : selectedYear + '/' + selectedMonth }}
             </button>
-            <button type="button" @click="shiftMonth(1)" class="mobile-month-nav-button" aria-label="下一個月">›</button>
+            <button type="button" @click="shiftMonth(1)" class="mobile-month-nav-button" aria-label="下一個月"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button>
           </div>
           <button @click="syncFromApi()" :disabled="syncing || !online"
                   :class="'is-' + headerSyncState"
@@ -108,11 +108,11 @@
 
           <!-- Month/Year Selector -->
           <div class="momo-header-pill desktop-month-selector flex items-center p-1">
-            <button type="button" @click="shiftMonth(-1)" class="desktop-month-nav-button" aria-label="上一個月">‹</button>
+            <button type="button" @click="shiftMonth(-1)" class="desktop-month-nav-button" aria-label="上一個月"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></button>
             <button type="button" @click="toggleAnnualView" class="desktop-month-label min-w-[126px] px-3 py-1.5 text-sm font-black" title="點擊切換全年／月份">
               {{ selectedYear }} 年 {{ selectedMonth === 'All' ? '全年' : selectedMonth + ' 月' }}
             </button>
-            <button type="button" @click="shiftMonth(1)" class="desktop-month-nav-button" aria-label="下一個月">›</button>
+            <button type="button" @click="shiftMonth(1)" class="desktop-month-nav-button" aria-label="下一個月"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button>
           </div>
 
           <!-- Actions -->
@@ -164,14 +164,14 @@
                       <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="6" cy="7" r="3"></circle><circle cx="6" cy="17" r="3"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M8.7 8.4 20 3M8.7 15.6 20 21M8.7 8.4 12 10"></path></svg></span>
                       <span class="momo-settings-copy"><span class="momo-settings-title">服務價目表</span><span class="momo-settings-description">價格、標準時間與同步計價</span></span>
                       <span class="momo-settings-value">{{ servicesConfig.length }} 項</span>
-                      <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                      <span class="momo-settings-chevron" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
                     </button>
                     </div>
 
                     <details class="momo-settings-advanced">
                       <summary class="momo-settings-advanced-summary">
                         <span class="momo-settings-copy"><span class="momo-settings-title">進階設定</span><span class="momo-settings-description">雲端帳號與資料匯出</span></span>
-                        <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                        <span class="momo-settings-chevron" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
                       </summary>
                       <div class="momo-settings-advanced-body">
                         <div class="momo-settings-group">
@@ -180,7 +180,7 @@
                       <summary class="momo-settings-row">
                         <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path stroke-linecap="round" d="M4.5 21a7.5 7.5 0 0115 0"></path></svg></span>
                         <span class="momo-settings-copy"><span class="momo-settings-title">雲端帳號</span><span class="momo-settings-description">{{ authConfig.configured ? ((authUser || authSession?.access_token) ? '已登入' : '尚未登入') : '目前使用本機模式' }}</span></span>
-                        <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                        <span class="momo-settings-chevron" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
                       </summary>
                       <div class="momo-settings-detail-body">
                         <p v-if="authUser" class="momo-settings-account-text">{{ authUser.email }}</p>
@@ -197,7 +197,7 @@
                       <summary class="momo-settings-row">
                         <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"></path></svg></span>
                         <span class="momo-settings-copy"><span class="momo-settings-title">資料匯出</span><span class="momo-settings-description">業績、顧客與支出 CSV</span></span>
-                        <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                        <span class="momo-settings-chevron" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
                       </summary>
                       <div class="momo-settings-detail-body grid grid-cols-3 gap-2">
                         <button @click="showDataTools = false; exportCSV()" class="momo-settings-export-action">業績</button>
@@ -228,7 +228,7 @@
               <h2 id="mobile-settings-title" class="text-base font-black text-slate-800">設定</h2>
               <p class="mt-0.5 text-[10px] font-bold text-slate-400">{{ lastSyncTime ? '最後同步 ' + lastSyncTime : '尚未同步行事曆' }}</p>
             </div>
-            <button @click="showMobileTools = false" class="momo-settings-close" aria-label="關閉設定"><span aria-hidden="true">×</span></button>
+            <button @click="showMobileTools = false" class="momo-settings-close" aria-label="關閉設定"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
           </div>
 
           <div class="momo-settings-body">
@@ -238,14 +238,14 @@
                 <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="6" cy="7" r="3"></circle><circle cx="6" cy="17" r="3"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M8.7 8.4 20 3M8.7 15.6 20 21M8.7 8.4 12 10"></path></svg></span>
                 <span class="momo-settings-copy"><span class="momo-settings-title">服務價目表</span><span class="momo-settings-description">價格、標準時間與同步計價</span></span>
                 <span class="momo-settings-value">{{ servicesConfig.length }} 項</span>
-                <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                <span class="momo-settings-chevron" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
               </button>
             </div>
 
             <details class="momo-settings-advanced">
               <summary class="momo-settings-advanced-summary">
                 <span class="momo-settings-copy"><span class="momo-settings-title">進階設定</span><span class="momo-settings-description">雲端帳號、資料匯出與 App</span></span>
-                <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                <span class="momo-settings-chevron" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
               </summary>
               <div class="momo-settings-advanced-body">
                 <div class="momo-settings-group">
@@ -254,7 +254,7 @@
                 <summary class="momo-settings-row">
                   <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path stroke-linecap="round" d="M4.5 21a7.5 7.5 0 0115 0"></path></svg></span>
                   <span class="momo-settings-copy"><span class="momo-settings-title">雲端帳號</span><span class="momo-settings-description">{{ authConfig.configured ? ((authUser || authSession?.access_token) ? '已登入' : '尚未登入') : '目前使用本機模式' }}</span></span>
-                  <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                  <span class="momo-settings-chevron" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
                 </summary>
                 <div class="momo-settings-detail-body">
                   <p v-if="authUser" class="momo-settings-account-text">{{ authUser.email }}</p>
@@ -271,7 +271,7 @@
                 <summary class="momo-settings-row">
                   <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"></path></svg></span>
                   <span class="momo-settings-copy"><span class="momo-settings-title">資料匯出</span><span class="momo-settings-description">業績、顧客與支出 CSV</span></span>
-                  <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                  <span class="momo-settings-chevron" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
                 </summary>
                 <div class="momo-settings-detail-body grid grid-cols-3 gap-2">
                   <button @click="showMobileTools = false; exportCSV()" class="momo-settings-export-action">業績</button>
@@ -284,7 +284,7 @@
                 <summary class="momo-settings-row">
                   <span class="momo-settings-icon" aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"></rect><path stroke-linecap="round" d="M10 18h4"></path></svg></span>
                   <span class="momo-settings-copy"><span class="momo-settings-title">App 設定</span><span class="momo-settings-description">{{ isStandalone ? '已加入主畫面' : '加入 iPhone 主畫面' }}</span></span>
-                  <span class="momo-settings-chevron" aria-hidden="true">›</span>
+                  <span class="momo-settings-chevron" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
                 </summary>
                 <div class="momo-settings-detail-body">
                   <button v-if="!isStandalone" @click="showMobileTools = false; showIosGuide = true" class="momo-settings-primary-action w-full">查看加入主畫面步驟</button>
@@ -320,7 +320,7 @@
           </svg>
         </span>
         <span class="momo-toast-message">{{ toast.message }}</span>
-        <button type="button" @click="closeToast" class="momo-toast-close" aria-label="關閉提示"><span aria-hidden="true">×</span></button>
+        <button type="button" @click="closeToast" class="momo-toast-close" aria-label="關閉提示"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
       </div>
     </transition>
 
@@ -336,7 +336,7 @@
             </div>
             <div class="flex items-center gap-2">
               <button @click="exportOperationLogCSV" class="min-h-[38px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">匯出</button>
-              <button @click="showOperationLogModal = false" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉操作紀錄"><span aria-hidden="true">×</span></button>
+              <button @click="showOperationLogModal = false" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉操作紀錄"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
             </div>
           </div>
           <div v-if="!operationLogs.length" class="momo-dialog-body momo-empty-state momo-empty-state--compact">
@@ -380,7 +380,7 @@
                 <span v-if="syncReport?.syncedAt"> · {{ formatDateTime(syncReport.syncedAt) }}</span>
               </p>
             </div>
-            <button @click="showSyncIssueModal = false" class="momo-dialog-close w-10 h-10 rounded-full bg-white text-slate-500 font-black" aria-label="關閉同步異常"><span aria-hidden="true">×</span></button>
+            <button @click="showSyncIssueModal = false" class="momo-dialog-close w-10 h-10 rounded-full bg-white text-slate-500 font-black" aria-label="關閉同步異常"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
           </div>
 
           <div class="sync-review-overview" aria-label="同步異常摘要">
@@ -1107,15 +1107,15 @@
                 <div class="momo-primary-actions daily-primary-actions grid grid-cols-3 gap-2">
                   <button @click="activeTab = 'orders'; showMobileAddOrderForm = true"
                           class="daily-action-button min-h-[58px] sm:min-h-[68px] rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-black flex flex-col items-center justify-center gap-1">
-                    <span class="text-lg leading-none">＋</span><span>新增業績</span>
+                    <span class="momo-action-icon" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span><span>新增業績</span>
                   </button>
                   <button @click="openExpenseFormForToday"
                           class="daily-action-button min-h-[58px] sm:min-h-[68px] rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-black flex flex-col items-center justify-center gap-1">
-                    <span class="text-lg leading-none">－</span><span>新增支出</span>
+                    <span class="momo-action-icon" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"></path></svg></span><span>新增支出</span>
                   </button>
                   <button @click="openCloseoutSheet()"
                           class="daily-action-button min-h-[58px] sm:min-h-[68px] rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-black flex flex-col items-center justify-center gap-1">
-                    <span class="text-lg leading-none">✓</span><span>{{ todayCloseoutRecord ? '查看打烊' : '完成打烊' }}</span>
+                    <span class="momo-action-icon" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4 10-10"></path></svg></span><span>{{ todayCloseoutRecord ? '查看打烊' : '完成打烊' }}</span>
                   </button>
                 </div>
               </div>
@@ -1168,7 +1168,7 @@
                   </div>
                   <div class="mt-1 text-[10px] font-bold text-slate-500 leading-relaxed line-clamp-2">{{ item.message }}</div>
                 </div>
-                <span class="shrink-0 text-[10px] font-black text-macaron-peach-500">{{ item.actionLabel || '處理' }} ›</span>
+                <span class="momo-inline-chevron shrink-0 text-[10px] font-black text-macaron-peach-500">{{ item.actionLabel || '處理' }}<svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></span>
               </button>
             </div>
 
@@ -1185,7 +1185,7 @@
                 <div class="ios-sheet-handle sm:hidden"></div>
                 <div class="momo-dialog-header momo-form-header daily-form-header px-4 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
                   <div><h3 id="closeout-dialog-title" class="text-base font-black text-slate-800">每日打烊對帳</h3><p class="momo-dialog-subtitle">{{ selectedCloseoutDateLabel }} · 核對現金後鎖帳</p></div>
-                  <button type="button" @click="showCloseoutSheet = false" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉每日打烊"><span aria-hidden="true">×</span></button>
+                  <button type="button" @click="showCloseoutSheet = false" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉每日打烊"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
                 </div>
                 <div class="momo-dialog-body momo-form-body daily-form-body closeout-sheet-body ios-sheet-body p-4 space-y-4 max-h-[75vh] overflow-y-auto">
                   <label class="momo-form-field daily-form-field block"><span class="momo-form-label daily-form-label block text-[10px] font-black text-slate-400 mb-1">打烊日期</span><input type="date" v-model="closeoutDate" @change="loadCloseoutFormForDate" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-black"></label>
@@ -1334,7 +1334,7 @@
                   <h3 class="font-black text-slate-800 text-lg">新增業績</h3>
                   <p class="momo-dialog-subtitle">服務、金額與付款方式</p>
                 </div>
-                <button type="button" @click="showMobileAddOrderForm = false" class="momo-dialog-close" aria-label="關閉新增業績"><span aria-hidden="true">×</span></button>
+                <button type="button" @click="showMobileAddOrderForm = false" class="momo-dialog-close" aria-label="關閉新增業績"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
               </div>
               <form @submit.prevent="addOrder" class="momo-dialog-body momo-dialog-form momo-form-body daily-form-body space-y-4">
                 <div class="daily-form-field">
@@ -1828,7 +1828,7 @@
                 <span v-if="Number(template.suggestedAmount) > 0" class="expense-template-amount shrink-0 text-[10px] font-black text-slate-600">
                   NT$ {{ formatNumber(template.suggestedAmount) }}
                 </span>
-                <span v-else class="expense-template-chevron shrink-0 text-slate-300" aria-hidden="true">›</span>
+                <span v-else class="expense-template-chevron shrink-0 text-slate-300" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
               </button>
             </div>
           </section>
@@ -1848,7 +1848,7 @@
                   <h3 class="font-black text-slate-800 text-lg">新增支出</h3>
                   <p class="momo-dialog-subtitle">日期、分類、金額與備註</p>
                 </div>
-                <button type="button" @click="showExpenseForm = false" class="momo-dialog-close" aria-label="關閉新增支出"><span aria-hidden="true">×</span></button>
+                <button type="button" @click="showExpenseForm = false" class="momo-dialog-close" aria-label="關閉新增支出"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
               </div>
 
               <form @submit.prevent="addExpense" class="momo-dialog-body momo-dialog-scroll momo-form-body daily-form-body space-y-4">
@@ -2199,7 +2199,7 @@
                   <h3 class="font-black text-slate-800 text-lg">新增庫存商品</h3>
                   <p class="momo-dialog-subtitle">設定目前數量與補貨警戒值</p>
                 </div>
-                <button type="button" @click="showInventoryForm = false" class="momo-dialog-close" aria-label="關閉新增庫存"><span aria-hidden="true">×</span></button>
+                <button type="button" @click="showInventoryForm = false" class="momo-dialog-close" aria-label="關閉新增庫存"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
               </div>
               <form @submit.prevent="addInventoryItem" class="momo-dialog-body momo-dialog-form momo-form-body space-y-4">
                 <div class="momo-form-field">
@@ -2470,7 +2470,7 @@
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                   <button @click="crmFilterMode = 'all'; crmSearchQuery = ''" class="min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black">全部顧客</button>
-                  <button @click="crmShowInsights = false" aria-label="關閉回流分析" class="crm-icon-button min-h-[38px] w-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-lg font-semibold">×</button>
+                  <button @click="crmShowInsights = false" aria-label="關閉回流分析" class="crm-icon-button min-h-[38px] w-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-lg font-semibold"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
                 </div>
               </div>
 
@@ -2536,7 +2536,7 @@
                   <input type="text" v-model="crmSearchQuery" placeholder="搜尋顧客、服務或配方..."
                          class="crm-search-input compact-search-input momo-command-search-input w-full min-h-[36px] bg-slate-50/80 border border-slate-100 rounded-full pl-10 pr-10 py-1.5 text-[13px] font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-macaron-peach-100 focus:border-orange-100">
                   <span class="crm-search-marker absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true"></span>
-                  <button v-if="crmSearchQuery" @click="crmSearchQuery = ''" aria-label="清除顧客搜尋" class="crm-search-clear absolute right-2.5 top-1/2 -translate-y-1/2 min-h-8 w-8 text-slate-400 font-black text-sm">×</button>
+                  <button v-if="crmSearchQuery" @click="crmSearchQuery = ''" aria-label="清除顧客搜尋" class="crm-search-clear absolute right-2.5 top-1/2 -translate-y-1/2 min-h-8 w-8 text-slate-400 font-black text-sm"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
                 </div>
                 <select v-model="crmSortMode" aria-label="顧客排序" class="crm-sort-select momo-command-filter-control min-h-[44px] jelly-input bg-white border border-orange-100 rounded-2xl px-3 text-xs font-black text-slate-600 sm:w-44">
                   <option value="lastDate">最近來訪</option>
@@ -2577,7 +2577,7 @@
                               @click="crmFilterMode = 'all'; crmShowMoreFilters = false"
                               class="crm-secondary-filter-clear">清除</button>
                       <button @click="crmShowMoreFilters = false" class="crm-secondary-filter-close" aria-label="收合更多篩選">
-                        <span aria-hidden="true">×</span>
+                        <svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
                       </button>
                     </div>
                   </div>
@@ -2644,7 +2644,7 @@
                     <div class="text-[9px] font-black text-slate-400">回流觀察</div>
                     <div class="mt-0.5 text-[10px] font-bold text-slate-500 truncate">{{ cust.returnReason }}</div>
                   </div>
-                  <span class="crm-customer-open" aria-hidden="true">›</span>
+                  <span class="crm-customer-open" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
                 </button>
 
                 <div v-if="expandedCrmCustomerName === cust.id" class="crm-profile-panel crm-profile-content border-t border-orange-100 p-3 sm:p-4 space-y-3">
@@ -2661,7 +2661,7 @@
                       <div class="crm-profile-actions flex items-center gap-2 shrink-0">
                         <button v-if="crmDraftHasChanges(cust)" @click.stop="cancelCrmDraft(cust)" class="crm-profile-restore min-h-[36px] px-3 rounded-xl bg-white border border-slate-200 text-slate-500 text-[11px] font-black">還原</button>
                         <button @click.stop="saveCrmDraft(cust)" :disabled="!crmDraftHasChanges(cust)" class="crm-profile-save min-h-[36px] px-3 sm:px-4 rounded-xl text-[11px] font-black disabled:opacity-45" :class="crmDraftHasChanges(cust) ? 'bg-slate-900 text-white shadow-md shadow-slate-200' : 'bg-slate-100 text-slate-400'">儲存</button>
-                        <button @click.stop="toggleCrmCustomer(cust.id)" :aria-label="`關閉 ${cust.name} 的完整顧客檔案`" class="crm-profile-close min-h-[38px] w-10 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-lg font-semibold">×</button>
+                        <button @click.stop="toggleCrmCustomer(cust.id)" :aria-label="`關閉 ${cust.name} 的完整顧客檔案`" class="crm-profile-close min-h-[38px] w-10 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-lg font-semibold"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
                       </div>
                     </div>
                     <div class="crm-profile-save-state mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
@@ -2887,7 +2887,7 @@
               <div class="crm-search-shell relative">
                 <input v-model="prepaidLedgerSearchQuery" type="text" placeholder="搜尋儲值顧客或服務..." class="crm-ledger-search w-full min-h-[44px] rounded-2xl bg-emerald-50/30 border border-emerald-100 pl-10 pr-10 text-sm font-semibold text-slate-700">
                 <span class="crm-search-marker absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true"></span>
-                <button v-if="prepaidLedgerSearchQuery" @click="prepaidLedgerSearchQuery = ''" aria-label="清除儲值搜尋" class="crm-search-clear absolute right-2.5 top-1/2 -translate-y-1/2 min-h-8 w-8 text-slate-400 font-black">×</button>
+                <button v-if="prepaidLedgerSearchQuery" @click="prepaidLedgerSearchQuery = ''" aria-label="清除儲值搜尋" class="crm-search-clear absolute right-2.5 top-1/2 -translate-y-1/2 min-h-8 w-8 text-slate-400 font-black"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
               </div>
               <div class="crm-ledger-filters grid grid-cols-3 gap-2">
                 <button @click="prepaidLedgerFilter = 'all'" class="crm-ledger-filter min-h-[38px] rounded-xl text-[11px] font-black border" :class="prepaidLedgerFilter === 'all' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'">全部 {{ prepaidLedgerEntries.length }}</button>
@@ -2955,9 +2955,9 @@
               <button @click="exportAnnualReport" class="report-secondary-button min-h-[42px] px-3 sm:px-4 rounded-xl border border-macaron-peach-200 bg-white text-macaron-peach-500 text-xs font-black">匯出 CSV</button>
             </div>
             <div class="report-year-switcher grid grid-cols-[44px_1fr_44px] items-center border-b border-slate-100">
-              <button @click="prevReportYear" class="min-h-[52px] text-xl font-black text-slate-500 border-r border-slate-100" aria-label="上一年">‹</button>
+              <button @click="prevReportYear" class="min-h-[52px] text-xl font-black text-slate-500 border-r border-slate-100" aria-label="上一年"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></button>
               <div class="text-center text-base font-black text-slate-800">{{ selectedYear }} 年</div>
-              <button @click="nextReportYear" class="min-h-[52px] text-xl font-black text-slate-500 border-l border-slate-100" aria-label="下一年">›</button>
+              <button @click="nextReportYear" class="min-h-[52px] text-xl font-black text-slate-500 border-l border-slate-100" aria-label="下一年"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button>
             </div>
             <div class="report-overview-grid momo-page-metrics grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100">
               <div class="report-overview-metric momo-page-metric p-4">
@@ -3256,7 +3256,7 @@
                     <td class="px-4 py-3 text-right text-sm font-bold text-sky-600">NT$ {{ formatNumber(month.expenses) }}</td>
                     <td class="px-4 py-3 text-right text-sm font-black" :class="month.net >= 0 ? 'text-emerald-600' : 'text-rose-600'">{{ month.net >= 0 ? '+' : '' }}NT$ {{ formatNumber(month.net) }}</td>
                     <td class="px-4 py-3 text-right text-sm font-black text-slate-600">{{ month.revenue ? Math.round(month.net / month.revenue * 100) : 0 }}%</td>
-                    <td class="pr-3 text-right text-slate-300">›</td>
+                    <td class="pr-3 text-right text-slate-300"><svg class="momo-ui-icon report-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></td>
                   </tr>
                   <tr v-if="!reportMonthlyRows.length"><td colspan="6" class="px-4 py-10 text-center text-xs font-bold text-slate-400">此年度尚無損益資料</td></tr>
                 </tbody>
@@ -3373,7 +3373,7 @@
                   <span v-if="syncReport?.syncedAt"> · 最後同步 {{ formatDateTime(syncReport.syncedAt) }}</span>
                 </span>
               </div>
-              <span class="safety-maintenance-chevron" :class="safetyMaintenanceSection === 'sync' ? 'is-open' : ''" aria-hidden="true">›</span>
+              <span class="safety-maintenance-chevron" :class="safetyMaintenanceSection === 'sync' ? 'is-open' : ''" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
             </button>
 
             <div v-if="safetyMaintenanceSection === 'sync'" id="safety-maintenance-sync" class="safety-maintenance-body border-t border-slate-100">
@@ -3483,7 +3483,7 @@
                   本機 {{ backupSnapshotRows.length }} 份快照 · {{ pwaStatusText }} · v{{ appVersion }}
                 </span>
               </div>
-              <span class="safety-maintenance-chevron" :class="safetyMaintenanceSection === 'maintenance' ? 'is-open' : ''" aria-hidden="true">›</span>
+              <span class="safety-maintenance-chevron" :class="safetyMaintenanceSection === 'maintenance' ? 'is-open' : ''" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
             </button>
 
             <div v-if="safetyMaintenanceSection === 'maintenance'" id="safety-maintenance-hub" class="safety-maintenance-body border-t border-slate-100">
@@ -3762,7 +3762,7 @@
               <h2 id="mobile-more-title" class="text-base font-black text-slate-800">更多頁面</h2>
               <p class="mt-0.5 text-[10px] font-bold text-slate-400">較少使用的管理與分析頁面</p>
             </div>
-            <button @click="showMobileMorePages = false" class="momo-settings-close" aria-label="關閉更多頁面"><span aria-hidden="true">×</span></button>
+            <button @click="showMobileMorePages = false" class="momo-settings-close" aria-label="關閉更多頁面"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
           </div>
           <div class="momo-more-body">
             <div class="momo-more-list">
@@ -3780,7 +3780,7 @@
                   <span v-if="tab.id === 'inventory' && lowStockItems.length" class="momo-more-badge momo-more-badge--danger">{{ lowStockItems.length }} 待補</span>
                   <span v-if="tab.id === 'safety' && healthIssueSummary.total" class="momo-more-badge momo-more-badge--warning">{{ healthIssueSummary.total > 9 ? '9+' : healthIssueSummary.total }}</span>
                   <svg v-if="activeTab === tab.id" class="momo-more-current-icon" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-label="目前頁面"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5"></path></svg>
-                  <span v-else class="momo-more-chevron" aria-hidden="true">›</span>
+                  <span v-else class="momo-more-chevron" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
                 </span>
               </button>
             </div>
@@ -3891,7 +3891,7 @@
                 {{ cloudRestoreDraft?.backup?.backupDate || '讀取中' }} · schema v{{ cloudRestoreDraft?.backup?.schemaVersion || dataSchemaVersion }} · {{ cloudRestoreDraft?.backup?.totalRecords || 0 }} 筆
               </p>
             </div>
-            <button @click="closeCloudRestoreModal" :disabled="cloudBackupStatus === 'restoring'" class="momo-dialog-close w-9 h-9 rounded-full bg-slate-50 text-slate-500 font-black disabled:opacity-30" aria-label="關閉還原備份"><span aria-hidden="true">×</span></button>
+            <button @click="closeCloudRestoreModal" :disabled="cloudBackupStatus === 'restoring'" class="momo-dialog-close w-9 h-9 rounded-full bg-slate-50 text-slate-500 font-black disabled:opacity-30" aria-label="關閉還原備份"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
           </div>
 
           <div class="momo-dialog-body momo-dialog-list momo-form-body cloud-restore-body overflow-y-auto">
@@ -4049,7 +4049,7 @@
           <div class="momo-dialog-body p-5 space-y-4">
             <div class="momo-dialog-header momo-dialog-header--inline flex items-center justify-between">
               <h3 class="text-base font-black text-slate-800">加入 iPhone 主畫面</h3>
-              <button @click="dismissIosGuide" class="momo-dialog-close w-9 h-9 rounded-full bg-slate-50 text-slate-500 font-black" aria-label="關閉加入主畫面說明"><span aria-hidden="true">×</span></button>
+              <button @click="dismissIosGuide" class="momo-dialog-close w-9 h-9 rounded-full bg-slate-50 text-slate-500 font-black" aria-label="關閉加入主畫面說明"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
             </div>
             <ol class="space-y-3 text-sm font-bold text-slate-600">
               <li class="flex gap-3"><span class="w-7 h-7 shrink-0 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center">1</span><span>使用 Safari 開啟此系統</span></li>
@@ -4078,7 +4078,7 @@
               </div>
               <p class="momo-dialog-subtitle">{{ tempServicesConfig.length }} 項服務 · 影響同步計價與時間產值</p>
             </div>
-            <button type="button" @click="closeServiceConfigModal" class="momo-dialog-close" aria-label="關閉服務價目表"><span aria-hidden="true">×</span></button>
+            <button type="button" @click="closeServiceConfigModal" class="momo-dialog-close" aria-label="關閉服務價目表"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
           </div>
 
           <div class="momo-dialog-body momo-form-body service-config-body overflow-y-auto">
@@ -4161,9 +4161,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.16-ios-type-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.16-icons-quiet-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.16-ios-type-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.16-icons-quiet-1"></script>
 </body>
 </html>

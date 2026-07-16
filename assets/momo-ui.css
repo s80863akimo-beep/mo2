@@ -9190,4 +9190,152 @@
       font-weight: 700 !important;
     }
 
+    /* Shared line icons for primary actions, navigation, and dismiss controls. */
+    body.momo-polish .momo-ui-icon {
+      display: block;
+      width: 18px;
+      height: 18px;
+      flex: 0 0 18px;
+      pointer-events: none;
+    }
+
+    body.momo-polish .momo-action-icon {
+      display: inline-flex;
+      width: 22px;
+      height: 22px;
+      align-items: center;
+      justify-content: center;
+      color: var(--momo-brand);
+    }
+
+    body.momo-polish .momo-action-icon .momo-ui-icon {
+      width: 20px;
+      height: 20px;
+      flex-basis: 20px;
+    }
+
+    body.momo-polish .mobile-month-nav-button,
+    body.momo-polish .desktop-month-nav-button,
+    body.momo-polish .report-year-switcher button,
+    body.momo-polish .crm-icon-button,
+    body.momo-polish .crm-search-clear,
+    body.momo-polish .crm-profile-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body.momo-polish .mobile-month-nav-button .momo-ui-icon,
+    body.momo-polish .desktop-month-nav-button .momo-ui-icon,
+    body.momo-polish .report-year-switcher button .momo-ui-icon {
+      width: 16px;
+      height: 16px;
+      flex-basis: 16px;
+    }
+
+    body.momo-polish .momo-dialog-close .momo-ui-icon,
+    body.momo-polish .momo-settings-close .momo-ui-icon,
+    body.momo-polish .crm-icon-button .momo-ui-icon,
+    body.momo-polish .crm-profile-close .momo-ui-icon {
+      width: 18px;
+      height: 18px;
+      flex-basis: 18px;
+    }
+
+    body.momo-polish .momo-toast-close .momo-ui-icon,
+    body.momo-polish .crm-secondary-filter-close .momo-ui-icon,
+    body.momo-polish .crm-search-clear .momo-ui-icon {
+      width: 14px;
+      height: 14px;
+      flex-basis: 14px;
+    }
+
+    body.momo-polish .momo-settings-chevron,
+    body.momo-polish .momo-more-chevron,
+    body.momo-polish .crm-customer-open {
+      display: inline-flex;
+      width: 18px;
+      height: 18px;
+      align-items: center;
+      justify-content: center;
+      line-height: 0;
+    }
+
+    body.momo-polish .momo-settings-chevron .momo-ui-icon,
+    body.momo-polish .momo-more-chevron .momo-ui-icon,
+    body.momo-polish .expense-template-chevron .momo-ui-icon,
+    body.momo-polish .crm-customer-open .momo-ui-icon,
+    body.momo-polish .safety-maintenance-chevron .momo-ui-icon {
+      width: 16px;
+      height: 16px;
+      flex-basis: 16px;
+    }
+
+    body.momo-polish .momo-inline-chevron {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    body.momo-polish .momo-inline-chevron .momo-ui-icon {
+      width: 12px;
+      height: 12px;
+      flex-basis: 12px;
+    }
+
+    body.momo-polish .report-row-chevron {
+      width: 16px;
+      height: 16px;
+      margin-left: auto;
+    }
+
+    /* Quieter report and safety surfaces: one panel edge, then simple separators. */
+    body.momo-polish .momo-report-page .report-panel,
+    body.momo-polish .momo-safety-page .safety-overview-panel,
+    body.momo-polish .momo-safety-page .safety-panel,
+    body.momo-polish .momo-safety-page .safety-attention-panel,
+    body.momo-polish .momo-safety-page .safety-maintenance-panel,
+    body.momo-polish .momo-safety-page .safety-advanced-panel {
+      border-color: transparent !important;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035), 0 12px 30px -28px rgba(15, 23, 42, 0.32) !important;
+    }
+
+    body.momo-polish .momo-report-page .report-settlement-panel {
+      border-top-color: var(--momo-revenue) !important;
+    }
+
+    body.momo-polish .momo-report-page .report-panel-header,
+    body.momo-polish .momo-safety-page .safety-overview-header,
+    body.momo-polish .momo-safety-page .safety-panel-header {
+      border-top-color: transparent !important;
+      border-right-color: transparent !important;
+      border-bottom-color: var(--momo-line) !important;
+      border-left-color: transparent !important;
+    }
+
+    body.momo-polish .momo-report-page .report-settlement-grid,
+    body.momo-polish .momo-report-page .report-overview-grid,
+    body.momo-polish .momo-report-page .report-prepaid-grid,
+    body.momo-polish .momo-report-page .report-cashflow-grid,
+    body.momo-polish .momo-report-page .report-operations-grid,
+    body.momo-polish .momo-report-page .report-completeness-grid,
+    body.momo-polish .momo-report-page .report-yield-summary-grid,
+    body.momo-polish .momo-safety-page .safety-status-grid,
+    body.momo-polish .momo-safety-page .safety-sync-metrics,
+    body.momo-polish .momo-safety-page .safety-system-status-grid {
+      border-right-width: 0 !important;
+      border-bottom-width: 0 !important;
+      border-left-width: 0 !important;
+    }
+
+    body.momo-polish .momo-safety-page .safety-maintenance-body,
+    body.momo-polish .momo-safety-page .safety-maintenance-subsection,
+    body.momo-polish .momo-safety-page .safety-sync-filters,
+    body.momo-polish .momo-safety-page .safety-price-workbench,
+    body.momo-polish .momo-safety-page .safety-backup-policy {
+      border-right-width: 0 !important;
+      border-bottom-width: 0 !important;
+      border-left-width: 0 !important;
+    }
+
     [v-cloak] { display: none !important; }
