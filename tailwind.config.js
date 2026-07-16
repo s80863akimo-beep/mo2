@@ -107,15 +107,15 @@ module.exports = {
     extend: {
       colors: {
         orange: {
-          50: '#EDF5FF',
-          100: '#D9EAFF',
-          200: '#B8D7FF',
-          300: '#8DBEFF',
-          400: '#4B9AFF',
-          500: '#0066CC',
-          600: '#0055B3',
-          700: '#00458F',
-          800: '#00376F'
+          50: '#FFF0F5',
+          100: '#FFE1EB',
+          200: '#F3C3D2',
+          300: '#E99BB5',
+          400: '#DA668C',
+          500: '#C93464',
+          600: '#A82A54',
+          700: '#8C2146',
+          800: '#6F1A38'
         },
         emerald: {
           50: '#F0FAF3',
@@ -159,14 +159,14 @@ module.exports = {
         macaron: {
           cream: '#F2F2F7',
           peach: {
-            50: '#EDF5FF',
-            100: '#D9EAFF',
-            200: '#B8D7FF',
-            300: '#8DBEFF',
-            400: '#4B9AFF',
-            500: '#0066CC'
+            50: '#FFF0F5',
+            100: '#FFE1EB',
+            200: '#F3C3D2',
+            300: '#E99BB5',
+            400: '#DA668C',
+            500: '#C93464'
           },
-          rose: '#FF2D55',
+          rose: '#C93464',
           pink: '#5E5CE6',
           mint: '#DCF5E2',
           lavender: '#E8E7FF',
