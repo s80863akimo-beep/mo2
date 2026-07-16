@@ -12,9 +12,9 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
   <meta name="application-name" content="摸摸頭營運總部">
-  <meta name="msapplication-TileColor" content="#F3F5F5">
-  <meta name="description" content="專為美髮工作室設計的極簡馬卡龍風營運管理系統，輕鬆掌握業績、支出、庫存與顧客配方。">
-  <meta name="theme-color" content="#F3F5F5">
+  <meta name="msapplication-TileColor" content="#F2F2F7">
+  <meta name="description" content="專為美髮工作室設計的 iOS 白色美學營運管理系統，輕鬆掌握業績、支出、庫存與顧客配方。">
+  <meta name="theme-color" content="#F2F2F7">
 
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-closeout-neutral-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-ios-white-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-closeout-neutral-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-ios-white-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -786,13 +786,13 @@
               <svg viewBox="0 0 600 120" class="w-full h-auto overflow-visible">
                 <defs>
                   <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#93616B" stop-opacity="0.22"></stop>
-                    <stop offset="100%" stop-color="#F6EEF0" stop-opacity="0.04"></stop>
+                    <stop offset="0%" stop-color="#5E5CE6" stop-opacity="0.18"></stop>
+                    <stop offset="100%" stop-color="#F3F2FF" stop-opacity="0.03"></stop>
                   </linearGradient>
                   <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stop-color="#B48790"></stop>
-                    <stop offset="50%" stop-color="#A5747E"></stop>
-                    <stop offset="100%" stop-color="#93616B"></stop>
+                    <stop offset="0%" stop-color="#8E8DE7"></stop>
+                    <stop offset="50%" stop-color="#7472DC"></stop>
+                    <stop offset="100%" stop-color="#5E5CE6"></stop>
                   </linearGradient>
                 </defs>
 
@@ -815,7 +815,7 @@
                         @touchend.passive="setTimeout(() => hoveredPoint = null, 800)"></rect>
                   <!-- The visual dot -->
                   <circle :cx="pt.x" :cy="pt.y" :r="hoveredPoint && hoveredPoint.key === pt.key ? 5.5 : (pt.total > 0 ? 3 : 0)"
-                          :fill="hoveredPoint && hoveredPoint.key === pt.key ? '#93616B' : '#B48790'"
+                          :fill="hoveredPoint && hoveredPoint.key === pt.key ? '#5E5CE6' : '#8E8DE7'"
                           stroke="#FFF" :stroke-width="hoveredPoint && hoveredPoint.key === pt.key ? 2 : 1"
                           class="transition-all duration-150 pointer-events-none"></circle>
                 </g>
@@ -886,7 +886,7 @@
               <div class="flex-grow grid grid-cols-2 gap-2.5 w-full">
                 <div v-for="seg in donutChartData.allSegments" :key="seg.cat"
                      class="flex items-center gap-2.5 p-3 rounded-2xl border transition-all"
-                     :style="{ borderColor: seg.amount > 0 ? seg.color : '#E5EAEB', backgroundColor: seg.amount > 0 ? seg.color + '18' : '#F7F9F9' }">
+                     :style="{ borderColor: seg.amount > 0 ? seg.color : '#E5E5EA', backgroundColor: seg.amount > 0 ? seg.color + '18' : '#F7F7FA' }">
                   <!-- Color Dot -->
                   <div class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-sm"
                        :style="{ backgroundColor: seg.color + '30' }">
@@ -3207,19 +3207,19 @@
           <section v-if="reportViewMode === 'annual' && reportAnalysisTab === 'trend'" class="report-panel report-analysis-panel report-trend-panel momo-surface bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
             <div class="report-panel-header momo-section-header px-4 py-4 sm:px-6 flex items-center justify-between border-b border-slate-100">
               <div><h2 class="text-base sm:text-lg font-black text-slate-800">月度趨勢</h2><p class="text-[10px] font-bold text-slate-400 mt-0.5">營業額、支出與淨利</p></div>
-              <div class="flex items-center gap-3 text-[9px] font-black"><span class="momo-revenue-text text-macaron-peach-500">● 營業額</span><span style="color:#607F8C">● 支出</span><span style="color:#5D7668">● 淨利</span></div>
+              <div class="flex items-center gap-3 text-[9px] font-black"><span class="momo-revenue-text text-macaron-peach-500">● 營業額</span><span style="color:#FF9F0A">● 支出</span><span style="color:#34C759">● 淨利</span></div>
             </div>
             <div class="report-trend-scroll p-4 sm:p-6 overflow-x-auto">
               <svg viewBox="0 0 600 150" class="w-full min-w-[560px] h-auto">
                 <line v-for="y in [20,55,90,125]" :key="y" x1="30" :y1="y" x2="585" :y2="y" stroke="#E2E8F0" stroke-dasharray="3,3" stroke-width="0.8"></line>
                 <line x1="30" :y1="reportTrendChart.zeroY" x2="585" :y2="reportTrendChart.zeroY" stroke="#94A3B8" stroke-width="1"></line>
-                <polyline :points="reportTrendChart.revenuePoints" fill="none" stroke="#93616B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                <polyline :points="reportTrendChart.expensePoints" fill="none" stroke="#607F8C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                <polyline :points="reportTrendChart.netPoints" fill="none" stroke="#5D7668" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                <polyline :points="reportTrendChart.revenuePoints" fill="none" stroke="#5E5CE6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                <polyline :points="reportTrendChart.expensePoints" fill="none" stroke="#FF9F0A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                <polyline :points="reportTrendChart.netPoints" fill="none" stroke="#34C759" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
                 <g v-for="point in reportTrendChart.points" :key="point.month">
-                  <circle :cx="point.x" :cy="point.revenueY" r="3" fill="#93616B"></circle>
-                  <circle :cx="point.x" :cy="point.expenseY" r="2.5" fill="#607F8C"></circle>
-                  <circle :cx="point.x" :cy="point.netY" r="2.5" fill="#5D7668"></circle>
+                  <circle :cx="point.x" :cy="point.revenueY" r="3" fill="#5E5CE6"></circle>
+                  <circle :cx="point.x" :cy="point.expenseY" r="2.5" fill="#FF9F0A"></circle>
+                  <circle :cx="point.x" :cy="point.netY" r="2.5" fill="#34C759"></circle>
                   <text :x="point.x" y="146" text-anchor="middle" fill="#64748B" font-size="9" font-weight="700">{{ point.month }}月</text>
                 </g>
               </svg>
@@ -4161,9 +4161,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.16-closeout-neutral-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.16-ios-white-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.16-closeout-neutral-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.16-ios-white-1"></script>
 </body>
 </html>

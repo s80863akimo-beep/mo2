@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.16-closeout-neutral-1';
+    const APP_VERSION = '2026.07.16-ios-white-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -1634,11 +1634,11 @@
           const circumference = 2 * Math.PI * r;
 
           const meta = {
-            '剪髮':    { color: '#A87982' },
-            '燙髮':    { color: '#789A9B' },
-            '染髮':    { color: '#9B809F' },
-            '洗護其他': { color: '#8B9D90' },
-            '更正': { color: '#A88B55' }
+            '剪髮':    { color: '#FF2D55' },
+            '燙髮':    { color: '#32ADE6' },
+            '染髮':    { color: '#AF52DE' },
+            '洗護其他': { color: '#34C759' },
+            '更正': { color: '#FF9F0A' }
           };
 
           let cumulative = 0;
@@ -2651,11 +2651,11 @@
           const total = Object.values(cats).reduce((s, v) => s + v, 0);
           const r = 55, circumference = 2 * Math.PI * r;
           const meta = {
-            '剪髮': { color: '#A87982' },
-            '燙髮': { color: '#789A9B' },
-            '染髮': { color: '#9B809F' },
-            '洗護其他': { color: '#8B9D90' },
-            '更正': { color: '#A88B55' }
+            '剪髮': { color: '#FF2D55' },
+            '燙髮': { color: '#32ADE6' },
+            '染髮': { color: '#AF52DE' },
+            '洗護其他': { color: '#34C759' },
+            '更正': { color: '#FF9F0A' }
           };
           let cumulative = 0;
           const allSegments = Object.entries(cats).map(([cat, amount]) => {
@@ -2685,7 +2685,7 @@
           let cumulative = 0;
           const allSegments = Object.entries(cats).map(([cat, amount]) => {
             const ratio = total > 0 ? amount / total : 0;
-            return { cat, amount, ratio, percentage: Math.round(ratio * 100), ...(meta[cat] || { color: '#8793A3' }) };
+            return { cat, amount, ratio, percentage: Math.round(ratio * 100), ...(meta[cat] || { color: '#8E8E93' }) };
           });
           const segments = allSegments.filter(s => s.amount > 0).map(s => {
             const length = s.ratio * circumference;
@@ -5795,12 +5795,12 @@
         // 支出分類的圖示、色系與報表色彩共用同一份對照。
         getExpenseCategoryInfo(category) {
           const map = {
-            '材料費': { key: 'materials', label: '材料費', chartColor: '#668C8D' },
-            '房租': { key: 'rent', label: '房租', chartColor: '#75839B' },
-            '水電費': { key: 'utilities', label: '水電費', chartColor: '#A88B55' },
-            '行銷費': { key: 'marketing', label: '行銷費', chartColor: '#9D6B70' },
-            '薪資': { key: 'salary', label: '薪資', chartColor: '#688272' },
-            '其他': { key: 'other', label: '其他', chartColor: '#7F8B91' }
+            '材料費': { key: 'materials', label: '材料費', chartColor: '#00C7BE' },
+            '房租': { key: 'rent', label: '房租', chartColor: '#5856D6' },
+            '水電費': { key: 'utilities', label: '水電費', chartColor: '#FF9F0A' },
+            '行銷費': { key: 'marketing', label: '行銷費', chartColor: '#FF2D55' },
+            '薪資': { key: 'salary', label: '薪資', chartColor: '#34C759' },
+            '其他': { key: 'other', label: '其他', chartColor: '#8E8E93' }
           };
           return map[category] || { ...map['其他'], label: category || '其他' };
         },

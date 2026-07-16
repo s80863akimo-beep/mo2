@@ -1,6 +1,6 @@
     body {
       font-family: 'Nunito', 'Noto Sans TC', sans-serif;
-      background: #F4F6F7;
+      background: #F2F2F7;
       min-height: 100vh;
       min-height: 100dvh; /* iOS Safari 動態視窗高度，URL 列顯示/隱藏時不跳動 */
       -webkit-tap-highlight-color: transparent;
@@ -59,21 +59,21 @@
     }
 
     body.momo-polish .momo-danger-action {
-      background: var(--momo-danger-soft, #F7EEEE) !important;
-      border-color: var(--momo-danger-line, #E1CACA) !important;
-      color: var(--momo-danger-ink, #8B504D) !important;
+      background: var(--momo-danger-soft, #FFF1F0) !important;
+      border-color: var(--momo-danger-line, #F6C7C4) !important;
+      color: var(--momo-danger-ink, #B4231A) !important;
     }
 
     body.momo-polish .momo-success-action {
-      background: var(--momo-success-soft, #EEF3F0) !important;
-      border-color: var(--momo-success-line, #C8D5CD) !important;
-      color: var(--momo-success-ink, #4E6559) !important;
+      background: var(--momo-success-soft, #F0FAF3) !important;
+      border-color: var(--momo-success-line, #C8EED2) !important;
+      color: var(--momo-success-ink, #1F7A35) !important;
     }
 
     body.momo-polish .momo-info-action {
-      background: var(--momo-info-soft, #EFF3F4) !important;
-      border-color: var(--momo-info-line, #CBD9DE) !important;
-      color: var(--momo-info-ink, #526D78) !important;
+      background: var(--momo-info-soft, #EFF9FD) !important;
+      border-color: var(--momo-info-line, #CBEAF7) !important;
+      color: var(--momo-info-ink, #087395) !important;
     }
 
     body.momo-polish .momo-app-header {
@@ -1159,42 +1159,42 @@
       animation: pulseSubtle 4s infinite ease-in-out;
     }
 
-    /* 2026 visual system: quiet salon operations workspace */
+    /* iOS-inspired visual system: grouped background, white surfaces, semantic color. */
     :root {
-      --momo-canvas: #F3F5F5;
+      --momo-canvas: #F2F2F7;
       --momo-surface: #FFFFFF;
-      --momo-surface-muted: #F7F9F9;
-      --momo-ink: #35434A;
-      --momo-muted: #738087;
-      --momo-line: #E0E5E5;
-      --momo-line-strong: #D0D8D9;
-      --momo-brand: #607983;
-      --momo-brand-hover: #516A74;
-      --momo-brand-ink: #516A74;
-      --momo-brand-soft: #EEF2F3;
-      --momo-brand-line: #CBD6DA;
-      --momo-revenue: #93616B;
-      --momo-revenue-ink: #82545E;
-      --momo-revenue-soft: #F6EEF0;
-      --momo-revenue-line: #DECBD0;
-      --momo-success: #5D7668;
-      --momo-success-hover: #4E6559;
-      --momo-success-ink: #4E6559;
-      --momo-success-soft: #EEF3F0;
-      --momo-success-line: #C8D5CD;
-      --momo-info: #607F8C;
-      --momo-info-ink: #526D78;
-      --momo-info-soft: #EFF3F4;
-      --momo-info-line: #CBD9DE;
-      --momo-warning: #8B7148;
-      --momo-warning-ink: #765F3D;
-      --momo-warning-soft: #F6F2E9;
-      --momo-warning-line: #DDD0B9;
-      --momo-danger: #9D5F5B;
-      --momo-danger-ink: #8B504D;
-      --momo-danger-soft: #F7EEEE;
-      --momo-danger-line: #E1CACA;
-      --momo-panel-shadow: 0 12px 30px -26px rgba(15, 23, 42, 0.42);
+      --momo-surface-muted: #F7F7FA;
+      --momo-ink: #1C1C1E;
+      --momo-muted: #6E6E73;
+      --momo-line: #E5E5EA;
+      --momo-line-strong: #D1D1D6;
+      --momo-brand: #0066CC;
+      --momo-brand-hover: #0055B3;
+      --momo-brand-ink: #0066CC;
+      --momo-brand-soft: #EDF5FF;
+      --momo-brand-line: #C7E0FF;
+      --momo-revenue: #5E5CE6;
+      --momo-revenue-ink: #4745AE;
+      --momo-revenue-soft: #F3F2FF;
+      --momo-revenue-line: #D6D5FA;
+      --momo-success: #34C759;
+      --momo-success-hover: #1F7A35;
+      --momo-success-ink: #1F7A35;
+      --momo-success-soft: #F0FAF3;
+      --momo-success-line: #C8EED2;
+      --momo-info: #32ADE6;
+      --momo-info-ink: #087395;
+      --momo-info-soft: #EFF9FD;
+      --momo-info-line: #CBEAF7;
+      --momo-warning: #FF9F0A;
+      --momo-warning-ink: #9A5B00;
+      --momo-warning-soft: #FFF8EB;
+      --momo-warning-line: #F9DBA8;
+      --momo-danger: #FF3B30;
+      --momo-danger-ink: #B4231A;
+      --momo-danger-soft: #FFF1F0;
+      --momo-danger-line: #F6C7C4;
+      --momo-panel-shadow: 0 8px 24px -22px rgba(0, 0, 0, 0.28);
     }
 
     body.momo-polish {
@@ -1203,11 +1203,11 @@
     }
 
     body.momo-polish ::selection {
-      background: #D9E1E3;
+      background: #D9EAFF;
       color: var(--momo-ink);
     }
 
-    /* Legacy macaron utilities now follow the semantic Morandi palette. */
+    /* Legacy macaron utilities now follow the semantic iOS palette. */
     body.momo-polish .text-macaron-peach-400,
     body.momo-polish .text-macaron-peach-500,
     body.momo-polish .text-macaron-rose {
@@ -1234,8 +1234,8 @@
     }
 
     body.momo-polish .momo-dashboard-intro {
-      border-color: var(--momo-brand-line) !important;
-      background: var(--momo-brand-soft) !important;
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface) !important;
     }
 
     body.momo-polish .momo-dialog--auth .momo-state-button {
@@ -1576,16 +1576,16 @@
     }
 
     body.momo-polish .ledger-date-badge {
-      border-color: #D8DEE6;
-      background: #F7F9FB;
-      color: #475569;
+      border-color: var(--momo-line);
+      background: var(--momo-surface-muted);
+      color: #636366;
       font-variant-numeric: tabular-nums;
     }
 
     body.momo-polish .ledger-weekday-badge.is-weekday {
-      border-color: #BCDDE2;
-      background: #F0F8F9;
-      color: #1F747B;
+      border-color: var(--momo-info-line);
+      background: var(--momo-info-soft);
+      color: var(--momo-info-ink);
     }
 
     body.momo-polish .ledger-weekday-badge.is-weekend {
@@ -1595,9 +1595,9 @@
     }
 
     body.momo-polish .ledger-lock-badge {
-      border-color: #EED28F;
-      background: #FFF9E9;
-      color: #8A6509;
+      border-color: var(--momo-warning-line);
+      background: var(--momo-warning-soft);
+      color: var(--momo-warning-ink);
     }
 
     body.momo-polish .ledger-status-icon {
@@ -1678,27 +1678,27 @@
     }
 
     body.momo-polish .orders-category-badge.is-perm {
-      border-color: #B9DEDF;
-      background: #EFF8F8;
-      color: #187B81;
+      border-color: var(--momo-info-line);
+      background: var(--momo-info-soft);
+      color: var(--momo-info-ink);
     }
 
     body.momo-polish .orders-category-badge.is-color {
-      border-color: #E3CDE9;
-      background: #FAF4FC;
-      color: #8B4F9A;
+      border-color: #DDD7F7;
+      background: #F6F3FF;
+      color: #6E3FA0;
     }
 
     body.momo-polish .orders-category-badge.is-care {
-      border-color: #C9E1D2;
-      background: #F1F8F4;
-      color: #47765E;
+      border-color: var(--momo-success-line);
+      background: var(--momo-success-soft);
+      color: var(--momo-success-ink);
     }
 
     body.momo-polish .orders-category-badge.is-correction {
-      border-color: #F4D18B;
-      background: #FFF8E7;
-      color: #946200;
+      border-color: var(--momo-warning-line);
+      background: var(--momo-warning-soft);
+      color: var(--momo-warning-ink);
     }
 
     body.momo-polish .orders-payment-badge {
@@ -1732,33 +1732,33 @@
     }
 
     body.momo-polish .orders-payment-badge.is-transfer {
-      border-color: #C9D5ED;
-      background: #F3F6FC;
-      color: #4A6292;
+      border-color: var(--momo-brand-line);
+      background: var(--momo-brand-soft);
+      color: var(--momo-brand-ink);
     }
 
     body.momo-polish .orders-payment-badge.is-prepaid {
-      border-color: #B9DDE1;
-      background: #EFF8F9;
-      color: #23747B;
+      border-color: var(--momo-info-line);
+      background: var(--momo-info-soft);
+      color: var(--momo-info-ink);
     }
 
     body.momo-polish .orders-payment-badge.is-mixed {
-      border-color: #EAD09C;
-      background: #FFF8EA;
-      color: #8A650F;
+      border-color: var(--momo-warning-line);
+      background: var(--momo-warning-soft);
+      color: var(--momo-warning-ink);
     }
 
     body.momo-polish .orders-payment-badge.is-topup {
-      border-color: #DECBE6;
-      background: #FAF5FC;
-      color: #82558D;
+      border-color: var(--momo-revenue-line);
+      background: var(--momo-revenue-soft);
+      color: var(--momo-revenue-ink);
     }
 
     body.momo-polish .orders-payment-badge.is-other {
-      border-color: #D8DEE6;
-      background: #F7F9FB;
-      color: #64748B;
+      border-color: var(--momo-line);
+      background: var(--momo-surface-muted);
+      color: #636366;
     }
 
     body.momo-polish .orders-payment-channel {
@@ -1770,9 +1770,9 @@
 
     body.momo-polish .orders-exclusion-badge {
       min-height: 24px;
-      border-color: #DECBE6;
-      background: #FAF5FC;
-      color: #82558D;
+      border-color: var(--momo-revenue-line);
+      background: var(--momo-revenue-soft);
+      color: var(--momo-revenue-ink);
     }
 
     body.momo-polish .orders-payment-breakdown {
@@ -2771,7 +2771,7 @@
 
     body.momo-polish .report-settlement-header {
       min-height: 76px;
-      background: var(--momo-revenue-soft) !important;
+      background: var(--momo-surface) !important;
     }
 
     body.momo-polish .report-settlement-status {
@@ -2811,9 +2811,9 @@
     }
 
     body.momo-polish .report-warning-button {
-      border-color: #F1D9AE !important;
-      background: #FFF9EE !important;
-      color: var(--momo-warning) !important;
+      border-color: var(--momo-warning-line) !important;
+      background: var(--momo-warning-soft) !important;
+      color: var(--momo-warning-ink) !important;
     }
 
     body.momo-polish .report-month-strip {
@@ -2892,12 +2892,12 @@
     }
 
     body.momo-polish .report-unclosed-strip {
-      border-color: #F1D9AE !important;
-      background: #FFF9EE !important;
+      border-color: var(--momo-warning-line) !important;
+      background: var(--momo-warning-soft) !important;
     }
 
     body.momo-polish .report-unclosed-strip button {
-      border-color: #F1D9AE !important;
+      border-color: var(--momo-warning-line) !important;
       border-radius: 6px !important;
       box-shadow: none !important;
     }
@@ -3407,7 +3407,7 @@
       --inventory-status-border: #D8DEE6;
       --inventory-status-bg: #F7F9FB;
       --inventory-status-ink: #64748B;
-      --inventory-status-strong: #8793A3;
+      --inventory-status-strong: #8E8E93;
     }
 
     body.momo-polish .inventory-status-tone.is-all {
@@ -3428,7 +3428,7 @@
       --inventory-status-border: var(--momo-warning-line);
       --inventory-status-bg: var(--momo-warning-soft);
       --inventory-status-ink: var(--momo-warning-ink);
-      --inventory-status-strong: #A88B55;
+      --inventory-status-strong: #FF9F0A;
     }
 
     body.momo-polish .inventory-status-tone.is-out {
@@ -3632,7 +3632,7 @@
     body.momo-polish .inventory-status-check.is-empty {
       border-color: var(--momo-line);
       background: var(--momo-surface);
-      color: #8793A3;
+      color: #8E8E93;
     }
 
     body.momo-polish .inventory-status-check svg {
@@ -3818,7 +3818,7 @@
       border: 1px solid var(--momo-line);
       border-radius: 8px;
       background: var(--momo-surface);
-      color: #8793A3;
+      color: #8E8E93;
     }
 
     body.momo-polish .inventory-empty-icon svg {
@@ -5575,10 +5575,15 @@
     }
 
     body.momo-polish .daily-form-summary {
-      border: 1px solid #273449 !important;
+      border: 1px solid var(--momo-line) !important;
       border-radius: 8px !important;
-      background: #172033 !important;
+      background: var(--momo-surface-muted) !important;
+      color: var(--momo-ink) !important;
       box-shadow: none !important;
+    }
+
+    body.momo-polish .daily-form-summary [class*="text-white"] {
+      color: var(--momo-muted) !important;
     }
 
     body.momo-polish .daily-form-status {
@@ -8145,32 +8150,32 @@
     }
 
     body.momo-polish .momo-status-tone {
-      --momo-status-border: #D8DEE6;
-      --momo-status-bg: #F7F9FB;
-      --momo-status-ink: #64748B;
-      --momo-status-strong: #8793A3;
+      --momo-status-border: var(--momo-line);
+      --momo-status-bg: var(--momo-surface-muted);
+      --momo-status-ink: #636366;
+      --momo-status-strong: #8E8E93;
     }
 
     body.momo-polish .momo-status-tone.is-neutral,
     body.momo-polish .momo-status-tone.is-all {
-      --momo-status-border: #D5DBE3;
-      --momo-status-bg: #F6F8FA;
-      --momo-status-ink: #526071;
-      --momo-status-strong: #7A8797;
+      --momo-status-border: var(--momo-line);
+      --momo-status-bg: var(--momo-surface-muted);
+      --momo-status-ink: #636366;
+      --momo-status-strong: #8E8E93;
     }
 
     body.momo-polish .momo-status-tone.is-info {
       --momo-status-border: var(--momo-info-line);
       --momo-status-bg: var(--momo-info-soft);
       --momo-status-ink: var(--momo-info-ink);
-      --momo-status-strong: #7896A1;
+      --momo-status-strong: var(--momo-info);
     }
 
     body.momo-polish .momo-status-tone.is-ok {
       --momo-status-border: var(--momo-success-line);
       --momo-status-bg: var(--momo-success-soft);
       --momo-status-ink: var(--momo-success-ink);
-      --momo-status-strong: #809789;
+      --momo-status-strong: var(--momo-success);
     }
 
     body.momo-polish .momo-status-tone.is-warn,
@@ -8178,7 +8183,7 @@
       --momo-status-border: var(--momo-warning-line);
       --momo-status-bg: var(--momo-warning-soft);
       --momo-status-ink: var(--momo-warning-ink);
-      --momo-status-strong: #A88B55;
+      --momo-status-strong: var(--momo-warning);
     }
 
     body.momo-polish .momo-status-tone.is-danger,
@@ -8186,7 +8191,7 @@
       --momo-status-border: var(--momo-danger-line);
       --momo-status-bg: var(--momo-danger-soft);
       --momo-status-ink: var(--momo-danger-ink);
-      --momo-status-strong: #AD7470;
+      --momo-status-strong: var(--momo-danger);
     }
 
     body.momo-polish .momo-status-badge {
@@ -8582,17 +8587,6 @@
       border-color: var(--momo-brand) !important;
       background: var(--momo-brand) !important;
       color: #FFFFFF !important;
-    }
-
-    body.momo-polish .closeout-sheet-panel .momo-form-primary {
-      border-color: var(--momo-success) !important;
-      background: var(--momo-success) !important;
-      color: #FFFFFF !important;
-    }
-
-    body.momo-polish .closeout-sheet-panel .momo-form-primary:hover {
-      border-color: var(--momo-success-hover) !important;
-      background: var(--momo-success-hover) !important;
     }
 
     body.momo-polish .momo-form-secondary {
