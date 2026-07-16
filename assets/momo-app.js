@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.16-dialogs-feedback-1';
+    const APP_VERSION = '2026.07.16-pwa-recovery-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -4265,6 +4265,7 @@
           }
           window.addEventListener('load', async () => {
             try {
+              let hadServiceWorkerController = Boolean(navigator.serviceWorker.controller);
               const registration = await navigator.serviceWorker.register('/service-worker.js');
               this.pwaRegistration = registration;
               this.pwaStatus = navigator.serviceWorker.controller ? '已啟用' : '等待啟用';
@@ -4298,7 +4299,24 @@
 
               navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (this.pwaRefreshing) return;
+                const replacedExistingController = hadServiceWorkerController;
+                hadServiceWorkerController = true;
                 this.pwaRefreshing = true;
+                this.pendingServiceWorker = null;
+                this.updateAvailable = false;
+                this.pwaStatus = '已啟用';
+
+                if (!replacedExistingController) {
+                  setTimeout(() => { this.pwaRefreshing = false; }, 1000);
+                  return;
+                }
+
+                if (this.iosPerfMode) {
+                  this.showToast('App 更新完成，關閉後重新開啟即可使用新版');
+                  setTimeout(() => { this.pwaRefreshing = false; }, 1000);
+                  return;
+                }
+
                 window.location.reload();
               });
 
@@ -4316,7 +4334,7 @@
         },
         applyPwaUpdate() {
           if (!this.pendingServiceWorker) {
-            window.location.reload();
+            this.checkPwaUpdate(true);
             return;
           }
           this.showToast('正在更新到最新版…', 'loading', 6000);

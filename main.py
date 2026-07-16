@@ -14,7 +14,7 @@ from collections import defaultdict
 import httpx
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from dotenv import load_dotenv
@@ -752,6 +752,68 @@ def sync_calendar(
         "today":           today_result,
         "diagnostics":     diagnostics,
     }
+
+
+@app.get("/api/recovery", response_class=HTMLResponse, include_in_schema=False)
+def app_recovery():
+    """Clear only PWA workers and caches, preserving all business data in localStorage."""
+    content = """<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#FFF9F6">
+  <title>摸摸頭 App 修復</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:24px;background:#f4f6f8;color:#1f2937;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif}
+    main{width:min(100%,420px);padding:28px 24px;border:1px solid #dce3ea;border-radius:12px;background:#fff;box-shadow:0 20px 44px -34px rgba(15,23,42,.45);text-align:center}
+    .mark{display:grid;width:48px;height:48px;margin:0 auto 16px;place-items:center;border-radius:10px;background:#f0f8f3;color:#16805d;font-size:24px;font-weight:900}
+    h1{margin:0;font-size:22px;line-height:1.3}p{margin:10px 0 0;color:#64748b;font-size:14px;font-weight:700;line-height:1.6}
+    .note{margin-top:18px;padding:12px;border:1px solid #bcdcc9;border-radius:8px;background:#f0f8f3;color:#347052;font-size:12px;font-weight:800;line-height:1.6}
+    button{width:100%;min-height:48px;margin-top:18px;border:0;border-radius:8px;background:#16805d;color:#fff;font-size:14px;font-weight:900}button[hidden]{display:none}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mark" aria-hidden="true">✓</div>
+    <h1>正在修復 App</h1>
+    <p id="status" role="status" aria-live="polite">正在移除舊版更新程式與快取，請稍候。</p>
+    <div class="note">業績、顧客、儲值、配方與本機備份都會保留。</div>
+    <button id="retry" type="button" hidden>重新開啟摸摸頭</button>
+  </main>
+  <script>
+    const statusNode=document.getElementById('status');
+    const retryButton=document.getElementById('retry');
+    const openApp=()=>location.replace('/?recovered='+Date.now());
+    retryButton.addEventListener('click',openApp);
+    (async()=>{
+      const warnings=[];
+      try{
+        if('serviceWorker' in navigator){
+          const registrations=await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map(item=>item.unregister()));
+        }
+      }catch(error){warnings.push('更新程式');}
+      try{
+        if('caches' in window){
+          const names=await caches.keys();
+          await Promise.all(names.map(name=>caches.delete(name)));
+        }
+      }catch(error){warnings.push('網頁快取');}
+      statusNode.textContent=warnings.length?'主要修復已完成，正在重新開啟 App。':'修復完成，正在重新開啟 App。';
+      retryButton.hidden=false;
+      setTimeout(openApp,900);
+    })();
+  </script>
+</body>
+</html>"""
+    return HTMLResponse(
+        content=content,
+        headers={
+            "Cache-Control": "no-store, max-age=0",
+            "Pragma": "no-cache",
+        },
+    )
 
 
 @app.get("/health")

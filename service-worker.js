@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v106-dialogs-feedback';
-const APP_VERSION = '2026.07.16-dialogs-feedback-1';
+const CACHE_NAME = 'momohair-shell-v108-pwa-recovery';
+const APP_VERSION = '2026.07.16-pwa-recovery-1';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
@@ -35,7 +35,6 @@ async function fetchAndUpdateAppShell(request) {
 }
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
   event.waitUntil(caches.open(CACHE_NAME).then(async (cache) => {
     await Promise.all(APP_SHELL.map(async (url) => {
       const response = await fetch(url, { cache: 'reload' });
