@@ -6110,8 +6110,8 @@
       }
 
       body.momo-polish .mobile-month-selector {
-        width: 6.6rem;
-        min-width: 6.6rem;
+        width: 7.2rem;
+        min-width: 7.2rem;
         min-height: 40px;
         padding: 0 0.125rem !important;
       }
@@ -6130,7 +6130,7 @@
       }
 
       body.momo-polish .mobile-month-label {
-        min-width: 3.25rem !important;
+        min-width: 3.75rem !important;
         padding: 0 0.1rem !important;
         color: #334155 !important;
         font-size: 0.75rem !important;

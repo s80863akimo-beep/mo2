@@ -1,5 +1,5 @@
-const CACHE_NAME = 'momohair-shell-v118-interaction-states';
-const APP_VERSION = '2026.07.16-interaction-states-1';
+const CACHE_NAME = 'momohair-shell-v119-annual-label';
+const APP_VERSION = '2026.07.16-annual-label-1';
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
