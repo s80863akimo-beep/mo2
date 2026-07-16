@@ -6038,21 +6038,21 @@
     }
 
     body.momo-polish .momo-sync-button.is-idle {
-      border-color: var(--momo-brand-line) !important;
-      background: var(--momo-brand-soft) !important;
-      color: var(--momo-brand-ink) !important;
+      border-color: #E1E5E9 !important;
+      background: rgba(255, 255, 255, 0.66) !important;
+      color: #475569 !important;
     }
 
     body.momo-polish .momo-sync-button.is-idle:hover {
-      border-color: var(--momo-brand) !important;
-      background: #FFF7FA !important;
-      color: var(--momo-brand-hover) !important;
+      border-color: #CBD5E1 !important;
+      background: #FFFFFF !important;
+      color: #1F2937 !important;
     }
 
     body.momo-polish .momo-sync-button.is-syncing {
-      border-color: var(--momo-brand-line) !important;
-      background: var(--momo-brand-soft) !important;
-      color: var(--momo-brand-ink) !important;
+      border-color: #E1E5E9 !important;
+      background: var(--momo-surface-muted) !important;
+      color: #475569 !important;
     }
 
     body.momo-polish .momo-sync-button.is-success {
@@ -8353,8 +8353,9 @@
 
     /* Shared typography, empty states and primary form dialogs. */
     body.momo-polish {
-      --momo-type-label: 0.6875rem;
-      --momo-type-note: 0.75rem;
+      --momo-type-compact: 0.6875rem;
+      --momo-type-label: 0.71875rem;
+      --momo-type-note: 0.78125rem;
       --momo-type-body: 0.875rem;
       --momo-type-title: 1rem;
       --momo-type-value: 1.25rem;
@@ -9115,6 +9116,78 @@
         min-height: 132px;
         padding: 1.25rem 1rem;
       }
+    }
+
+    /* Typography hierarchy: strong data, quieter labels and supporting copy. */
+    body.momo-polish .font-black {
+      font-weight: 800 !important;
+    }
+
+    body.momo-polish .font-extrabold,
+    body.momo-polish button.font-black,
+    body.momo-polish button.font-extrabold {
+      font-weight: 700 !important;
+    }
+
+    body.momo-polish .font-bold {
+      font-weight: 600 !important;
+    }
+
+    body.momo-polish .text-\[9px\].font-black,
+    body.momo-polish .text-\[10px\].font-black,
+    body.momo-polish .text-\[11px\].font-black,
+    body.momo-polish .text-xs.font-black {
+      font-weight: 700 !important;
+    }
+
+    body.momo-polish .momo-status-badge,
+    body.momo-polish .momo-filter-chip,
+    body.momo-polish .orders-category-badge,
+    body.momo-polish .orders-payment-badge,
+    body.momo-polish .ledger-date-badge,
+    body.momo-polish .ledger-weekday-badge,
+    body.momo-polish .ledger-lock-badge,
+    body.momo-polish .momo-more-badge,
+    body.momo-polish .momo-dialog-state-badge {
+      font-size: var(--momo-type-compact) !important;
+      font-weight: 700 !important;
+    }
+
+    body.momo-polish .momo-page-title,
+    body.momo-polish .momo-command-title,
+    body.momo-polish .momo-empty-title,
+    body.momo-polish .momo-settings-title,
+    body.momo-polish .momo-more-title,
+    body.momo-polish .momo-dialog-header h2,
+    body.momo-polish .momo-dialog-header h3,
+    body.momo-polish .momo-home-card-header h2,
+    body.momo-polish .momo-today-overview-header h2,
+    body.momo-polish .report-panel-header h2 {
+      font-weight: 800 !important;
+    }
+
+    body.momo-polish .momo-page-subtitle,
+    body.momo-polish .momo-command-subtitle,
+    body.momo-polish .momo-dialog-subtitle,
+    body.momo-polish .momo-empty-description,
+    body.momo-polish .momo-settings-description,
+    body.momo-polish .momo-more-description,
+    body.momo-polish .report-panel p {
+      font-weight: 600 !important;
+    }
+
+    body.momo-polish .momo-type-value,
+    body.momo-polish .momo-revenue-text,
+    body.momo-polish .momo-page-metric > :nth-child(2) {
+      font-weight: 800 !important;
+    }
+
+    body.momo-polish .momo-sync-button,
+    body.momo-polish .momo-header-pill button,
+    body.momo-polish .desktop-header-content .momo-header-button,
+    body.momo-polish .momo-mobile-nav-button,
+    body.momo-polish .desktop-full-nav button {
+      font-weight: 700 !important;
     }
 
     [v-cloak] { display: none !important; }
