@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-typography-empty-dialogs-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-dialogs-feedback-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-typography-empty-dialogs-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-dialogs-feedback-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -54,8 +54,8 @@
           <form class="mt-5 space-y-3" @submit.prevent="signInWithSupabase">
             <label class="block"><span class="block mb-1 text-[11px] font-black text-slate-500">Email</span><input v-model.trim="authForm.email" type="email" required autocomplete="username" class="w-full min-h-[46px] rounded-2xl border border-orange-100 px-4 text-sm font-semibold" placeholder="你的管理員 Email"></label>
             <label class="block"><span class="block mb-1 text-[11px] font-black text-slate-500">密碼</span><input v-model="authForm.password" type="password" required autocomplete="current-password" class="w-full min-h-[46px] rounded-2xl border border-orange-100 px-4 text-sm font-semibold" placeholder="Supabase Auth 密碼"></label>
-            <p v-if="authError" class="rounded-xl bg-rose-50 border border-rose-100 px-3 py-2 text-xs font-bold text-rose-600">{{ authError }}</p>
-            <button type="submit" :disabled="authLoading" class="w-full min-h-[48px] rounded-2xl bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-sm font-black disabled:opacity-50">{{ authLoading ? '驗證中…' : '登入' }}</button>
+            <p v-if="authError" class="momo-feedback-state is-error rounded-xl bg-rose-50 border border-rose-100 px-3 py-2 text-xs font-bold text-rose-600">{{ authError }}</p>
+            <button type="submit" :disabled="authLoading" :aria-busy="authLoading ? 'true' : 'false'" class="momo-state-button w-full min-h-[48px] rounded-2xl bg-gradient-to-r from-macaron-peach-400 to-macaron-rose text-white text-sm font-black disabled:opacity-50">{{ authLoading ? '驗證中…' : '登入' }}</button>
           </form>
           <p class="mt-3 text-[10px] font-bold text-slate-400">密碼只送往你的 Supabase 專案；本機僅保存登入權杖，不保存密碼。</p>
         </section>
@@ -300,19 +300,27 @@
     </transition>
 
     <!-- Global Toast Alert -->
-    <transition name="fade">
-      <div v-if="toast.show" class="fixed top-6 sm:top-24 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full text-sm font-black macaron-shadow-lg flex items-center gap-2"
-           :class="toast.type === 'success' ? 'bg-macaron-mint text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'">
-        <svg v-if="toast.type === 'success'" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <path d="m9 11 3 3L22 4"></path>
-        </svg>
-        <svg v-else class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10"></circle>
-          <path d="M12 8v4"></path>
-          <path d="M12 16h.01"></path>
-        </svg>
-        <span>{{ toast.message }}</span>
+    <transition name="momo-toast">
+      <div v-if="toast.show"
+           class="momo-toast"
+           :class="'is-' + toast.type"
+           :role="toast.type === 'error' ? 'alert' : 'status'"
+           :aria-live="toast.type === 'error' ? 'assertive' : 'polite'"
+           aria-atomic="true">
+        <span class="momo-toast-icon" aria-hidden="true">
+          <span v-if="toast.type === 'loading'" class="momo-loading-spinner"></span>
+          <svg v-else-if="toast.type === 'success'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m6 12 4 4 8-9"></path>
+          </svg>
+          <svg v-else-if="toast.type === 'info'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3 2.8 19h18.4L12 3Z"></path><path d="M12 9v4M12 16.5h.01"></path>
+          </svg>
+        </span>
+        <span class="momo-toast-message">{{ toast.message }}</span>
+        <button type="button" @click="closeToast" class="momo-toast-close" aria-label="關閉提示"><span aria-hidden="true">×</span></button>
       </div>
     </transition>
 
@@ -647,7 +655,7 @@
               <div class="text-[9px] font-bold text-slate-400 mt-1">{{ backupSummaryText }} · {{ integritySummaryText }}</div>
             </div>
             <div class="grid grid-cols-2 sm:flex gap-2">
-              <button @click="handleBackupReminderAction" :disabled="backupStatus === 'saving'" class="min-h-[40px] px-4 rounded-xl bg-white border text-xs font-black disabled:opacity-50"
+              <button @click="handleBackupReminderAction" :disabled="backupStatus === 'saving'" :aria-busy="backupStatus === 'saving' ? 'true' : 'false'" class="momo-state-button min-h-[40px] px-4 rounded-xl bg-white border text-xs font-black disabled:opacity-50"
                       :class="backupReminder.tone === 'ok' ? 'border-emerald-100 text-emerald-700' : backupReminder.tone === 'error' ? 'border-rose-100 text-rose-700' : 'border-amber-100 text-amber-700'">
                 {{ backupStatus === 'saving' ? '備份中…' : backupReminder.actionLabel }}
               </button>
@@ -655,13 +663,13 @@
             </div>
           </section>
 
-          <section v-if="syncError" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <section v-if="syncError" class="momo-feedback-state is-error rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div class="min-w-0">
               <div class="text-xs font-black text-rose-700">{{ syncError.title }}</div>
               <div class="text-[10px] text-rose-600 font-semibold mt-0.5">{{ syncError.message }}</div>
               <div class="text-[9px] text-rose-400 font-bold mt-1">上次嘗試：{{ formatDateTime(syncError.at) }} · 本機資料未受影響</div>
             </div>
-            <button @click="retryCalendarSync" :disabled="syncing" class="min-h-[38px] px-4 rounded-xl bg-rose-500 text-white text-xs font-black disabled:opacity-50 whitespace-nowrap">
+            <button @click="retryCalendarSync" :disabled="syncing" :aria-busy="syncing ? 'true' : 'false'" class="momo-state-button min-h-[38px] px-4 rounded-xl bg-rose-500 text-white text-xs font-black disabled:opacity-50 whitespace-nowrap">
               {{ syncing ? '重新同步中…' : '重新同步' }}
             </button>
           </section>
@@ -1173,14 +1181,14 @@
           <!-- Closeout bottom sheet -->
           <transition name="fade">
             <div v-if="showCloseoutSheet" class="momo-dialog-overlay closeout-sheet-overlay fixed inset-0 z-[70] bg-slate-900/40 flex items-end sm:items-center justify-center sm:p-4" @click="showCloseoutSheet = false">
-              <div class="momo-dialog momo-dialog--md momo-form-dialog daily-form-dialog closeout-sheet-panel ios-sheet w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden safe-pb" @click.stop>
+              <div class="momo-dialog momo-dialog--md momo-form-dialog daily-form-dialog closeout-sheet-panel ios-sheet w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden safe-pb" role="dialog" aria-modal="true" aria-labelledby="closeout-dialog-title" @click.stop>
                 <div class="ios-sheet-handle sm:hidden"></div>
-                <div class="momo-dialog-header daily-form-header px-4 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
-                  <div><h3 class="text-base font-black text-slate-800">每日打烊對帳</h3><p class="momo-dialog-subtitle">{{ selectedCloseoutDateLabel }} · 核對現金後鎖帳</p></div>
+                <div class="momo-dialog-header momo-form-header daily-form-header px-4 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+                  <div><h3 id="closeout-dialog-title" class="text-base font-black text-slate-800">每日打烊對帳</h3><p class="momo-dialog-subtitle">{{ selectedCloseoutDateLabel }} · 核對現金後鎖帳</p></div>
                   <button type="button" @click="showCloseoutSheet = false" class="momo-dialog-close w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black" aria-label="關閉每日打烊"><span aria-hidden="true">×</span></button>
                 </div>
-                <div class="momo-dialog-body daily-form-body closeout-sheet-body ios-sheet-body p-4 space-y-4 max-h-[75vh] overflow-y-auto">
-                  <label class="daily-form-field block"><span class="daily-form-label block text-[10px] font-black text-slate-400 mb-1">打烊日期</span><input type="date" v-model="closeoutDate" @change="loadCloseoutFormForDate" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-black"></label>
+                <div class="momo-dialog-body momo-form-body daily-form-body closeout-sheet-body ios-sheet-body p-4 space-y-4 max-h-[75vh] overflow-y-auto">
+                  <label class="momo-form-field daily-form-field block"><span class="momo-form-label daily-form-label block text-[10px] font-black text-slate-400 mb-1">打烊日期</span><input type="date" v-model="closeoutDate" @change="loadCloseoutFormForDate" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-black"></label>
                   <div class="daily-form-summary p-4 rounded-xl bg-slate-900 text-white">
                     <div class="flex items-center justify-between gap-3">
                       <div><div class="text-[10px] font-black text-white/50">應有現金</div><div class="text-3xl font-black">NT$ {{ formatNumber(selectedCloseout.actualCashIn) }}</div></div>
@@ -1194,18 +1202,18 @@
                     <div class="rounded-xl bg-sky-50 border border-sky-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值扣款</div><div class="text-sm font-black text-sky-700">NT$ {{ formatNumber(selectedCloseout.prepaidOut) }}</div></div>
                     <div class="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值進帳</div><div class="text-sm font-black text-emerald-700">NT$ {{ formatNumber(selectedCloseout.prepaidIn) }}</div></div>
                   </div>
-                  <label class="daily-form-field block">
-                    <span class="daily-form-label block text-[10px] font-black text-slate-400 mb-1">實際盤點現金</span>
+                  <label class="momo-form-field daily-form-field block">
+                    <span class="momo-form-label daily-form-label block text-[10px] font-black text-slate-400 mb-1">實際盤點現金</span>
                     <div class="grid grid-cols-[1fr_auto] gap-2">
                       <input type="number" inputmode="numeric" v-model.number="closeoutCashCount" placeholder="輸入現金總額" class="jelly-input w-full min-h-[50px] rounded-xl border border-slate-200 px-4 text-lg font-black">
                       <button type="button" @click="setCloseoutCashToExpected" class="min-h-[50px] px-3 rounded-xl bg-slate-100 text-slate-700 text-[11px] font-black">帶入</button>
                     </div>
                   </label>
-                  <div v-if="todayCloseoutDifference !== null" class="daily-form-status rounded-2xl px-4 py-3 text-sm font-black flex justify-between border" aria-live="polite"
+                  <div v-if="todayCloseoutDifference !== null" class="momo-feedback-state daily-form-status rounded-2xl px-4 py-3 text-sm font-black flex justify-between border" aria-live="polite"
                        :class="todayCloseoutDifference === 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'">
                     <span>{{ todayCloseoutDifference === 0 ? '帳實相符' : '帳實差額需確認' }}</span><span>{{ todayCloseoutDifference > 0 ? '+' : '' }}NT$ {{ formatNumber(todayCloseoutDifference) }}</span>
                   </div>
-                  <label class="daily-form-field block"><span class="daily-form-label block text-[10px] font-black text-slate-400 mb-1">打烊備註</span><input type="text" v-model="closeoutNote" placeholder="差額原因、找零或臨時採買" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-semibold"></label>
+                  <label class="momo-form-field daily-form-field block"><span class="momo-form-label daily-form-label block text-[10px] font-black text-slate-400 mb-1">打烊備註</span><input type="text" v-model="closeoutNote" placeholder="差額原因、找零或臨時採買" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-semibold"></label>
                   <details class="rounded-xl border border-slate-100 bg-white overflow-hidden">
                     <summary class="min-h-[42px] px-3 cursor-pointer flex items-center justify-between text-xs font-black text-slate-600"><span>查看金流明細</span><span>展開</span></summary>
                     <div class="p-3 grid grid-cols-2 gap-2 border-t border-slate-100">
@@ -1217,12 +1225,12 @@
                     </div>
                   </details>
                   <div v-if="selectedCloseoutRecord" class="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-[11px] font-black text-amber-700">{{ selectedCloseoutDateLabel }} 已鎖帳；新增、修改、刪除該日業績與支出會被擋下。</div>
-                  <button v-if="selectedCloseoutRecord" type="button" @click="copyCloseoutSummary" class="w-full min-h-[46px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-black">複製打烊摘要</button>
-                  <button v-if="selectedCloseoutRecord" type="button" @click="unlockCloseoutDate(closeoutDate)" class="w-full min-h-[46px] rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-sm font-black">解除此日鎖帳</button>
-                  <div class="momo-dialog-action-bar daily-form-actions daily-form-actions--split ios-action-bar">
-                    <button type="button" @click="completeCloseoutFromSheet" class="daily-form-primary ios-primary-action w-full min-h-[52px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ selectedCloseoutRecord ? '更新打烊紀錄' : '完成打烊並鎖帳' }}</button>
-                    <button type="button" @click="copyCloseoutDraftSummary" class="daily-form-secondary ios-secondary-action min-h-[46px] rounded-xl border text-sm font-black">複製摘要</button>
-                  </div>
+                  <button v-if="selectedCloseoutRecord" type="button" @click="copyCloseoutSummary" class="momo-form-secondary closeout-secondary-action w-full min-h-[46px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-black">複製打烊摘要</button>
+                  <button v-if="selectedCloseoutRecord" type="button" @click="unlockCloseoutDate(closeoutDate)" class="momo-form-warning w-full min-h-[46px] rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-sm font-black">解除此日鎖帳</button>
+                </div>
+                <div class="momo-dialog-footer momo-form-footer momo-dialog-action-bar momo-form-actions daily-form-actions daily-form-actions--split ios-action-bar">
+                  <button type="button" @click="completeCloseoutFromSheet" class="momo-form-primary daily-form-primary ios-primary-action w-full min-h-[52px] rounded-xl bg-slate-900 text-white text-sm font-black">{{ selectedCloseoutRecord ? '更新打烊紀錄' : '完成打烊並鎖帳' }}</button>
+                  <button type="button" @click="copyCloseoutDraftSummary" class="momo-form-secondary daily-form-secondary ios-secondary-action min-h-[46px] rounded-xl border text-sm font-black">複製摘要</button>
                 </div>
               </div>
             </div>
@@ -3008,7 +3016,7 @@
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">已打烊日期使用固定快照；未打烊日期暫算，不受畫面篩選影響</p>
               </div>
               <div class="report-actions report-settlement-actions flex items-center gap-2">
-                <button @click="exportMonthlySettlementReport" class="report-primary-button min-h-[40px] px-3 rounded-xl bg-slate-900 text-white text-xs font-black">匯出正式月結</button>
+                <button @click="requestMonthlySettlementExport" class="report-primary-button min-h-[40px] px-3 rounded-xl bg-slate-900 text-white text-xs font-black">匯出正式月結</button>
                 <button @click="copyMonthlySettlementSummary" class="report-secondary-button min-h-[40px] px-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black">複製月結</button>
                 <button v-if="monthlySettlementSummary.unclosedDates.length" @click="openCloseoutSheet(monthlySettlementSummary.unclosedDates[0])" class="report-warning-button min-h-[40px] px-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 text-xs font-black">補打烊</button>
               </div>
@@ -3269,7 +3277,7 @@
                 <span class="shrink-0 px-3 py-1 rounded-full border text-[11px] font-black" :class="statusToneClasses(healthIssueSummary.status === 'ok' ? 'ok' : healthIssueSummary.status === 'error' ? 'error' : 'warn')">
                   {{ healthIssueSummary.title }}
                 </span>
-                <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" class="safety-check-button min-h-[38px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black disabled:opacity-50">
+                <button @click="runSystemStatusCheck(true)" :disabled="safetyChecking || pwaCheckingUpdate" :aria-busy="safetyChecking || pwaCheckingUpdate ? 'true' : 'false'" class="momo-state-button safety-check-button min-h-[38px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black disabled:opacity-50">
                   {{ safetyChecking || pwaCheckingUpdate ? '檢查中…' : '重新檢查' }}
                 </button>
               </div>
@@ -3374,8 +3382,8 @@
                          class="min-h-[38px] rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black">
                   查看異常
                 </button>
-                <button @click="retryCalendarSync" :disabled="syncing"
-                        class="min-h-[38px] rounded-xl bg-slate-900 text-white text-[11px] font-black disabled:opacity-50">
+                <button @click="retryCalendarSync" :disabled="syncing" :aria-busy="syncing ? 'true' : 'false'"
+                        class="momo-state-button min-h-[38px] rounded-xl bg-slate-900 text-white text-[11px] font-black disabled:opacity-50">
                   {{ syncing ? '同步中…' : '重新同步' }}
                 </button>
               </div>
@@ -3403,12 +3411,12 @@
               </div>
             </div>
 
-            <div v-if="syncError" class="safety-sync-error px-4 py-3 sm:px-6 border-t border-rose-100 bg-rose-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div v-if="syncError" class="momo-feedback-state is-error safety-sync-error px-4 py-3 sm:px-6 border-t border-rose-100 bg-rose-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div class="min-w-0">
                 <div class="text-xs font-black text-rose-700">{{ syncError.title }}</div>
                 <div class="mt-0.5 text-[10px] font-bold text-rose-500 line-clamp-2">{{ syncError.message }}</div>
               </div>
-              <button @click="retryCalendarSync" :disabled="syncing" class="min-h-[36px] px-3 rounded-xl bg-white border border-rose-100 text-rose-700 text-[11px] font-black disabled:opacity-50">重試同步</button>
+              <button @click="retryCalendarSync" :disabled="syncing" :aria-busy="syncing ? 'true' : 'false'" class="momo-state-button min-h-[36px] px-3 rounded-xl bg-white border border-rose-100 text-rose-700 text-[11px] font-black disabled:opacity-50">{{ syncing ? '同步中…' : '重試同步' }}</button>
             </div>
 
             <div v-if="syncIssueSummary.total" class="safety-sync-filters px-4 py-3 sm:px-6 border-t border-slate-100 flex flex-wrap gap-2">
@@ -3512,20 +3520,23 @@
               <div class="grid grid-cols-2 gap-2 lg:w-[260px]">
                 <button @click="fetchCloudBackupList({ silent: false })"
                         :disabled="!authUser || !authSession?.access_token || cloudBackupStatus === 'loading' || cloudBackupStatus === 'restoring'"
-                        class="min-h-[38px] rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black disabled:opacity-40">
+                        :aria-busy="cloudBackupStatus === 'loading' ? 'true' : 'false'"
+                        class="momo-state-button min-h-[38px] rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black disabled:opacity-40">
                   {{ cloudBackupStatus === 'loading' ? '讀取中…' : '刷新清單' }}
                 </button>
                 <button v-if="cloudReady"
                         @click="createAutomaticBackup({ force: true, silent: false })"
                         :disabled="backupStatus === 'saving' || cloudBackupStatus === 'restoring'"
-                        class="min-h-[38px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-black disabled:opacity-40">
+                        :aria-busy="backupStatus === 'saving' ? 'true' : 'false'"
+                        class="momo-state-button min-h-[38px] rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-black disabled:opacity-40">
                   {{ backupStatus === 'saving' ? '建立中…' : '建立雲端' }}
                 </button>
                 <button v-else-if="cloudMigrationNeeded"
                         @click="migrateLocalDataToSupabase"
                         :disabled="cloudStatus === 'syncing'"
-                        class="min-h-[38px] rounded-xl bg-violet-50 border border-violet-100 text-violet-700 text-[11px] font-black disabled:opacity-40">
-                  首次搬移
+                        :aria-busy="cloudStatus === 'syncing' ? 'true' : 'false'"
+                        class="momo-state-button min-h-[38px] rounded-xl bg-violet-50 border border-violet-100 text-violet-700 text-[11px] font-black disabled:opacity-40">
+                  {{ cloudStatus === 'syncing' ? '搬移中…' : '首次搬移' }}
                 </button>
                 <button v-else
                         @click="showAuthSheet = true"
@@ -3548,13 +3559,15 @@
               <div class="text-sm font-black text-violet-700">需先完成首次搬移</div>
               <p class="mt-1 text-xs font-bold text-slate-400">完成本機資料搬移後，才能建立正式雲端備份。</p>
             </div>
-            <div v-else-if="cloudBackupStatus === 'loading'" class="p-8 text-center">
-              <div class="text-sm font-black text-slate-700">正在讀取雲端備份清單</div>
-              <p class="mt-1 text-xs font-bold text-slate-400">請稍候，資料表較大時會需要幾秒。</p>
+            <div v-else-if="cloudBackupStatus === 'loading'" class="momo-feedback-state momo-feedback-state--panel is-loading" role="status" aria-live="polite">
+              <span class="momo-feedback-icon" aria-hidden="true"><span class="momo-loading-spinner"></span></span>
+              <div><div class="momo-feedback-title">正在讀取雲端備份清單</div><p class="momo-feedback-description">請稍候，資料表較大時會需要幾秒。</p></div>
             </div>
-            <div v-else-if="cloudBackupStatus === 'error'" class="p-8 text-center">
-              <div class="text-sm font-black text-rose-700">雲端備份讀取失敗</div>
-              <p class="mt-1 text-xs font-bold text-slate-400">{{ cloudBackupError || '請稍後重新刷新清單。' }}</p>
+            <div v-else-if="cloudBackupStatus === 'error'" class="momo-feedback-state momo-feedback-state--panel is-error" role="alert">
+              <span class="momo-feedback-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.8 19h18.4L12 3Z"></path><path d="M12 9v4M12 16.5h.01"></path></svg>
+              </span>
+              <div><div class="momo-feedback-title">雲端備份讀取失敗</div><p class="momo-feedback-description">{{ cloudBackupError || '請稍後重新刷新清單。' }}</p></div>
             </div>
             <div v-else-if="!cloudBackupRows.length" class="momo-empty-state momo-empty-state--compact">
               <div class="momo-empty-content">
@@ -3593,7 +3606,8 @@
                   </button>
                   <button @click="restoreCloudBackupSnapshot(backup)"
                           :disabled="cloudBackupStatus === 'restoring' || cloudRestorePreviewLoading"
-                          class="min-h-[38px] rounded-xl bg-sky-50 border border-sky-100 text-sky-700 text-[11px] font-black disabled:opacity-40">
+                          :aria-busy="cloudBackupRestoringId === backup.id ? 'true' : 'false'"
+                          class="momo-state-button min-h-[38px] rounded-xl bg-sky-50 border border-sky-100 text-sky-700 text-[11px] font-black disabled:opacity-40">
                     {{ cloudBackupRestoringId === backup.id ? (cloudRestorePreviewLoading ? '預覽中…' : '還原中…') : '還原' }}
                   </button>
                 </div>
@@ -3696,12 +3710,12 @@
                 </div>
 
                 <div class="safety-system-actions grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <button type="button" @click="updateAvailable ? applyPwaUpdate() : checkPwaUpdate(true)" :disabled="pwaCheckingUpdate"
-                          class="safety-system-action safety-system-action--primary disabled:opacity-50">
+                  <button type="button" @click="updateAvailable ? applyPwaUpdate() : checkPwaUpdate(true)" :disabled="pwaCheckingUpdate" :aria-busy="pwaCheckingUpdate ? 'true' : 'false'"
+                          class="momo-state-button safety-system-action safety-system-action--primary disabled:opacity-50">
                     {{ updateAvailable ? '套用 App 更新' : pwaCheckingUpdate ? '檢查中…' : '檢查 App 更新' }}
                   </button>
                   <button type="button" @click="showOperationLogModal = true" class="safety-system-action">查看操作紀錄</button>
-                  <button type="button" @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" class="safety-system-action disabled:opacity-50">
+                  <button type="button" @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" :aria-busy="pwaClearingCache ? 'true' : 'false'" class="momo-state-button safety-system-action disabled:opacity-50">
                     {{ pwaClearingCache ? '清理中…' : '清除 App 舊快取' }}
                   </button>
                 </div>
@@ -3797,14 +3811,18 @@
     <!-- 多裝置版本衝突處理 -->
     <transition name="fade">
       <div v-if="cloudConflict" class="momo-dialog-overlay fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-        <div class="momo-dialog momo-dialog--lg ios-sheet bg-white rounded-3xl w-full max-w-2xl max-h-[88dvh] macaron-shadow-lg border border-amber-100 overflow-hidden flex flex-col">
+        <div class="momo-dialog momo-dialog--lg momo-form-dialog cloud-conflict-dialog ios-sheet bg-white rounded-3xl w-full max-w-2xl max-h-[88dvh] macaron-shadow-lg border border-amber-100 overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="cloud-conflict-title">
           <div class="ios-sheet-handle sm:hidden"></div>
-          <div class="momo-dialog-body p-5 sm:p-6 space-y-3 overflow-y-auto">
-            <div class="mx-auto w-10 h-1.5 rounded-full bg-amber-100"></div>
-            <h3 class="text-base font-black text-slate-800 text-center">另一台裝置已修改這筆資料</h3>
-            <p class="text-xs font-semibold text-slate-500 text-center leading-relaxed">{{ cloudConflict.label }} 的雲端版本較新。系統已暫停同步並保留本機內容。</p>
+          <div class="momo-dialog-header momo-form-header cloud-conflict-header">
+            <div class="min-w-0">
+              <h3 id="cloud-conflict-title" class="text-base font-black text-slate-800">資料版本需要選擇</h3>
+              <p class="momo-dialog-subtitle">{{ cloudConflict.label }} · 另一台裝置的雲端版本較新</p>
+            </div>
+            <span class="momo-dialog-state-badge is-warning">同步已暫停</span>
+          </div>
+          <div class="momo-dialog-body momo-form-body cloud-conflict-body p-5 sm:p-6 space-y-3 overflow-y-auto">
             <p class="text-[10px] font-bold text-amber-700 text-center leading-relaxed bg-amber-50 rounded-2xl px-3 py-2">
-              如果你選「保留本機」，系統會一次覆蓋所有待同步的本機修改，避免同一個視窗一直跳出。
+              系統已保留本機內容。選擇「保留本機」會一次覆蓋所有待同步修改。
             </p>
 
             <div class="rounded-2xl border border-slate-100 bg-slate-50/70 px-3 py-2">
@@ -3842,9 +3860,11 @@
               找不到可比較的欄位；建議先使用雲端版本或重新整理後再試。
             </div>
           </div>
-          <div class="momo-dialog-footer grid grid-cols-2 border-t border-amber-100 shrink-0 bg-white">
-            <button @click="useCloudConflictVersion" class="min-h-[54px] px-3 text-sky-700 text-xs font-black border-r border-amber-100 hover:bg-sky-50">使用雲端版本</button>
-            <button @click="keepLocalConflictVersion" class="min-h-[54px] px-3 text-amber-700 text-xs font-black hover:bg-amber-50">保留本機並覆蓋全部</button>
+          <div class="momo-dialog-footer momo-form-footer cloud-conflict-footer grid grid-cols-2 border-t border-amber-100 shrink-0 bg-white">
+            <button @click="useCloudConflictVersion" :disabled="cloudStatus === 'syncing'" class="momo-form-secondary min-h-[54px] px-3 text-sky-700 text-xs font-black border-r border-amber-100">使用雲端版本</button>
+            <button @click="keepLocalConflictVersion" :disabled="cloudStatus === 'syncing'" :aria-busy="cloudStatus === 'syncing' ? 'true' : 'false'" class="momo-form-warning min-h-[54px] px-3 text-amber-700 text-xs font-black">
+              {{ cloudStatus === 'syncing' ? '正在覆蓋雲端…' : '保留本機並覆蓋全部' }}
+            </button>
           </div>
         </div>
       </div>
@@ -3855,13 +3875,13 @@
       <div v-if="showCloudRestoreModal"
            class="momo-dialog-overlay fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-3 sm:p-4 bg-slate-900/45 backdrop-blur-sm"
            @click="closeCloudRestoreModal">
-        <div class="momo-dialog momo-dialog--lg ios-sheet cloud-restore-dialog bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-2xl macaron-shadow-lg border border-slate-200 overflow-hidden"
-             @click.stop>
+        <div class="momo-dialog momo-dialog--lg momo-form-dialog ios-sheet cloud-restore-dialog bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-2xl macaron-shadow-lg border border-slate-200 overflow-hidden"
+             role="dialog" aria-modal="true" aria-labelledby="cloud-restore-title" @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
-          <div class="momo-dialog-header cloud-restore-header p-4 sm:p-5 flex items-start justify-between gap-3">
+          <div class="momo-dialog-header momo-form-header cloud-restore-header p-4 sm:p-5 flex items-start justify-between gap-3">
             <div class="min-w-0">
               <div class="cloud-restore-titleline">
-                <h3 class="text-base sm:text-lg font-black text-slate-800">還原雲端備份</h3>
+                <h3 id="cloud-restore-title" class="text-base sm:text-lg font-black text-slate-800">還原雲端備份</h3>
                 <span class="cloud-restore-risk-badge"
                       :class="cloudRestoreDraft?.preview?.riskTone === 'error' ? 'bg-rose-50 text-rose-700' : cloudRestoreDraft?.preview?.riskTone === 'warn' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'">
                   {{ cloudRestoreDraft?.preview?.riskLabel || '差異預覽' }}
@@ -3874,7 +3894,7 @@
             <button @click="closeCloudRestoreModal" :disabled="cloudBackupStatus === 'restoring'" class="momo-dialog-close w-9 h-9 rounded-full bg-slate-50 text-slate-500 font-black disabled:opacity-30" aria-label="關閉還原備份"><span aria-hidden="true">×</span></button>
           </div>
 
-          <div class="momo-dialog-body momo-dialog-list cloud-restore-body overflow-y-auto">
+          <div class="momo-dialog-body momo-dialog-list momo-form-body cloud-restore-body overflow-y-auto">
             <section class="cloud-restore-guard"
                      :class="cloudRestoreDraft?.preview?.riskTone === 'error' ? 'is-error' : cloudRestoreDraft?.preview?.riskTone === 'warn' ? 'is-warning' : 'is-ok'">
               <div class="min-w-0">
@@ -3951,7 +3971,7 @@
                 </div>
                 <span v-if="cloudRestoreDraft?.preview?.riskTone !== 'error'" class="cloud-restore-confirm-state">{{ cloudRestoreReadyToConfirm ? '已確認' : '待輸入' }}</span>
               </div>
-              <label v-if="cloudRestoreDraft?.preview?.riskTone !== 'error'" class="cloud-restore-confirm-field">
+              <label v-if="cloudRestoreDraft?.preview?.riskTone !== 'error'" class="momo-form-field cloud-restore-confirm-field">
                 <span>請輸入 {{ cloudRestoreDraft?.backup?.backupDate || '備份日期' }}</span>
                 <input v-model.trim="cloudRestoreConfirmText"
                        :placeholder="cloudRestoreDraft?.backup?.backupDate || 'YYYY-MM-DD'"
@@ -3964,15 +3984,16 @@
             </section>
           </div>
 
-          <div class="momo-dialog-footer cloud-restore-footer">
+          <div class="momo-dialog-footer momo-form-footer cloud-restore-footer">
             <button @click="closeCloudRestoreModal"
                     :disabled="cloudBackupStatus === 'restoring'"
-                    class="cloud-restore-cancel disabled:opacity-40">
+                    class="momo-form-secondary cloud-restore-cancel disabled:opacity-40">
               取消
             </button>
             <button @click="confirmCloudBackupRestore"
                     :disabled="!cloudRestoreReadyToConfirm || cloudBackupStatus === 'restoring'"
-                    class="cloud-restore-submit disabled:opacity-40"
+                    :aria-busy="cloudBackupStatus === 'restoring' ? 'true' : 'false'"
+                    class="momo-form-primary cloud-restore-submit disabled:opacity-40"
                     :class="cloudRestoreDraft?.preview?.riskTone === 'error' ? 'is-blocked' : cloudRestoreReadyToConfirm ? 'is-ready' : ''">
               {{ cloudBackupStatus === 'restoring' ? '還原中…' : cloudRestoreDraft?.preview?.riskTone === 'error' ? '無法還原' : '確認還原' }}
             </button>
@@ -3986,22 +4007,34 @@
       <div v-if="confirmModal.show"
            class="momo-dialog-overlay fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
            @click="closeConfirm">
-        <div class="momo-dialog momo-dialog--sm momo-dialog--confirm ios-sheet bg-white rounded-3xl w-full max-w-sm macaron-shadow-lg border border-orange-100 overflow-hidden"
-             @click.stop>
+        <div class="momo-dialog momo-dialog--sm momo-dialog--confirm momo-form-dialog ios-sheet bg-white rounded-3xl w-full max-w-sm macaron-shadow-lg border border-orange-100 overflow-hidden"
+             :class="'is-' + confirmModal.tone" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message" @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
-          <div class="momo-dialog-body momo-confirm-body p-6 space-y-2">
-            <div class="momo-confirm-mark" aria-hidden="true">!</div>
-            <h3 class="text-base font-black text-slate-800 text-center">確認操作</h3>
-            <p class="text-sm font-bold text-slate-700 text-center leading-relaxed whitespace-pre-line">{{ confirmModal.message }}</p>
+          <div class="momo-dialog-header momo-form-header momo-confirm-header">
+            <span class="momo-confirm-mark" aria-hidden="true">
+              <svg v-if="confirmModal.tone === 'info'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.8 19h18.4L12 3Z"></path><path d="M12 9v4M12 16.5h.01"></path></svg>
+            </span>
+            <div class="min-w-0">
+              <h3 id="confirm-dialog-title" class="text-base font-black text-slate-800">{{ confirmModal.title }}</h3>
+              <p class="momo-dialog-subtitle">{{ confirmModal.subtitle }}</p>
+            </div>
           </div>
-          <div class="momo-dialog-footer flex border-t border-orange-100">
+          <div class="momo-dialog-body momo-form-body momo-confirm-body p-6">
+            <p id="confirm-dialog-message" class="momo-confirm-message text-sm font-bold text-slate-700 leading-relaxed whitespace-pre-line">{{ confirmModal.message }}</p>
+          </div>
+          <div class="momo-dialog-footer momo-form-footer momo-confirm-footer grid grid-cols-2 border-t border-orange-100">
             <button @click="closeConfirm"
-                    class="flex-1 py-4 text-slate-500 text-sm font-black jelly-btn hover:bg-orange-50 transition-colors border-r border-orange-100">
-              取消
+                    :disabled="confirmModal.busy"
+                    class="momo-form-secondary min-h-[54px] px-3 text-slate-500 text-sm font-black border-r border-orange-100">
+              {{ confirmModal.cancelLabel }}
             </button>
             <button @click="doConfirm"
-                    class="flex-1 py-4 text-rose-500 text-sm font-black jelly-btn hover:bg-rose-50 transition-colors">
-              確認
+                    :disabled="confirmModal.busy"
+                    :aria-busy="confirmModal.busy ? 'true' : 'false'"
+                    class="min-h-[54px] px-3 text-sm font-black"
+                    :class="confirmModal.tone === 'danger' ? 'momo-form-danger' : confirmModal.tone === 'info' ? 'momo-form-primary' : 'momo-form-warning'">
+              {{ confirmModal.busy ? confirmModal.loadingLabel : confirmModal.confirmLabel }}
             </button>
           </div>
         </div>
@@ -4128,9 +4161,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.16-typography-empty-dialogs-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.16-dialogs-feedback-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.16-typography-empty-dialogs-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.16-dialogs-feedback-1"></script>
 </body>
 </html>

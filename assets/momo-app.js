@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.16-typography-empty-dialogs-1';
+    const APP_VERSION = '2026.07.16-dialogs-feedback-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -262,7 +262,14 @@
           // 自訂確認 Modal（取代瀏覽器原生 confirm()）
           confirmModal: {
             show: false,
+            title: '確認操作',
+            subtitle: '請確認內容後再繼續',
             message: '',
+            tone: 'warning',
+            confirmLabel: '確認',
+            cancelLabel: '取消',
+            loadingLabel: '處理中…',
+            busy: false,
             onConfirm: null
           },
 
@@ -3158,7 +3165,7 @@
             this.recordOperation('backup_snapshot_restore', '還原本機快照', `${this.formatDateTime(snapshot.createdAt)} · ${this.backupReasonLabel(snapshot.reason)}`, { snapshotId: snapshot.id, servicesIncluded });
             this.activeTab = 'safety';
             this.showToast(servicesIncluded ? '本機快照已還原' : '本機快照已還原，但原快照不含價目表', servicesIncluded ? 'success' : 'error', 7000);
-          });
+          }, { title: '還原本機快照', subtitle: '目前資料將由快照內容取代', tone: 'danger', confirmLabel: '確認還原', loadingLabel: '還原中…' });
         },
         deleteBackupSnapshot(snapshotId) {
           if (!snapshotId) return;
@@ -3167,7 +3174,7 @@
             this.persistBackupSnapshots(this.backupSnapshots.filter(item => item.id !== snapshotId));
             this.runDataSafetyCheck(false);
             this.showToast('本機快照已刪除');
-          });
+          }, { title: '刪除本機快照', subtitle: '刪除後無法從清單復原', tone: 'danger', confirmLabel: '刪除快照', loadingLabel: '刪除中…' });
         },
         normalizeCloudBackupRow(row = {}) {
           const counts = row.record_counts || row.counts || {};
@@ -3750,7 +3757,8 @@
               });
               this.clearOrderDraft(order.id);
               this.showToast(`已建立 ${correctionOrders.length} 筆更正單`);
-            }
+            },
+            { title: '建立鎖帳更正單', subtitle: `${before.date} 原始帳目保持不變`, tone: 'warning', confirmLabel: '建立更正單', loadingLabel: '建立中…' }
           );
           return false;
         },
@@ -3806,7 +3814,8 @@
                 correctionOrderIds: correctionOrders.map(item => item.id)
               });
               this.showToast(`已建立 ${correctionOrders.length} 筆刪除沖銷更正單`);
-            }
+            },
+            { title: '建立刪除沖銷', subtitle: `${before.date} 原始帳目保持不變`, tone: 'danger', confirmLabel: '建立沖銷單', loadingLabel: '建立中…' }
           );
           return false;
         },
@@ -4144,7 +4153,7 @@
             this.queueCloudSync();
             this.recordOperation('closeout_unlock', '解除鎖帳', date);
             this.showToast(`已解除 ${date} 鎖帳`);
-          });
+          }, { title: '解除每日鎖帳', subtitle: `${date} 將恢復可編輯狀態`, tone: 'warning', confirmLabel: '解除鎖帳', loadingLabel: '解除中…' });
         },
         async refreshPwaCacheStatus() {
           if (!('caches' in window)) {
@@ -4247,7 +4256,7 @@
               this.showToast(`清除快取失敗：${error.message}`, 'error', 6000);
               this.pwaClearingCache = false;
             }
-          });
+          }, { title: '清除 App 舊快取', subtitle: '營運資料與備份不會被刪除', tone: 'info', confirmLabel: '清除並重載', loadingLabel: '清理中…' });
         },
         setupPwaUpdateListener() {
           if (!('serviceWorker' in navigator)) {
@@ -4310,7 +4319,7 @@
             window.location.reload();
             return;
           }
-          this.showToast('正在更新到最新版…');
+          this.showToast('正在更新到最新版…', 'loading', 6000);
           this.pendingServiceWorker.postMessage({ type: 'SKIP_WAITING' });
         },
         dismissPwaUpdate() {
@@ -4486,7 +4495,8 @@
                 customerId: entry.customerId
               });
               this.showToast('已新增反向沖銷分錄');
-            }
+            },
+            { title: '儲值帳本反向沖銷', subtitle: '原始分錄會保留供日後對帳', tone: 'warning', confirmLabel: '建立反向分錄', loadingLabel: '建立中…' }
           );
         },
         reconcilePrepaidLedger() {
@@ -4831,7 +4841,7 @@
             }
             this.recordOperation('customer_merge', '合併顧客', `${source.name} → ${target.name}`, { sourceId, targetId });
             this.showToast(`已合併到 ${target.name}`);
-          });
+          }, { title: '合併顧客資料', subtitle: `保留「${target.name}」並移入全部紀錄`, tone: 'warning', confirmLabel: '確認合併', loadingLabel: '合併中…' });
         },
         saveCrmFormulas(name) {
           if (name && this.crmFormulas[name]) this.crmFormulas[name].updatedAt = new Date().toLocaleDateString('sv-SE');
@@ -5794,29 +5804,53 @@
         },
 
         // 自訂確認對話框（取代瀏覽器原生 confirm()）
-        showConfirm(message, onConfirm) {
+        showConfirm(message, onConfirm, options = {}) {
           this.confirmModal.message = message;
           this.confirmModal.onConfirm = onConfirm;
+          this.confirmModal.title = options.title || '確認操作';
+          this.confirmModal.subtitle = options.subtitle || '請確認內容後再繼續';
+          this.confirmModal.tone = ['danger', 'warning', 'info'].includes(options.tone) ? options.tone : 'warning';
+          this.confirmModal.confirmLabel = options.confirmLabel || '確認';
+          this.confirmModal.cancelLabel = options.cancelLabel || '取消';
+          this.confirmModal.loadingLabel = options.loadingLabel || '處理中…';
+          this.confirmModal.busy = false;
           this.confirmModal.show = true;
         },
-        closeConfirm() {
+        closeConfirm(force = false) {
+          if (this.confirmModal.busy && !force) return;
           this.confirmModal.show = false;
+          this.confirmModal.busy = false;
           this.confirmModal.onConfirm = null;
         },
-        doConfirm() {
-          if (this.confirmModal.onConfirm) this.confirmModal.onConfirm();
-          this.closeConfirm();
+        async doConfirm() {
+          if (!this.confirmModal.onConfirm || this.confirmModal.busy) return;
+          const onConfirm = this.confirmModal.onConfirm;
+          this.confirmModal.busy = true;
+          try {
+            await Promise.resolve(onConfirm());
+            this.closeConfirm(true);
+          } catch (error) {
+            console.error('Confirmed action failed:', error);
+            this.confirmModal.busy = false;
+            this.showToast(`操作失敗：${error?.message || '請稍後再試'}`, 'error', 7000);
+          }
         },
 
         // Toast Messages
         showToast(message, type = 'success', duration = 3000) {
+          const normalizedType = ['success', 'error', 'warning', 'info', 'loading'].includes(type) ? type : 'info';
           this.toast.message = message;
-          this.toast.type = type;
+          this.toast.type = normalizedType;
           this.toast.show = true;
           if (this._toastTimer) clearTimeout(this._toastTimer);
           this._toastTimer = setTimeout(() => {
             this.toast.show = false;
           }, duration);
+        },
+        closeToast() {
+          if (this._toastTimer) clearTimeout(this._toastTimer);
+          this._toastTimer = null;
+          this.toast.show = false;
         },
         formatDateTime(value) {
           if (!value) return '—';
@@ -7295,7 +7329,7 @@
           } else {
             this.calendarAutoSyncStatus = 'syncing';
             this.calendarAutoSyncMessage = '同步中…';
-            this.showToast('正在向伺服器同步資料...', 'success');
+            this.showToast('正在向伺服器同步資料…', 'loading', 8000);
           }
 
           // 根據當前選擇的年月份建立 Query 參數，讓同步能配合當前檢視區間
@@ -7334,7 +7368,7 @@
               return false;
             }
             console.log('本機後端未啟動或連線超時，切換為 Render 雲端後端...');
-            if (!silent) this.showToast('連線雲端伺服器，冷啟動約需 30 秒，請稍候...', 'success');
+            if (!silent) this.showToast('連線雲端伺服器，冷啟動約需 30 秒，請稍候…', 'info', 8000);
             try {
               response = await fetch(`${productionApi}/api/sync${queryString}`, {
                 method: 'POST',
@@ -7847,7 +7881,7 @@
               this.showServiceConfigModal = false;
               this.tempServicesConfig = JSON.parse(JSON.stringify(this.servicesConfig || []));
               this.serviceConfigSearchQuery = '';
-            });
+            }, { title: '放棄價目表修改', subtitle: '尚未儲存的內容將會消失', tone: 'warning', confirmLabel: '放棄修改' });
             return;
           }
           this.showServiceConfigModal = false;
@@ -7864,7 +7898,7 @@
           this.showConfirm('確定要將所有服務項目重設為系統預設值嗎？目前的自訂定價與時長將被覆蓋。', () => {
             this.serviceConfigSearchQuery = '';
             this.tempServicesConfig = JSON.parse(JSON.stringify(defaultServicesConfig));
-          });
+          }, { title: '重設服務價目表', subtitle: '自訂定價與標準時間將被覆蓋', tone: 'danger', confirmLabel: '重設預設值' });
         },
         saveServicesConfig() {
           // Filter out items with empty names
@@ -7899,6 +7933,24 @@
           this.selectedMonth = String(month).padStart(2, '0');
           this.activeTab = 'orders';
           this.scrollToTopForNavigation();
+        },
+        requestMonthlySettlementExport() {
+          const summary = this.monthlySettlementSummary;
+          const unclosedCount = summary.unclosedDates?.length || 0;
+          const statusMessage = unclosedCount
+            ? `仍有 ${unclosedCount} 天尚未打烊；匯出內容會將這些日期標示為暫算。`
+            : '本月營業日期皆已完成打烊，正式月結會使用固定快照。';
+          this.showConfirm(
+            `${summary.label}\n\n服務營收：NT$ ${this.formatNumber(summary.serviceRevenue)}\n淨利：NT$ ${this.formatNumber(summary.netProfit)}\n\n${statusMessage}`,
+            () => this.exportMonthlySettlementReport(),
+            {
+              title: '匯出正式月結',
+              subtitle: unclosedCount ? '月結仍包含暫算日期' : '打烊快照已完整',
+              tone: unclosedCount ? 'warning' : 'info',
+              confirmLabel: '確認匯出',
+              loadingLabel: '準備報表中…'
+            }
+          );
         },
         exportMonthlySettlementReport() {
           const s = this.monthlySettlementSummary;
@@ -8164,7 +8216,8 @@
           if (existing) {
             this.showConfirm(
               `${parseInt(month)} 月已有薪資紀錄（NT$ ${existing.amount.toLocaleString()}），確定要用本月最新業績重新計算並覆蓋嗎？`,
-              doImport
+              doImport,
+              { title: '更新本月薪資支出', subtitle: '現有薪資紀錄將被最新計算取代', tone: 'warning', confirmLabel: '重新計算並覆蓋' }
             );
           } else {
             doImport();
@@ -8197,7 +8250,12 @@
           const existingCustomer = selectedCustomer || this.findCustomerByName(this.newOrder.customerName);
           const warnings = this.collectNewOrderWarnings(existingCustomer, totalAmount, cashAmount, serviceName);
           if (warnings.length) {
-            this.showConfirm(`新增前請確認：\n\n${warnings.join('\n')}\n\n仍要寫入這筆業績嗎？`, () => this.createOrderFromForm());
+            this.showConfirm(`新增前請確認：\n\n${warnings.join('\n')}\n\n仍要寫入這筆業績嗎？`, () => this.createOrderFromForm(), {
+              title: '業績內容需要確認',
+              subtitle: '系統偵測到可能影響對帳的內容',
+              tone: 'warning',
+              confirmLabel: '仍要新增'
+            });
             return;
           }
           this.createOrderFromForm();
@@ -8301,7 +8359,7 @@
             this.saveOrders();
             this.recordOperation('order_delete', '刪除業績', `${order?.date || ''} ${order?.customerName || ''} ${order?.serviceName || ''} · NT$ ${this.formatNumber(order?.amount || 0)}`, { orderId: id });
             this.showToast('業績已刪除');
-          });
+          }, { title: '刪除業績紀錄', subtitle: `${order?.date || ''} ${order?.customerName || ''}`.trim(), tone: 'danger', confirmLabel: '刪除業績' });
         },
         toggleOrderDate(date) {
           this.collapsedOrderDates = {
@@ -8352,7 +8410,7 @@
             this.saveExpenses();
             this.recordOperation('expense_delete', '刪除支出', `${expense?.date || ''} ${expense?.category || ''} · NT$ ${this.formatNumber(expense?.amount || 0)}`, { expenseId: id });
             this.showToast('支出已刪除');
-          });
+          }, { title: '刪除支出紀錄', subtitle: `${expense?.date || ''} ${expense?.category || ''}`.trim(), tone: 'danger', confirmLabel: '刪除支出' });
         },
         toggleExpenseDate(date) {
           this.collapsedExpenseDates = {
@@ -8457,7 +8515,7 @@
             this.deleteCloudRecord('inventory', 'id', id);
             this.saveInventory();
             this.showToast('商品已從庫存移除');
-          });
+          }, { title: '刪除庫存品項', subtitle: '刪除後不再顯示於庫存清單', tone: 'danger', confirmLabel: '刪除品項' });
         },
 
         // --- Tab 5: CRM Notes Saving ---
