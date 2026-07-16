@@ -59,21 +59,21 @@
     }
 
     body.momo-polish .momo-danger-action {
-      background: #fff1f2 !important;
-      border-color: #ffe4e6 !important;
-      color: #be123c !important;
+      background: var(--momo-danger-soft, #F7EEEE) !important;
+      border-color: var(--momo-danger-line, #E1CACA) !important;
+      color: var(--momo-danger-ink, #8B504D) !important;
     }
 
     body.momo-polish .momo-success-action {
-      background: #ecfdf5 !important;
-      border-color: #d1fae5 !important;
-      color: #047857 !important;
+      background: var(--momo-success-soft, #EEF3F0) !important;
+      border-color: var(--momo-success-line, #C8D5CD) !important;
+      color: var(--momo-success-ink, #4E6559) !important;
     }
 
     body.momo-polish .momo-info-action {
-      background: #f0f9ff !important;
-      border-color: #e0f2fe !important;
-      color: #0369a1 !important;
+      background: var(--momo-info-soft, #EFF3F4) !important;
+      border-color: var(--momo-info-line, #CBD9DE) !important;
+      color: var(--momo-info-ink, #526D78) !important;
     }
 
     body.momo-polish .momo-app-header {
@@ -91,7 +91,7 @@
       right: 0.75rem;
       bottom: -1px;
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(251, 113, 133, 0.16), transparent);
+      background: linear-gradient(90deg, transparent, rgba(96, 121, 131, 0.16), transparent);
       pointer-events: none;
     }
 
@@ -118,7 +118,7 @@
     body.momo-polish .momo-header-button:hover,
     body.momo-polish .mobile-tools-button:hover {
       background: rgba(248, 250, 252, 0.92) !important;
-      border-color: rgba(251, 113, 133, 0.28) !important;
+      border-color: rgba(96, 121, 131, 0.3) !important;
     }
 
     body.momo-polish .momo-header-button svg,
@@ -186,13 +186,13 @@
       width: 0.36rem;
       height: 0.36rem;
       border-radius: 999px;
-      background: #fb7185;
-      box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.13);
+      background: var(--momo-brand);
+      box-shadow: 0 0 0 3px rgba(96, 121, 131, 0.14);
     }
 
     body.momo-polish .momo-sync-button:hover {
       background: #ffffff !important;
-      border-color: rgba(251, 113, 133, 0.34) !important;
+      border-color: rgba(96, 121, 131, 0.36) !important;
       color: #0f172a !important;
     }
 
@@ -212,7 +212,7 @@
     }
 
     body.momo-polish .momo-sync-button svg {
-      color: #f43f5e;
+      color: var(--momo-brand);
     }
 
     /* 1) Sheet / modal consistency */
@@ -243,8 +243,8 @@
     body.momo-polish .ios-sheet input:focus,
     body.momo-polish .ios-sheet select:focus,
     body.momo-polish .ios-sheet textarea:focus {
-      border-color: #FDA4AF !important;
-      box-shadow: 0 0 0 3px rgba(253, 164, 175, 0.18) !important;
+      border-color: rgba(96, 121, 131, 0.62) !important;
+      box-shadow: 0 0 0 3px rgba(96, 121, 131, 0.14) !important;
     }
 
     body.momo-polish .ios-action-bar {
@@ -302,10 +302,10 @@
       background: #cbd5e1;
     }
 
-    body.momo-polish .today-metric-card--cash::before { background: #fb7185; }
-    body.momo-polish .today-metric-card--expense::before { background: #fda4af; }
-    body.momo-polish .today-metric-card--closed::before { background: #34d399; }
-    body.momo-polish .today-metric-card--open::before { background: #fbbf24; }
+    body.momo-polish .today-metric-card--cash::before { background: var(--momo-revenue); }
+    body.momo-polish .today-metric-card--expense::before { background: var(--momo-danger); }
+    body.momo-polish .today-metric-card--closed::before { background: var(--momo-success); }
+    body.momo-polish .today-metric-card--open::before { background: var(--momo-warning); }
 
     body.momo-polish .today-metric-value {
       color: #0f172a !important;
@@ -393,9 +393,9 @@
       background: #cbd5e1;
     }
 
-    body.momo-polish .momo-home-alert--ok::before { background: #34d399; }
-    body.momo-polish .momo-home-alert--warn::before { background: #fbbf24; }
-    body.momo-polish .momo-home-alert--error::before { background: #fb7185; }
+    body.momo-polish .momo-home-alert--ok::before { background: var(--momo-success); }
+    body.momo-polish .momo-home-alert--warn::before { background: var(--momo-warning); }
+    body.momo-polish .momo-home-alert--error::before { background: var(--momo-danger); }
 
     body.momo-polish .momo-home-alert button {
       background: rgba(255, 255, 255, 0.98) !important;
@@ -418,11 +418,11 @@
       bottom: 0.65rem;
       width: 3px;
       border-radius: 999px;
-      background: #fbbf24;
+      background: var(--momo-warning);
     }
 
-    body.momo-polish .momo-home-list-item--error::before { background: #fb7185; }
-    body.momo-polish .momo-home-list-item--ok::before { background: #34d399; }
+    body.momo-polish .momo-home-list-item--error::before { background: var(--momo-danger); }
+    body.momo-polish .momo-home-list-item--ok::before { background: var(--momo-success); }
 
     body.momo-polish .momo-home-empty {
       background: rgba(248, 250, 252, 0.72) !important;
@@ -539,7 +539,7 @@
     }
 
     body.momo-polish .floating-nav .tab-active-indicator {
-      background: #fb7185 !important;
+      background: var(--momo-brand) !important;
       opacity: 0.88;
     }
 
@@ -645,7 +645,7 @@
       background: transparent;
     }
     ::-webkit-scrollbar-thumb {
-      background: #FFAAA6;
+      background: #AAB7BA;
       border-radius: 99px;
     }
 
@@ -671,8 +671,8 @@
     }
     .jelly-input:focus {
       outline: none;
-      border-color: #FFA475;
-      box-shadow: 0 0 0 3px rgba(255, 164, 117, 0.2);
+      border-color: rgba(96, 121, 131, 0.62);
+      box-shadow: 0 0 0 3px rgba(96, 121, 131, 0.14);
     }
 
     input.orders-search-input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
@@ -1081,7 +1081,7 @@
     select {
       -webkit-appearance: none;
       appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23FFAAA6' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23607983' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 0.6rem center;
       padding-right: 1.8rem !important;
@@ -1168,26 +1168,87 @@
 
     /* 2026 visual system: quiet salon operations workspace */
     :root {
-      --momo-canvas: #F4F6F7;
+      --momo-canvas: #F3F5F5;
       --momo-surface: #FFFFFF;
-      --momo-surface-muted: #F8FAFB;
-      --momo-ink: #172033;
-      --momo-muted: #697586;
-      --momo-line: #E1E6EB;
-      --momo-line-strong: #D3DAE2;
-      --momo-brand: #D95F54;
-      --momo-brand-hover: #C95148;
-      --momo-brand-soft: #FFF1EF;
-      --momo-success: #16805D;
-      --momo-info: #287FA3;
-      --momo-warning: #A76412;
-      --momo-danger: #C34D62;
+      --momo-surface-muted: #F7F9F9;
+      --momo-ink: #35434A;
+      --momo-muted: #738087;
+      --momo-line: #E0E5E5;
+      --momo-line-strong: #D0D8D9;
+      --momo-brand: #607983;
+      --momo-brand-hover: #516A74;
+      --momo-brand-ink: #516A74;
+      --momo-brand-soft: #EEF2F3;
+      --momo-brand-line: #CBD6DA;
+      --momo-revenue: #93616B;
+      --momo-revenue-ink: #82545E;
+      --momo-revenue-soft: #F6EEF0;
+      --momo-revenue-line: #DECBD0;
+      --momo-success: #5D7668;
+      --momo-success-hover: #4E6559;
+      --momo-success-ink: #4E6559;
+      --momo-success-soft: #EEF3F0;
+      --momo-success-line: #C8D5CD;
+      --momo-info: #607F8C;
+      --momo-info-ink: #526D78;
+      --momo-info-soft: #EFF3F4;
+      --momo-info-line: #CBD9DE;
+      --momo-warning: #8B7148;
+      --momo-warning-ink: #765F3D;
+      --momo-warning-soft: #F6F2E9;
+      --momo-warning-line: #DDD0B9;
+      --momo-danger: #9D5F5B;
+      --momo-danger-ink: #8B504D;
+      --momo-danger-soft: #F7EEEE;
+      --momo-danger-line: #E1CACA;
       --momo-panel-shadow: 0 12px 30px -26px rgba(15, 23, 42, 0.42);
     }
 
     body.momo-polish {
       background: var(--momo-canvas) !important;
       color: var(--momo-ink);
+    }
+
+    body.momo-polish ::selection {
+      background: #D9E1E3;
+      color: var(--momo-ink);
+    }
+
+    /* Legacy macaron utilities now follow the semantic Morandi palette. */
+    body.momo-polish .text-macaron-peach-400,
+    body.momo-polish .text-macaron-peach-500,
+    body.momo-polish .text-macaron-rose {
+      color: var(--momo-brand-ink) !important;
+    }
+
+    body.momo-polish .bg-macaron-peach-50,
+    body.momo-polish .bg-macaron-peach-100 {
+      background-color: var(--momo-brand-soft) !important;
+    }
+
+    body.momo-polish .border-macaron-peach-100,
+    body.momo-polish .border-macaron-peach-200 {
+      border-color: var(--momo-brand-line) !important;
+    }
+
+    body.momo-polish .momo-revenue-text {
+      color: var(--momo-revenue-ink) !important;
+    }
+
+    body.momo-polish .momo-revenue-bar {
+      background-color: var(--momo-revenue) !important;
+      background-image: none !important;
+    }
+
+    body.momo-polish .momo-dashboard-intro {
+      border-color: var(--momo-brand-line) !important;
+      background: var(--momo-brand-soft) !important;
+    }
+
+    body.momo-polish .momo-dialog--auth .momo-state-button {
+      border: 1px solid var(--momo-brand) !important;
+      background: var(--momo-brand) !important;
+      background-image: none !important;
     }
 
     body.momo-polish,
@@ -1224,8 +1285,8 @@
 
     body.momo-polish .floating-nav button.text-slate-900 {
       background: var(--momo-brand-soft) !important;
-      color: var(--momo-brand) !important;
-      box-shadow: inset 0 0 0 1px rgba(217, 95, 84, 0.22) !important;
+      color: var(--momo-brand-ink) !important;
+      box-shadow: inset 0 0 0 1px rgba(96, 121, 131, 0.24) !important;
     }
 
     body.momo-polish .floating-nav .tab-active-indicator {
@@ -1277,10 +1338,10 @@
       background: #AEB8C4;
     }
 
-    body.momo-polish .momo-metric-cell.today-metric-card--cash::before { background: var(--momo-brand); }
+    body.momo-polish .momo-metric-cell.today-metric-card--cash::before { background: var(--momo-revenue); }
     body.momo-polish .momo-metric-cell.today-metric-card--expense::before { background: var(--momo-danger); }
     body.momo-polish .momo-metric-cell.today-metric-card--closed::before { background: var(--momo-success); }
-    body.momo-polish .momo-metric-cell.today-metric-card--open::before { background: #D38A2C; }
+    body.momo-polish .momo-metric-cell.today-metric-card--open::before { background: var(--momo-warning); }
 
     body.momo-polish .momo-metric-cell .today-metric-value {
       color: var(--momo-ink) !important;
@@ -1325,20 +1386,20 @@
     }
 
     body.momo-polish .momo-primary-actions .daily-action-button--primary:hover {
-      border-color: #12684C !important;
-      background: #12684C !important;
+      border-color: var(--momo-success-hover) !important;
+      background: var(--momo-success-hover) !important;
     }
 
     body.momo-polish .momo-primary-actions .daily-action-button--primary.is-complete {
-      border-color: #BCDCC9 !important;
-      background: #F0F8F3 !important;
-      color: #347052 !important;
+      border-color: var(--momo-success-line) !important;
+      background: var(--momo-success-soft) !important;
+      color: var(--momo-success-ink) !important;
     }
 
     body.momo-polish .momo-primary-actions .daily-action-button--primary.is-complete:hover {
-      border-color: #A8CFB8 !important;
-      background: #E8F4ED !important;
-      color: #285E45 !important;
+      border-color: #B5C7BC !important;
+      background: #E5ECE8 !important;
+      color: var(--momo-success-hover) !important;
     }
 
     body.momo-polish .momo-home-list-item {
@@ -1456,8 +1517,8 @@
     }
 
     body.momo-polish .orders-search-shell input.orders-search-input:focus {
-      border-color: rgba(217, 95, 84, 0.55) !important;
-      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.12) !important;
+      border-color: rgba(96, 121, 131, 0.58) !important;
+      box-shadow: 0 0 0 3px rgba(96, 121, 131, 0.13) !important;
     }
 
     body.momo-polish .orders-filter-panel {
@@ -1558,9 +1619,9 @@
     }
 
     body.momo-polish .ledger-weekday-badge.is-weekend {
-      border-color: #F3C7C0;
-      background: #FFF5F3;
-      color: #C4554C;
+      border-color: var(--momo-revenue-line);
+      background: var(--momo-revenue-soft);
+      color: var(--momo-revenue-ink);
     }
 
     body.momo-polish .ledger-lock-badge {
@@ -1576,7 +1637,7 @@
     }
 
     body.momo-polish .orders-day-total {
-      color: #D7674E !important;
+      color: var(--momo-revenue) !important;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
@@ -1641,9 +1702,9 @@
     }
 
     body.momo-polish .orders-category-badge.is-cut {
-      border-color: #F4C7C2;
-      background: #FFF6F4;
-      color: #C95148;
+      border-color: var(--momo-revenue-line);
+      background: var(--momo-revenue-soft);
+      color: var(--momo-revenue-ink);
     }
 
     body.momo-polish .orders-category-badge.is-perm {
@@ -1695,9 +1756,9 @@
     }
 
     body.momo-polish .orders-payment-badge.is-cash {
-      border-color: #BFDCCB;
-      background: #F1F8F4;
-      color: #347052;
+      border-color: var(--momo-success-line);
+      background: var(--momo-success-soft);
+      color: var(--momo-success-ink);
     }
 
     body.momo-polish .orders-payment-badge.is-transfer {
@@ -2087,17 +2148,17 @@
     }
 
     body.momo-polish .expense-category-tone.is-marketing {
-      --expense-category-border: #F3C7C0;
-      --expense-category-bg: #FFF5F3;
-      --expense-category-ink: #C4554C;
-      --expense-category-strong: #DE8D84;
+      --expense-category-border: var(--momo-danger-line);
+      --expense-category-bg: var(--momo-danger-soft);
+      --expense-category-ink: var(--momo-danger-ink);
+      --expense-category-strong: #AD7470;
     }
 
     body.momo-polish .expense-category-tone.is-salary {
-      --expense-category-border: #BFDCCB;
-      --expense-category-bg: #F1F8F4;
-      --expense-category-ink: #347052;
-      --expense-category-strong: #81B397;
+      --expense-category-border: var(--momo-success-line);
+      --expense-category-bg: var(--momo-success-soft);
+      --expense-category-ink: var(--momo-success-ink);
+      --expense-category-strong: #809789;
     }
 
     body.momo-polish .expense-category-tone.is-other {
@@ -2217,8 +2278,8 @@
     }
 
     body.momo-polish .expense-salary-import-button:hover:not(:disabled) {
-      border-color: rgba(217, 95, 84, 0.42) !important;
-      background: #FFF7F5 !important;
+      border-color: rgba(96, 121, 131, 0.45) !important;
+      background: var(--momo-brand-soft) !important;
     }
 
     body.momo-polish .expense-form-templates {
@@ -2735,12 +2796,12 @@
     }
 
     body.momo-polish .report-settlement-panel {
-      border-top: 3px solid var(--momo-brand) !important;
+      border-top: 3px solid var(--momo-revenue) !important;
     }
 
     body.momo-polish .report-settlement-header {
       min-height: 76px;
-      background: #FFFCFB !important;
+      background: var(--momo-revenue-soft) !important;
     }
 
     body.momo-polish .report-settlement-status {
@@ -2936,7 +2997,7 @@
     }
 
     body.momo-polish .report-yield-bar > div {
-      background-color: var(--momo-brand) !important;
+      background-color: var(--momo-revenue) !important;
       background-image: none !important;
     }
 
@@ -3387,24 +3448,24 @@
     }
 
     body.momo-polish .inventory-status-tone.is-ok {
-      --inventory-status-border: #BCDCC9;
-      --inventory-status-bg: #F0F8F3;
-      --inventory-status-ink: #347052;
-      --inventory-status-strong: #5D9C79;
+      --inventory-status-border: var(--momo-success-line);
+      --inventory-status-bg: var(--momo-success-soft);
+      --inventory-status-ink: var(--momo-success-ink);
+      --inventory-status-strong: #809789;
     }
 
     body.momo-polish .inventory-status-tone.is-low {
-      --inventory-status-border: #E8D09C;
-      --inventory-status-bg: #FFF8E9;
-      --inventory-status-ink: #8A650F;
-      --inventory-status-strong: #C69A3E;
+      --inventory-status-border: var(--momo-warning-line);
+      --inventory-status-bg: var(--momo-warning-soft);
+      --inventory-status-ink: var(--momo-warning-ink);
+      --inventory-status-strong: #A88B55;
     }
 
     body.momo-polish .inventory-status-tone.is-out {
-      --inventory-status-border: #F0C3BE;
-      --inventory-status-bg: #FFF3F1;
-      --inventory-status-ink: #BE4F47;
-      --inventory-status-strong: #D7675E;
+      --inventory-status-border: var(--momo-danger-line);
+      --inventory-status-bg: var(--momo-danger-soft);
+      --inventory-status-ink: var(--momo-danger-ink);
+      --inventory-status-strong: #AD7470;
     }
 
     body.momo-polish .inventory-status-badge {
@@ -3592,10 +3653,10 @@
       height: 34px;
       align-items: center;
       justify-content: center;
-      border: 1px solid #BCDCC9;
+      border: 1px solid var(--momo-success-line);
       border-radius: 7px;
-      background: #F0F8F3;
-      color: #347052;
+      background: var(--momo-success-soft);
+      color: var(--momo-success-ink);
     }
 
     body.momo-polish .inventory-status-check.is-empty {
@@ -3628,8 +3689,8 @@
     }
 
     body.momo-polish .inventory-form-input:focus {
-      border-color: rgba(217, 95, 84, 0.5) !important;
-      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.1) !important;
+      border-color: rgba(96, 121, 131, 0.55) !important;
+      box-shadow: 0 0 0 3px rgba(96, 121, 131, 0.12) !important;
     }
 
     body.momo-polish .inventory-form-submit {
@@ -3684,8 +3745,8 @@
     }
 
     body.momo-polish .inventory-search-input.compact-search-input:focus {
-      border-color: rgba(217, 95, 84, 0.5) !important;
-      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.1) !important;
+      border-color: rgba(96, 121, 131, 0.55) !important;
+      box-shadow: 0 0 0 3px rgba(96, 121, 131, 0.12) !important;
     }
 
     body.momo-polish .inventory-filter-button {
@@ -4108,8 +4169,8 @@
     body.momo-polish .crm-search-input.compact-search-input:focus,
     body.momo-polish .crm-ledger-search:focus,
     body.momo-polish .crm-sort-select:focus {
-      border-color: rgba(217, 95, 84, 0.5) !important;
-      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.1) !important;
+      border-color: rgba(96, 121, 131, 0.55) !important;
+      box-shadow: 0 0 0 3px rgba(96, 121, 131, 0.12) !important;
     }
 
     body.momo-polish .crm-search-marker {
@@ -4184,9 +4245,9 @@
     }
 
     body.momo-polish .crm-more-filter-toggle.is-active {
-      border-color: rgba(217, 95, 84, 0.32) !important;
+      border-color: rgba(96, 121, 131, 0.34) !important;
       background: var(--momo-brand-soft) !important;
-      color: var(--momo-brand) !important;
+      color: var(--momo-brand-ink) !important;
     }
 
     body.momo-polish .crm-more-filter-dot {
@@ -4273,7 +4334,7 @@
 
     body.momo-polish .crm-secondary-filter-button.is-active {
       background: var(--momo-brand-soft);
-      color: var(--momo-brand);
+      color: var(--momo-brand-ink);
     }
 
     body.momo-polish .crm-customer-list {
@@ -4477,8 +4538,8 @@
     body.momo-polish .crm-profile-content select:focus,
     body.momo-polish .crm-profile-content textarea:focus {
       outline: none;
-      border-color: rgba(217, 95, 84, 0.5) !important;
-      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.1) !important;
+      border-color: rgba(96, 121, 131, 0.55) !important;
+      box-shadow: 0 0 0 3px rgba(96, 121, 131, 0.12) !important;
     }
 
     body.momo-polish .crm-profile-finish {
@@ -5450,9 +5511,9 @@
     body.momo-polish .momo-dialog input:not([type="checkbox"]):not([type="radio"]):focus,
     body.momo-polish .momo-dialog select:focus,
     body.momo-polish .momo-dialog textarea:focus {
-      border-color: rgba(217, 95, 84, 0.58) !important;
+      border-color: rgba(96, 121, 131, 0.62) !important;
       background: #FFFFFF !important;
-      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.11) !important;
+      box-shadow: 0 0 0 3px rgba(96, 121, 131, 0.13) !important;
     }
 
     body.momo-polish .momo-dialog .rounded-xl,
@@ -5466,9 +5527,9 @@
     body.momo-polish .momo-dialog .expense-submit-button,
     body.momo-polish .momo-dialog .inventory-form-submit {
       min-height: 48px !important;
-      border: 1px solid #D95F54 !important;
+      border: 1px solid var(--momo-brand) !important;
       border-radius: 8px !important;
-      background: #D95F54 !important;
+      background: var(--momo-brand) !important;
       color: #FFFFFF !important;
       box-shadow: none !important;
     }
@@ -5476,8 +5537,8 @@
     body.momo-polish .momo-dialog .ios-primary-action:hover,
     body.momo-polish .momo-dialog .expense-submit-button:hover,
     body.momo-polish .momo-dialog .inventory-form-submit:hover {
-      border-color: #C24E46 !important;
-      background: #C24E46 !important;
+      border-color: var(--momo-brand-hover) !important;
+      background: var(--momo-brand-hover) !important;
     }
 
     body.momo-polish .momo-dialog .ios-secondary-action {
@@ -5588,7 +5649,7 @@
 
     body.momo-polish .daily-form-continue input[type="checkbox"] {
       flex: 0 0 auto;
-      accent-color: #D95F54;
+      accent-color: var(--momo-brand);
     }
 
     body.momo-polish .daily-form-dialog .expense-form-templates {
@@ -5645,7 +5706,7 @@
       margin: 0 auto 0.75rem;
       border-radius: 50%;
       background: #FFF1F2;
-      color: #D95F54;
+      color: var(--momo-danger);
       font-size: 1rem;
       font-weight: 900;
     }
@@ -5816,8 +5877,8 @@
     /* Compact app toolbar: one quiet surface with stateful utility controls. */
     body.momo-polish .momo-app-header,
     body.momo-ios-perf .momo-app-header {
-      background: #FFF9F6 !important;
-      border-bottom: 1px solid #E7E2DF !important;
+      background: #FFFFFF !important;
+      border-bottom: 1px solid var(--momo-line) !important;
       box-shadow: 0 6px 18px -18px rgba(15, 23, 42, 0.5) !important;
       -webkit-backdrop-filter: none !important;
       backdrop-filter: none !important;
@@ -5830,7 +5891,7 @@
     body.momo-polish .momo-header-logo {
       border: 0 !important;
       border-radius: 8px !important;
-      background: #FFF9F6 !important;
+      background: #FFFFFF !important;
       box-shadow: none !important;
       transform: none !important;
     }
@@ -5919,14 +5980,14 @@
     body.momo-polish .momo-sync-button:focus-visible,
     body.momo-polish .momo-header-pill button:focus-visible,
     body.momo-polish .desktop-header-content .momo-header-button:focus-visible {
-      outline: 2px solid rgba(217, 95, 84, 0.52) !important;
+      outline: 2px solid rgba(96, 121, 131, 0.56) !important;
       outline-offset: 2px;
     }
 
     body.momo-polish .mobile-tools-button[aria-pressed="true"] {
-      border-color: rgba(217, 95, 84, 0.3) !important;
-      background: #FFF1EF !important;
-      color: #C95148 !important;
+      border-color: rgba(96, 121, 131, 0.34) !important;
+      background: var(--momo-brand-soft) !important;
+      color: var(--momo-brand-ink) !important;
     }
 
     body.momo-polish .momo-sync-button {
@@ -5978,9 +6039,9 @@
     }
 
     body.momo-polish .momo-sync-button.is-success {
-      border-color: #A7E8CE !important;
-      background: #ECFDF5 !important;
-      color: #047857 !important;
+      border-color: var(--momo-success-line) !important;
+      background: var(--momo-success-soft) !important;
+      color: var(--momo-success-ink) !important;
     }
 
     body.momo-polish .momo-sync-button.is-error {
@@ -6327,8 +6388,8 @@
     }
 
     body.momo-polish .momo-settings-primary-action {
-      border: 1px solid #D95F54;
-      background: #D95F54;
+      border: 1px solid var(--momo-brand);
+      background: var(--momo-brand);
       color: #FFFFFF;
     }
 
@@ -6346,8 +6407,8 @@
     }
 
     body.momo-polish .momo-settings-primary-action:hover {
-      border-color: #C95148;
-      background: #C95148;
+      border-color: var(--momo-brand-hover);
+      background: var(--momo-brand-hover);
     }
 
     body.momo-polish .momo-settings-secondary-action:hover,
@@ -6363,7 +6424,7 @@
     body.momo-polish .momo-settings-primary-action:focus-visible,
     body.momo-polish .momo-settings-secondary-action:focus-visible,
     body.momo-polish .momo-settings-export-action:focus-visible {
-      outline: 2px solid rgba(217, 95, 84, 0.5);
+      outline: 2px solid rgba(96, 121, 131, 0.55);
       outline-offset: -2px;
     }
 
@@ -6442,18 +6503,18 @@
     }
 
     body.momo-polish .service-config-search input:focus {
-      border-color: rgba(217, 95, 84, 0.58) !important;
+      border-color: rgba(96, 121, 131, 0.62) !important;
       background: #FFFFFF !important;
-      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.11) !important;
+      box-shadow: 0 0 0 3px rgba(96, 121, 131, 0.13) !important;
       outline: 0;
     }
 
     body.momo-polish .service-config-add-button {
       min-height: 42px;
       padding: 0 0.875rem;
-      border: 1px solid #D95F54;
+      border: 1px solid var(--momo-brand);
       border-radius: 8px;
-      background: #D95F54;
+      background: var(--momo-brand);
       color: #FFFFFF;
       font-size: 0.75rem;
       font-weight: 900;
@@ -6528,9 +6589,9 @@
     }
 
     body.momo-polish .service-config-table input:focus {
-      border-color: rgba(217, 95, 84, 0.42) !important;
+      border-color: rgba(96, 121, 131, 0.48) !important;
       background: #FFFFFF !important;
-      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.09) !important;
+      box-shadow: 0 0 0 3px rgba(96, 121, 131, 0.11) !important;
       outline: 0;
     }
 
@@ -6820,7 +6881,7 @@
       height: 7px;
       border: 2px solid #FFFFFF;
       border-radius: 50%;
-      background: #D95F54;
+      background: var(--momo-brand);
       box-sizing: content-box;
     }
 
@@ -6876,7 +6937,7 @@
     }
 
     body.momo-polish .momo-more-row.is-current {
-      background: #FFF7F5;
+      background: var(--momo-brand-soft);
     }
 
     body.momo-polish .momo-more-icon {
@@ -6892,8 +6953,8 @@
     }
 
     body.momo-polish .momo-more-row.is-current .momo-more-icon {
-      background: #FFF1EF;
-      color: #C95148;
+      background: var(--momo-brand-soft);
+      color: var(--momo-brand-ink);
     }
 
     body.momo-polish .momo-more-icon svg {
@@ -6959,7 +7020,7 @@
     body.momo-polish .momo-more-current-icon {
       width: 18px;
       height: 18px;
-      color: #C95148;
+      color: var(--momo-brand-ink);
     }
 
     body.momo-polish .momo-more-chevron {
@@ -6974,7 +7035,7 @@
 
     body.momo-polish .momo-more-row:focus-visible,
     body.momo-polish .momo-mobile-nav-button:focus-visible {
-      outline: 2px solid rgba(217, 95, 84, 0.5);
+      outline: 2px solid rgba(96, 121, 131, 0.55);
       outline-offset: -2px;
     }
 
@@ -7016,9 +7077,9 @@
       }
 
       body.momo-polish .mobile-primary-nav .momo-mobile-nav-button.is-active {
-        background: #FFF1EF !important;
-        color: #C95148 !important;
-        box-shadow: inset 0 0 0 1px rgba(217, 95, 84, 0.2) !important;
+        background: var(--momo-brand-soft) !important;
+        color: var(--momo-brand-ink) !important;
+        box-shadow: inset 0 0 0 1px rgba(96, 121, 131, 0.22) !important;
       }
     }
 
@@ -7758,7 +7819,7 @@
     }
 
     body.momo-polish .cloud-restore-submit.is-ready {
-      background: #D95F54;
+      background: var(--momo-brand);
       color: #FFFFFF;
     }
 
@@ -8044,8 +8105,8 @@
     }
 
     body.momo-polish .momo-command-search input.momo-command-search-input:focus {
-      border-color: rgba(217, 95, 84, 0.55) !important;
-      box-shadow: 0 0 0 3px rgba(217, 95, 84, 0.1) !important;
+      border-color: rgba(96, 121, 131, 0.58) !important;
+      box-shadow: 0 0 0 3px rgba(96, 121, 131, 0.12) !important;
     }
 
     body.momo-polish .momo-command-filter-panel {
@@ -8069,9 +8130,9 @@
     }
 
     body.momo-polish .momo-command-filter-clear {
-      border-color: #F0C3BE !important;
-      background: #FFF3F1 !important;
-      color: #BE4F47 !important;
+      border-color: var(--momo-danger-line) !important;
+      background: var(--momo-danger-soft) !important;
+      color: var(--momo-danger-ink) !important;
     }
 
     body.momo-polish .crm-filter-button.momo-command-filter-button.bg-slate-800,
@@ -8096,21 +8157,21 @@
     }
 
     body.momo-polish .momo-filter-chip.is-brand {
-      border-color: #F0C3BE;
-      background: #FFF3F1 !important;
-      color: var(--momo-brand) !important;
+      border-color: var(--momo-brand-line);
+      background: var(--momo-brand-soft) !important;
+      color: var(--momo-brand-ink) !important;
     }
 
     body.momo-polish .momo-filter-chip.is-info {
-      border-color: #BED9E4;
-      background: #F0F8FB !important;
-      color: var(--momo-info) !important;
+      border-color: var(--momo-info-line);
+      background: var(--momo-info-soft) !important;
+      color: var(--momo-info-ink) !important;
     }
 
     body.momo-polish .momo-filter-chip.is-ok {
-      border-color: #BCDCC9;
-      background: #F0F8F3 !important;
-      color: var(--momo-success) !important;
+      border-color: var(--momo-success-line);
+      background: var(--momo-success-soft) !important;
+      color: var(--momo-success-ink) !important;
     }
 
     body.momo-polish .momo-status-tone {
@@ -8129,33 +8190,33 @@
     }
 
     body.momo-polish .momo-status-tone.is-info {
-      --momo-status-border: #BED9E4;
-      --momo-status-bg: #F0F8FB;
-      --momo-status-ink: #287FA3;
-      --momo-status-strong: #4E97B4;
+      --momo-status-border: var(--momo-info-line);
+      --momo-status-bg: var(--momo-info-soft);
+      --momo-status-ink: var(--momo-info-ink);
+      --momo-status-strong: #7896A1;
     }
 
     body.momo-polish .momo-status-tone.is-ok {
-      --momo-status-border: #BCDCC9;
-      --momo-status-bg: #F0F8F3;
-      --momo-status-ink: #347052;
-      --momo-status-strong: #5D9C79;
+      --momo-status-border: var(--momo-success-line);
+      --momo-status-bg: var(--momo-success-soft);
+      --momo-status-ink: var(--momo-success-ink);
+      --momo-status-strong: #809789;
     }
 
     body.momo-polish .momo-status-tone.is-warn,
     body.momo-polish .momo-status-tone.is-low {
-      --momo-status-border: #E8D09C;
-      --momo-status-bg: #FFF8E9;
-      --momo-status-ink: #8A650F;
-      --momo-status-strong: #C69A3E;
+      --momo-status-border: var(--momo-warning-line);
+      --momo-status-bg: var(--momo-warning-soft);
+      --momo-status-ink: var(--momo-warning-ink);
+      --momo-status-strong: #A88B55;
     }
 
     body.momo-polish .momo-status-tone.is-danger,
     body.momo-polish .momo-status-tone.is-out {
-      --momo-status-border: #F0C3BE;
-      --momo-status-bg: #FFF3F1;
-      --momo-status-ink: #BE4F47;
-      --momo-status-strong: #D7675E;
+      --momo-status-border: var(--momo-danger-line);
+      --momo-status-bg: var(--momo-danger-soft);
+      --momo-status-ink: var(--momo-danger-ink);
+      --momo-status-strong: #AD7470;
     }
 
     body.momo-polish .momo-status-badge {
@@ -8484,9 +8545,9 @@
     }
 
     body.momo-polish .momo-empty-state.is-success .momo-empty-icon {
-      border-color: #BCDCC9 !important;
-      background: #F0F8F3 !important;
-      color: var(--momo-success) !important;
+      border-color: var(--momo-success-line) !important;
+      background: var(--momo-success-soft) !important;
+      color: var(--momo-success-ink) !important;
     }
 
     body.momo-polish .momo-form-header {
@@ -8551,6 +8612,17 @@
       border-color: var(--momo-brand) !important;
       background: var(--momo-brand) !important;
       color: #FFFFFF !important;
+    }
+
+    body.momo-polish .closeout-sheet-panel .momo-form-primary {
+      border-color: var(--momo-success) !important;
+      background: var(--momo-success) !important;
+      color: #FFFFFF !important;
+    }
+
+    body.momo-polish .closeout-sheet-panel .momo-form-primary:hover {
+      border-color: var(--momo-success-hover) !important;
+      background: var(--momo-success-hover) !important;
     }
 
     body.momo-polish .momo-form-secondary {

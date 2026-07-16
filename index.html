@@ -12,9 +12,9 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
   <meta name="application-name" content="摸摸頭營運總部">
-  <meta name="msapplication-TileColor" content="#FFF9F6">
+  <meta name="msapplication-TileColor" content="#F3F5F5">
   <meta name="description" content="專為美髮工作室設計的極簡馬卡龍風營運管理系統，輕鬆掌握業績、支出、庫存與顧客配方。">
-  <meta name="theme-color" content="#FFF9F6">
+  <meta name="theme-color" content="#F3F5F5">
 
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-closeout-green-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-morandi-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-closeout-green-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-morandi-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -508,7 +508,7 @@
           <template v-if="false">
 
           <!-- Welcome Banner (Desktop only) -->
-          <div class="hidden md:flex bg-gradient-to-r from-macaron-peach-100 to-macaron-soft p-5 sm:p-6 rounded-3xl sm:rounded-4xl border border-white macaron-shadow items-center justify-between hover-lift">
+          <div class="momo-dashboard-intro hidden md:flex bg-gradient-to-r from-macaron-peach-100 to-macaron-soft p-5 sm:p-6 rounded-3xl sm:rounded-4xl border border-white macaron-shadow items-center justify-between hover-lift">
             <div class="space-y-2">
               <h2 class="text-xl sm:text-2xl font-black text-slate-800">{{ dailyGreeting.title }}</h2>
               <p class="text-slate-500 text-xs font-semibold bg-white/60 px-3 py-1 rounded-xl inline-block">{{ dailyGreeting.sub }}</p>
@@ -544,7 +544,7 @@
               <!-- Right: Today's Status (Quick Look) -->
               <div class="flex items-center sm:items-end flex-row sm:flex-col justify-between sm:justify-center p-3.5 sm:px-5 sm:py-3 rounded-2xl bg-white border border-orange-100/30 macaron-shadow-sm sm:text-right min-w-[200px]">
                 <div class="space-y-0.5">
-                  <span class="text-[10px] font-black text-macaron-peach-500 uppercase tracking-widest block select-none">今日營業額</span>
+                  <span class="momo-revenue-text text-[10px] font-black text-macaron-peach-500 uppercase tracking-widest block select-none">今日營業額</span>
                   <div class="text-lg sm:text-xl font-black text-slate-700 tracking-tight">NT$ {{ formatNumber(todayRevenue) }}</div>
                 </div>
                 <div class="text-[10px] font-bold text-slate-400 mt-1">
@@ -775,7 +775,7 @@
                 {{ selectedMonth === 'All' ? selectedYear + ' 年 年度營業額趨勢' : selectedYear + ' 年 ' + selectedMonth + ' 月 營業額趨勢' }}
               </h3>
               <div class="text-xs text-slate-400 font-bold select-none">
-                <span v-if="hoveredPoint" class="bg-macaron-peach-100 text-macaron-peach-500 px-2.5 py-0.5 rounded-full font-black animate-pulse-subtle">
+                <span v-if="hoveredPoint" class="momo-revenue-text bg-macaron-peach-100 text-macaron-peach-500 px-2.5 py-0.5 rounded-full font-black animate-pulse-subtle">
                   {{ hoveredPoint.label }}: NT$ {{ formatNumber(hoveredPoint.total) }}
                 </span>
                 <span v-else class="hidden sm:inline">每日/月營業額走勢</span>
@@ -786,19 +786,19 @@
               <svg viewBox="0 0 600 120" class="w-full h-auto overflow-visible">
                 <defs>
                   <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#FF8B94" stop-opacity="0.25"></stop>
-                    <stop offset="100%" stop-color="#FFEBE1" stop-opacity="0.02"></stop>
+                    <stop offset="0%" stop-color="#93616B" stop-opacity="0.22"></stop>
+                    <stop offset="100%" stop-color="#F6EEF0" stop-opacity="0.04"></stop>
                   </linearGradient>
                   <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stop-color="#FFAAA6"></stop>
-                    <stop offset="50%" stop-color="#FF8B94"></stop>
-                    <stop offset="100%" stop-color="#FF5A1F"></stop>
+                    <stop offset="0%" stop-color="#B48790"></stop>
+                    <stop offset="50%" stop-color="#A5747E"></stop>
+                    <stop offset="100%" stop-color="#93616B"></stop>
                   </linearGradient>
                 </defs>
 
-                <line x1="15" y1="15" x2="585" y2="15" stroke="#FFF0E8" stroke-dasharray="3,3" stroke-width="0.8"></line>
-                <line x1="15" y1="60" x2="585" y2="60" stroke="#FFF0E8" stroke-dasharray="3,3" stroke-width="0.8"></line>
-                <line x1="15" y1="105" x2="585" y2="105" stroke="#FFE2D1" stroke-width="1.2"></line>
+                <line x1="15" y1="15" x2="585" y2="15" stroke="#ECEFF0" stroke-dasharray="3,3" stroke-width="0.8"></line>
+                <line x1="15" y1="60" x2="585" y2="60" stroke="#ECEFF0" stroke-dasharray="3,3" stroke-width="0.8"></line>
+                <line x1="15" y1="105" x2="585" y2="105" stroke="#DDE3E4" stroke-width="1.2"></line>
 
                 <!-- Gradient Area -->
                 <path v-if="trendChartPath.points.length > 0" :d="trendChartPath.fillPath" fill="url(#chartGrad)"></path>
@@ -815,7 +815,7 @@
                         @touchend.passive="setTimeout(() => hoveredPoint = null, 800)"></rect>
                   <!-- The visual dot -->
                   <circle :cx="pt.x" :cy="pt.y" :r="hoveredPoint && hoveredPoint.key === pt.key ? 5.5 : (pt.total > 0 ? 3 : 0)"
-                          :fill="hoveredPoint && hoveredPoint.key === pt.key ? '#FF5A1F' : '#FFAAA6'"
+                          :fill="hoveredPoint && hoveredPoint.key === pt.key ? '#93616B' : '#B48790'"
                           stroke="#FFF" :stroke-width="hoveredPoint && hoveredPoint.key === pt.key ? 2 : 1"
                           class="transition-all duration-150 pointer-events-none"></circle>
                 </g>
@@ -825,7 +825,7 @@
               <div v-if="hoveredPoint" class="absolute bg-slate-800/95 text-white text-[10px] sm:text-[11px] font-bold px-2.5 py-1.5 rounded-xl shadow-lg pointer-events-none transition-all duration-100 flex flex-col z-30"
                    :style="{ left: (hoveredPoint.x / 600 * 100) + '%', top: '15px', transform: 'translateX(-50%)' }">
                 <span>{{ hoveredPoint.label }}</span>
-                <span class="text-macaron-rose">NT$ {{ formatNumber(hoveredPoint.total) }}</span>
+                <span class="momo-revenue-text text-macaron-rose">NT$ {{ formatNumber(hoveredPoint.total) }}</span>
               </div>
             </div>
             <div class="flex justify-between text-[10px] text-slate-400 font-bold px-2 select-none">
@@ -840,7 +840,7 @@
           <div class="bg-white p-4 sm:p-6 rounded-3xl sm:rounded-4xl border border-orange-50 macaron-shadow hover-lift">
             <div class="flex items-center justify-between pb-3 border-b border-orange-50 mb-5">
               <h3 class="font-black text-slate-800 text-sm sm:text-lg flex items-center gap-2">
-                <svg class="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-macaron-rose" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <svg class="momo-revenue-text w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-macaron-rose" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M21.21 15.89A10 10 0 1 1 8.11 2.99"></path>
                   <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
                 </svg>
@@ -864,7 +864,7 @@
               <div class="relative flex-shrink-0">
                 <svg viewBox="0 0 160 160" width="155" height="155" class="overflow-visible">
                   <!-- Background ring -->
-                  <circle cx="80" cy="80" r="55" fill="none" stroke="#FFF0E8" stroke-width="22"
+                  <circle cx="80" cy="80" r="55" fill="none" stroke="#E5EAEB" stroke-width="22"
                           transform="rotate(-90 80 80)"/>
                   <!-- Colored segments -->
                   <circle v-for="seg in donutChartData.segments" :key="seg.cat"
@@ -886,7 +886,7 @@
               <div class="flex-grow grid grid-cols-2 gap-2.5 w-full">
                 <div v-for="seg in donutChartData.allSegments" :key="seg.cat"
                      class="flex items-center gap-2.5 p-3 rounded-2xl border transition-all"
-                     :style="{ borderColor: seg.amount > 0 ? seg.color : '#FFF0E8', backgroundColor: seg.amount > 0 ? seg.color + '18' : '#FFF9F6' }">
+                     :style="{ borderColor: seg.amount > 0 ? seg.color : '#E5EAEB', backgroundColor: seg.amount > 0 ? seg.color + '18' : '#F7F9F9' }">
                   <!-- Color Dot -->
                   <div class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-sm"
                        :style="{ backgroundColor: seg.color + '30' }">
@@ -1039,7 +1039,7 @@
                   </div>
                   <!-- Visual performance indicator bar -->
                   <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
-                    <div class="bg-gradient-to-r from-macaron-peach-300 to-macaron-rose h-full rounded-full transition-all duration-500"
+                    <div class="momo-revenue-bar bg-gradient-to-r from-macaron-peach-300 to-macaron-rose h-full rounded-full transition-all duration-500"
                          :style="{ width: Math.min(100, (item.yieldPerHour / 2000) * 100) + '%' }"></div>
                   </div>
                 </div>
@@ -1316,7 +1316,7 @@
             </div>
             <div v-if="ordersSummary.bestDayTotal" class="orders-summary-footer px-5 py-2.5 border-t border-orange-50 text-[10px] font-bold text-slate-400 flex items-center justify-end gap-1.5">
               <span>最高單日 {{ ordersSummary.bestDayDate }}</span>
-              <span class="font-black text-macaron-peach-500">NT$ {{ formatNumber(ordersSummary.bestDayTotal) }}</span>
+              <span class="momo-revenue-text font-black text-macaron-peach-500">NT$ {{ formatNumber(ordersSummary.bestDayTotal) }}</span>
             </div>
           </div>
 
@@ -1513,7 +1513,7 @@
                   </div>
                   <div v-if="ordersFilterActive" class="text-right shrink-0">
                     <span class="text-slate-400">{{ filteredOrders.length }} 筆 · 小計</span>
-                    <span class="ml-1 text-macaron-peach-500 font-black">NT$ {{ formatNumber(filteredOrdersTotal) }}</span>
+                    <span class="momo-revenue-text ml-1 text-macaron-peach-500 font-black">NT$ {{ formatNumber(filteredOrdersTotal) }}</span>
                   </div>
                 </div>
               </div>
@@ -2963,7 +2963,7 @@
             <div class="report-overview-grid momo-page-metrics grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100">
               <div class="report-overview-metric momo-page-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">營業額</div>
-                <div class="text-xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(annualSummary.totalRevenue) }}</div>
+                <div class="momo-revenue-text text-xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(annualSummary.totalRevenue) }}</div>
                 <div class="text-[9px] font-bold mt-1" :class="reportComparisons.revenue >= 0 ? 'text-emerald-600' : 'text-rose-500'">{{ reportComparisons.revenue >= 0 ? '↑' : '↓' }} {{ Math.abs(reportComparisons.revenue) }}% vs 去年</div>
               </div>
               <div class="report-overview-metric momo-page-metric p-4">
@@ -3000,7 +3000,7 @@
             <div class="report-operations-grid grid grid-cols-2 lg:grid-cols-4">
               <div v-for="card in monthlyOperationsSummary.cards" :key="'operations-' + card.key" class="report-operations-metric p-4">
                 <div class="text-[10px] font-black text-slate-400">{{ card.label }}</div>
-                <div class="mt-1 text-lg sm:text-xl font-black text-slate-800 tabular-nums" :class="card.tone === 'brand' ? 'text-macaron-peach-500' : card.tone === 'info' ? 'text-sky-700' : ''">{{ card.value }}</div>
+                <div class="mt-1 text-lg sm:text-xl font-black text-slate-800 tabular-nums" :class="card.tone === 'brand' ? 'momo-revenue-text' : card.tone === 'info' ? 'text-sky-700' : ''">{{ card.value }}</div>
                 <div class="mt-1 text-[10px] font-bold text-slate-400">{{ card.detail }}</div>
               </div>
             </div>
@@ -3030,7 +3030,7 @@
               </button>
             </div>
             <div class="report-settlement-grid grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100 mt-4 border-t border-slate-100">
-              <div class="p-4"><div class="text-[10px] font-black text-slate-400">營業額</div><div class="text-xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(monthlySettlementSummary.serviceRevenue) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlySettlementSummary.ordersCount }} 筆 · 客單 NT$ {{ formatNumber(monthlySettlementSummary.avgTicket) }}</div></div>
+              <div class="p-4"><div class="text-[10px] font-black text-slate-400">營業額</div><div class="momo-revenue-text text-xl font-black text-macaron-peach-500 mt-1">NT$ {{ formatNumber(monthlySettlementSummary.serviceRevenue) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlySettlementSummary.ordersCount }} 筆 · 客單 NT$ {{ formatNumber(monthlySettlementSummary.avgTicket) }}</div></div>
               <div class="p-4"><div class="text-[10px] font-black text-slate-400">支出</div><div class="text-xl font-black text-sky-600 mt-1">NT$ {{ formatNumber(monthlySettlementSummary.expenses) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlySettlementSummary.businessDays }} 個有資料日期</div></div>
               <div class="p-4"><div class="text-[10px] font-black text-slate-400">淨利</div><div class="text-xl font-black mt-1" :class="monthlySettlementSummary.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'">NT$ {{ formatNumber(monthlySettlementSummary.netProfit) }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">營業額－支出</div></div>
               <div class="p-4"><div class="text-[10px] font-black text-slate-400">淨利率</div><div class="text-xl font-black mt-1" :class="monthlyReportCompleteness.expenseMissing ? 'text-amber-700' : monthlySettlementSummary.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'">{{ monthlyReportCompleteness.expenseMissing ? '待確認' : monthlySettlementSummary.profitMargin + '%' }}</div><div class="text-[9px] font-bold text-slate-400 mt-1">{{ monthlyReportCompleteness.expenseMissing ? '本月支出為 0' : '淨利 ÷ 營業額' }}</div></div>
@@ -3190,7 +3190,7 @@
                     </div>
                   </div>
                   <div class="report-yield-bar h-1.5 rounded-full bg-slate-100 overflow-hidden mt-3">
-                    <div class="h-full rounded-full bg-gradient-to-r from-macaron-peach-300 to-macaron-rose"
+                    <div class="momo-revenue-bar h-full rounded-full bg-gradient-to-r from-macaron-peach-300 to-macaron-rose"
                          :style="{ width: Math.min(100, (item.yieldPerHour / Math.max(1, reportServiceYieldRows[0]?.yieldPerHour || 2000)) * 100) + '%' }"></div>
                   </div>
                 </div>
@@ -3208,19 +3208,19 @@
           <section v-if="reportViewMode === 'annual' && reportAnalysisTab === 'trend'" class="report-panel report-analysis-panel report-trend-panel momo-surface bg-white border border-orange-100/70 rounded-2xl overflow-hidden shadow-sm">
             <div class="report-panel-header momo-section-header px-4 py-4 sm:px-6 flex items-center justify-between border-b border-slate-100">
               <div><h2 class="text-base sm:text-lg font-black text-slate-800">月度趨勢</h2><p class="text-[10px] font-bold text-slate-400 mt-0.5">營業額、支出與淨利</p></div>
-              <div class="flex items-center gap-3 text-[9px] font-black"><span class="text-macaron-peach-500">● 營業額</span><span class="text-sky-600">● 支出</span><span class="text-emerald-600">● 淨利</span></div>
+              <div class="flex items-center gap-3 text-[9px] font-black"><span class="momo-revenue-text text-macaron-peach-500">● 營業額</span><span style="color:#607F8C">● 支出</span><span style="color:#5D7668">● 淨利</span></div>
             </div>
             <div class="report-trend-scroll p-4 sm:p-6 overflow-x-auto">
               <svg viewBox="0 0 600 150" class="w-full min-w-[560px] h-auto">
                 <line v-for="y in [20,55,90,125]" :key="y" x1="30" :y1="y" x2="585" :y2="y" stroke="#E2E8F0" stroke-dasharray="3,3" stroke-width="0.8"></line>
                 <line x1="30" :y1="reportTrendChart.zeroY" x2="585" :y2="reportTrendChart.zeroY" stroke="#94A3B8" stroke-width="1"></line>
-                <polyline :points="reportTrendChart.revenuePoints" fill="none" stroke="#FF716A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                <polyline :points="reportTrendChart.expensePoints" fill="none" stroke="#3B9DE0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                <polyline :points="reportTrendChart.netPoints" fill="none" stroke="#20A779" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                <polyline :points="reportTrendChart.revenuePoints" fill="none" stroke="#93616B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                <polyline :points="reportTrendChart.expensePoints" fill="none" stroke="#607F8C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                <polyline :points="reportTrendChart.netPoints" fill="none" stroke="#5D7668" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
                 <g v-for="point in reportTrendChart.points" :key="point.month">
-                  <circle :cx="point.x" :cy="point.revenueY" r="3" fill="#FF716A"></circle>
-                  <circle :cx="point.x" :cy="point.expenseY" r="2.5" fill="#3B9DE0"></circle>
-                  <circle :cx="point.x" :cy="point.netY" r="2.5" fill="#20A779"></circle>
+                  <circle :cx="point.x" :cy="point.revenueY" r="3" fill="#93616B"></circle>
+                  <circle :cx="point.x" :cy="point.expenseY" r="2.5" fill="#607F8C"></circle>
+                  <circle :cx="point.x" :cy="point.netY" r="2.5" fill="#5D7668"></circle>
                   <text :x="point.x" y="146" text-anchor="middle" fill="#64748B" font-size="9" font-weight="700">{{ point.month }}月</text>
                 </g>
               </svg>
@@ -3238,7 +3238,7 @@
             <div class="p-4 sm:p-6 divide-y divide-slate-100">
               <div v-for="row in reportBreakdownRows" :key="row.label" class="py-3 first:pt-0 last:pb-0">
                 <div class="flex items-center justify-between gap-3"><span class="text-sm font-black text-slate-700">{{ row.label }}</span><div class="text-right"><span class="text-sm font-black text-slate-800">NT$ {{ formatNumber(row.amount) }}</span><span class="ml-2 text-[10px] font-bold text-slate-400">{{ row.percentage }}%</span></div></div>
-                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden mt-2"><div class="h-full rounded-full" :class="reportBreakdownTab === 'income' ? 'bg-macaron-peach-400' : 'bg-sky-400'" :style="{ width: row.percentage + '%' }"></div></div>
+                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden mt-2"><div class="h-full rounded-full" :class="reportBreakdownTab === 'income' ? 'momo-revenue-bar' : 'bg-sky-400'" :style="{ width: row.percentage + '%' }"></div></div>
               </div>
               <div v-if="!reportBreakdownRows.length" class="py-8 text-center text-xs font-bold text-slate-400">此年度尚無資料</div>
             </div>
@@ -3253,7 +3253,7 @@
                 <tbody class="divide-y divide-slate-100">
                   <tr v-for="month in reportMonthlyRows" :key="month.month" @click="openReportMonth(month.month)" class="cursor-pointer hover:bg-orange-50/40">
                     <td class="px-4 py-3 text-sm font-black text-slate-700">{{ month.label }}</td>
-                    <td class="px-4 py-3 text-right text-sm font-black text-macaron-peach-500">NT$ {{ formatNumber(month.revenue) }}</td>
+                    <td class="momo-revenue-text px-4 py-3 text-right text-sm font-black text-macaron-peach-500">NT$ {{ formatNumber(month.revenue) }}</td>
                     <td class="px-4 py-3 text-right text-sm font-bold text-sky-600">NT$ {{ formatNumber(month.expenses) }}</td>
                     <td class="px-4 py-3 text-right text-sm font-black" :class="month.net >= 0 ? 'text-emerald-600' : 'text-rose-600'">{{ month.net >= 0 ? '+' : '' }}NT$ {{ formatNumber(month.net) }}</td>
                     <td class="px-4 py-3 text-right text-sm font-black text-slate-600">{{ month.revenue ? Math.round(month.net / month.revenue * 100) : 0 }}%</td>
@@ -4162,9 +4162,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.16-closeout-green-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.16-morandi-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.16-closeout-green-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.16-morandi-1"></script>
 </body>
 </html>

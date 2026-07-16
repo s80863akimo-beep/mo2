@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.16-closeout-green-1';
+    const APP_VERSION = '2026.07.16-morandi-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -1634,11 +1634,11 @@
           const circumference = 2 * Math.PI * r;
 
           const meta = {
-            '剪髮':    { color: '#FFAAA6' },
-            '燙髮':    { color: '#A8DADC' },
-            '染髮':    { color: '#E8AEFF' },
-            '洗護其他': { color: '#FFC5A3' },
-            '更正': { color: '#FBBF24' }
+            '剪髮':    { color: '#A87982' },
+            '燙髮':    { color: '#789A9B' },
+            '染髮':    { color: '#9B809F' },
+            '洗護其他': { color: '#8B9D90' },
+            '更正': { color: '#A88B55' }
           };
 
           let cumulative = 0;
@@ -2651,11 +2651,11 @@
           const total = Object.values(cats).reduce((s, v) => s + v, 0);
           const r = 55, circumference = 2 * Math.PI * r;
           const meta = {
-            '剪髮': { color: '#FFAAA6' },
-            '燙髮': { color: '#A8DADC' },
-            '染髮': { color: '#E8AEFF' },
-            '洗護其他': { color: '#FFC5A3' },
-            '更正': { color: '#FBBF24' }
+            '剪髮': { color: '#A87982' },
+            '燙髮': { color: '#789A9B' },
+            '染髮': { color: '#9B809F' },
+            '洗護其他': { color: '#8B9D90' },
+            '更正': { color: '#A88B55' }
           };
           let cumulative = 0;
           const allSegments = Object.entries(cats).map(([cat, amount]) => {
@@ -5795,12 +5795,12 @@
         // 支出分類的圖示、色系與報表色彩共用同一份對照。
         getExpenseCategoryInfo(category) {
           const map = {
-            '材料費': { key: 'materials', label: '材料費', chartColor: '#4F9FA4' },
-            '房租': { key: 'rent', label: '房租', chartColor: '#7184B4' },
-            '水電費': { key: 'utilities', label: '水電費', chartColor: '#C69A3E' },
-            '行銷費': { key: 'marketing', label: '行銷費', chartColor: '#D7675E' },
-            '薪資': { key: 'salary', label: '薪資', chartColor: '#4F8C6B' },
-            '其他': { key: 'other', label: '其他', chartColor: '#8793A3' }
+            '材料費': { key: 'materials', label: '材料費', chartColor: '#668C8D' },
+            '房租': { key: 'rent', label: '房租', chartColor: '#75839B' },
+            '水電費': { key: 'utilities', label: '水電費', chartColor: '#A88B55' },
+            '行銷費': { key: 'marketing', label: '行銷費', chartColor: '#9D6B70' },
+            '薪資': { key: 'salary', label: '薪資', chartColor: '#688272' },
+            '其他': { key: 'other', label: '其他', chartColor: '#7F8B91' }
           };
           return map[category] || { ...map['其他'], label: category || '其他' };
         },

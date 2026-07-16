@@ -106,23 +106,73 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        orange: {
+          50: '#F3F6F6',
+          100: '#E4EAEB',
+          200: '#D1DCDE',
+          300: '#B8C7CB',
+          400: '#8EA3AA',
+          500: '#607983',
+          600: '#516A74',
+          700: '#455B64',
+          800: '#3A4D54'
+        },
+        emerald: {
+          50: '#EEF3F0',
+          100: '#DDE7E1',
+          200: '#C8D5CD',
+          400: '#839B8D',
+          500: '#6E8878',
+          600: '#4E6559',
+          700: '#40554A',
+          800: '#34473D'
+        },
+        rose: {
+          50: '#F7EEEE',
+          100: '#EEDDDD',
+          200: '#E1CACA',
+          400: '#B47B77',
+          500: '#9D5F5B',
+          600: '#8B504D',
+          700: '#774441',
+          800: '#633936'
+        },
+        sky: {
+          50: '#EFF3F4',
+          100: '#DCE6E9',
+          200: '#CBD9DE',
+          400: '#7D9AA5',
+          500: '#587783',
+          600: '#526D78',
+          700: '#455D66',
+          800: '#394D55'
+        },
+        amber: {
+          50: '#F6F2E9',
+          100: '#ECE3D2',
+          200: '#DDD0B9',
+          400: '#B39B70',
+          500: '#8B7148',
+          600: '#765F3D',
+          700: '#665233'
+        },
         macaron: {
-          cream: '#FFF9F6',
+          cream: '#F3F5F5',
           peach: {
-            50: '#FFF0E8',
-            100: '#FFE2D1',
-            200: '#FFC5A3',
-            300: '#FFA475',
-            400: '#FF7F47',
-            500: '#FF5A1F'
+            50: '#F4F6F6',
+            100: '#E8EDEE',
+            200: '#D5DFE1',
+            300: '#ABBCC1',
+            400: '#7D949D',
+            500: '#607983'
           },
-          rose: '#FFAAA6',
-          pink: '#FF8B94',
-          mint: '#D8F3DC',
-          lavender: '#E8AEFF',
-          sky: '#A8DADC',
-          yellow: '#FFF5C0',
-          soft: '#FFEBE1'
+          rose: '#A87982',
+          pink: '#93616B',
+          mint: '#C8D5CD',
+          lavender: '#D7CDD9',
+          sky: '#CADADB',
+          yellow: '#E5DAC0',
+          soft: '#E8EDEE'
         }
       },
       fontFamily: {
