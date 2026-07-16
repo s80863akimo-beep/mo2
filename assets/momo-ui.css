@@ -5109,6 +5109,43 @@
       color: #FFFFFF !important;
     }
 
+    body.momo-polish .safety-runtime-diagnostics {
+      border-top: 1px solid var(--momo-line);
+      background: var(--momo-surface);
+    }
+
+    body.momo-polish .safety-runtime-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.875rem 1.5rem;
+    }
+
+    body.momo-polish .safety-runtime-list {
+      border-top: 1px solid var(--momo-line);
+    }
+
+    body.momo-polish .safety-runtime-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.625rem;
+      padding: 0.7rem 1.5rem;
+      border-bottom: 1px solid var(--momo-line);
+    }
+
+    body.momo-polish .safety-runtime-row:last-child {
+      border-bottom: 0;
+    }
+
+    body.momo-polish .safety-runtime-empty {
+      padding: 0.875rem 1.5rem;
+      border-top: 1px solid var(--momo-line);
+      color: var(--momo-muted);
+      font-size: 0.6875rem;
+      font-weight: 800;
+    }
+
     body.momo-polish .safety-system-note {
       padding: 0.875rem 1.5rem 1rem;
       border-top: 1px solid var(--momo-line);
@@ -5316,6 +5353,13 @@
 
       body.momo-polish .safety-system-note {
         padding: 0.875rem;
+      }
+
+      body.momo-polish .safety-runtime-header,
+      body.momo-polish .safety-runtime-row,
+      body.momo-polish .safety-runtime-empty {
+        padding-left: 0.875rem;
+        padding-right: 0.875rem;
       }
 
       body.momo-polish .safety-maintenance-actions {

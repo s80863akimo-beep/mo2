@@ -183,6 +183,31 @@
     };
   }
 
+  function evaluatePwaReloadGuard(lastReload = null, now = Date.now(), cooldownMs = 90000) {
+    const lastReloadAt = Number(lastReload?.at || 0);
+    const currentTime = Number(now);
+    const cooldown = Math.max(0, Number(cooldownMs) || 0);
+    const elapsed = currentTime - lastReloadAt;
+    const blocked = Boolean(lastReloadAt)
+      && Number.isFinite(currentTime)
+      && Number.isFinite(elapsed)
+      && elapsed >= 0
+      && elapsed < cooldown;
+    return {
+      allow: !blocked,
+      retryAfterMs: blocked ? Math.max(0, cooldown - elapsed) : 0
+    };
+  }
+
+  function shouldRetryCalendarSync(options = {}) {
+    const retryAttempt = Math.max(0, Number(options.retryAttempt) || 0);
+    const status = Math.max(0, Number(options.status) || 0);
+    const errorName = String(options.errorName || '');
+    if (options.online === false || retryAttempt >= 1) return false;
+    if (status) return status >= 500 || [408, 425, 429].includes(status);
+    return errorName === 'AbortError' || errorName === 'TypeError';
+  }
+
   return {
     PAYMENT,
     toMoney,
@@ -200,6 +225,8 @@
     getOrderPrepaidTarget,
     prepaidEntryReversed,
     canReversePrepaidEntry,
-    buildPrepaidReversalPayload
+    buildPrepaidReversalPayload,
+    evaluatePwaReloadGuard,
+    shouldRetryCalendarSync
   };
 });

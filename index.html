@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-annual-label-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-startup-stability-1">
 
-  <!-- Vue 3 Global Build CDN -->
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- Vue 3 Global Build (local copy for reliable PWA startup) -->
+  <script src="/assets/vue.global.prod.js?v=2026.07.16-startup-stability-1"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-annual-label-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-startup-stability-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -489,9 +489,9 @@
         <div class="flex items-center gap-2">
           <div class="min-w-0 flex-1">
             <div class="text-xs font-black">有新版本可更新</div>
-            <div class="text-[10px] text-slate-300 font-semibold truncate">更新後會重新載入，未同步資料仍保留。</div>
+            <div class="text-[10px] text-slate-300 font-semibold leading-snug">{{ pwaUpdateMessage }}</div>
           </div>
-          <button @click="applyPwaUpdate" class="min-h-[34px] px-3 rounded-xl bg-white text-slate-900 text-[11px] font-black shrink-0">更新</button>
+          <button @click="applyPwaUpdate" :disabled="pwaUpdateApplying" :aria-busy="pwaUpdateApplying ? 'true' : 'false'" class="min-h-[34px] px-3 rounded-xl bg-white text-slate-900 text-[11px] font-black shrink-0 disabled:opacity-60">{{ pwaUpdateApplying ? '更新中…' : '更新' }}</button>
           <button @click="dismissPwaUpdate" class="min-h-[34px] px-2 rounded-xl text-slate-300 hover:bg-white/10 text-[11px] font-bold shrink-0">稍後</button>
         </div>
       </div>
@@ -3703,8 +3703,8 @@
               </div>
 
               <div v-else id="safety-maintenance-panel-system" class="safety-system-view" role="tabpanel" aria-labelledby="safety-maintenance-tab-system">
-                <div class="safety-system-status-grid grid grid-cols-1 sm:grid-cols-2">
-                  <div v-for="item in systemStatusItems.filter(row => ['version', 'cloud'].includes(row.key))"
+                <div class="safety-system-status-grid grid grid-cols-1 sm:grid-cols-3">
+                  <div v-for="item in systemStatusItems.filter(row => ['version', 'cloud', 'runtime'].includes(row.key))"
                        :key="'safety-system-' + item.key" class="safety-system-status-item">
                     <div class="flex items-center justify-between gap-2">
                       <span class="text-[10px] font-black text-slate-400">{{ item.label }}</span>
@@ -3716,14 +3716,37 @@
                 </div>
 
                 <div class="safety-system-actions grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <button type="button" @click="updateAvailable ? applyPwaUpdate() : checkPwaUpdate(true)" :disabled="pwaCheckingUpdate" :aria-busy="pwaCheckingUpdate ? 'true' : 'false'"
+                  <button type="button" @click="updateAvailable ? applyPwaUpdate() : checkPwaUpdate(true)" :disabled="pwaCheckingUpdate || pwaUpdateApplying" :aria-busy="pwaCheckingUpdate || pwaUpdateApplying ? 'true' : 'false'"
                           class="momo-state-button safety-system-action safety-system-action--primary disabled:opacity-50">
-                    {{ updateAvailable ? '套用 App 更新' : pwaCheckingUpdate ? '檢查中…' : '檢查 App 更新' }}
+                    {{ pwaUpdateApplying ? '更新中…' : updateAvailable ? (hasProtectedAppActivity ? '完成目前操作後更新' : '套用 App 更新') : pwaCheckingUpdate ? '檢查中…' : '檢查 App 更新' }}
                   </button>
                   <button type="button" @click="showOperationLogModal = true" class="safety-system-action">查看操作紀錄</button>
                   <button type="button" @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" :aria-busy="pwaClearingCache ? 'true' : 'false'" class="momo-state-button safety-system-action disabled:opacity-50">
                     {{ pwaClearingCache ? '清理中…' : '清除 App 舊快取' }}
                   </button>
+                </div>
+
+                <div class="safety-runtime-diagnostics">
+                  <div class="safety-runtime-header">
+                    <div>
+                      <div class="text-xs font-black text-slate-700">啟動與同步紀錄</div>
+                      <p class="mt-0.5 text-[10px] font-bold text-slate-400">保留最近 30 筆，方便確認卡住、重試或更新原因。</p>
+                    </div>
+                    <span class="text-[10px] font-black text-slate-400">最近 {{ runtimeDiagnosticRows.length }} 筆</span>
+                  </div>
+                  <div v-if="runtimeDiagnosticRows.length" class="safety-runtime-list">
+                    <div v-for="row in runtimeDiagnosticRows" :key="row.id" class="safety-runtime-row">
+                      <span class="w-2 h-2 rounded-full shrink-0" :class="statusToneClasses(row.tone, 'dot')"></span>
+                      <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center justify-between gap-1.5">
+                          <span class="text-[10px] font-black text-slate-500">{{ runtimeDiagnosticLabel(row.category) }}</span>
+                          <span class="text-[9px] font-bold text-slate-400">{{ formatDateTime(row.at) }}</span>
+                        </div>
+                        <p class="mt-0.5 text-[11px] font-bold text-slate-600 leading-relaxed">{{ row.message }}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="safety-runtime-empty">尚無啟動或同步異常紀錄</div>
                 </div>
 
                 <div class="safety-system-note">
@@ -4167,9 +4190,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.16-annual-label-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.16-startup-stability-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.16-annual-label-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.16-startup-stability-1"></script>
 </body>
 </html>

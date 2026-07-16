@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.16-annual-label-1';
+    const APP_VERSION = '2026.07.16-startup-stability-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -164,6 +164,9 @@
           calendarAutoSyncState: safeParse(localStorage.getItem('momo_calendar_auto_sync_state'), {}),
           calendarSyncConfigured: null,
           calendarAutoSyncTimer: null,
+          calendarSyncRetryTimer: null,
+          calendarSyncRetryAt: null,
+          calendarSyncFallbackActive: false,
           calendarAutoSyncStatus: 'idle',
           calendarAutoSyncMessage: '',
           backupStatus: 'idle',
@@ -190,6 +193,7 @@
           safetyShowAllLocalSnapshots: false,
           pendingActionStartDate: '2026-07-01',
           operationLogs: safeParse(localStorage.getItem('momo_operation_logs'), []),
+          runtimeDiagnostics: safeParse(localStorage.getItem('momo_runtime_diagnostics'), []),
           showOperationLogModal: false,
           closeoutRecords: {},
           closeoutDate: todayStr,
@@ -223,6 +227,8 @@
           pendingServiceWorker: null,
           pwaRegistration: null,
           pwaRefreshing: false,
+          pwaUpdateApplying: false,
+          pwaUpdateDeferred: false,
           pwaCheckingUpdate: false,
           pwaClearingCache: false,
           pwaCacheNames: [],
@@ -580,9 +586,38 @@
           if (this.safetyReport.status === 'ok') return '資料安全正常';
           return `${this.safetyReport.errorCount || 0} 錯誤、${this.safetyReport.warningCount || 0} 提醒`;
         },
+        runtimeDiagnosticRows() {
+          return (Array.isArray(this.runtimeDiagnostics) ? this.runtimeDiagnostics : [])
+            .filter(row => row?.id && row?.at && row?.message)
+            .slice(0, 5);
+        },
+        runtimeStatusSummary() {
+          if (this.calendarSyncFallbackActive) {
+            return {
+              value: this.calendarSyncRetryAt ? '等待自動重試' : '使用本機資料',
+              detail: this.calendarAutoSyncMessage || '遠端暫時無法回應，本機資料仍可使用',
+              tone: 'warn'
+            };
+          }
+          if (this.syncing) {
+            return { value: '同步中', detail: this.calendarAutoSyncMessage || '正在更新行事曆資料', tone: 'info' };
+          }
+          if (this.syncError || this.pwaStatus === '檢查失敗' || this.pwaStatus === '註冊失敗') {
+            const detail = this.syncError?.message || this.runtimeDiagnosticRows[0]?.message || '可在下方查看最近紀錄';
+            return { value: '最近有異常', detail, tone: 'warn' };
+          }
+          if (['warning', 'error'].includes(this.runtimeDiagnosticRows[0]?.tone)) {
+            return { value: '最近有提醒', detail: this.runtimeDiagnosticRows[0].message, tone: 'warn' };
+          }
+          return {
+            value: '運作穩定',
+            detail: this.runtimeDiagnosticRows[0]?.message || '啟動、更新與同步未發現異常',
+            tone: 'ok'
+          };
+        },
         systemStatusTone() {
           if (this.cloudStatus === 'error' || this.cloudStatus === 'conflict' || this.cloudBackupHealth.status === 'error' || this.safetyReport?.status === 'error') return 'error';
-          if (this.updateAvailable || this.cloudMigrationNeeded || this.cloudSyncPending || this.backupReminder.due || this.cloudBackupHealth.status === 'warning' || this.safetyReport?.status === 'warning') return 'warn';
+          if (this.updateAvailable || this.cloudMigrationNeeded || this.cloudSyncPending || this.backupReminder.due || this.cloudBackupHealth.status === 'warning' || this.safetyReport?.status === 'warning' || this.runtimeStatusSummary.tone === 'warn') return 'warn';
           return 'ok';
         },
         systemStatusTitle() {
@@ -626,6 +661,13 @@
               value: this.cloudStatus === 'syncing' ? '同步中' : this.cloudStatus === 'conflict' ? '衝突待處理' : this.cloudMigrationNeeded ? '待搬移' : this.cloudReady ? '已連接' : this.authConfig.configured ? '待確認' : '本機模式',
               detail: this.cloudMessage || (this.cloudReady ? '雲端資料可用' : '目前以本機資料為主'),
               tone: cloudTone
+            },
+            {
+              key: 'runtime',
+              label: '啟動與同步',
+              value: this.runtimeStatusSummary.value,
+              detail: this.runtimeStatusSummary.detail,
+              tone: this.runtimeStatusSummary.tone
             },
             {
               key: 'backup',
@@ -2813,6 +2855,56 @@
           return currentCount !== savedCount
             || String(this.closeoutNote || '').trim() !== String(record?.note || '').trim();
         },
+        hasUnsavedAppWork() {
+          const dirtyOrderEdit = Object.entries(this.orderEditDrafts || {}).some(([id, draft]) => {
+            const order = this.orders.find(row => String(row.id) === String(id));
+            return Boolean(order) && this.orderAuditFields().some(field =>
+              JSON.stringify(order?.[field] ?? null) !== JSON.stringify(draft?.[field] ?? null)
+            );
+          });
+          const dirtyExpenseEdit = Object.entries(this.expenseEditDrafts || {}).some(([id, draft]) => {
+            const expense = this.expenses.find(row => String(row.id) === String(id));
+            return Boolean(expense) && ['date', 'category', 'amount', 'notes'].some(field =>
+              JSON.stringify(expense?.[field] ?? null) !== JSON.stringify(draft?.[field] ?? null)
+            );
+          });
+          const dirtyInventoryEdit = Object.entries(this.inventoryEditDrafts || {}).some(([id, draft]) => {
+            const item = this.inventory.find(row => String(row.id) === String(id));
+            if (!item) return false;
+            const current = this.cloneInventoryForDraft(item);
+            return ['name', 'stock', 'minStock', 'notes'].some(field =>
+              JSON.stringify(current?.[field] ?? null) !== JSON.stringify(draft?.[field] ?? null)
+            );
+          });
+          const dirtyCrmEdit = Object.entries(this.crmEditDrafts || {}).some(([id, draft]) => {
+            const customer = this.customerMap[id];
+            return Boolean(customer) && JSON.stringify(this.buildCrmDraft(customer)) !== JSON.stringify(draft);
+          });
+          return this.newOrderDraftDirty
+            || this.newExpenseDraftDirty
+            || this.newInventoryDraftDirty
+            || (this.showCloseoutSheet && this.closeoutDraftDirty)
+            || (this.showServiceConfigModal && this.serviceConfigHasChanges)
+            || dirtyOrderEdit
+            || dirtyExpenseEdit
+            || dirtyInventoryEdit
+            || dirtyCrmEdit;
+        },
+        hasProtectedAppActivity() {
+          return this.hasUnsavedAppWork
+            || Object.values(this.formActionBusy || {}).some(Boolean)
+            || Boolean(this.confirmModal?.show)
+            || this.syncing
+            || this.cloudSyncInFlight
+            || this.cloudBackupStatus === 'restoring';
+        },
+        pwaUpdateMessage() {
+          if (this.pwaUpdateApplying) return '正在切換至新版本，請稍候。';
+          if (this.hasUnsavedAppWork) return '目前有尚未儲存的內容，完成後再更新。';
+          if (this.hasProtectedAppActivity) return '目前正在同步或儲存，完成後再更新。';
+          if (this.pwaUpdateDeferred) return '已保留新版，現在可安心套用。';
+          return '更新後只會重新載入一次，本機資料仍會保留。';
+        },
         filteredTempServicesConfigRows() {
           const query = String(this.serviceConfigSearchQuery || '').trim().toLowerCase();
           return (this.tempServicesConfig || [])
@@ -2878,13 +2970,27 @@
       mounted() {
         if (this.iosPerfMode) document.body.classList.add('momo-ios-perf');
         this.loadFromLocalStorage();
+        this.recordRuntimeDiagnostic('startup', 'ok', 'App 已開啟，本機資料可立即使用', {
+          version: this.appVersion,
+          localDataCount: this.localDataCount
+        });
         this.runDataSafetyCheck(false);
-        this.initAuth().finally(() => this.scheduleInitialCalendarAutoSync());
+        this.initAuth()
+          .catch((error) => {
+            this.recordRuntimeDiagnostic('startup', 'warning', '後端初始化失敗，已保留本機模式', {
+              error: String(error?.message || error)
+            });
+          })
+          .finally(() => this.scheduleInitialCalendarAutoSync());
         this.setupPwaUpdateListener();
         setTimeout(() => this.runSystemStatusCheck(false), 3500);
         window.addEventListener('online', () => {
           this.online = true;
-          this.scheduleInitialCalendarAutoSync(1500);
+          if (this.calendarSyncFallbackActive && !this.calendarSyncRetryTimer) {
+            this.scheduleCalendarSyncRetry({ automatic: true, silent: true, retryAttempt: 0 }, 1500, '網路連線已恢復');
+          } else {
+            this.scheduleInitialCalendarAutoSync(1500);
+          }
         });
         window.addEventListener('offline', () => { this.online = false; });
         if (this.isIOSDevice && !this.isStandalone && localStorage.getItem('momo_ios_guide_dismissed') !== '1') {
@@ -2926,6 +3032,7 @@
         if (this.cloudVersionPollTimer) clearInterval(this.cloudVersionPollTimer);
         if (this.cloudSyncTimer) clearTimeout(this.cloudSyncTimer);
         if (this.calendarAutoSyncTimer) clearTimeout(this.calendarAutoSyncTimer);
+        if (this.calendarSyncRetryTimer) clearTimeout(this.calendarSyncRetryTimer);
         if (this.headerSyncFeedbackTimer) clearTimeout(this.headerSyncFeedbackTimer);
         if (this.pwaAutoCheckTimer) clearTimeout(this.pwaAutoCheckTimer);
         if (this.pwaAutoCheckInterval) clearInterval(this.pwaAutoCheckInterval);
@@ -3076,6 +3183,29 @@
             note: record.note || '',
             completedAt: record.completedAt || null
           };
+        },
+        recordRuntimeDiagnostic(category, tone, message, meta = {}) {
+          const entry = {
+            id: this.generateStableId('diag'),
+            at: new Date().toISOString(),
+            category: ['startup', 'sync', 'update'].includes(category) ? category : 'startup',
+            tone: ['ok', 'info', 'warning', 'error'].includes(tone) ? tone : 'info',
+            message: String(message || '').slice(0, 180),
+            meta
+          };
+          this.runtimeDiagnostics = [
+            entry,
+            ...(Array.isArray(this.runtimeDiagnostics) ? this.runtimeDiagnostics : [])
+          ].slice(0, 30);
+          localStorage.setItem('momo_runtime_diagnostics', JSON.stringify(this.runtimeDiagnostics));
+          return entry;
+        },
+        runtimeDiagnosticLabel(category) {
+          return {
+            startup: '啟動',
+            sync: '行事曆',
+            update: 'App 更新'
+          }[category] || '系統';
         },
         recordOperation(action, label, detail = '', meta = {}) {
           const log = {
@@ -4197,6 +4327,42 @@
             this.showToast(`已解除 ${date} 鎖帳`);
           }, { title: '解除每日鎖帳', subtitle: `${date} 將恢復可編輯狀態`, tone: 'warning', confirmLabel: '解除鎖帳', loadingLabel: '解除中…' });
         },
+        pwaReloadGuardKey() {
+          return 'momo_pwa_reload_guard';
+        },
+        pwaReloadDecision() {
+          let lastReload = null;
+          try {
+            lastReload = safeParse(sessionStorage.getItem(this.pwaReloadGuardKey()), null);
+          } catch (error) {
+            return { allow: true, retryAfterMs: 0 };
+          }
+          return MomoCore.evaluatePwaReloadGuard(lastReload, Date.now(), 90000);
+        },
+        reloadAppOnce(reason = 'manual', delayMs = 0) {
+          if (this._pwaReloadRequested) return false;
+          const decision = this.pwaReloadDecision();
+          if (!decision.allow) {
+            const seconds = Math.max(1, Math.ceil(decision.retryAfterMs / 1000));
+            this.pwaStatus = '已阻止重複載入';
+            this.recordRuntimeDiagnostic('update', 'warning', '已阻止短時間內再次重新載入', { reason, retryAfterSeconds: seconds });
+            this.showToast('已阻止重複重新整理，請關閉 App 後再開啟', 'warning', 7000);
+            return false;
+          }
+          try {
+            sessionStorage.setItem(this.pwaReloadGuardKey(), JSON.stringify({
+              at: Date.now(),
+              reason,
+              version: this.appVersion
+            }));
+          } catch (error) {
+            // Session storage may be unavailable in strict private browsing mode.
+          }
+          this._pwaReloadRequested = true;
+          this.recordRuntimeDiagnostic('update', 'info', 'App 將重新載入一次以完成更新', { reason, version: this.appVersion });
+          setTimeout(() => window.location.reload(), Math.max(0, Number(delayMs) || 0));
+          return true;
+        },
         async refreshPwaCacheStatus() {
           if (!('caches' in window)) {
             this.pwaCacheNames = [];
@@ -4213,6 +4379,7 @@
           }
         },
         async checkPwaUpdate(manual = false) {
+          if (this.pwaCheckingUpdate) return false;
           this.pwaCheckingUpdate = true;
           this.pwaLastCheckedAt = new Date().toISOString();
           try {
@@ -4252,6 +4419,7 @@
           } catch (error) {
             console.warn('PWA update check failed:', error);
             this.pwaStatus = '檢查失敗';
+            this.recordRuntimeDiagnostic('update', 'warning', 'App 更新檢查失敗', { error: String(error?.message || error) });
             if (manual) this.showToast(`檢查更新失敗：${error.message}`, 'error', 6000);
             return false;
           } finally {
@@ -4282,6 +4450,16 @@
           return this.checkPwaUpdate(false);
         },
         clearPwaCachesAndReload() {
+          if (this.hasProtectedAppActivity) {
+            this.recordRuntimeDiagnostic('update', 'warning', '清除快取已延後：目前有未完成的修改或同步');
+            this.showToast('請先完成目前的修改或同步，再清除舊快取', 'warning', 6500);
+            return;
+          }
+          if (!this.pwaReloadDecision().allow) {
+            this.recordRuntimeDiagnostic('update', 'warning', '清除快取已阻止：短時間內曾重新載入');
+            this.showToast('剛完成一次重新載入，請關閉 App 後再開啟', 'warning', 6500);
+            return;
+          }
           this.showConfirm('確定清除 App 舊快取並重新載入嗎？這不會刪除業績、CRM 或備份資料。', async () => {
             this.pwaClearingCache = true;
             try {
@@ -4292,7 +4470,7 @@
               }
               this.recordOperation('pwa_cache_clear', '清除 App 快取', `版本 ${this.appVersion}`);
               this.showToast('已清除 App 快取，正在重新載入…');
-              setTimeout(() => window.location.reload(), 350);
+              this.reloadAppOnce('cache_clear', 350);
             } catch (error) {
               console.warn('PWA cache clear failed:', error);
               this.showToast(`清除快取失敗：${error.message}`, 'error', 6000);
@@ -4346,20 +4524,28 @@
                 this.pwaRefreshing = true;
                 this.pendingServiceWorker = null;
                 this.updateAvailable = false;
+                this.pwaUpdateApplying = false;
                 this.pwaStatus = '已啟用';
 
                 if (!replacedExistingController) {
+                  this.recordRuntimeDiagnostic('update', 'ok', 'App 更新服務已啟用', { version: this.appVersion });
                   setTimeout(() => { this.pwaRefreshing = false; }, 1000);
                   return;
                 }
 
-                if (this.iosPerfMode) {
+                if (this.iosPerfMode || this.hasProtectedAppActivity) {
+                  this.pwaUpdateDeferred = this.hasProtectedAppActivity;
+                  this.recordRuntimeDiagnostic('update', 'ok', this.hasProtectedAppActivity
+                    ? '新版已啟用，因目前有未完成內容而未重新載入'
+                    : '新版已啟用，重新開啟 App 後完成切換');
                   this.showToast('App 更新完成，關閉後重新開啟即可使用新版');
                   setTimeout(() => { this.pwaRefreshing = false; }, 1000);
                   return;
                 }
 
-                window.location.reload();
+                if (!this.reloadAppOnce('service_worker_update')) {
+                  setTimeout(() => { this.pwaRefreshing = false; }, 1000);
+                }
               });
 
               document.addEventListener('visibilitychange', () => {
@@ -4371,19 +4557,46 @@
             } catch (error) {
               console.warn('PWA service worker registration failed:', error);
               this.pwaStatus = '註冊失敗';
+              this.recordRuntimeDiagnostic('update', 'warning', 'App 更新服務啟用失敗', { error: String(error?.message || error) });
             }
           });
         },
         applyPwaUpdate() {
+          if (this.pwaUpdateApplying) return;
+          if (this.hasProtectedAppActivity) {
+            this.pwaUpdateDeferred = true;
+            this.recordRuntimeDiagnostic('update', 'warning', 'App 更新已延後：目前有未完成的修改或同步');
+            this.showToast('請先完成目前的修改或同步，再套用 App 更新', 'warning', 6500);
+            return;
+          }
+          if (!this.pwaReloadDecision().allow) {
+            this.recordRuntimeDiagnostic('update', 'warning', 'App 更新已阻止：短時間內曾重新載入');
+            this.showToast('剛完成一次更新，請關閉 App 後再開啟', 'warning', 6500);
+            return;
+          }
           if (!this.pendingServiceWorker) {
             this.checkPwaUpdate(true);
             return;
           }
+          this.pwaUpdateDeferred = false;
+          this.pwaUpdateApplying = true;
+          this.recordRuntimeDiagnostic('update', 'info', '正在套用 App 新版本', { version: this.appVersion });
           this.showToast('正在更新到最新版…', 'loading', 6000);
-          this.pendingServiceWorker.postMessage({ type: 'SKIP_WAITING' });
+          try {
+            this.pendingServiceWorker.postMessage({ type: 'SKIP_WAITING' });
+          } catch (error) {
+            this.pwaUpdateApplying = false;
+            this.recordRuntimeDiagnostic('update', 'error', 'App 更新套用失敗', { error: String(error?.message || error) });
+            this.showToast('App 更新未完成，請稍後再試', 'error', 6500);
+            return;
+          }
+          setTimeout(() => {
+            if (!this.pwaRefreshing) this.pwaUpdateApplying = false;
+          }, 10000);
         },
         dismissPwaUpdate() {
           this.updateAvailable = false;
+          this.pwaUpdateDeferred = true;
         },
         generateStableId(prefix) {
           const randomPart = window.crypto && crypto.randomUUID
@@ -5934,7 +6147,9 @@
             message = '恢復網路後按「重新同步」，本機資料仍會保留。';
           } else if (isTimeout) {
             title = '伺服器回應逾時';
-            message = 'Render 可能正在喚醒，請等待約 30 秒後重新同步。';
+            message = options.willRetry
+              ? 'Render 可能正在喚醒；已保留本機資料，稍後會自動重試一次。'
+              : 'Render 可能正在喚醒；本機資料仍可使用，請稍後重新同步。';
           } else if (status === 401) {
             title = '登入已過期';
             message = '請重新登入 Supabase，再按「重新同步」。';
@@ -5943,16 +6158,85 @@
             title = '雲端伺服器暫時異常';
             message = 'Google Calendar 或 Render 暫時無法回應，請稍後重新同步。';
           }
+          if (options.willRetry && !isTimeout && status !== 401) {
+            message = '已保留本機資料，系統會在稍後自動重試一次。';
+          }
           this.syncError = { title, message: String(message).slice(0, 240), status, at: new Date().toISOString() };
           localStorage.setItem('momo_sync_error', JSON.stringify(this.syncError));
-          if (!options.silent) this.showToast(`${title}：${message}`, 'error', 8000);
+          if (!options.silent) this.showToast(`${title}：${message}`, options.willRetry ? 'warning' : 'error', 8000);
         },
         clearCalendarSyncError() {
           this.syncError = null;
           localStorage.removeItem('momo_sync_error');
         },
         retryCalendarSync() {
-          if (!this.syncing) this.syncFromApi();
+          if (this.syncing) return this._calendarSyncPromise || false;
+          this.cancelCalendarSyncRetry();
+          return this.syncFromApi();
+        },
+        cancelCalendarSyncRetry() {
+          if (this.calendarSyncRetryTimer) clearTimeout(this.calendarSyncRetryTimer);
+          this.calendarSyncRetryTimer = null;
+          this.calendarSyncRetryAt = null;
+        },
+        scheduleCalendarSyncRetry(options = {}, delayMs = 20000, reason = '遠端暫時無法回應') {
+          if (this.calendarSyncRetryTimer || !navigator.onLine) return false;
+          const delay = Math.max(1000, Number(delayMs) || 20000);
+          this.calendarSyncRetryAt = new Date(Date.now() + delay).toISOString();
+          this.calendarAutoSyncStatus = 'waiting';
+          this.calendarAutoSyncMessage = '伺服器啟動中，先使用本機資料，稍後自動重試';
+          this.recordRuntimeDiagnostic('sync', 'warning', '已切回本機資料，排定一次自動重試', {
+            reason,
+            retryAt: this.calendarSyncRetryAt,
+            retryAttempt: Number(options.retryAttempt) || 0
+          });
+          this.calendarSyncRetryTimer = setTimeout(() => {
+            this.calendarSyncRetryTimer = null;
+            this.calendarSyncRetryAt = null;
+            if (!navigator.onLine) {
+              this.calendarSyncFallbackActive = true;
+              this.calendarAutoSyncStatus = 'error';
+              this.calendarAutoSyncMessage = '離線中，繼續使用本機資料';
+              return;
+            }
+            this.recordRuntimeDiagnostic('sync', 'info', '開始自動重試行事曆同步');
+            this.syncFromApi({
+              ...options,
+              automatic: true,
+              silent: true,
+              retryAttempt: (Number(options.retryAttempt) || 0) + 1
+            });
+          }, delay);
+          return true;
+        },
+        activateCalendarSyncFallback(options = {}) {
+          if (!this.syncing || this.calendarSyncFallbackActive) return;
+          this.calendarSyncFallbackActive = true;
+          this.calendarAutoSyncMessage = '伺服器啟動中，先顯示本機資料';
+          this.recordRuntimeDiagnostic('sync', 'warning', '遠端回應較慢，畫面繼續使用本機資料', {
+            source: options.automatic ? 'auto' : 'manual'
+          });
+          if (!options.silent) this.showToast('伺服器仍在啟動，畫面可先照常使用', 'info', 6500);
+        },
+        handleCalendarSyncFailure(error, options = {}, status = 0, detail = '') {
+          const retryable = MomoCore.shouldRetryCalendarSync({
+            online: navigator.onLine,
+            errorName: error?.name,
+            status,
+            retryAttempt: options.retryAttempt
+          });
+          this.setCalendarSyncError(error, status, detail, { silent: Boolean(options.silent), willRetry: retryable });
+          this.markCalendarSyncFailure(error, options);
+          this.calendarSyncFallbackActive = retryable || !navigator.onLine;
+          this.recordRuntimeDiagnostic('sync', retryable ? 'warning' : 'error', retryable
+            ? '行事曆同步未完成，已保留本機資料並準備重試'
+            : '行事曆同步未完成，本機資料未受影響', {
+            error: String(error?.message || error),
+            status,
+            retryAttempt: Number(options.retryAttempt) || 0
+          });
+          if (retryable) this.scheduleCalendarSyncRetry(options, 20000, error?.message || `HTTP ${status || 0}`);
+          return false;
         },
         calendarAutoSyncStorageKey() {
           return 'momo_calendar_auto_sync_state';
@@ -6039,6 +6323,14 @@
           });
           this.calendarAutoSyncStatus = 'synced';
           this.calendarAutoSyncMessage = options.automatic ? `行事曆已自動更新 ${timeText}` : `行事曆已更新 ${timeText}`;
+          this.calendarSyncFallbackActive = false;
+          this.cancelCalendarSyncRetry();
+          this.recordRuntimeDiagnostic('sync', 'ok', options.retryAttempt
+            ? '行事曆自動重試成功'
+            : '行事曆同步完成', {
+            source: options.automatic ? 'auto' : 'manual',
+            retryAttempt: Number(options.retryAttempt) || 0
+          });
           if (this.headerSyncFeedbackTimer) clearTimeout(this.headerSyncFeedbackTimer);
           this.headerSyncFeedback = 'success';
           this.headerSyncFeedbackTimer = setTimeout(() => {
@@ -6095,6 +6387,7 @@
 
           if (!config) {
             this.authLoading = false;
+            this.recordRuntimeDiagnostic('startup', 'warning', '後端尚未回應，已先使用本機資料');
             return;
           }
 
@@ -6105,6 +6398,10 @@
             publishableKey: config.supabase_publishable_key || ''
           };
           this.calendarSyncConfigured = config.calendar_configured !== false;
+          this.recordRuntimeDiagnostic('startup', 'ok', '後端連線完成', {
+            apiBaseUrl: this.apiBaseUrl,
+            calendarConfigured: this.calendarSyncConfigured
+          });
 
           if (!this.authConfig.configured) {
             this.authLoading = false;
@@ -7367,10 +7664,40 @@
             this.selectedMonth = 'All';
           }
         },
-        async syncFromApi(options = {}) {
+        async fetchCalendarSyncResponse(baseUrl, queryString, payload, timeoutMs = 45000) {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+          try {
+            return await fetch(`${baseUrl}/api/sync${queryString}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
+              body: JSON.stringify(payload),
+              signal: controller.signal
+            });
+          } finally {
+            clearTimeout(timeoutId);
+          }
+        },
+        syncFromApi(options = {}) {
           const syncOptions = this.normalizeCalendarSyncOptions(options);
+          if (this._calendarSyncPromise) {
+            if (!syncOptions.silent && !syncOptions.automatic) {
+              const now = Date.now();
+              if (!this._calendarSyncJoinNotifiedAt || now - this._calendarSyncJoinNotifiedAt > 2500) {
+                this._calendarSyncJoinNotifiedAt = now;
+                this.showToast('行事曆已在同步中，會沿用同一次連線', 'info', 3500);
+              }
+            }
+            return this._calendarSyncPromise;
+          }
+          const trackedPromise = this._syncFromApiOnce(syncOptions).finally(() => {
+            if (this._calendarSyncPromise === trackedPromise) this._calendarSyncPromise = null;
+          });
+          this._calendarSyncPromise = trackedPromise;
+          return trackedPromise;
+        },
+        async _syncFromApiOnce(syncOptions = {}) {
           const silent = Boolean(syncOptions.silent);
-          if (this.syncing) return false;
           if (this.authConfig.required && !this.authSession?.access_token) {
             this.authError = '請先登入後再同步行事曆';
             if (!silent) this.showAuthSheet = true;
@@ -7386,6 +7713,8 @@
           }
 
           this.syncing = true;
+          this.cancelCalendarSyncRetry();
+          this.calendarSyncFallbackActive = false;
           this.markCalendarSyncAttempt(syncOptions);
           if (silent) {
             this.calendarAutoSyncStatus = 'syncing';
@@ -7395,6 +7724,7 @@
             this.calendarAutoSyncMessage = '同步中…';
             this.showToast('正在向伺服器同步資料…', 'loading', 8000);
           }
+          const slowResponseTimer = setTimeout(() => this.activateCalendarSyncFallback(syncOptions), 10000);
 
           // 根據當前選擇的年月份建立 Query 參數，讓同步能配合當前檢視區間
           const params = [];
@@ -7412,39 +7742,29 @@
           const syncPayload = this.buildCalendarSyncPricingPayload();
           try {
             // 正式站直接使用同網域 API；本機開發時沿用偵測到的本機 API。
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), primaryApi.includes('127.0.0.1') ? 1500 : 45000);
-
-            response = await fetch(`${primaryApi}/api/sync${queryString}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
-              body: JSON.stringify(syncPayload),
-              signal: controller.signal
-            });
-            clearTimeout(timeoutId);
+            response = await this.fetchCalendarSyncResponse(
+              primaryApi,
+              queryString,
+              syncPayload,
+              primaryApi.includes('127.0.0.1') ? 1500 : 45000
+            );
             console.log(`成功連線至 ${primaryApi} 同步！`);
           } catch (e) {
             if (primaryApi === productionApi) {
               console.error('API Sync Error:', e);
-              this.setCalendarSyncError(e, 0, '', { silent });
-              this.markCalendarSyncFailure(e, syncOptions);
+              clearTimeout(slowResponseTimer);
               this.syncing = false;
-              return false;
+              return this.handleCalendarSyncFailure(e, syncOptions);
             }
             console.log('本機後端未啟動或連線超時，切換為 Render 雲端後端...');
             if (!silent) this.showToast('連線雲端伺服器，冷啟動約需 30 秒，請稍候…', 'info', 8000);
             try {
-              response = await fetch(`${productionApi}/api/sync${queryString}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
-                body: JSON.stringify(syncPayload)
-              });
+              response = await this.fetchCalendarSyncResponse(productionApi, queryString, syncPayload, 45000);
             } catch (err) {
               console.error('API Sync Error:', err);
-              this.setCalendarSyncError(err, 0, '', { silent });
-              this.markCalendarSyncFailure(err, syncOptions);
+              clearTimeout(slowResponseTimer);
               this.syncing = false;
-              return false;
+              return this.handleCalendarSyncFailure(err, syncOptions);
             }
           }
 
@@ -7486,10 +7806,9 @@
               const parsed = detail ? JSON.parse(detail) : null;
               detail = parsed?.detail || detail;
             } catch (_) {}
-            this.setCalendarSyncError(e, e.httpStatus || 0, detail, { silent });
-            this.markCalendarSyncFailure(e, syncOptions);
-            return false;
+            return this.handleCalendarSyncFailure(e, syncOptions, e.httpStatus || 0, detail);
           } finally {
+            clearTimeout(slowResponseTimer);
             this.syncing = false;
           }
         },

@@ -6,6 +6,7 @@ const {
   buildLockedOrderCorrectionLines,
   buildPrepaidReversalPayload,
   canReversePrepaidEntry,
+  evaluatePwaReloadGuard,
   getMixedCashAmount,
   getMixedPrepaidAmount,
   getOrderPrepaidBucket,
@@ -13,7 +14,8 @@ const {
   isCorrectionSlip,
   orderMoneyVector,
   prepaidEntryReversed,
-  prepaidKindForTarget
+  prepaidKindForTarget,
+  shouldRetryCalendarSync
 } = MomoCore;
 
 function baseOrder(overrides = {}) {
@@ -125,6 +127,25 @@ function baseOrder(overrides = {}) {
   );
   assert.equal(prepaidEntryReversed(reversedLedger, entry), true);
   assert.equal(canReversePrepaidEntry(reversedLedger, entry), false);
+}
+
+{
+  assert.deepEqual(
+    evaluatePwaReloadGuard({ at: 1000 }, 31000, 90000),
+    { allow: false, retryAfterMs: 60000 }
+  );
+  assert.deepEqual(
+    evaluatePwaReloadGuard({ at: 1000 }, 91000, 90000),
+    { allow: true, retryAfterMs: 0 }
+  );
+}
+
+{
+  assert.equal(shouldRetryCalendarSync({ online: true, errorName: 'AbortError', retryAttempt: 0 }), true);
+  assert.equal(shouldRetryCalendarSync({ online: true, status: 503, retryAttempt: 0 }), true);
+  assert.equal(shouldRetryCalendarSync({ online: true, status: 401, retryAttempt: 0 }), false);
+  assert.equal(shouldRetryCalendarSync({ online: true, status: 503, retryAttempt: 1 }), false);
+  assert.equal(shouldRetryCalendarSync({ online: false, errorName: 'TypeError', retryAttempt: 0 }), false);
 }
 
 console.log('momo-core tests passed');
