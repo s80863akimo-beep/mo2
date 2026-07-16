@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-report-safety-details-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.16-dialogs-feedback-1">
 
   <!-- Vue 3 Global Build CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-report-safety-details-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.16-dialogs-feedback-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -3081,9 +3081,7 @@
                 <span class="momo-status-badge momo-status-tone min-h-[30px] inline-flex items-center px-2.5 rounded-lg text-[10px] font-black" :class="monthlyPrepaidReconciliation.balanced ? 'is-ok' : 'is-danger'">
                   {{ monthlyPrepaidReconciliation.balanced ? '帳面平衡' : '需檢查' }}
                 </span>
-                <button v-if="monthlyPrepaidReconciliation.customerRows.length" type="button" @click="reportShowPrepaidDetails = !reportShowPrepaidDetails"
-                        class="report-detail-toggle min-h-[34px] px-3 border border-slate-200 bg-white text-slate-600 text-[10px] font-black"
-                        :class="{ 'is-open': reportShowPrepaidDetails }" :aria-expanded="reportShowPrepaidDetails" aria-controls="report-prepaid-details">
+                <button v-if="monthlyPrepaidReconciliation.customerRows.length" type="button" @click="reportShowPrepaidDetails = !reportShowPrepaidDetails" class="report-detail-toggle min-h-[34px] px-3 border border-slate-200 bg-white text-slate-600 text-[10px] font-black">
                   {{ reportShowPrepaidDetails ? '收合明細' : `顧客明細 ${monthlyPrepaidReconciliation.customerRows.length}` }}
                 </button>
               </div>
@@ -3098,12 +3096,10 @@
             <div v-if="monthlyPrepaidReconciliation.customerRows.length && !reportShowPrepaidDetails" class="report-collapsed-note px-4 py-3 sm:px-6 border-t border-slate-100 text-[11px] font-bold text-slate-500">
               {{ monthlyPrepaidReconciliation.customerRows.length }} 位顧客列入本月儲值對帳，正式月結 CSV 會包含完整明細。
             </div>
-            <div v-if="monthlyPrepaidReconciliation.customerRows.length && reportShowPrepaidDetails" id="report-prepaid-details"
-                 class="report-detail-region report-table-scroll report-prepaid-table-scroll border-t border-slate-100 overflow-x-auto"
-                 role="region" aria-label="顧客儲值對帳明細">
+            <div v-if="monthlyPrepaidReconciliation.customerRows.length && reportShowPrepaidDetails" class="report-table-scroll report-prepaid-table-scroll border-t border-slate-100 overflow-x-auto">
               <table class="report-data-table report-prepaid-table w-full min-w-[680px] text-left">
                 <thead class="bg-emerald-50/50 text-[10px] font-black text-slate-400">
-                  <tr><th scope="col" class="px-4 py-3">顧客</th><th scope="col" class="px-4 py-3 text-right">期初</th><th scope="col" class="px-4 py-3 text-right">進帳</th><th scope="col" class="px-4 py-3 text-right">扣款</th><th scope="col" class="px-4 py-3 text-right">調整</th><th scope="col" class="px-4 py-3 text-right">期末</th></tr>
+                  <tr><th class="px-4 py-3">顧客</th><th class="px-4 py-3 text-right">期初</th><th class="px-4 py-3 text-right">進帳</th><th class="px-4 py-3 text-right">扣款</th><th class="px-4 py-3 text-right">調整</th><th class="px-4 py-3 text-right">期末</th></tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                   <tr v-for="row in monthlyPrepaidReconciliation.customerRows.slice(0, 12)" :key="'prepaid-recon-' + row.customerId">
@@ -3133,9 +3129,7 @@
                 <p class="text-[10px] font-bold text-slate-400 mt-0.5">優先採用實際工時；樣本不足的服務預設不列入比較</p>
               </div>
               <div class="report-yield-controls grid grid-cols-2 sm:flex gap-2">
-                <button type="button" @click="reportShowYieldDetails = !reportShowYieldDetails"
-                        class="report-secondary-button report-detail-toggle min-h-[40px] px-3 border border-slate-200 bg-white text-slate-600 text-xs font-black"
-                        :class="{ 'is-open': reportShowYieldDetails }" :aria-expanded="reportShowYieldDetails" aria-controls="report-yield-details">
+                <button type="button" @click="reportShowYieldDetails = !reportShowYieldDetails" class="report-secondary-button min-h-[40px] px-3 border border-slate-200 bg-white text-slate-600 text-xs font-black">
                   {{ reportShowYieldDetails ? '收合排行' : `查看排行 ${reportServiceYieldRows.length}` }}
                 </button>
                 <select v-if="reportShowYieldDetails" v-model="reportYieldSort" class="min-h-[40px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-black">
@@ -3154,7 +3148,7 @@
               <div class="p-4"><div class="text-[10px] font-black text-slate-400">符合樣本服務</div><div class="mt-1 text-lg font-black text-sky-700">{{ reportServiceYieldRows.length }} 項</div></div>
               <div class="p-4"><div class="text-[10px] font-black text-slate-400">實際工時覆蓋</div><div class="mt-1 text-lg font-black" :class="reportAnnualYieldSummary.actualCoverage >= 80 ? 'text-emerald-700' : 'text-amber-700'">{{ reportAnnualYieldSummary.actualCoverage }}%</div></div>
             </div>
-            <div v-else id="report-yield-details" class="report-detail-region report-yield-body p-4 sm:p-6" role="region" aria-label="服務產值排行明細">
+            <div v-else class="report-yield-body p-4 sm:p-6">
               <div v-if="reportAnnualServiceYieldRows.length === 0" class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-8 text-center text-xs font-bold text-slate-400">
                 此期間沒有可分析的服務時長資料
               </div>
@@ -3168,18 +3162,18 @@
                       <div class="flex flex-wrap items-center gap-2">
                         <span class="report-yield-rank w-7 h-7 rounded-xl bg-slate-900 text-white text-xs font-black inline-flex items-center justify-center">{{ idx + 1 }}</span>
                         <div class="text-sm font-black text-slate-800 truncate">{{ item.serviceName }}</div>
-                        <span class="momo-status-badge momo-status-tone report-yield-status"
-                              :class="item.confidenceTone === 'ok' ? 'is-ok' : item.confidenceTone === 'warn' ? 'is-warn' : 'is-neutral'">
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black"
+                              :class="item.confidenceTone === 'ok' ? 'bg-emerald-50 text-emerald-700' : item.confidenceTone === 'warn' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-500'">
                           {{ item.confidenceLabel }}
                         </span>
                       </div>
-                      <div class="report-yield-meta-grid mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-bold text-slate-500">
+                      <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-bold text-slate-500">
                         <div><span class="text-slate-400">筆數</span> {{ item.count }}</div>
                         <div><span class="text-slate-400">總營收</span> NT$ {{ formatNumber(item.totalAmount) }}</div>
                         <div><span class="text-slate-400">平均客單</span> NT$ {{ formatNumber(item.averageAmount) }}</div>
                         <div><span class="text-slate-400">平均工時</span> {{ item.averageMinutes || 0 }} 分</div>
                       </div>
-                      <div class="report-yield-basis-grid mt-1 grid grid-cols-1 sm:grid-cols-3 gap-1 text-[10px] font-bold text-slate-400">
+                      <div class="mt-1 grid grid-cols-1 sm:grid-cols-3 gap-1 text-[10px] font-bold text-slate-400">
                         <div>實際 {{ formatHours(item.actualHours) }} hr · 標準 {{ formatHours(item.totalHours) }} hr</div>
                         <div>標準差異 {{ formatMinuteDelta(item.durationDeltaMinutes) }}<span v-if="item.durationDeltaPercent !== null"> · {{ item.durationDeltaPercent > 0 ? '+' : '' }}{{ item.durationDeltaPercent }}%</span></div>
                         <div>{{ item.timeBasisLabel }} · 覆蓋 {{ item.actualCoverage }}%</div>
@@ -3188,8 +3182,8 @@
                     <div class="report-yield-value lg:w-[190px] shrink-0 lg:text-right">
                       <div class="text-2xl font-black text-slate-800">NT$ {{ formatNumber(item.yieldPerHour) }}</div>
                       <div class="text-[10px] font-black text-slate-400">每小時產值</div>
-                      <span class="momo-status-badge momo-status-tone report-yield-level mt-1"
-                            :class="item.level === '高效' ? 'is-ok' : item.level === '穩定' ? 'is-info' : 'is-warn'">
+                      <span class="mt-1 inline-flex px-2 py-0.5 rounded-full text-[10px] font-black"
+                            :class="item.level === '高效' ? 'text-emerald-700 bg-emerald-50' : item.level === '穩定' ? 'text-sky-700 bg-sky-50' : 'text-amber-700 bg-amber-50'">
                         {{ item.level }}
                       </span>
                     </div>
@@ -3254,12 +3248,9 @@
             <div class="report-panel-header momo-section-header px-4 py-4 sm:px-6 flex items-center justify-between border-b border-slate-100"><div><h2 class="text-base sm:text-lg font-black text-slate-800">每月損益表</h2><p class="text-[10px] font-bold text-slate-400 mt-0.5">點擊月份查看業績紀錄</p></div><span class="text-[10px] font-black text-slate-400">{{ reportMonthlyRows.length }} 個月</span></div>
             <div class="report-table-scroll overflow-x-auto">
               <table class="report-data-table report-monthly-table w-full min-w-[620px] text-left">
-                <thead class="bg-slate-50 text-[10px] font-black text-slate-400"><tr><th scope="col" class="px-4 py-3">月份</th><th scope="col" class="px-4 py-3 text-right">營業額</th><th scope="col" class="px-4 py-3 text-right">支出</th><th scope="col" class="px-4 py-3 text-right">淨利</th><th scope="col" class="px-4 py-3 text-right">淨利率</th><th scope="col" class="w-10"><span class="sr-only">查看月份</span></th></tr></thead>
+                <thead class="bg-slate-50 text-[10px] font-black text-slate-400"><tr><th class="px-4 py-3">月份</th><th class="px-4 py-3 text-right">營業額</th><th class="px-4 py-3 text-right">支出</th><th class="px-4 py-3 text-right">淨利</th><th class="px-4 py-3 text-right">淨利率</th><th class="w-10"></th></tr></thead>
                 <tbody class="divide-y divide-slate-100">
-                  <tr v-for="month in reportMonthlyRows" :key="month.month" @click="openReportMonth(month.month)"
-                      @keydown.enter.prevent="openReportMonth(month.month)" @keydown.space.prevent="openReportMonth(month.month)"
-                      class="report-table-action-row cursor-pointer hover:bg-orange-50/40" role="button" tabindex="0"
-                      :aria-label="`${month.label}，營業額 NT$ ${formatNumber(month.revenue)}，查看業績紀錄`">
+                  <tr v-for="month in reportMonthlyRows" :key="month.month" @click="openReportMonth(month.month)" class="cursor-pointer hover:bg-orange-50/40">
                     <td class="px-4 py-3 text-sm font-black text-slate-700">{{ month.label }}</td>
                     <td class="px-4 py-3 text-right text-sm font-black text-macaron-peach-500">NT$ {{ formatNumber(month.revenue) }}</td>
                     <td class="px-4 py-3 text-right text-sm font-bold text-sky-600">NT$ {{ formatNumber(month.expenses) }}</td>
@@ -3338,18 +3329,17 @@
               <div v-for="issue in visibleHealthIssueRows" :key="'health-' + issue.source + '-' + issue.code + '-' + issue.message"
                    class="safety-issue-row px-4 py-3 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                    :class="issue.severity === 'error' ? 'safety-issue-row--error' : 'safety-issue-row--warning'">
-                <div class="safety-issue-copy min-w-0">
-                  <div class="safety-issue-heading flex flex-wrap items-center gap-2">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
                     <span class="momo-status-badge momo-status-tone px-2 py-0.5 rounded-full text-[9px] font-black" :class="issue.severity === 'error' ? 'is-danger' : 'is-warn'">
                       {{ issue.severity === 'error' ? '錯誤' : '提醒' }}
                     </span>
                     <span class="text-[10px] font-black text-slate-400">{{ issue.sourceLabel }}</span>
                   </div>
-                  <div class="safety-issue-message mt-1 text-sm font-black text-slate-800 leading-relaxed">{{ issue.message }}</div>
-                  <div v-if="issue.serviceName" class="safety-issue-meta mt-0.5 text-[10px] font-bold text-slate-400">服務：{{ issue.serviceName }}</div>
+                  <div class="mt-1 text-sm font-black text-slate-800 leading-relaxed">{{ issue.message }}</div>
+                  <div v-if="issue.serviceName" class="mt-0.5 text-[10px] font-bold text-slate-400">服務：{{ issue.serviceName }}</div>
                 </div>
-                <button @click="handleHealthIssue(issue)" class="safety-issue-action min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black shrink-0"
-                        :aria-label="`${issue.actionLabel}：${issue.message}`">
+                <button @click="handleHealthIssue(issue)" class="safety-issue-action min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black shrink-0">
                   {{ issue.actionLabel }}
                 </button>
               </div>
@@ -3367,9 +3357,8 @@
           </div>
 
           <section class="safety-sync-panel safety-maintenance-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
-            <button id="safety-maintenance-summary-sync" type="button" @click="toggleSafetyMaintenanceSection('sync')"
+            <button type="button" @click="toggleSafetyMaintenanceSection('sync')"
                     class="safety-maintenance-summary w-full px-4 py-4 sm:px-6 flex items-center justify-between gap-3 text-left"
-                    :class="{ 'is-open': safetyMaintenanceSection === 'sync' }"
                     :aria-expanded="safetyMaintenanceSection === 'sync'" aria-controls="safety-maintenance-sync">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -3387,8 +3376,7 @@
               <span class="safety-maintenance-chevron" :class="safetyMaintenanceSection === 'sync' ? 'is-open' : ''" aria-hidden="true">›</span>
             </button>
 
-            <div v-if="safetyMaintenanceSection === 'sync'" id="safety-maintenance-sync" class="safety-maintenance-body border-t border-slate-100"
-                 role="region" aria-labelledby="safety-maintenance-summary-sync">
+            <div v-if="safetyMaintenanceSection === 'sync'" id="safety-maintenance-sync" class="safety-maintenance-body border-t border-slate-100">
               <div class="safety-maintenance-actions px-4 py-3 sm:px-6 grid grid-cols-2 gap-2 border-b border-slate-100">
                 <button @click="openSyncIssueModal(priceMatchWorkbenchRows.length ? 'pricing' : 'all')"
                          class="min-h-[38px] rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black">
@@ -3480,9 +3468,8 @@
           </div>
 
           <section class="safety-backup-panel safety-maintenance-panel safety-maintenance-hub momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
-            <button id="safety-maintenance-summary-hub" type="button" @click="toggleSafetyMaintenanceSection('maintenance')"
+            <button type="button" @click="toggleSafetyMaintenanceSection('maintenance')"
                     class="safety-maintenance-summary w-full px-4 py-4 sm:px-6 flex items-center justify-between gap-3 text-left"
-                    :class="{ 'is-open': safetyMaintenanceSection === 'maintenance' }"
                     :aria-expanded="safetyMaintenanceSection === 'maintenance'" aria-controls="safety-maintenance-hub">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -3499,8 +3486,7 @@
               <span class="safety-maintenance-chevron" :class="safetyMaintenanceSection === 'maintenance' ? 'is-open' : ''" aria-hidden="true">›</span>
             </button>
 
-            <div v-if="safetyMaintenanceSection === 'maintenance'" id="safety-maintenance-hub" class="safety-maintenance-body border-t border-slate-100"
-                 role="region" aria-labelledby="safety-maintenance-summary-hub">
+            <div v-if="safetyMaintenanceSection === 'maintenance'" id="safety-maintenance-hub" class="safety-maintenance-body border-t border-slate-100">
               <div class="safety-maintenance-tabs" role="tablist" aria-label="資料維護內容">
                 <button id="safety-maintenance-tab-backup" type="button" role="tab" aria-controls="safety-maintenance-panel-backup"
                         @click="setSafetyMaintenanceView('backup')" :aria-selected="safetyMaintenanceView === 'backup'"
@@ -3594,17 +3580,17 @@
             </div>
             <div v-else class="safety-backup-list divide-y divide-slate-100">
               <div v-for="backup in visibleCloudBackupRows" :key="'cloud-backup-' + backup.id + '-' + backup.backupDate" class="safety-backup-row px-4 py-3 sm:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                <div class="safety-backup-main min-w-0">
-                  <div class="safety-backup-title-row flex flex-wrap items-center gap-2">
-                    <span class="safety-backup-title text-sm font-black text-slate-800">正式雲端備份 · {{ backup.backupDate }}</span>
-                    <span class="safety-backup-status px-2 py-0.5 rounded-full text-[9px] font-black" :class="statusToneClasses(backup.tone)">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-black text-slate-800">正式雲端備份 · {{ backup.backupDate }}</span>
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="statusToneClasses(backup.tone)">
                       {{ backup.integrityStatus === 'ok' ? '檢查正常' : backup.errorCount ? `${backup.errorCount} 錯誤` : `${backup.warningCount || 0} 提醒` }}
                     </span>
                   </div>
-                  <div class="safety-backup-meta mt-1 text-[10px] font-bold text-slate-400">
+                  <div class="mt-1 text-[10px] font-bold text-slate-400">
                     {{ formatDateTime(backup.createdAt) }} · {{ backup.totalRecords }} 筆 · schema v{{ backup.schemaVersion }}
                   </div>
-                  <div class="safety-backup-counts mt-1 flex flex-wrap gap-1.5 text-[9px] font-black text-slate-400">
+                  <div class="mt-1 flex flex-wrap gap-1.5 text-[9px] font-black text-slate-400">
                     <span>顧客 {{ backup.counts.customers || 0 }}</span>
                     <span>業績 {{ backup.counts.orders || 0 }}</span>
                     <span>儲值 {{ backup.counts.prepaidLedger || 0 }}</span>
@@ -3612,7 +3598,7 @@
                     <span>庫存 {{ backup.counts.inventory || 0 }}</span>
                   </div>
                 </div>
-                <div class="safety-backup-actions grid grid-cols-2 gap-2 lg:w-[170px]">
+                <div class="grid grid-cols-2 gap-2 lg:w-[170px]">
                   <button @click="downloadCloudBackupSnapshot(backup)"
                           :disabled="cloudBackupStatus === 'restoring'"
                           class="min-h-[38px] rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black disabled:opacity-40">
@@ -3661,17 +3647,17 @@
             </div>
             <div v-else class="safety-backup-list divide-y divide-slate-100">
               <div v-for="snapshot in visibleBackupSnapshotRows" :key="snapshot.id" class="safety-backup-row px-4 py-3 sm:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                <div class="safety-backup-main min-w-0">
-                  <div class="safety-backup-title-row flex flex-wrap items-center gap-2">
-                    <span class="safety-backup-title text-sm font-black text-slate-800">{{ snapshot.reasonLabel }}</span>
-                    <span class="safety-backup-status px-2 py-0.5 rounded-full text-[9px] font-black" :class="statusToneClasses(snapshot.tone)">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-black text-slate-800">{{ snapshot.reasonLabel }}</span>
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black" :class="statusToneClasses(snapshot.tone)">
                       {{ snapshot.integrityStatus === 'ok' ? '檢查正常' : snapshot.errorCount ? `${snapshot.errorCount} 錯誤` : `${snapshot.warningCount || 0} 提醒` }}
                     </span>
                   </div>
-                  <div class="safety-backup-meta mt-1 text-[10px] font-bold text-slate-400">
+                  <div class="mt-1 text-[10px] font-bold text-slate-400">
                     {{ formatDateTime(snapshot.createdAt) }} · {{ snapshot.totalRecords }} 筆 · {{ snapshot.sizeText }} · v{{ snapshot.appVersion }}
                   </div>
-                  <div class="safety-backup-counts mt-1 flex flex-wrap gap-1.5 text-[9px] font-black text-slate-400">
+                  <div class="mt-1 flex flex-wrap gap-1.5 text-[9px] font-black text-slate-400">
                     <span>顧客 {{ snapshot.counts.customers || 0 }}</span>
                     <span>業績 {{ snapshot.counts.orders || 0 }}</span>
                     <span>儲值 {{ snapshot.counts.prepaidLedger || 0 }}</span>
@@ -3679,7 +3665,7 @@
                     <span>庫存 {{ snapshot.counts.inventory || 0 }}</span>
                   </div>
                 </div>
-                <div class="safety-backup-actions grid grid-cols-3 gap-2 lg:w-[240px]">
+                <div class="grid grid-cols-3 gap-2 lg:w-[240px]">
                   <button @click="downloadBackupSnapshot(snapshot)" class="min-h-[38px] rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black">下載</button>
                   <button @click="restoreBackupSnapshot(snapshot)" class="min-h-[38px] rounded-xl bg-sky-50 border border-sky-100 text-sky-700 text-[11px] font-black">還原</button>
                   <button @click="deleteBackupSnapshot(snapshot.id)" class="min-h-[38px] rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-[11px] font-black">刪除</button>
@@ -4175,9 +4161,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.16-report-safety-details-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.16-dialogs-feedback-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.16-report-safety-details-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.16-dialogs-feedback-1"></script>
 </body>
 </html>
