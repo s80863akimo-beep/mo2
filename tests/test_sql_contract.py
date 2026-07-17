@@ -74,7 +74,7 @@ class SqlIntegrityContractTest(unittest.TestCase):
 
 class PwaVersionContractTest(unittest.TestCase):
     def test_cached_assets_share_one_version(self):
-        expected = "2026.07.17-memory-stability-1"
+        expected = "2026.07.17-runtime-monitoring-1"
         index = (ROOT / "index.html").read_text(encoding="utf-8")
         service_worker = (ROOT / "service-worker.js").read_text(encoding="utf-8")
         app = (ROOT / "assets" / "momo-app.js").read_text(encoding="utf-8")

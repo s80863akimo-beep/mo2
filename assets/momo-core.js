@@ -991,6 +991,64 @@
     return groups;
   }
 
+  function classifyMemoryPressure(sample = {}, thresholds = {}) {
+    const usedBytes = Math.max(0, Number(sample.usedBytes) || 0);
+    const limitBytes = Math.max(0, Number(sample.limitBytes) || 0);
+    const previousUsedBytes = Math.max(0, Number(sample.previousUsedBytes) || 0);
+    const elapsedMs = Math.max(0, Number(sample.elapsedMs) || 0);
+    const warningRatio = Math.min(1, Math.max(0, Number(thresholds.warningRatio) || 0.75));
+    const errorRatio = Math.min(1, Math.max(warningRatio, Number(thresholds.errorRatio) || 0.88));
+    const warningGrowthBytes = Math.max(1, Number(thresholds.warningGrowthBytes) || 96 * 1024 * 1024);
+    const errorGrowthBytes = Math.max(warningGrowthBytes, Number(thresholds.errorGrowthBytes) || 192 * 1024 * 1024);
+    const growthWindowMs = Math.max(1000, Number(thresholds.growthWindowMs) || 120000);
+    const supported = usedBytes > 0 && limitBytes > 0;
+    const ratio = supported ? usedBytes / limitBytes : 0;
+    const percent = supported ? Math.max(0.1, Math.min(100, Math.round(ratio * 1000) / 10)) : null;
+    const growthBytes = previousUsedBytes > 0 ? usedBytes - previousUsedBytes : 0;
+    const rapidGrowth = previousUsedBytes > 0 && elapsedMs > 0 && elapsedMs <= growthWindowMs;
+
+    let severity = 'ok';
+    let reason = supported ? 'normal' : 'unsupported';
+    if (supported && ratio >= errorRatio) {
+      severity = 'error';
+      reason = 'heap_ratio_error';
+    } else if (rapidGrowth && growthBytes >= errorGrowthBytes) {
+      severity = 'error';
+      reason = 'rapid_growth_error';
+    } else if (supported && ratio >= warningRatio) {
+      severity = 'warning';
+      reason = 'heap_ratio_warning';
+    } else if (rapidGrowth && growthBytes >= warningGrowthBytes) {
+      severity = 'warning';
+      reason = 'rapid_growth_warning';
+    }
+
+    return { supported, usedBytes, limitBytes, percent, growthBytes, elapsedMs, severity, reason };
+  }
+
+  function evaluatePreviousRuntimeSession(session = null, now = Date.now(), maxAgeMs = 24 * 60 * 60 * 1000) {
+    if (!session || typeof session !== 'object') return { unclean: false, ageMs: null, reason: 'missing' };
+    if (session.closedCleanly) return { unclean: false, ageMs: 0, reason: 'clean' };
+    const lastHeartbeatAt = Date.parse(session.lastHeartbeatAt || session.startedAt || '');
+    const currentTime = Number(now);
+    if (!Number.isFinite(lastHeartbeatAt) || !Number.isFinite(currentTime)) {
+      return { unclean: false, ageMs: null, reason: 'invalid_time' };
+    }
+    const ageMs = currentTime - lastHeartbeatAt;
+    if (ageMs < 0 || ageMs > Math.max(1000, Number(maxAgeMs) || 0)) {
+      return { unclean: false, ageMs, reason: 'stale' };
+    }
+    return { unclean: true, ageMs, reason: 'missing_clean_shutdown' };
+  }
+
+  function classifyMainThreadStall(lagMs, options = {}) {
+    const lag = Math.max(0, Number(lagMs) || 0);
+    const warningMs = Math.max(100, Number(options.warningMs) || 1500);
+    const errorMs = Math.max(warningMs, Number(options.errorMs) || 5000);
+    if (options.visible === false || lag < warningMs) return { detected: false, severity: 'ok', lagMs: lag };
+    return { detected: true, severity: lag >= errorMs ? 'error' : 'warning', lagMs: lag };
+  }
+
   return {
     PAYMENT,
     EXPENSE_PAYMENT,
@@ -1030,6 +1088,9 @@
     validateAndNormalizeBackupPayload,
     evaluatePwaReloadGuard,
     shouldRetryCalendarSync,
-    groupRecentRowsByCustomer
+    groupRecentRowsByCustomer,
+    classifyMemoryPressure,
+    evaluatePreviousRuntimeSession,
+    classifyMainThreadStall
   };
 });

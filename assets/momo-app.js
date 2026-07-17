@@ -1,5 +1,5 @@
     const { createApp, markRaw } = Vue;
-    const APP_VERSION = '2026.07.17-memory-stability-1';
+    const APP_VERSION = '2026.07.17-runtime-monitoring-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -201,6 +201,23 @@
           pendingActionStartDate: '2026-07-01',
           operationLogs: safeParse(localStorage.getItem('momo_operation_logs'), []),
           runtimeDiagnostics: safeParse(localStorage.getItem('momo_runtime_diagnostics'), []),
+          runtimeDiagnosticsExpanded: false,
+          runtimeHealthSample: null,
+          runtimeMonitorStartedAt: null,
+          runtimeMonitorTimer: null,
+          runtimeMonitorExpectedAt: 0,
+          runtimeMonitorTick: 0,
+          runtimeLongTaskObserver: null,
+          runtimeLongTaskStats: null,
+          runtimeLastAnomalyAt: {},
+          runtimeErrorHandler: null,
+          runtimeRejectionHandler: null,
+          runtimeVisibilityHandler: null,
+          runtimePageHideHandler: null,
+          runtimePageShowHandler: null,
+          runtimeMemoryPressureHandler: null,
+          runtimeSessionId: '',
+          runtimeSessionState: null,
           showOperationLogModal: false,
           closeoutRecords: {},
           closeoutDate: todayStr,
@@ -600,7 +617,35 @@
         runtimeDiagnosticRows() {
           return (Array.isArray(this.runtimeDiagnostics) ? this.runtimeDiagnostics : [])
             .filter(row => row?.id && row?.at && row?.message)
-            .slice(0, 5);
+            .slice(0, 50);
+        },
+        visibleRuntimeDiagnosticRows() {
+          return this.runtimeDiagnosticRows.slice(0, this.runtimeDiagnosticsExpanded ? 20 : 6);
+        },
+        runtimeMonitorSummary() {
+          const sample = this.runtimeHealthSample || {};
+          const recentAnomaly = this.runtimeDiagnosticRows.find(row => {
+            if (!['performance', 'memory', 'error'].includes(row.category)) return false;
+            const at = Date.parse(row.at || '');
+            return Number.isFinite(at) && Date.now() - at <= 30 * 60 * 1000;
+          });
+          if (sample.severity === 'error') {
+            return { value: '記憶體危險', detail: `目前使用 ${sample.percent || 0}% · 已留下診斷紀錄`, tone: 'error' };
+          }
+          if (sample.severity === 'warning') {
+            return { value: '記憶體偏高', detail: `目前使用 ${sample.percent || 0}% · 建議關閉其他分頁`, tone: 'warn' };
+          }
+          if (recentAnomaly) {
+            return {
+              value: recentAnomaly.category === 'performance' ? '偵測到卡頓' : recentAnomaly.category === 'memory' ? '記憶體提醒' : '程式錯誤',
+              detail: `${this.formatDateTime(recentAnomaly.at)} · ${recentAnomaly.message}`,
+              tone: recentAnomaly.tone === 'error' ? 'error' : 'warn'
+            };
+          }
+          if (sample.supported) {
+            return { value: '監控正常', detail: `記憶體 ${sample.percent || 0}% · 卡頓與錯誤持續監控中`, tone: 'ok' };
+          }
+          return { value: '監控中', detail: '此瀏覽器不提供記憶體數值；仍會偵測卡頓、崩潰與同步失敗', tone: 'ok' };
         },
         runtimeStatusSummary() {
           if (this.calendarSyncFallbackActive) {
@@ -627,8 +672,8 @@
           };
         },
         systemStatusTone() {
-          if (this.cloudStatus === 'error' || this.cloudStatus === 'conflict' || this.cloudBackupHealth.status === 'error' || this.safetyReport?.status === 'error') return 'error';
-          if (this.updateAvailable || this.cloudRestorePending || this.cloudMigrationNeeded || this.cloudSyncPending || this.backupReminder.due || this.cloudBackupHealth.status === 'warning' || this.safetyReport?.status === 'warning' || this.runtimeStatusSummary.tone === 'warn') return 'warn';
+          if (this.cloudStatus === 'error' || this.cloudStatus === 'conflict' || this.cloudBackupHealth.status === 'error' || this.safetyReport?.status === 'error' || this.runtimeMonitorSummary.tone === 'error') return 'error';
+          if (this.updateAvailable || this.cloudRestorePending || this.cloudMigrationNeeded || this.cloudSyncPending || this.backupReminder.due || this.cloudBackupHealth.status === 'warning' || this.safetyReport?.status === 'warning' || this.runtimeStatusSummary.tone === 'warn' || this.runtimeMonitorSummary.tone === 'warn') return 'warn';
           return 'ok';
         },
         systemStatusTitle() {
@@ -679,6 +724,13 @@
               value: this.runtimeStatusSummary.value,
               detail: this.runtimeStatusSummary.detail,
               tone: this.runtimeStatusSummary.tone
+            },
+            {
+              key: 'monitor',
+              label: '自動監控',
+              value: this.runtimeMonitorSummary.value,
+              detail: this.runtimeMonitorSummary.detail,
+              tone: this.runtimeMonitorSummary.tone
             },
             {
               key: 'backup',
@@ -3077,6 +3129,7 @@
             this.safetyShowAllIssues = false;
             this.safetyShowAllCloudBackups = false;
             this.safetyShowAllLocalSnapshots = false;
+            this.runtimeDiagnosticsExpanded = false;
           }
           if (newVal !== 'report') {
             this.reportShowPrepaidDetails = false;
@@ -3118,6 +3171,8 @@
       mounted() {
         if (this.iosPerfMode) document.body.classList.add('momo-ios-perf');
         this.loadFromLocalStorage();
+        this.startRuntimeMonitoring();
+        this.applyLocalRuntimeMonitorQaRoute();
         const startupTone = this.storageRecoveryBlocked ? 'error' : this.storageRecoveryNotice ? 'warning' : 'ok';
         const startupMessage = this.storageRecoveryBlocked
           ? '偵測到中斷的資料寫入，已停止自動同步，請從保護快照還原'
@@ -3145,7 +3200,10 @@
                 error: String(error?.message || error)
               });
             })
-            .finally(() => this.scheduleInitialCalendarAutoSync());
+            .finally(() => {
+              this.scheduleInitialCalendarAutoSync();
+              this.applyLocalRuntimeMonitorQaRoute();
+            });
         }
         this.setupPwaUpdateListener();
         this.scheduleStartupSystemCheck();
@@ -3195,6 +3253,7 @@
         }
       },
       beforeUnmount() {
+        this.stopRuntimeMonitoring();
         if (this.cloudVersionPollTimer) clearInterval(this.cloudVersionPollTimer);
         if (this.cloudSyncTimer) clearTimeout(this.cloudSyncTimer);
         if (this.calendarAutoSyncTimer) clearTimeout(this.calendarAutoSyncTimer);
@@ -3211,6 +3270,15 @@
         document.body.classList.remove('momo-ios-perf');
       },
       methods: {
+        applyLocalRuntimeMonitorQaRoute() {
+          if (!['localhost', '127.0.0.1'].includes(window.location.hostname)) return false;
+          if (new URLSearchParams(window.location.search).get('runtime_monitor_check') !== '1') return false;
+          this.showAuthSheet = false;
+          this.activeTab = 'safety';
+          this.safetyMaintenanceSection = 'maintenance';
+          this.safetyMaintenanceView = 'system';
+          return true;
+        },
         scheduleStartupSystemCheck(delay = 8000) {
           if (this.startupSystemCheckTimer) clearTimeout(this.startupSystemCheckTimer);
           if (this.startupSystemCheckIdleHandle && 'cancelIdleCallback' in window) {
@@ -3348,28 +3416,402 @@
             completedAt: record.completedAt || null
           };
         },
+        readRuntimeMemory() {
+          const memory = typeof performance !== 'undefined' ? performance.memory : null;
+          return {
+            usedBytes: Math.max(0, Number(memory?.usedJSHeapSize) || 0),
+            limitBytes: Math.max(0, Number(memory?.jsHeapSizeLimit) || 0),
+            totalBytes: Math.max(0, Number(memory?.totalJSHeapSize) || 0)
+          };
+        },
+        inferRuntimeCause() {
+          if (this.syncing) return { cause: 'calendar_sync', causeLabel: 'Google Calendar 同步' };
+          if (this.cloudSyncInFlight) return { cause: 'cloud_sync', causeLabel: 'Supabase 雲端同步' };
+          if (['loading', 'saving', 'restoring'].includes(this.cloudBackupStatus) || this.backupStatus === 'saving') {
+            return { cause: 'cloud_backup', causeLabel: '雲端備份處理' };
+          }
+          if (this.safetyChecking) return { cause: 'safety_check', causeLabel: '資料安全檢查' };
+          if (this.pwaCheckingUpdate || this.pwaUpdateApplying) return { cause: 'app_update', causeLabel: 'App 更新檢查' };
+          if (this.activeTab === 'crm') return { cause: 'crm_render', causeLabel: '顧客 CRM 畫面重算' };
+          if (this.activeTab === 'report') return { cause: 'report_render', causeLabel: '報表畫面重算' };
+          return { cause: 'unknown', causeLabel: '背景工作或瀏覽器資源不足' };
+        },
+        normalizeRuntimeDiagnosticMeta(meta = {}) {
+          try {
+            const json = JSON.stringify(meta, (key, value) => {
+              if (/password|token|authorization|publishablekey|apikey/i.test(key)) return '[redacted]';
+              if (typeof value === 'string') {
+                return value
+                  .replace(/Bearer\s+[A-Za-z0-9._~-]+/gi, 'Bearer [redacted]')
+                  .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, '[redacted-jwt]')
+                  .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[redacted-email]')
+                  .slice(0, 600);
+              }
+              if (typeof value === 'bigint') return Number(value);
+              return value;
+            });
+            return json ? JSON.parse(json) : {};
+          } catch (error) {
+            return { metaError: String(error?.message || error).slice(0, 160) };
+          }
+        },
+        captureRuntimeContext(extra = {}) {
+          const liveMemory = this.readRuntimeMemory();
+          const memory = this.runtimeHealthSample?.supported ? this.runtimeHealthSample : MomoCore.classifyMemoryPressure(liveMemory);
+          return this.normalizeRuntimeDiagnosticMeta({
+            appVersion: this.appVersion,
+            sessionId: this.runtimeSessionId || null,
+            page: this.activeTab,
+            visible: !document.hidden,
+            online: navigator.onLine,
+            standalone: this.isStandalone,
+            deviceMemoryGb: Number(navigator.deviceMemory) || null,
+            hardwareConcurrency: Number(navigator.hardwareConcurrency) || null,
+            dataCount: this.localDataCount,
+            ordersCount: this.orders?.length || 0,
+            customersCount: this.customers?.length || 0,
+            prepaidLedgerCount: this.prepaidLedger?.length || 0,
+            syncing: Boolean(this.syncing),
+            calendarSyncStatus: this.calendarAutoSyncStatus,
+            cloudStatus: this.cloudStatus,
+            cloudSyncInFlight: Boolean(this.cloudSyncInFlight),
+            cloudBackupStatus: this.cloudBackupStatus,
+            safetyChecking: Boolean(this.safetyChecking),
+            memorySupported: Boolean(memory.supported),
+            heapUsedBytes: liveMemory.usedBytes,
+            heapLimitBytes: liveMemory.limitBytes,
+            heapPercent: memory.percent,
+            ...this.inferRuntimeCause(),
+            ...extra
+          });
+        },
         recordRuntimeDiagnostic(category, tone, message, meta = {}) {
           const entry = {
             id: this.generateStableId('diag'),
             at: new Date().toISOString(),
-            category: ['startup', 'sync', 'update'].includes(category) ? category : 'startup',
+            category: ['startup', 'sync', 'update', 'performance', 'memory', 'error'].includes(category) ? category : 'error',
             tone: ['ok', 'info', 'warning', 'error'].includes(tone) ? tone : 'info',
             message: String(message || '').slice(0, 180),
-            meta
+            meta: this.captureRuntimeContext(meta)
           };
           this.runtimeDiagnostics = [
             entry,
             ...(Array.isArray(this.runtimeDiagnostics) ? this.runtimeDiagnostics : [])
-          ].slice(0, 30);
-          localStorage.setItem('momo_runtime_diagnostics', JSON.stringify(this.runtimeDiagnostics));
+          ].slice(0, 50);
+          try {
+            localStorage.setItem('momo_runtime_diagnostics', JSON.stringify(this.runtimeDiagnostics));
+          } catch (error) {
+            this.runtimeDiagnostics = this.runtimeDiagnostics.slice(0, 12);
+            try { localStorage.setItem('momo_runtime_diagnostics', JSON.stringify(this.runtimeDiagnostics)); }
+            catch (_) {}
+          }
+          return entry;
+        },
+        recordRuntimeAnomaly(category, tone, message, meta = {}, cooldownMs = 60000) {
+          const now = Date.now();
+          const dedupeKey = String(meta.dedupeKey || `${category}:${message}`).slice(0, 120);
+          const previousAt = Number(this.runtimeLastAnomalyAt?.[dedupeKey]) || 0;
+          if (previousAt && now - previousAt < Math.max(1000, Number(cooldownMs) || 0)) return null;
+          this.runtimeLastAnomalyAt = { ...(this.runtimeLastAnomalyAt || {}), [dedupeKey]: now };
+          const entry = this.recordRuntimeDiagnostic(category, tone, message, { ...meta, dedupeKey });
+          if (this.runtimeSessionState && entry) {
+            this.runtimeSessionState = {
+              ...this.runtimeSessionState,
+              lastAnomaly: { at: entry.at, category: entry.category, tone: entry.tone, message: entry.message, meta: entry.meta }
+            };
+            try { localStorage.setItem(this.runtimeSessionStorageKey(), JSON.stringify(this.runtimeSessionState)); }
+            catch (_) {}
+          }
           return entry;
         },
         runtimeDiagnosticLabel(category) {
           return {
             startup: '啟動',
-            sync: '行事曆',
-            update: 'App 更新'
+            sync: '同步',
+            update: 'App 更新',
+            performance: '網頁卡頓',
+            memory: '記憶體',
+            error: '程式錯誤'
           }[category] || '系統';
+        },
+        recordCloudSyncFailure(operation, error, meta = {}) {
+          return this.recordRuntimeAnomaly('sync', 'error', `${operation}失敗，本機資料已保留`, {
+            syncTarget: 'supabase',
+            operation,
+            error: String(error?.message || error || '未知錯誤').slice(0, 500),
+            errorName: error?.name || null,
+            status: Number(error?.status) || Number(error?.code) || null,
+            stack: String(error?.stack || '').slice(0, 1200),
+            cause: 'cloud_sync',
+            causeLabel: 'Supabase 雲端同步',
+            dedupeKey: `cloud:${operation}:${String(error?.message || error).slice(0, 80)}`,
+            ...meta
+          }, 60000);
+        },
+        runtimeDiagnosticMetaText(row = {}) {
+          const meta = row.meta || {};
+          const pieces = [];
+          if (meta.causeLabel) pieces.push(`可能原因：${meta.causeLabel}`);
+          if (Number(meta.stallMs) > 0) pieces.push(`卡頓 ${(Number(meta.stallMs) / 1000).toFixed(1)} 秒`);
+          if (meta.heapPercent !== null && meta.heapPercent !== undefined && Number.isFinite(Number(meta.heapPercent))) {
+            pieces.push(`記憶體 ${Number(meta.heapPercent)}%`);
+          }
+          if (meta.status) pieces.push(`狀態 ${meta.status}`);
+          if (meta.page) pieces.push(`頁面 ${meta.page}`);
+          if (Number(meta.dataCount) >= 0) pieces.push(`資料 ${Number(meta.dataCount)} 筆`);
+          return pieces.slice(0, 5).join(' · ');
+        },
+        runtimeSessionStorageKey() {
+          return 'momo_runtime_session';
+        },
+        beginRuntimeSession() {
+          const previous = safeParse(localStorage.getItem(this.runtimeSessionStorageKey()), null);
+          const previousState = MomoCore.evaluatePreviousRuntimeSession(previous);
+          const navigationType = performance.getEntriesByType?.('navigation')?.[0]?.type || 'navigate';
+          this.runtimeSessionId = this.generateStableId('session');
+          const now = new Date().toISOString();
+          this.runtimeSessionState = {
+            id: this.runtimeSessionId,
+            startedAt: now,
+            lastHeartbeatAt: now,
+            closedCleanly: false,
+            lastSnapshot: this.captureRuntimeContext({ cause: 'session_start', causeLabel: 'App 啟動' })
+          };
+          this.persistRuntimeSession();
+          if (previousState.unclean) {
+            const reloaded = navigationType === 'reload';
+            this.recordRuntimeDiagnostic('startup', reloaded ? 'info' : 'warning', reloaded
+              ? '上次頁面重新載入，已保留重新載入前最後狀態'
+              : '上次頁面可能異常關閉，已保留崩潰前最後狀態', {
+              ...(previous?.lastSnapshot || {}),
+              previousSessionId: previous?.id || null,
+              previousAnomaly: previous?.lastAnomaly || null,
+              lastHeartbeatAt: previous?.lastHeartbeatAt || null,
+              uncleanAgeSeconds: Math.round((previousState.ageMs || 0) / 1000),
+              navigationType,
+              cause: 'unclean_shutdown',
+              causeLabel: reloaded ? '瀏覽器重新載入' : '分頁崩潰、記憶體不足或強制關閉',
+              dedupeKey: `unclean:${previous?.id || previous?.startedAt || 'unknown'}`
+            });
+          }
+        },
+        persistRuntimeSession(extra = {}) {
+          if (!this.runtimeSessionState) return;
+          const now = new Date().toISOString();
+          this.runtimeSessionState = {
+            ...this.runtimeSessionState,
+            ...extra,
+            lastHeartbeatAt: now,
+            lastSnapshot: this.captureRuntimeContext(extra.lastSnapshot || {})
+          };
+          try { localStorage.setItem(this.runtimeSessionStorageKey(), JSON.stringify(this.runtimeSessionState)); }
+          catch (_) {}
+        },
+        closeRuntimeSession(reason = 'pagehide') {
+          if (!this.runtimeSessionState) return;
+          this.runtimeSessionState = {
+            ...this.runtimeSessionState,
+            closedCleanly: true,
+            endedAt: new Date().toISOString(),
+            endReason: reason,
+            lastSnapshot: this.captureRuntimeContext({ cause: 'clean_shutdown', causeLabel: '正常關閉頁面' })
+          };
+          try { localStorage.setItem(this.runtimeSessionStorageKey(), JSON.stringify(this.runtimeSessionState)); }
+          catch (_) {}
+        },
+        sampleRuntimeMemory({ record = true } = {}) {
+          const now = Date.now();
+          const current = this.readRuntimeMemory();
+          const previous = this.runtimeHealthSample || {};
+          const sample = MomoCore.classifyMemoryPressure({
+            ...current,
+            previousUsedBytes: previous.usedBytes,
+            elapsedMs: previous.sampledAt ? now - previous.sampledAt : 0
+          });
+          this.runtimeHealthSample = { ...sample, totalBytes: current.totalBytes, sampledAt: now };
+          if (record && ['warning', 'error'].includes(sample.severity)) {
+            const rapidlyGrowing = String(sample.reason).startsWith('rapid_growth');
+            this.recordRuntimeAnomaly(
+              'memory',
+              sample.severity,
+              rapidlyGrowing ? '記憶體在短時間內快速增加' : `網頁記憶體使用已達 ${sample.percent || 0}%`,
+              {
+                heapUsedBytes: sample.usedBytes,
+                heapLimitBytes: sample.limitBytes,
+                heapPercent: sample.percent,
+                growthBytes: sample.growthBytes,
+                memoryReason: sample.reason,
+                dedupeKey: 'memory_pressure'
+              },
+              5 * 60 * 1000
+            );
+          }
+          return this.runtimeHealthSample;
+        },
+        runRuntimeHeartbeat() {
+          const now = performance.now();
+          const lagMs = this.runtimeMonitorExpectedAt ? Math.max(0, now - this.runtimeMonitorExpectedAt) : 0;
+          const stall = MomoCore.classifyMainThreadStall(lagMs, { visible: !document.hidden });
+          this.runtimeMonitorTick += 1;
+          if (stall.detected) {
+            this.recordRuntimeAnomaly('performance', stall.severity, `網頁主畫面曾卡住約 ${(stall.lagMs / 1000).toFixed(1)} 秒`, {
+              stallMs: Math.round(stall.lagMs),
+              monitor: 'heartbeat',
+              dedupeKey: 'main_thread_stall'
+            }, 60000);
+          }
+          if (this.runtimeMonitorTick % 6 === 0) this.sampleRuntimeMemory({ record: true });
+          if (this.runtimeMonitorTick % 3 === 0) this.persistRuntimeSession();
+          this.runtimeMonitorExpectedAt = performance.now() + 5000;
+          this.runtimeMonitorTimer = setTimeout(() => this.runRuntimeHeartbeat(), 5000);
+        },
+        startRuntimeMonitoring() {
+          if (this.runtimeMonitorTimer) return;
+          this.runtimeMonitorStartedAt = new Date().toISOString();
+          this.beginRuntimeSession();
+          this.sampleRuntimeMemory({ record: true });
+
+          this.runtimeErrorHandler = event => {
+            const target = event?.target;
+            const resourceUrl = target && target !== window ? (target.currentSrc || target.src || target.href || '') : '';
+            const rawMessage = String(event?.message || (resourceUrl ? `資源載入失敗：${resourceUrl}` : '瀏覽器回報未知錯誤'));
+            const memoryError = /out of memory|not enough memory|allocation failed|memory limit/i.test(rawMessage);
+            this.recordRuntimeAnomaly(memoryError ? 'memory' : 'error', 'error', memoryError ? '瀏覽器回報記憶體不足' : rawMessage, {
+              errorName: event?.error?.name || null,
+              filename: event?.filename || resourceUrl || null,
+              line: Number(event?.lineno) || null,
+              column: Number(event?.colno) || null,
+              stack: String(event?.error?.stack || '').slice(0, 1200),
+              dedupeKey: `${memoryError ? 'oom' : 'window_error'}:${rawMessage.slice(0, 80)}`
+            }, 60000);
+          };
+          this.runtimeRejectionHandler = event => {
+            const reason = event?.reason;
+            const message = String(reason?.message || reason || '未處理的非同步錯誤');
+            const memoryError = /out of memory|not enough memory|allocation failed|memory limit/i.test(message);
+            this.recordRuntimeAnomaly(memoryError ? 'memory' : 'error', 'error', memoryError ? '非同步工作發生記憶體不足' : message, {
+              errorName: reason?.name || null,
+              stack: String(reason?.stack || '').slice(0, 1200),
+              dedupeKey: `${memoryError ? 'oom_rejection' : 'promise_rejection'}:${message.slice(0, 80)}`
+            }, 60000);
+          };
+          this.runtimeVisibilityHandler = () => {
+            this.runtimeMonitorExpectedAt = performance.now() + 5000;
+            if (!document.hidden) this.persistRuntimeSession({ closedCleanly: false });
+          };
+          this.runtimePageHideHandler = () => this.closeRuntimeSession('pagehide');
+          this.runtimePageShowHandler = () => this.persistRuntimeSession({ closedCleanly: false, endedAt: null, endReason: null });
+          this.runtimeMemoryPressureHandler = () => {
+            const sample = this.sampleRuntimeMemory({ record: false });
+            this.recordRuntimeAnomaly('memory', 'error', '瀏覽器發出記憶體壓力警告', {
+              heapPercent: sample.percent,
+              dedupeKey: 'browser_memory_pressure'
+            }, 5 * 60 * 1000);
+          };
+          window.addEventListener('error', this.runtimeErrorHandler, true);
+          window.addEventListener('unhandledrejection', this.runtimeRejectionHandler);
+          document.addEventListener('visibilitychange', this.runtimeVisibilityHandler);
+          window.addEventListener('pagehide', this.runtimePageHideHandler);
+          window.addEventListener('beforeunload', this.runtimePageHideHandler);
+          window.addEventListener('pageshow', this.runtimePageShowHandler);
+          window.addEventListener('memorypressure', this.runtimeMemoryPressureHandler);
+
+          if (typeof PerformanceObserver !== 'undefined' && PerformanceObserver.supportedEntryTypes?.includes('longtask')) {
+            try {
+              this.runtimeLongTaskStats = { windowStartedAt: Date.now(), count: 0, totalMs: 0, maxMs: 0 };
+              this.runtimeLongTaskObserver = new PerformanceObserver(list => {
+                const now = Date.now();
+                if (!this.runtimeLongTaskStats || now - this.runtimeLongTaskStats.windowStartedAt > 30000) {
+                  this.runtimeLongTaskStats = { windowStartedAt: now, count: 0, totalMs: 0, maxMs: 0 };
+                }
+                list.getEntries().forEach(entry => {
+                  this.runtimeLongTaskStats.count += 1;
+                  this.runtimeLongTaskStats.totalMs += Number(entry.duration) || 0;
+                  this.runtimeLongTaskStats.maxMs = Math.max(this.runtimeLongTaskStats.maxMs, Number(entry.duration) || 0);
+                });
+                const stats = this.runtimeLongTaskStats;
+                if (!document.hidden && (stats.maxMs >= 1200 || stats.totalMs >= 2500)) {
+                  this.recordRuntimeAnomaly('performance', stats.maxMs >= 5000 ? 'error' : 'warning', '網頁在短時間內執行過多工作', {
+                    stallMs: Math.round(stats.maxMs),
+                    longTaskCount: stats.count,
+                    longTaskTotalMs: Math.round(stats.totalMs),
+                    monitor: 'longtask',
+                    dedupeKey: 'main_thread_stall'
+                  }, 60000);
+                  this.runtimeLongTaskStats = { windowStartedAt: now, count: 0, totalMs: 0, maxMs: 0 };
+                }
+              });
+              this.runtimeLongTaskObserver.observe({ type: 'longtask', buffered: false });
+            } catch (error) {
+              this.runtimeLongTaskObserver = null;
+            }
+          }
+          this.runtimeMonitorExpectedAt = performance.now() + 5000;
+          this.runtimeMonitorTimer = setTimeout(() => this.runRuntimeHeartbeat(), 5000);
+        },
+        stopRuntimeMonitoring() {
+          if (this.runtimeMonitorTimer) clearTimeout(this.runtimeMonitorTimer);
+          this.runtimeMonitorTimer = null;
+          if (this.runtimeLongTaskObserver) this.runtimeLongTaskObserver.disconnect();
+          this.runtimeLongTaskObserver = null;
+          if (this.runtimeErrorHandler) window.removeEventListener('error', this.runtimeErrorHandler, true);
+          if (this.runtimeRejectionHandler) window.removeEventListener('unhandledrejection', this.runtimeRejectionHandler);
+          if (this.runtimeVisibilityHandler) document.removeEventListener('visibilitychange', this.runtimeVisibilityHandler);
+          if (this.runtimePageHideHandler) window.removeEventListener('pagehide', this.runtimePageHideHandler);
+          if (this.runtimePageHideHandler) window.removeEventListener('beforeunload', this.runtimePageHideHandler);
+          if (this.runtimePageShowHandler) window.removeEventListener('pageshow', this.runtimePageShowHandler);
+          if (this.runtimeMemoryPressureHandler) window.removeEventListener('memorypressure', this.runtimeMemoryPressureHandler);
+          this.closeRuntimeSession('app_unmount');
+        },
+        async runRuntimeMonitorCheck(showResult = true) {
+          const sample = this.sampleRuntimeMemory({ record: true });
+          let storage = null;
+          try {
+            if (navigator.storage?.estimate) {
+              const estimate = await navigator.storage.estimate();
+              storage = { usageBytes: Number(estimate.usage) || 0, quotaBytes: Number(estimate.quota) || 0 };
+            }
+          } catch (_) {}
+          this.persistRuntimeSession({ lastSnapshot: { storage } });
+          if (showResult) {
+            const message = sample.severity === 'error'
+              ? `記憶體使用 ${sample.percent || 0}%，建議先關閉其他分頁`
+              : sample.severity === 'warning'
+                ? `記憶體使用 ${sample.percent || 0}%，系統會持續觀察`
+                : sample.supported
+                  ? `監控正常，記憶體使用 ${sample.percent || 0}%`
+                  : '監控正常；此瀏覽器不提供記憶體百分比';
+            this.showToast(message, sample.severity === 'error' ? 'error' : sample.severity === 'warning' ? 'warning' : 'success', 7000);
+          }
+          return { sample, storage };
+        },
+        async exportRuntimeDiagnostics() {
+          const current = await this.runRuntimeMonitorCheck(false);
+          const report = {
+            reportVersion: 1,
+            generatedAt: new Date().toISOString(),
+            appVersion: this.appVersion,
+            environment: {
+              userAgent: navigator.userAgent,
+              language: navigator.language,
+              deviceMemoryGb: Number(navigator.deviceMemory) || null,
+              hardwareConcurrency: Number(navigator.hardwareConcurrency) || null,
+              viewport: { width: window.innerWidth, height: window.innerHeight },
+              standalone: this.isStandalone
+            },
+            current: this.captureRuntimeContext({ storage: current.storage }),
+            session: this.runtimeSessionState,
+            diagnostics: this.runtimeDiagnosticRows
+          };
+          const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `MOMO系統診斷_${new Date().toLocaleDateString('sv-SE')}.json`;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 0);
+          this.recordRuntimeDiagnostic('startup', 'info', '已匯出系統診斷報告', { cause: 'manual_export', causeLabel: '手動匯出診斷' });
+          this.showToast('系統診斷報告已下載；不包含業績明細、顧客清單或登入資料');
         },
         recordOperation(action, label, detail = '', meta = {}) {
           const log = {
@@ -3617,6 +4059,7 @@
             console.error('Cloud backup list failed:', error);
             this.cloudBackupStatus = 'error';
             this.cloudBackupError = error.message || '雲端備份清單讀取失敗';
+            this.recordCloudSyncFailure('讀取雲端備份清單', error);
             if (refreshSafety) this.runDataSafetyCheck(false);
             if (!silent) this.showToast(`雲端備份讀取失敗：${this.cloudBackupError}`, 'error', 8000);
             return [];
@@ -6609,6 +7052,16 @@
           }
           this.syncError = { title, message: String(message).slice(0, 240), status, at: new Date().toISOString() };
           localStorage.setItem('momo_sync_error', JSON.stringify(this.syncError));
+          this.recordRuntimeAnomaly('sync', options.willRetry ? 'warning' : 'error', `${title}：${message}`, {
+            syncTarget: 'google_calendar',
+            error: String(error?.message || error || message).slice(0, 500),
+            errorName: error?.name || null,
+            status,
+            willRetry: Boolean(options.willRetry),
+            cause: 'calendar_sync',
+            causeLabel: 'Google Calendar 同步',
+            dedupeKey: `calendar:${status || error?.name || 'unknown'}:${title}`
+          }, 60000);
           if (!options.silent) this.showToast(`${title}：${message}`, options.willRetry ? 'warning' : 'error', 8000);
         },
         clearCalendarSyncError() {
@@ -6674,13 +7127,6 @@
           this.setCalendarSyncError(error, status, detail, { silent: Boolean(options.silent), willRetry: retryable });
           this.markCalendarSyncFailure(error, options);
           this.calendarSyncFallbackActive = retryable || !navigator.onLine;
-          this.recordRuntimeDiagnostic('sync', retryable ? 'warning' : 'error', retryable
-            ? '行事曆同步未完成，已保留本機資料並準備重試'
-            : '行事曆同步未完成，本機資料未受影響', {
-            error: String(error?.message || error),
-            status,
-            retryAttempt: Number(options.retryAttempt) || 0
-          });
           if (retryable) this.scheduleCalendarSyncRetry(options, 20000, error?.message || `HTTP ${status || 0}`);
           return false;
         },
@@ -7899,6 +8345,7 @@
             this.cloudReady = false;
             this.cloudStatus = 'error';
             this.cloudMessage = '雲端載入失敗，仍使用本機資料';
+            this.recordCloudSyncFailure('初始載入雲端資料', error);
             this.showToast(`雲端載入失敗：${error.message}`, 'error', 7000);
           }
         },
@@ -8111,6 +8558,10 @@
             return true;
           } catch (error) {
             console.error('Cloud sync failed:', error);
+            this.recordCloudSyncFailure('寫入雲端資料', error, {
+              initialMigration: Boolean(initialMigration),
+              versionConflict: error.code === 'VERSION_CONFLICT'
+            });
             if (error.code === 'VERSION_CONFLICT') {
               this.cloudConflict = error.conflict;
               this.cloudStatus = 'conflict';
@@ -8188,6 +8639,7 @@
             console.error(`Cloud delete failed for ${table}:`, error);
             this.cloudStatus = 'error';
             this.cloudMessage = '雲端刪除失敗，請稍後重新同步';
+            this.recordCloudSyncFailure('刪除雲端資料', error, { table });
             return false;
           }
         },
@@ -8293,6 +8745,7 @@
             this.cloudMessage = this.cloudRestorePending
               ? '雲端載入失敗，本機還原版本仍受保護且未被覆蓋'
               : '雲端重新載入失敗，本機資料未變更';
+            this.recordCloudSyncFailure('重新載入雲端資料', error, { restorePending: Boolean(this.cloudRestorePending) });
             this.showToast(`雲端載入失敗：${error.message}`, 'error', 7000);
             return false;
           }
@@ -10373,6 +10826,7 @@
           } catch (error) {
             console.error('Automatic backup failed:', error);
             this.backupStatus = 'error';
+            this.recordCloudSyncFailure('建立雲端備份', error);
             if (!silent) this.showToast(`雲端備份失敗：${error.message}`, 'error', 8000);
             return false;
           }
@@ -10551,6 +11005,20 @@
         }
       }
     });
+    momoApp.config.errorHandler = (error, instance, info) => {
+      try {
+        const reporter = typeof instance?.recordRuntimeAnomaly === 'function' ? instance : instance?.$root;
+        reporter?.recordRuntimeAnomaly('error', 'error', String(error?.message || error || 'Vue 畫面錯誤'), {
+          errorName: error?.name || null,
+          stack: String(error?.stack || '').slice(0, 1200),
+          vueInfo: String(info || '').slice(0, 240),
+          cause: 'vue_render',
+          causeLabel: 'Vue 畫面運算或元件事件',
+          dedupeKey: `vue:${String(error?.message || error).slice(0, 80)}`
+        }, 60000);
+      } catch (_) {}
+      console.error('Vue runtime error:', error, info);
+    };
     const momoVm = momoApp.mount('#app');
     if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
       window.__MOMO_QA_APP__ = momoVm;
