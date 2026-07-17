@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.17-report-safety-list-density-1';
+    const APP_VERSION = '2026.07.17-ledger-calendar-integrity-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -111,7 +111,8 @@
           inventory: [],
           customers: [],
           prepaidLedger: [],
-          dataSchemaVersion: 2,
+          dataSchemaVersion: 3,
+          todayDate: todayStr,
           crmNotes: {},
 
           selectedYear: curYear,
@@ -140,11 +141,13 @@
           cloudStatus: 'idle',
           cloudMessage: '尚未連接雲端資料',
           cloudLastSync: localStorage.getItem('momo_cloud_last_sync') || null,
+          cloudRestorePending: safeParse(localStorage.getItem('momo_cloud_restore_pending'), null),
           cloudSyncTimer: null,
           cloudSyncInFlight: false,
           cloudSyncPending: false,
           cloudApplying: false,
           cloudBaseline: {},
+          cloudPendingWrite: safeParse(localStorage.getItem('momo_cloud_pending_write'), null),
           cloudConflict: null,
           cloudTopupChannelSupported: true,
           cloudCloseoutBreakdownSupported: true,
@@ -183,6 +186,8 @@
           cloudRestoreDraft: null,
           cloudRestoreConfirmText: '',
           cloudRestorePreviewLoading: false,
+          storageRecoveryBlocked: null,
+          storageRecoveryNotice: safeParse(localStorage.getItem('momo_storage_recovery_notice'), null),
           integrityReport: safeParse(localStorage.getItem('momo_integrity_report'), null),
           safetyReport: safeParse(localStorage.getItem('momo_safety_report'), null),
           safetyChecking: false,
@@ -617,7 +622,7 @@
         },
         systemStatusTone() {
           if (this.cloudStatus === 'error' || this.cloudStatus === 'conflict' || this.cloudBackupHealth.status === 'error' || this.safetyReport?.status === 'error') return 'error';
-          if (this.updateAvailable || this.cloudMigrationNeeded || this.cloudSyncPending || this.backupReminder.due || this.cloudBackupHealth.status === 'warning' || this.safetyReport?.status === 'warning' || this.runtimeStatusSummary.tone === 'warn') return 'warn';
+          if (this.updateAvailable || this.cloudRestorePending || this.cloudMigrationNeeded || this.cloudSyncPending || this.backupReminder.due || this.cloudBackupHealth.status === 'warning' || this.safetyReport?.status === 'warning' || this.runtimeStatusSummary.tone === 'warn') return 'warn';
           return 'ok';
         },
         systemStatusTitle() {
@@ -633,7 +638,7 @@
         systemStatusItems() {
           const cloudTone = this.cloudStatus === 'error' || this.cloudStatus === 'conflict'
             ? 'error'
-            : this.cloudMigrationNeeded || this.cloudSyncPending || this.cloudSyncInFlight
+            : this.cloudRestorePending || this.cloudMigrationNeeded || this.cloudSyncPending || this.cloudSyncInFlight
               ? 'warn'
               : this.cloudReady
                 ? 'ok'
@@ -658,7 +663,7 @@
             {
               key: 'cloud',
               label: '雲端',
-              value: this.cloudStatus === 'syncing' ? '同步中' : this.cloudStatus === 'conflict' ? '衝突待處理' : this.cloudMigrationNeeded ? '待搬移' : this.cloudReady ? '已連接' : this.authConfig.configured ? '待確認' : '本機模式',
+              value: this.cloudStatus === 'syncing' ? '同步中' : this.cloudStatus === 'conflict' ? '衝突待處理' : this.cloudRestorePending ? '還原保護中' : this.cloudMigrationNeeded ? '待搬移' : this.cloudReady ? '已連接' : this.authConfig.configured ? '待確認' : '本機模式',
               detail: this.cloudMessage || (this.cloudReady ? '雲端資料可用' : '目前以本機資料為主'),
               tone: cloudTone
             },
@@ -744,8 +749,8 @@
             return {
               count: 0,
               latest: null,
-              status: this.cloudMigrationNeeded ? 'warn' : 'neutral',
-              title: this.cloudMigrationNeeded ? '待首次搬移' : '雲端待確認',
+              status: this.cloudRestorePending || this.cloudMigrationNeeded ? 'warn' : 'neutral',
+              title: this.cloudRestorePending ? '還原保護中' : this.cloudMigrationNeeded ? '待首次搬移' : '雲端待確認',
               detail: this.cloudMessage || '完成雲端初始化後可建立正式備份。'
             };
           }
@@ -1006,11 +1011,11 @@
             {
               key: 'cloud',
               label: '雲端狀態',
-              value: this.cloudReady ? '已連接' : this.cloudMigrationNeeded ? '待搬移' : this.authConfig.configured ? '待登入' : '本機',
+              value: this.cloudReady ? '已連接' : this.cloudRestorePending ? '還原保護中' : this.cloudMigrationNeeded ? '待搬移' : this.authConfig.configured ? '待登入' : '本機',
               detail: this.cloudReady ? this.cloudBackupSummary.detail : (this.cloudMessage || '目前以本機資料為主'),
               tone: this.cloudStatus === 'error' || this.cloudStatus === 'conflict' || this.cloudBackupSummary.status === 'error'
                 ? 'error'
-                : this.cloudMigrationNeeded || this.cloudSyncPending || this.cloudBackupSummary.status === 'warn'
+                : this.cloudRestorePending || this.cloudMigrationNeeded || this.cloudSyncPending || this.cloudBackupSummary.status === 'warn'
                   ? 'warn'
                   : this.cloudReady
                     ? 'ok'
@@ -1038,7 +1043,12 @@
           const amount = Number(this.newOrder.amount) || 0;
           const serviceName = String(this.newOrder.serviceName || '').trim();
           if (!this.newOrder.date || !this.newOrder.customerName || !serviceName || amount <= 0) return [];
-          const customer = this.customerMap[this.newOrder.customerId] || this.findCustomerByName(this.newOrder.customerName);
+          const selected = this.customerMap[this.newOrder.customerId];
+          const matches = selected ? [] : this.findCustomersByName(this.newOrder.customerName);
+          if (!selected && !this.newOrder.createNewCustomer && matches.length > 1) {
+            return [`・找到 ${matches.length} 位同名顧客，請先從清單選擇正確顧客`];
+          }
+          const customer = selected || (this.newOrder.createNewCustomer ? null : matches[0] || null);
           return this.collectNewOrderWarnings(customer, amount, Number(this.newOrder.cashAmount) || 0, serviceName);
         },
         yearOptions() {
@@ -1060,21 +1070,34 @@
           return ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
         },
 
-        customerMap() {
+        rawCustomerMap() {
           return Object.fromEntries(this.customers.map(customer => [customer.id, customer]));
         },
+        customerMap() {
+          const map = { ...this.rawCustomerMap };
+          this.customers.forEach(customer => {
+            const terminalId = customer?.mergedIntoCustomerId ? this.resolveMergedCustomerId(customer.id) : null;
+            const target = terminalId ? this.rawCustomerMap[terminalId] : null;
+            if (target) map[customer.id] = target;
+          });
+          return map;
+        },
+        activeCustomers() {
+          return this.customers.filter(customer => !customer?.archivedAt && !customer?.mergedIntoCustomerId);
+        },
         customerOptions() {
-          return [...this.customers].sort((a, b) => String(a.name).localeCompare(String(b.name), 'zh-Hant'));
+          return [...this.activeCustomers].sort((a, b) => String(a.name).localeCompare(String(b.name), 'zh-Hant'));
         },
         prepaidTotalsByCustomer() {
           const totals = {};
           this.prepaidLedger.forEach(entry => {
             if (!entry.customerId) return;
-            if (!totals[entry.customerId]) totals[entry.customerId] = { balance: 0, topupNet: 0, debitNet: 0 };
+            const customerId = this.resolveMergedCustomerId(entry.customerId);
+            if (!totals[customerId]) totals[customerId] = { balance: 0, topupNet: 0, debitNet: 0 };
             const signedAmount = Number(entry.signedAmount) || 0;
-            totals[entry.customerId].balance += signedAmount;
-            if (entry.bucket === 'topup') totals[entry.customerId].topupNet += signedAmount;
-            if (entry.bucket === 'debit') totals[entry.customerId].debitNet += signedAmount;
+            totals[customerId].balance += signedAmount;
+            if (entry.bucket === 'topup') totals[customerId].topupNet += signedAmount;
+            if (entry.bucket === 'debit') totals[customerId].debitNet += signedAmount;
           });
           Object.values(totals).forEach(total => {
             total.prepaidIn = Math.max(0, total.topupNet);
@@ -1083,12 +1106,38 @@
           return totals;
         },
 
+        // 會計唯一訂單：Calendar 以 Order ID 去重；若舊資料已有重複，
+        // 僅採最後同步的一筆，其他列保留供完整性檢查與稽核。
+        accountingOrders() {
+          const normalOrders = [];
+          const calendarByOrderId = new Map();
+          const today = new Date().toLocaleDateString('sv-SE');
+          (this.orders || []).forEach(order => {
+            if (!order || !this.isOrderActive(order)) return;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(String(order.date || '')) || String(order.date) > today) return;
+            const externalId = order.source === 'google_calendar' && order.orderId
+              ? String(order.orderId).trim().toLocaleLowerCase('zh-TW')
+              : '';
+            if (!externalId) {
+              normalOrders.push(order);
+              return;
+            }
+            const current = calendarByOrderId.get(externalId);
+            const currentStamp = String(current?.lastSyncedAt || current?.updatedAt || current?.createdAt || '');
+            const candidateStamp = String(order.lastSyncedAt || order.updatedAt || order.createdAt || '');
+            if (!current || candidateStamp > currentStamp || (candidateStamp === currentStamp && String(order.id) < String(current.id))) {
+              calendarByOrderId.set(externalId, order);
+            }
+          });
+          return [...normalOrders, ...calendarByOrderId.values()];
+        },
+
         // 當期全部有效業績（不受搜尋與明細篩選影響）
         periodOrders() {
-          return this.orders.filter(o => {
+          return this.accountingOrders.filter(o => {
             if (this.ordersCustomerHistoryId) {
               return this.isOrderActive(o)
-                && o.customerId === this.ordersCustomerHistoryId
+                && this.resolveMergedCustomerId(o.customerId) === this.resolveMergedCustomerId(this.ordersCustomerHistoryId)
                 && o.customerName && o.customerName.trim()
                 && !this.isBlockedSlot(o.customerName);
             }
@@ -1257,13 +1306,13 @@
         // Today's Stats
         todayRevenue() {
           const todayStr = new Date().toLocaleDateString('sv-SE');
-          return this.orders
+          return this.accountingOrders
             .filter(o => this.isOrderActive(o) && o.date === todayStr && o.customerName && !this.isBlockedSlot(o.customerName) && o.paymentMethod !== '儲值進帳')
             .reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
         },
         todayOrdersCount() {
           const todayStr = new Date().toLocaleDateString('sv-SE');
-          return this.orders.filter(o => this.isOrderActive(o) && !this.isCorrectionSlip(o) && o.date === todayStr && o.customerName && !this.isBlockedSlot(o.customerName) && o.paymentMethod !== '儲值進帳').length;
+          return this.accountingOrders.filter(o => !this.isCorrectionSlip(o) && o.date === todayStr && o.customerName && !this.isBlockedSlot(o.customerName) && o.paymentMethod !== '儲值進帳').length;
         },
         todayDateLabel() {
           const d = new Date();
@@ -1271,7 +1320,7 @@
         },
         todayOrders() {
           const todayStr = new Date().toLocaleDateString('sv-SE');
-          return this.orders
+          return this.accountingOrders
             .filter(o => this.isOrderActive(o) && o.date === todayStr && o.customerName && !this.isBlockedSlot(o.customerName))
             .sort((a, b) => String(a.id).localeCompare(String(b.id)));
         },
@@ -1291,7 +1340,7 @@
         },
         selectedCloseoutOrders() {
           const date = this.closeoutDate || new Date().toLocaleDateString('sv-SE');
-          return this.orders
+          return this.accountingOrders
             .filter(o => this.isOrderActive(o) && o.date === date && o.customerName && !this.isBlockedSlot(o.customerName))
             .sort((a, b) => String(a.id).localeCompare(String(b.id)));
         },
@@ -1323,7 +1372,7 @@
           const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
           const dates = new Set();
 
-          (this.orders || []).forEach(order => {
+          this.accountingOrders.forEach(order => {
             if (!order || !validDate(order.date) || order.date < startDate || order.date > today) return;
             if (!this.isOrderActive(order) || this.isBlockedSlot(order.customerName)) return;
             dates.add(order.date);
@@ -1540,24 +1589,15 @@
 
         // KPI Calculations（排除儲值進帳，避免業績虛高）
         kpis() {
-          const serviceOrders = this.filteredOrders.filter(o => o.paymentMethod !== '儲值進帳');
-          const countableOrders = serviceOrders.filter(o => !this.isCorrectionSlip(o));
-          const revenue = serviceOrders.reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
-          const ordersCount = countableOrders.length;
-          const countableRevenue = countableOrders.reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
-          const aov = ordersCount > 0 ? Math.round(countableRevenue / ordersCount) : 0;
-          const momoSalary = Math.round(revenue * 0.45);
-          const totalExp = this.periodExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-          const netProfit = revenue - totalExp;
-
-          return { revenue, ordersCount, aov, momoSalary, netProfit };
+          // 更正單影響營收分子，但不增加服務人次分母；與正式月結口徑一致。
+          return MomoCore.calculatePeriodKpis(this.periodOrders, this.periodExpenses);
         },
 
         // Reconciliation
         paymentReconciliation() {
           const dict = { '現金': 0, '轉帳': 0, '儲值扣款': 0, '儲值進帳': 0 };
           dict['其他'] = 0; // 舊版付款方式（LinePay、轉帳）歸類於此
-          this.filteredOrders.forEach(o => {
+          this.periodOrders.forEach(o => {
             if (o.paymentMethod === '現金＋儲值扣款') {
               dict['現金'] += this.getMixedCashAmount(o);
               dict['儲值扣款'] += this.getMixedPrepaidAmount(o);
@@ -1577,7 +1617,7 @@
             // Annual trend by month
             return Array.from({ length: 12 }, (_, i) => {
               const mStr = String(i + 1).padStart(2, '0');
-              const total = this.orders
+              const total = this.accountingOrders
                 .filter(o => {
                   const [y, m] = o.date.split('-');
                   const notBlocked = o.customerName && !this.isBlockedSlot(o.customerName);
@@ -1594,7 +1634,7 @@
 
             return Array.from({ length: daysInMonth }, (_, i) => {
               const dayStr = `${this.selectedYear}-${this.selectedMonth}-${String(i + 1).padStart(2, '0')}`;
-              const total = this.orders
+              const total = this.accountingOrders
                 .filter(o => this.isOrderActive(o) && o.date === dayStr && o.customerName && !this.isBlockedSlot(o.customerName) && o.paymentMethod !== '儲值進帳')
                 .reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
               return { label: `${i + 1}日`, total, key: i + 1 };
@@ -1667,7 +1707,7 @@
         // 服務類別收入佔比
         categoryBreakdown() {
           const cats = { '剪髮': 0, '燙髮': 0, '染髮': 0, '洗護其他': 0, '更正': 0 };
-          this.filteredOrders
+          this.periodOrders
             .filter(o => o.paymentMethod !== '儲值進帳')
             .forEach(o => {
               const cat = this.isCorrectionSlip(o) ? '更正' : (o.category || this.classifyCategory(o.serviceName));
@@ -1717,12 +1757,12 @@
         // Top 4 Customers in Filtered Period（排除儲值進帳）
         topCustomers() {
           const map = {};
-          this.filteredOrders.forEach(o => {
+          this.periodOrders.forEach(o => {
             if (o.paymentMethod === '儲值進帳') return;
-            const customerId = o.customerId || o.customerName;
-            const name = this.customerMap[o.customerId]?.name || o.customerName;
+            const customerId = o.customerId ? this.resolveMergedCustomerId(o.customerId) : o.customerName;
+            const name = this.customerMap[customerId]?.name || o.customerName;
             if (!map[customerId]) {
-              map[customerId] = { id: o.customerId || null, name, gender: o.gender, totalSpent: 0, count: 0 };
+              map[customerId] = { id: o.customerId ? customerId : null, name, gender: o.gender, totalSpent: 0, count: 0 };
             }
             map[customerId].totalSpent += (Number(o.amount) || 0);
             if (!this.isCorrectionSlip(o)) map[customerId].count += 1;
@@ -1763,7 +1803,7 @@
           ];
         },
         reportAnnualServiceOrders() {
-          return (this.orders || []).filter(order => {
+          return this.accountingOrders.filter(order => {
             if (!order?.date || !String(order.date).startsWith(`${this.selectedYear}-`)) return false;
             return this.isOrderActive(order)
               && !this.isCorrectionSlip(order)
@@ -1919,7 +1959,7 @@
           const map = {};
           const today = new Date(new Date().toLocaleDateString('sv-SE') + 'T00:00:00');
 
-          this.customers.forEach(customer => {
+          this.activeCustomers.forEach(customer => {
             map[customer.id] = {
               id: customer.id,
               name: customer.name,
@@ -1932,22 +1972,30 @@
               serviceAmountMap: {},
               serviceActualMinutesMap: {},
               serviceStandardMinutesMap: {},
+              serviceEffectiveMinutesMap: {},
+              serviceTimedAmountMap: {},
+              serviceActualCountMap: {},
+              serviceStandardCountMap: {},
               actualMinutesTotal: 0,
               actualMinutesCount: 0,
               standardMinutesTotal: 0,
               standardMinutesCount: 0,
+              effectiveMinutesTotal: 0,
+              effectiveMinutesCount: 0,
+              timedAmountTotal: 0,
               recentOrders: []
             };
           });
 
           // Customer ID 是 CRM 主鍵；姓名只負責顯示，不再決定顧客身分。
-          this.orders.forEach(o => {
+          this.accountingOrders.forEach(o => {
             if (!this.isOrderActive(o)) return;
             if (!o.customerId || !o.customerName || this.isBlockedSlot(o.customerName)) return;
-            const customer = this.customerMap[o.customerId];
-            if (!map[o.customerId]) {
-              map[o.customerId] = {
-                id: o.customerId,
+            const customerId = this.resolveMergedCustomerId(o.customerId);
+            const customer = this.customerMap[customerId];
+            if (!map[customerId]) {
+              map[customerId] = {
+                id: customerId,
                 name: customer?.name || o.customerName,
                 gender: customer?.gender || o.gender || '女',
                 count: 0,
@@ -1958,17 +2006,22 @@
                 serviceAmountMap: {},
                 serviceActualMinutesMap: {},
                 serviceStandardMinutesMap: {},
+                serviceEffectiveMinutesMap: {},
+                serviceTimedAmountMap: {},
+                serviceActualCountMap: {},
+                serviceStandardCountMap: {},
                 actualMinutesTotal: 0,
                 actualMinutesCount: 0,
                 standardMinutesTotal: 0,
                 standardMinutesCount: 0,
+                effectiveMinutesTotal: 0,
+                effectiveMinutesCount: 0,
+                timedAmountTotal: 0,
                 recentOrders: []
               };
             }
 
-            const record = map[o.customerId];
-            if (!record.lastDate || o.date > record.lastDate) record.lastDate = o.date;
-            if (!record.firstDate || o.date < record.firstDate) record.firstDate = o.date;
+            const record = map[customerId];
             if (o.gender) record.gender = o.gender;
 
             if (o.paymentMethod !== '儲值進帳') {
@@ -1976,10 +2029,13 @@
               const serviceName = o.serviceName || '未填服務';
               const standardMinutes = this.getServiceMinutes(serviceName);
               const actualMinutes = this.getOrderActualMinutes(o);
-              const basisMinutes = actualMinutes || standardMinutes || 0;
+              const effective = MomoCore.resolveEffectiveMinutes(actualMinutes, standardMinutes);
+              const basisMinutes = effective.effectiveMinutes;
               const correctionSlip = this.isCorrectionSlip(o);
               record.totalSpent += amount;
               if (!correctionSlip) {
+                if (!record.lastDate || o.date > record.lastDate) record.lastDate = o.date;
+                if (!record.firstDate || o.date < record.firstDate) record.firstDate = o.date;
                 record.count += 1;
                 record.serviceMap[serviceName] = (record.serviceMap[serviceName] || 0) + 1;
                 record.serviceAmountMap[serviceName] = (record.serviceAmountMap[serviceName] || 0) + amount;
@@ -1993,19 +2049,29 @@
                   record.actualMinutesCount += 1;
                   record.serviceActualMinutesMap[serviceName] = (record.serviceActualMinutesMap[serviceName] || 0) + actualMinutes;
                 }
+                if (basisMinutes) {
+                  record.effectiveMinutesTotal += basisMinutes;
+                  record.effectiveMinutesCount += 1;
+                  record.timedAmountTotal += amount;
+                  record.serviceEffectiveMinutesMap[serviceName] = (record.serviceEffectiveMinutesMap[serviceName] || 0) + basisMinutes;
+                  record.serviceTimedAmountMap[serviceName] = (record.serviceTimedAmountMap[serviceName] || 0) + amount;
+                  const countMap = effective.source === 'actual' ? record.serviceActualCountMap : record.serviceStandardCountMap;
+                  countMap[serviceName] = (countMap[serviceName] || 0) + 1;
+                }
+                record.recentOrders.push({
+                  id: o.id,
+                  date: o.date,
+                  serviceName,
+                  amount,
+                  paymentMethod: o.paymentMethod,
+                  standardMinutes,
+                  actualMinutes,
+                  basisMinutes,
+                  timeSource: effective.source,
+                  yieldPerHour: basisMinutes ? Math.round(amount / (basisMinutes / 60)) : 0,
+                  correctionSlip: false
+                });
               }
-              record.recentOrders.push({
-                id: o.id,
-                date: o.date,
-                serviceName,
-                amount,
-                paymentMethod: o.paymentMethod,
-                standardMinutes,
-                actualMinutes,
-                basisMinutes,
-                yieldPerHour: basisMinutes ? Math.round(amount / (basisMinutes / 60)) : 0,
-                correctionSlip
-              });
             }
           });
 
@@ -2039,17 +2105,28 @@
             const valueTier = (cust.totalSpent >= 8000 || cust.count >= 5 || avgTicket >= 2500) ? 'high' : cust.count >= 3 ? 'regular' : 'light';
             const valueTierLabel = valueTier === 'high' ? '高價值' : valueTier === 'regular' ? '固定觀察' : '低頻';
             const actualTimeCoverage = cust.count > 0 ? Math.round((cust.actualMinutesCount / cust.count) * 100) : 0;
-            const workMinutes = cust.actualMinutesTotal || cust.standardMinutesTotal;
-            const workHourYield = workMinutes ? Math.round(cust.totalSpent / (workMinutes / 60)) : 0;
+            const fallbackTimeCount = Math.max(0, cust.effectiveMinutesCount - cust.actualMinutesCount);
+            const effectiveTimeCoverage = cust.count > 0
+              ? Math.round((cust.effectiveMinutesCount / cust.count) * 100)
+              : 0;
+            const workMinutes = cust.effectiveMinutesTotal;
+            const workHourYield = workMinutes ? Math.round(cust.timedAmountTotal / (workMinutes / 60)) : 0;
             const workTimeLabel = workMinutes ? this.formatMinutesCompact(workMinutes) : '未設定';
-            const workTimeBasis = cust.actualMinutesTotal ? '實際工時' : cust.standardMinutesTotal ? '標準工時' : '無工時';
+            const workTimeBasis = cust.actualMinutesCount && fallbackTimeCount
+              ? '混合工時'
+              : cust.actualMinutesCount
+                ? (cust.actualMinutesCount === cust.count ? '實際工時' : '部分實際工時')
+                : fallbackTimeCount
+                  ? (fallbackTimeCount === cust.count ? '標準工時' : '部分標準工時')
+                  : '無工時';
             const servicePreferenceRows = Object.keys(cust.serviceMap)
               .map(serviceName => {
                 const count = cust.serviceMap[serviceName] || 0;
                 const totalAmount = cust.serviceAmountMap[serviceName] || 0;
-                const actualMinutes = cust.serviceActualMinutesMap[serviceName] || 0;
-                const standardMinutes = cust.serviceStandardMinutesMap[serviceName] || 0;
-                const minutes = actualMinutes || standardMinutes || 0;
+                const minutes = cust.serviceEffectiveMinutesMap[serviceName] || 0;
+                const timedAmount = cust.serviceTimedAmountMap[serviceName] || 0;
+                const actualCount = cust.serviceActualCountMap[serviceName] || 0;
+                const standardCount = cust.serviceStandardCountMap[serviceName] || 0;
                 return {
                   serviceName,
                   count,
@@ -2057,8 +2134,8 @@
                   avgAmount: count ? Math.round(totalAmount / count) : 0,
                   minutes,
                   timeLabel: minutes ? this.formatMinutesCompact(minutes) : '未設定',
-                  basisLabel: actualMinutes ? '實際' : standardMinutes ? '標準' : '無工時',
-                  yieldPerHour: minutes ? Math.round(totalAmount / (minutes / 60)) : 0
+                  basisLabel: actualCount && standardCount ? '混合' : actualCount ? '實際' : standardCount ? '標準' : '無工時',
+                  yieldPerHour: minutes ? Math.round(timedAmount / (minutes / 60)) : 0
                 };
               })
               .sort((a, b) => b.count - a.count || b.totalAmount - a.totalAmount)
@@ -2069,10 +2146,15 @@
                 ? `${order.actualMinutes ? '實際' : '標準'} ${this.formatMinutesCompact(order.basisMinutes)}`
                 : '工時未設定'
             }));
-            const prepaidTimeline = this.prepaidLedgerEntries
-              .filter(entry => entry.customerId === cust.id)
-              .slice(0, 6)
-              .map(entry => ({
+            let combinedPrepaidBalance = 0;
+            const prepaidHistory = this.prepaidLedgerEntries
+              .filter(entry => this.resolveMergedCustomerId(entry.customerId) === cust.id)
+              .sort((a, b) => String(a.date).localeCompare(String(b.date))
+                || String(a.createdAt).localeCompare(String(b.createdAt))
+                || String(a.id).localeCompare(String(b.id)))
+              .map(entry => {
+                combinedPrepaidBalance += Number(entry.signedAmount) || 0;
+                return {
                 id: entry.id,
                 date: entry.date,
                 signedAmount: Number(entry.signedAmount) || 0,
@@ -2080,8 +2162,10 @@
                 type: Number(entry.signedAmount) >= 0 ? 'in' : 'out',
                 bucket: entry.bucket,
                 note: entry.note || entry.serviceName || (entry.bucket === 'topup' ? '儲值進帳' : '儲值扣款'),
-                balanceAfter: entry.balanceAfter
-              }));
+                  balanceAfter: combinedPrepaidBalance
+                };
+              });
+            const prepaidTimeline = prepaidHistory.slice(-6).reverse();
             const formulaTimeline = this.buildCustomerFormulaTimeline(cust, formula, recentOrders);
             const returnStatus = this.getCustomerReturnStatus({
               count: cust.count,
@@ -2132,6 +2216,7 @@
               prepaidDormant,
               formulaSummary,
               actualTimeCoverage,
+              effectiveTimeCoverage,
               workMinutes,
               workTimeLabel,
               workTimeBasis,
@@ -2203,14 +2288,15 @@
               || a.index - b.index)
             .map(({ entry }) => {
               const signedAmount = Number(entry.signedAmount) || 0;
-              balances[entry.customerId] = (balances[entry.customerId] || 0) + signedAmount;
+              const balanceCustomerId = this.resolveMergedCustomerId(entry.customerId);
+              balances[balanceCustomerId] = (balances[balanceCustomerId] || 0) + signedAmount;
               const customer = this.customerMap[entry.customerId];
               return {
                 ...entry,
                 customerName: customer?.name || entry.customerNameSnapshot || '未知顧客',
                 type: signedAmount >= 0 ? 'in' : 'out',
                 amount: Math.abs(signedAmount),
-                balanceAfter: balances[entry.customerId]
+                balanceAfter: balances[balanceCustomerId]
               };
             })
             .reverse();
@@ -2251,7 +2337,7 @@
           const lastYear = String(parseInt(this.selectedYear) - 1);
           return Array.from({ length: 12 }, (_, i) => {
             const mStr = String(i + 1).padStart(2, '0');
-            const monthOrders = this.orders.filter(o => {
+            const monthOrders = this.accountingOrders.filter(o => {
               const [y, m] = o.date.split('-');
               return y === lastYear && m === mStr
                 && this.isOrderActive(o)
@@ -2279,7 +2365,7 @@
         annualMonthlyData() {
           return Array.from({ length: 12 }, (_, i) => {
             const mStr = String(i + 1).padStart(2, '0');
-            const monthOrders = this.orders.filter(o => {
+            const monthOrders = this.accountingOrders.filter(o => {
               const [y, m] = o.date.split('-');
               return y === this.selectedYear && m === mStr
                 && this.isOrderActive(o)
@@ -2323,7 +2409,7 @@
         settlementOrders() {
           const prefix = this.reportSettlementPrefix;
           const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
-          return (this.orders || [])
+          return this.accountingOrders
             .filter(order => {
               if (!order || !validDate(order.date) || !String(order.date).startsWith(prefix)) return false;
               return this.isOrderActive(order) && order.customerName && !this.isBlockedSlot(order.customerName);
@@ -2382,6 +2468,7 @@
             adjustmentCount: 0
           };
           const ensureRow = customerId => {
+            customerId = this.resolveMergedCustomerId(customerId);
             if (!rowsByCustomer[customerId]) {
               const customer = this.customerMap[customerId];
               rowsByCustomer[customerId] = {
@@ -2412,8 +2499,8 @@
 
             row.netChange += amount;
             summary.netChange += amount;
-            const isTopupIn = amount > 0 && entry.bucket === 'topup';
-            const isDebitOut = amount < 0 && entry.bucket === 'debit';
+            const isTopupIn = amount > 0 && entry.kind === 'topup' && entry.bucket === 'topup';
+            const isDebitOut = amount < 0 && entry.kind === 'debit' && entry.bucket === 'debit';
             if (isTopupIn) {
               row.topupIn += amount;
               summary.topupIn += amount;
@@ -2438,8 +2525,59 @@
             .sort((a, b) => Math.abs(b.closingBalance) - Math.abs(a.closingBalance) || String(a.customerName).localeCompare(String(b.customerName), 'zh-Hant'));
 
           summary.closingBalance = summary.openingBalance + summary.netChange;
-          summary.balanced = summary.openingBalance + summary.topupIn - summary.debitOut + summary.adjustments === summary.closingBalance;
-          return { ...summary, customerRows };
+          const expectedByOrderCustomer = new Map();
+          const ledgerByOrderCustomer = new Map();
+          const keyFor = (orderId, customerId) => JSON.stringify([String(orderId), String(customerId)]);
+
+          this.accountingOrders.forEach(order => {
+            if (!order?.id || !order.customerId || !String(order.date || '').startsWith(this.reportSettlementPrefix)) return;
+            const expected = this.getOrderPrepaidTarget(order);
+            if (!expected) return;
+            const customerId = this.resolveMergedCustomerId(order.customerId);
+            const key = keyFor(order.id, customerId);
+            expectedByOrderCustomer.set(key, {
+              orderId: String(order.id),
+              customerId,
+              expected: (expectedByOrderCustomer.get(key)?.expected || 0) + expected,
+              order
+            });
+          });
+          (this.prepaidLedger || []).forEach(entry => {
+            if (!entry?.sourceOrderId || !entry.customerId || !String(entry.date || '').startsWith(this.reportSettlementPrefix)) return;
+            const customerId = this.resolveMergedCustomerId(entry.customerId);
+            const key = keyFor(entry.sourceOrderId, customerId);
+            const current = ledgerByOrderCustomer.get(key) || {
+              orderId: String(entry.sourceOrderId),
+              customerId,
+              ledger: 0
+            };
+            current.ledger += Number(entry.signedAmount) || 0;
+            ledgerByOrderCustomer.set(key, current);
+          });
+
+          const mismatchKeys = new Set([...expectedByOrderCustomer.keys(), ...ledgerByOrderCustomer.keys()]);
+          const mismatches = [...mismatchKeys].map(key => {
+            const expectedRow = expectedByOrderCustomer.get(key);
+            const ledgerRow = ledgerByOrderCustomer.get(key);
+            const expected = Math.round(Number(expectedRow?.expected) || 0);
+            const ledger = Math.round(Number(ledgerRow?.ledger) || 0);
+            const customerId = expectedRow?.customerId || ledgerRow?.customerId || '';
+            return {
+              orderId: expectedRow?.orderId || ledgerRow?.orderId || '',
+              customerId,
+              customerName: this.customerMap[customerId]?.name || customerId || '未知顧客',
+              expected,
+              ledger,
+              difference: ledger - expected
+            };
+          }).filter(row => row.difference !== 0);
+
+          summary.orderExpectedNet = [...expectedByOrderCustomer.values()].reduce((sum, row) => sum + row.expected, 0);
+          summary.orderLedgerNet = [...ledgerByOrderCustomer.values()].reduce((sum, row) => sum + row.ledger, 0);
+          summary.orderDifference = summary.orderLedgerNet - summary.orderExpectedNet;
+          summary.mismatchCount = mismatches.length;
+          summary.balanced = mismatches.length === 0;
+          return { ...summary, customerRows, mismatches };
         },
         monthlySettlementSummary() {
           const month = this.reportSettlementMonth;
@@ -2680,7 +2818,7 @@
         },
         annualCategoryBreakdown() {
           const cats = { '剪髮': 0, '燙髮': 0, '染髮': 0, '洗護其他': 0, '更正': 0 };
-          this.orders
+          this.accountingOrders
             .filter(o => {
               const [y] = o.date.split('-');
               return y === this.selectedYear && o.customerName
@@ -2804,18 +2942,10 @@
           return breakdown;
         },
         serviceDictionary() {
-          const dict = {};
-          this.servicesConfig.forEach(s => {
-            if (s.name) dict[s.name.trim()] = Number(s.duration) || 0;
-          });
-          return dict;
+          return MomoCore.buildServiceMetricDictionary(this.servicesConfig, 'duration');
         },
         priceDictionary() {
-          const dict = {};
-          this.servicesConfig.forEach(s => {
-            if (s.name) dict[s.name.trim()] = Number(s.price) || 0;
-          });
-          return dict;
+          return MomoCore.buildServiceMetricDictionary(this.servicesConfig, 'price');
         },
         serviceConfigHasChanges() {
           return JSON.stringify(this.tempServicesConfig || []) !== JSON.stringify(this.servicesConfig || []);
@@ -2970,22 +3100,41 @@
       mounted() {
         if (this.iosPerfMode) document.body.classList.add('momo-ios-perf');
         this.loadFromLocalStorage();
-        this.recordRuntimeDiagnostic('startup', 'ok', 'App 已開啟，本機資料可立即使用', {
+        const startupTone = this.storageRecoveryBlocked ? 'error' : this.storageRecoveryNotice ? 'warning' : 'ok';
+        const startupMessage = this.storageRecoveryBlocked
+          ? '偵測到中斷的資料寫入，已停止自動同步，請從保護快照還原'
+          : this.storageRecoveryNotice
+            ? '偵測到中斷的資料寫入，已自動回復上次完整版本'
+            : 'App 已開啟，本機資料可立即使用';
+        this.recordRuntimeDiagnostic('startup', startupTone, startupMessage, {
           version: this.appVersion,
           localDataCount: this.localDataCount
         });
+        if (this.storageRecoveryBlocked) this.showToast(startupMessage, 'error', 10000);
+        else if (this.storageRecoveryNotice) {
+          this.showToast(startupMessage, 'warning', 8000);
+          localStorage.removeItem('momo_storage_recovery_notice');
+          this.storageRecoveryNotice = null;
+        }
         this.runDataSafetyCheck(false);
-        this.initAuth()
-          .catch((error) => {
-            this.recordRuntimeDiagnostic('startup', 'warning', '後端初始化失敗，已保留本機模式', {
-              error: String(error?.message || error)
-            });
-          })
-          .finally(() => this.scheduleInitialCalendarAutoSync());
+        if (this.storageRecoveryBlocked) {
+          this.authLoading = false;
+          this.calendarAutoSyncStatus = 'error';
+          this.calendarAutoSyncMessage = '資料回復待處理，自動同步已暫停';
+        } else {
+          this.initAuth()
+            .catch((error) => {
+              this.recordRuntimeDiagnostic('startup', 'warning', '後端初始化失敗，已保留本機模式', {
+                error: String(error?.message || error)
+              });
+            })
+            .finally(() => this.scheduleInitialCalendarAutoSync());
+        }
         this.setupPwaUpdateListener();
         setTimeout(() => this.runSystemStatusCheck(false), 3500);
         window.addEventListener('online', () => {
           this.online = true;
+          if (this.storageRecoveryBlocked) return;
           if (this.calendarSyncFallbackActive && !this.calendarSyncRetryTimer) {
             this.scheduleCalendarSyncRetry({ automatic: true, silent: true, retryAttempt: 0 }, 1500, '網路連線已恢復');
           } else {
@@ -3065,7 +3214,7 @@
           return stock > 0 && stock < this.inventorySafetyStock(item);
         },
         calculateCloseoutForDate(date) {
-          const closeoutOrders = this.orders
+          const closeoutOrders = this.accountingOrders
             .filter(o => this.isOrderActive(o) && o.date === date && o.customerName && !this.isBlockedSlot(o.customerName));
           const closeoutExpenses = this.expenses
             .filter(e => e.date === date)
@@ -3271,10 +3420,24 @@
         persistBackupSnapshots(snapshots = []) {
           const normalized = snapshots
             .filter(snapshot => snapshot?.id && snapshot?.createdAt && snapshot?.payload)
-            .slice(0, 10);
-          localStorage.setItem('momo_backup_snapshots', JSON.stringify(normalized));
-          this.backupSnapshots = normalized;
-          return normalized;
+            .slice(0, 3);
+          let lastError = null;
+          for (let keep = normalized.length; keep >= 1; keep -= 1) {
+            const candidate = normalized.slice(0, keep);
+            try {
+              localStorage.setItem('momo_backup_snapshots', JSON.stringify(candidate));
+              this.backupSnapshots = candidate;
+              return candidate;
+            } catch (error) {
+              lastError = error;
+            }
+          }
+          if (!normalized.length) {
+            localStorage.setItem('momo_backup_snapshots', '[]');
+            this.backupSnapshots = [];
+            return [];
+          }
+          throw lastError || new Error('本機快照容量不足');
         },
         createLocalBackupSnapshot(reason = 'manual', { silent = false, force = true, sourceLogId = null } = {}) {
           if (!force && this.backupSnapshotRows[0]?.createdDate === new Date().toLocaleDateString('sv-SE')) return this.backupSnapshotRows[0];
@@ -3284,7 +3447,7 @@
           const snapshot = {
             id: this.generateStableId('snap'),
             createdAt,
-            createdDate: createdAt.slice(0, 10),
+            createdDate: new Date().toLocaleDateString('sv-SE'),
             appVersion: this.appVersion,
             schemaVersion: this.dataSchemaVersion,
             reason,
@@ -3332,11 +3495,19 @@
             return;
           }
           this.showConfirm(`確定還原這份本機快照嗎？\n\n${this.formatDateTime(snapshot.createdAt)} · ${this.backupReasonLabel(snapshot.reason)}\n\n系統會先建立一份還原前保護快照，再覆蓋目前業績、CRM、儲值帳本、支出、庫存、打烊與價目表資料。`, () => {
-            this.createLocalBackupSnapshot('pre_restore', { silent: true, force: true });
-            const servicesIncluded = this.applyBackupData(snapshot.payload);
-            this.recordOperation('backup_snapshot_restore', '還原本機快照', `${this.formatDateTime(snapshot.createdAt)} · ${this.backupReasonLabel(snapshot.reason)}`, { snapshotId: snapshot.id, servicesIncluded });
-            this.activeTab = 'safety';
-            this.showToast(servicesIncluded ? '本機快照已還原' : '本機快照已還原，但原快照不含價目表', servicesIncluded ? 'success' : 'warning', 7000);
+            try {
+              const protection = this.createLocalBackupSnapshot('pre_restore', { silent: true, force: true });
+              if (!protection) throw new Error('無法建立還原前保護快照');
+              const servicesIncluded = this.applyBackupData(snapshot.payload, { source: 'local_snapshot_restore' });
+              this.recordOperation('backup_snapshot_restore', '還原本機快照', `${this.formatDateTime(snapshot.createdAt)} · ${this.backupReasonLabel(snapshot.reason)}`, { snapshotId: snapshot.id, servicesIncluded });
+              this.activeTab = 'safety';
+              const pendingMessage = this.cloudRestorePending
+                ? '本機快照已還原；為避免雲端舊資料回灌，同步已暫停'
+                : null;
+              this.showToast(pendingMessage || (servicesIncluded ? '本機快照已還原' : '本機快照已還原，但原快照不含價目表'), pendingMessage || !servicesIncluded ? 'warning' : 'success', 8000);
+            } catch (error) {
+              this.showToast(`快照還原失敗：${error.message}`, 'error', 8000);
+            }
           }, { title: '還原本機快照', subtitle: '目前資料將由快照內容取代', tone: 'danger', confirmLabel: '確認還原', loadingLabel: '還原中…' });
         },
         deleteBackupSnapshot(snapshotId) {
@@ -3514,6 +3685,11 @@
           const addWarning = (severity, code, message) => warnings.push({ severity, code, message });
           const localTotal = this.businessRestoreTotal(localCounts);
           const backupTotal = this.businessRestoreTotal(backupCounts);
+          const validation = MomoCore.validateAndNormalizeBackupPayload(full.payload || {}, {
+            currentSchemaVersion: this.dataSchemaVersion
+          });
+          validation.errors.forEach((message, index) => addWarning('error', `backup_invalid_${index + 1}`, message));
+          validation.warnings.forEach((message, index) => addWarning('warning', `backup_warning_${index + 1}`, message));
 
           if ((Number(full.schemaVersion) || 1) < this.dataSchemaVersion) {
             addWarning('warning', 'schema_old', `這份備份 schema v${full.schemaVersion || 1} 低於目前 v${this.dataSchemaVersion}，還原後會用相容模式載入。`);
@@ -3610,8 +3786,9 @@
           this.cloudBackupError = '';
           try {
             const beforeCounts = this.backupComparableCounts();
-            this.createLocalBackupSnapshot('pre_restore', { silent: true, force: true });
-            const servicesIncluded = this.applyBackupData(full.payload);
+            const protection = this.createLocalBackupSnapshot('pre_restore', { silent: true, force: true });
+            if (!protection) throw new Error('無法建立還原前保護快照，已取消還原');
+            const servicesIncluded = this.applyBackupData(full.payload, { source: 'cloud_backup_restore' });
             const afterCounts = this.backupComparableCounts();
             const integrity = this.runIntegrityCheck(false);
             const safety = this.runDataSafetyCheck(false);
@@ -3639,11 +3816,13 @@
             this.cloudBackupStatus = 'ready';
             this.runDataSafetyCheck(false);
             this.showToast(
-              servicesIncluded
-                ? (integrity.status === 'ok' ? '雲端備份已還原，健康檢查正常' : '雲端備份已還原，請查看健康檢查提醒')
-                : '雲端備份已還原，但原備份不含價目表',
-              integrity.status === 'ok' && servicesIncluded ? 'success' : 'error',
-              9000
+              this.cloudRestorePending
+                ? '雲端備份已還原到本機；同步已暫停，避免目前雲端資料覆蓋還原版本'
+                : servicesIncluded
+                  ? (integrity.status === 'ok' ? '雲端備份已還原，健康檢查正常' : '雲端備份已還原，請查看健康檢查提醒')
+                  : '雲端備份已還原，但原備份不含價目表',
+              this.cloudRestorePending ? 'warning' : (integrity.status === 'ok' && servicesIncluded ? 'success' : 'error'),
+              10000
             );
             try {
               await this.fetchCloudBackupList({ silent: true });
@@ -3706,7 +3885,7 @@
           delete this.editSnapshots[key];
         },
         orderAuditFields() {
-          return ['date', 'customerId', 'customerName', 'gender', 'serviceName', 'amount', 'paymentMethod', 'cashAmount', 'topupChannel', 'syncStatus'];
+          return ['date', 'customerId', 'customerName', 'gender', 'serviceName', 'amount', 'paymentMethod', 'cashAmount', 'topupChannel', 'actualDurationMinutes', 'syncStatus'];
         },
         orderAuditFieldLabel(field) {
           return ({
@@ -3719,12 +3898,14 @@
             paymentMethod: '付款',
             cashAmount: '現金付款',
             topupChannel: '儲值收款',
+            actualDurationMinutes: '實際工時',
             syncStatus: '狀態'
           })[field] || field;
         },
         formatOrderAuditValue(field, value) {
           if (value === null || value === undefined || value === '') return '空白';
           if (field === 'amount' || field === 'cashAmount') return `NT$ ${this.formatNumber(value)}`;
+          if (field === 'actualDurationMinutes') return `${this.formatNumber(value)} 分鐘`;
           if (field === 'customerId') return this.shortCustomerId(value);
           return String(value);
         },
@@ -3739,7 +3920,7 @@
         },
         orderCorrectionLogs(orderId) {
           return (this.operationLogs || [])
-            .filter(log => log?.meta?.orderId === orderId && ['order_correction', 'order_update', 'locked_order_correction_slip', 'locked_order_correction_note', 'locked_order_delete_correction_slip'].includes(log.action))
+            .filter(log => log?.meta?.orderId === orderId && ['order_correction', 'order_update', 'locked_order_time_update', 'locked_order_correction_slip', 'locked_order_correction_note', 'locked_order_delete_correction_slip'].includes(log.action))
             .slice(0, 3);
         },
         cloneOrderForDraft(order = {}) {
@@ -3814,12 +3995,15 @@
           draft.gender = customer.gender || draft.gender || '女';
         },
         normalizeOrderDraft(draft = {}) {
+          const actualDurationMinutes = this.normalizeMinutes(draft.actualDurationMinutes);
           return {
             ...draft,
             serviceName: String(draft.serviceName || '').trim(),
             amount: Number(draft.amount) || 0,
             cashAmount: draft.paymentMethod === '現金＋儲值扣款' ? Number(draft.cashAmount) || 0 : null,
-            topupChannel: draft.paymentMethod === '儲值進帳' ? (draft.topupChannel || '現金') : null
+            topupChannel: draft.paymentMethod === '儲值進帳' ? (draft.topupChannel || '現金') : null,
+            actualDurationMinutes,
+            actualDurationSource: actualDurationMinutes ? 'manual' : null
           };
         },
         validateOrderDraft(order, draft, options = {}) {
@@ -3847,6 +4031,13 @@
           if (draft.paymentMethod === '儲值進帳' && !['現金', '轉帳'].includes(draft.topupChannel)) {
             this.showToast('請選擇儲值收款方式：現金或轉帳', 'error');
             return false;
+          }
+          if (draft.actualDurationMinutes !== null && draft.actualDurationMinutes !== '') {
+            const minutes = Number(draft.actualDurationMinutes);
+            if (!Number.isInteger(minutes) || minutes <= 0 || minutes > 1440) {
+              this.showToast('實際工時請輸入 1～1440 的整數分鐘；不確定可留白', 'error', 6000);
+              return false;
+            }
           }
           return true;
         },
@@ -3993,17 +4184,33 @@
         },
         saveOrderDraft(order) {
           const draft = this.orderEditDraft(order);
+          const normalizedDraft = this.normalizeOrderDraft(draft);
+          const changed = this.orderAuditFields().filter(field =>
+            JSON.stringify(order?.[field] ?? null) !== JSON.stringify(normalizedDraft?.[field] ?? null)
+          );
           if (this.isDateLocked(order?.date) || this.isDateLocked(draft?.date)) {
             if (!this.validateOrderDraft(order, draft, { allowLocked: true })) return false;
+            if (changed.length && changed.every(field => field === 'actualDurationMinutes')) {
+              const before = JSON.parse(JSON.stringify(order));
+              Object.assign(order, {
+                actualDurationMinutes: normalizedDraft.actualDurationMinutes,
+                actualDurationSource: normalizedDraft.actualDurationSource,
+                updatedAt: new Date().toISOString()
+              });
+              this.saveOrders();
+              this.recordOperation('locked_order_time_update', '補登鎖帳實際工時', this.buildOrderCorrectionDetail(before, order, changed), {
+                orderId: order.id,
+                fields: changed
+              });
+              this.clearOrderDraft(order.id);
+              this.showToast('實際工時已補登；金流與打烊數字未變更');
+              return true;
+            }
             return this.createLockedOrderCorrectionSlip(order, draft);
           }
           if (!this.validateOrderDraft(order, draft)) return false;
           this.selectOrderDraftCustomer(order);
           const before = JSON.parse(JSON.stringify(order));
-          const normalizedDraft = this.normalizeOrderDraft(draft);
-          const changed = this.orderAuditFields().filter(field =>
-            JSON.stringify(before?.[field] ?? null) !== JSON.stringify(normalizedDraft?.[field] ?? null)
-          );
           if (!changed.length) {
             this.clearOrderDraft(order.id);
             this.showToast('沒有需要儲存的修正', 'info');
@@ -4225,6 +4432,7 @@
             this.showToast('顧客姓名不可空白', 'error');
             return false;
           }
+          const rollback = this.buildBackupData();
           const before = this.buildCrmDraft(customer);
           customer.name = newName;
           customer.gender = draft.gender || '女';
@@ -4245,11 +4453,12 @@
           };
           this.crmNotes[customer.id] = String(draft.note || '').trim();
           this.crmFormulas[customer.id] = formula;
-          localStorage.setItem('momo_orders', JSON.stringify(this.orders));
-          this.saveCustomerData();
-          localStorage.setItem('momo_crmNotes', JSON.stringify(this.crmNotes));
-          localStorage.setItem('momo_crmFormulas', JSON.stringify(this.crmFormulas));
-          this.queueCloudSync();
+          try {
+            this.persistCurrentStateStrict(localStorage.getItem('momo_servicesConfigUpdatedAt'));
+          } catch (error) {
+            this.replaceBusinessStateFromBackup(rollback, true);
+            throw new Error(`CRM 儲存失敗，原資料已回復：${error.message || error}`);
+          }
           this.clearCrmDraft(customer.id);
           this.recordOperation('crm_profile_update', '儲存 CRM 修正', customer.name, {
             customerId: customer.id,
@@ -4318,11 +4527,23 @@
         },
         unlockCloseoutDate(date = new Date().toLocaleDateString('sv-SE')) {
           if (!this.closeoutRecords?.[date]) return;
-          this.showConfirm(`確定解除 ${date} 的鎖帳嗎？解除後可修改當日業績與支出，完成修正後請重新打烊。`, () => {
+          this.showConfirm(`確定解除 ${date} 的鎖帳嗎？解除後可修改當日業績與支出，完成修正後請重新打烊。`, async () => {
+            if (!this.assertCloudDeleteReady()) return;
+            const record = MomoCore.cloneJsonValue(this.closeoutRecords[date]);
             delete this.closeoutRecords[date];
-            localStorage.setItem('momo_closeoutRecords', JSON.stringify(this.closeoutRecords));
-            this.deleteCloudRecord('closeouts', 'closeout_date', date);
-            this.queueCloudSync();
+            try {
+              this.writeLocalStorageAtomically([['momo_closeoutRecords', JSON.stringify(this.closeoutRecords)]]);
+              this.queueCloudSync();
+              if (this.cloudReady && this.authUser) {
+                const deleted = await this.deleteCloudRecord('closeouts', 'closeout_date', date);
+                if (!deleted) throw new Error(this.cloudMessage || '雲端鎖帳紀錄未刪除');
+              }
+            } catch (error) {
+              this.closeoutRecords[date] = record;
+              this.writeLocalStorageAtomically([['momo_closeoutRecords', JSON.stringify(this.closeoutRecords)]]);
+              this.queueCloudSync();
+              throw new Error(`解除鎖帳失敗，原鎖帳已回復：${error.message || error}`);
+            }
             this.recordOperation('closeout_unlock', '解除鎖帳', date);
             this.showToast(`已解除 ${date} 鎖帳`);
           }, { title: '解除每日鎖帳', subtitle: `${date} 將恢復可編輯狀態`, tone: 'warning', confirmLabel: '解除鎖帳', loadingLabel: '解除中…' });
@@ -4610,16 +4831,33 @@
         shortCustomerId(customerId) {
           return String(customerId || '').replace(/^cust_/, '').slice(-6).toUpperCase();
         },
+        resolveMergedCustomerId(customerId) {
+          let currentId = String(customerId || '');
+          const visited = new Set();
+          while (currentId && !visited.has(currentId)) {
+            visited.add(currentId);
+            const customer = this.rawCustomerMap?.[currentId]
+              || this.customers.find(item => item.id === currentId);
+            if (!customer?.mergedIntoCustomerId) break;
+            currentId = String(customer.mergedIntoCustomerId);
+          }
+          return currentId || String(customerId || '');
+        },
         findCustomerByName(name) {
+          return this.findCustomersByName(name)[0] || null;
+        },
+        findCustomersByName(name) {
           const normalized = this.normalizeCustomerName(name);
-          if (!normalized) return null;
-          return this.customers.find(customer => this.normalizeCustomerName(customer.name) === normalized) || null;
+          if (!normalized) return [];
+          return this.activeCustomers.filter(customer => this.normalizeCustomerName(customer.name) === normalized);
         },
         findOrCreateCustomer(name, gender = '女', preferredId = null, forceNew = false) {
           const cleanName = String(name || '').trim().replace(/\s+/g, ' ');
           if (!cleanName) return null;
           if (preferredId && this.customerMap[preferredId]) return this.customerMap[preferredId];
-          const existing = forceNew ? null : this.findCustomerByName(cleanName);
+          const matches = forceNew ? [] : this.findCustomersByName(cleanName);
+          if (!forceNew && matches.length > 1) return null;
+          const existing = matches[0] || null;
           if (existing) {
             if (!existing.gender && gender) existing.gender = gender;
             return existing;
@@ -4667,25 +4905,62 @@
                 id,
                 name: String(customer.name).trim(),
                 gender: customer.gender || '女',
+                mergedIntoCustomerId: customer.mergedIntoCustomerId || customer.merged_into_customer_id || null,
+                archivedAt: customer.archivedAt || customer.archived_at || null,
                 createdAt: customer.createdAt || new Date().toISOString(),
-                updatedAt: customer.updatedAt || customer.createdAt || new Date().toISOString()
+                updatedAt: customer.updatedAt || customer.createdAt || new Date().toISOString(),
+                version: Number(customer.version) || 1
               };
             });
+
+          const validCustomerIds = new Set(this.customers.map(customer => customer.id));
+          this.customers.forEach(customer => {
+            if (!validCustomerIds.has(customer.mergedIntoCustomerId) || customer.mergedIntoCustomerId === customer.id) {
+              customer.mergedIntoCustomerId = null;
+              customer.archivedAt = null;
+            }
+          });
+          const customerById = new Map(this.customers.map(customer => [customer.id, customer]));
+          this.customers.forEach(customer => {
+            if (!customer.mergedIntoCustomerId) return;
+            const path = [];
+            const seen = new Set();
+            let cursor = customer;
+            while (cursor?.mergedIntoCustomerId) {
+              if (seen.has(cursor.id)) {
+                path.forEach(item => {
+                  item.mergedIntoCustomerId = null;
+                  item.archivedAt = null;
+                });
+                return;
+              }
+              seen.add(cursor.id);
+              path.push(cursor);
+              cursor = customerById.get(cursor.mergedIntoCustomerId);
+            }
+            if (cursor && cursor.id !== customer.id) {
+              customer.archivedAt = customer.archivedAt || customer.updatedAt || new Date().toISOString();
+            }
+          });
 
           this.orders.forEach(order => {
             if (!order || !order.customerName || this.isBlockedSlot(order.customerName)) return;
             let customer = order.customerId ? this.customers.find(item => item.id === order.customerId) : null;
-            if (!customer) customer = this.findOrCreateCustomer(order.customerName, order.gender);
+            if (!customer) {
+              const matches = this.findCustomersByName(order.customerName);
+              customer = matches.length === 1 ? matches[0] : (matches.length ? null : this.findOrCreateCustomer(order.customerName, order.gender));
+            }
             if (!customer) return;
             order.customerId = customer.id;
-            order.customerName = customer.name;
+            if (!order.customerName) order.customerName = customer.name;
           });
 
           const migrateKeyedRecords = source => {
             const migrated = {};
             Object.entries(source && typeof source === 'object' ? source : {}).forEach(([key, value]) => {
               const existingCustomer = this.customers.find(customer => customer.id === key);
-              const customer = existingCustomer || this.findOrCreateCustomer(key, '女');
+              const ambiguousLegacyName = !existingCustomer && this.findCustomersByName(key).length > 1;
+              const customer = existingCustomer || this.findOrCreateCustomer(key, '女', null, ambiguousLegacyName);
               if (customer && migrated[customer.id] === undefined) migrated[customer.id] = value;
             });
             return migrated;
@@ -4704,11 +4979,14 @@
                 amount: Math.abs(signedAmount),
                 kind: entry.kind || (signedAmount >= 0 ? 'topup' : 'debit'),
                 bucket: entry.bucket || (entry.kind === 'topup' ? 'topup' : entry.kind === 'debit' ? 'debit' : signedAmount >= 0 ? 'topup' : 'debit'),
+                reversalOfEntryId: entry.reversalOfEntryId || entry.reversal_of_entry_id || null,
+                transferGroupId: entry.transferGroupId || entry.transfer_group_id || null,
+                systemManaged: Boolean(entry.systemManaged ?? entry.system_managed),
                 createdAt: entry.createdAt || new Date().toISOString()
               };
             });
         },
-        appendPrepaidLedgerEntry({ customerId, signedAmount, kind, bucket, date, sourceOrderId, serviceName, paymentMethod, note, reversalOfEntryId }) {
+        appendPrepaidLedgerEntry({ customerId, signedAmount, kind, bucket, date, sourceOrderId, serviceName, paymentMethod, note, reversalOfEntryId, transferGroupId, systemManaged }) {
           const amount = Math.round(Number(signedAmount) || 0);
           if (!customerId || !amount) return null;
           const customer = this.customerMap[customerId];
@@ -4726,6 +5004,8 @@
             paymentMethod: paymentMethod || (amount > 0 ? '儲值進帳' : '儲值扣款'),
             note: note || '',
             reversalOfEntryId: reversalOfEntryId || null,
+            transferGroupId: transferGroupId || null,
+            systemManaged: Boolean(systemManaged),
             createdAt: new Date().toISOString()
           };
           this.prepaidLedger.push(entry);
@@ -4748,7 +5028,7 @@
         },
         reversePrepaidLedgerEntry(entry = {}) {
           if (!this.canReversePrepaidEntry(entry)) {
-            this.showToast('此儲值分錄已沖銷或不可沖銷', 'error');
+            this.showToast(entry.sourceOrderId ? '訂單分錄請直接更正訂單，系統會自動追加差額' : '此儲值分錄已沖銷或不可沖銷', 'error');
             return;
           }
           const today = new Date().toLocaleDateString('sv-SE');
@@ -4760,7 +5040,12 @@
           this.showConfirm(
             `確定沖銷這筆儲值帳本嗎？\n\n${entry.date} ${entry.customerName || entry.customerNameSnapshot || ''}\n${this.ledgerKindLabel(entry.kind)}：${amount >= 0 ? '+' : ''}NT$ ${this.formatNumber(amount)}\n\n系統會新增一筆反向分錄，不會刪除原紀錄。`,
             () => {
-              const reversal = this.appendPrepaidLedgerEntry(MomoCore.buildPrepaidReversalPayload(entry, today));
+              const payload = MomoCore.buildPrepaidReversalPayload(entry, today);
+              if (!payload || !this.canReversePrepaidEntry(entry)) {
+                this.showToast('此分錄已無法沖銷，請重新整理後再確認', 'error');
+                return;
+              }
+              const reversal = this.appendPrepaidLedgerEntry(payload);
               this.saveCustomerData();
               this.recordOperation('prepaid_ledger_reversal', '儲值帳本反向沖銷', `${entry.customerName || entry.customerNameSnapshot || ''} ${this.ledgerKindLabel(entry.kind)} NT$ ${this.formatNumber(amount)}`, {
                 ledgerEntryId: entry.id,
@@ -4774,140 +5059,48 @@
         },
         reconcilePrepaidLedger() {
           const today = new Date().toLocaleDateString('sv-SE');
-          const orderIds = new Set(this.orders.filter(Boolean).map(order => String(order.id || '')));
-          const totals = new Map();
-          const entriesByOrder = new Map();
-
-          this.prepaidLedger.forEach(entry => {
-            if (!entry.sourceOrderId || !entry.customerId) return;
-            const orderId = String(entry.sourceOrderId);
-            const key = `${orderId}::${entry.customerId}`;
-            totals.set(key, (totals.get(key) || 0) + (Number(entry.signedAmount) || 0));
-            if (!entriesByOrder.has(orderId)) entriesByOrder.set(orderId, []);
-            entriesByOrder.get(orderId).push(entry);
-          });
-
-          const appendAndTrack = payload => {
-            const entry = this.appendPrepaidLedgerEntry(payload);
-            if (!entry || !entry.sourceOrderId) return;
-            const orderId = String(entry.sourceOrderId);
-            const key = `${orderId}::${entry.customerId}`;
-            totals.set(key, (totals.get(key) || 0) + entry.signedAmount);
-            if (!entriesByOrder.has(orderId)) entriesByOrder.set(orderId, []);
-            entriesByOrder.get(orderId).push(entry);
-          };
-
           this.orders.forEach(order => {
             if (!order || !order.id || !order.customerName || this.isBlockedSlot(order.customerName)) return;
-            let customer = order.customerId ? this.customerMap[order.customerId] : null;
-            if (!customer) customer = this.findOrCreateCustomer(order.customerName, order.gender);
+            let customer = order.customerId ? this.rawCustomerMap[order.customerId] : null;
+            if (!customer) {
+              const matches = this.findCustomersByName(order.customerName);
+              customer = matches.length === 1 ? matches[0] : (matches.length ? null : this.findOrCreateCustomer(order.customerName, order.gender));
+            }
             if (!customer) return;
             order.customerId = customer.id;
-            order.customerName = customer.name;
-
-            const orderId = String(order.id);
-            const target = this.getOrderPrepaidTarget(order);
-            const relatedEntries = entriesByOrder.get(orderId) || [];
-            const relatedCustomerIds = new Set(relatedEntries.map(entry => entry.customerId));
-
-            relatedCustomerIds.forEach(customerId => {
-              if (customerId === order.customerId) return;
-              const key = `${orderId}::${customerId}`;
-              const existingTotal = totals.get(key) || 0;
-              if (!existingTotal) return;
-              const latestForCustomer = [...relatedEntries].reverse().find(entry => entry.customerId === customerId);
-              appendAndTrack({
-                customerId,
-                signedAmount: -existingTotal,
-                kind: 'reversal',
-                bucket: latestForCustomer?.bucket || (existingTotal > 0 ? 'topup' : 'debit'),
-                date: today,
-                sourceOrderId: orderId,
-                serviceName: order.serviceName,
-                paymentMethod: order.paymentMethod,
-                note: '訂單改綁其他顧客，原顧客帳務沖銷'
-              });
-            });
-
-            const targetKey = `${orderId}::${order.customerId}`;
-            const currentTotal = totals.get(targetKey) || 0;
-            const targetEntries = relatedEntries.filter(entry => entry.customerId === order.customerId);
-            const latestTargetEntry = [...targetEntries].reverse()[0];
-            const targetBucket = this.getOrderPrepaidBucket(order) || (target > 0 ? 'topup' : target < 0 ? 'debit' : (latestTargetEntry?.bucket || (currentTotal > 0 ? 'topup' : 'debit')));
-
-            if (currentTotal && target && Math.sign(currentTotal) !== Math.sign(target)) {
-              appendAndTrack({
-                customerId: order.customerId,
-                signedAmount: -currentTotal,
-                kind: 'reversal',
-                bucket: latestTargetEntry?.bucket || (currentTotal > 0 ? 'topup' : 'debit'),
-                date: today,
-                sourceOrderId: orderId,
-                serviceName: order.serviceName,
-                paymentMethod: order.paymentMethod,
-                note: '付款類型改變，先沖銷原儲值交易'
-              });
-              appendAndTrack({
-                customerId: order.customerId,
-                signedAmount: target,
-                kind: this.prepaidKindForTarget(target, targetBucket, 'adjustment'),
-                bucket: targetBucket,
-                date: today,
-                sourceOrderId: orderId,
-                serviceName: order.serviceName,
-                paymentMethod: order.paymentMethod,
-                note: '付款類型改變，建立新儲值交易'
-              });
-              return;
-            }
-
-            const difference = target - currentTotal;
-            if (!difference) return;
-            const isInitial = targetEntries.length === 0;
-            appendAndTrack({
-              customerId: order.customerId,
-              signedAmount: difference,
-              kind: isInitial ? this.prepaidKindForTarget(target, targetBucket, 'adjustment') : (target === 0 ? 'reversal' : 'adjustment'),
-              bucket: targetBucket,
-              date: isInitial ? order.date : today,
-              sourceOrderId: orderId,
-              serviceName: order.serviceName,
-              paymentMethod: order.paymentMethod,
-              note: isInitial ? '由訂單建立' : '訂單內容異動，自動追加調整'
-            });
+            if (!order.customerName) order.customerName = customer.name;
           });
-
-          entriesByOrder.forEach((entries, orderId) => {
-            if (orderIds.has(orderId)) return;
-            const customerIds = new Set(entries.map(entry => entry.customerId));
-            customerIds.forEach(customerId => {
-              const key = `${orderId}::${customerId}`;
-              const existingTotal = totals.get(key) || 0;
-              if (!existingTotal) return;
-              const latest = [...entries].reverse().find(entry => entry.customerId === customerId) || {};
-              appendAndTrack({
-                customerId,
-                signedAmount: -existingTotal,
-                kind: 'reversal',
-                bucket: latest.bucket || (existingTotal > 0 ? 'topup' : 'debit'),
-                date: today,
-                sourceOrderId: orderId,
-                serviceName: latest.serviceName,
-                paymentMethod: latest.paymentMethod,
-                note: '原訂單已刪除，自動追加沖銷'
-              });
-            });
+          const accountingOrderIds = new Set(this.accountingOrders.map(order => String(order.id || '')));
+          const planned = MomoCore.planPrepaidLedgerReconciliation(this.orders, this.prepaidLedger, {
+            today,
+            accountingOrderIds,
+            resolveCustomerId: customerId => this.resolveMergedCustomerId(customerId)
           });
+          planned.forEach(payload => this.appendPrepaidLedgerEntry(payload));
         },
         saveCustomerData() {
-          localStorage.setItem('momo_customers', JSON.stringify(this.customers));
-          localStorage.setItem('momo_prepaidLedger', JSON.stringify(this.prepaidLedger));
-          localStorage.setItem('momo_data_schema_version', String(this.dataSchemaVersion));
-          this.queueCloudSync();
+          const previousCustomers = safeParse(localStorage.getItem('momo_customers'), []);
+          const previousLedger = safeParse(localStorage.getItem('momo_prepaidLedger'), []);
+          try {
+            this.writeLocalStorageAtomically([
+              ['momo_customers', JSON.stringify(this.customers)],
+              ['momo_prepaidLedger', JSON.stringify(this.prepaidLedger)],
+              ['momo_data_schema_version', String(this.dataSchemaVersion)]
+            ]);
+            this.queueCloudSync();
+            return true;
+          } catch (error) {
+            this.customers = Array.isArray(previousCustomers) ? previousCustomers : [];
+            this.prepaidLedger = Array.isArray(previousLedger) ? previousLedger : [];
+            this.showToast('顧客與儲值帳本儲存失敗，畫面已回復上次完整版本', 'error', 9000);
+            throw error;
+          }
         },
         // LocalStorage loading
         loadFromLocalStorage() {
+          const recovery = this.recoverInterruptedStorageWrite();
           const clone = value => JSON.parse(JSON.stringify(value));
+          const storedSchemaVersion = Math.max(1, Number(localStorage.getItem('momo_data_schema_version')) || 1);
           const parsedOrders = safeParse(localStorage.getItem('momo_orders'), clone(defaultOrders));
           const parsedExpenses = safeParse(localStorage.getItem('momo_expenses'), clone(defaultExpenses));
           const parsedInventory = safeParse(localStorage.getItem('momo_inventory'), clone(defaultInventory));
@@ -4919,6 +5112,15 @@
           this.crmNotes = safeParse(localStorage.getItem('momo_crmNotes'), clone(defaultCrmNotes));
           this.crmFormulas = safeParse(localStorage.getItem('momo_crmFormulas'), {});
           this.closeoutRecords = safeParse(localStorage.getItem('momo_closeoutRecords'), {});
+          const savedServicesConfig = safeParse(localStorage.getItem('momo_servicesConfig'), clone(defaultServicesConfig));
+          this.servicesConfig = Array.isArray(savedServicesConfig) ? savedServicesConfig : clone(defaultServicesConfig);
+          const todayRecord = this.closeoutRecords[new Date().toLocaleDateString('sv-SE')];
+          if (todayRecord) {
+            this.closeoutCashCount = todayRecord.countedCash;
+            this.closeoutNote = todayRecord.note || '';
+          }
+          if (recovery.blocked) return;
+          this.migrateLegacyCalendarActualDurations(storedSchemaVersion);
 
           // 一次性移除舊版內建範例；只比對固定範例 ID／原始內容，不碰正式資料
           if (localStorage.getItem('momo_examples_removed_v1') !== '1') {
@@ -4943,60 +5145,172 @@
           this.migrateCustomerIdentity();
           this.reconcilePrepaidLedger();
 
-          const todayRecord = this.closeoutRecords[new Date().toLocaleDateString('sv-SE')];
-          if (todayRecord) {
-            this.closeoutCashCount = todayRecord.countedCash;
-            this.closeoutNote = todayRecord.note || '';
-          }
+          this.saveToLocalStorage({ queueCloud: storedSchemaVersion < this.dataSchemaVersion });
+        },
 
-          const savedServicesConfig = safeParse(localStorage.getItem('momo_servicesConfig'), clone(defaultServicesConfig));
-          this.servicesConfig = Array.isArray(savedServicesConfig) ? savedServicesConfig : clone(defaultServicesConfig);
-          this.saveToLocalStorage();
+        recoverInterruptedStorageWrite() {
+          const raw = localStorage.getItem('momo_restore_in_progress');
+          if (!raw) return { recovered: false, blocked: false };
+          const journal = safeParse(raw, null);
+          if (!journal || journal.version !== 1 || !Array.isArray(journal.previous)
+            || journal.previous.some(item => !Array.isArray(item) || item.length !== 2 || typeof item[0] !== 'string')) {
+            this.storageRecoveryBlocked = {
+              detectedAt: new Date().toISOString(),
+              reason: 'invalid_restore_journal'
+            };
+            return { recovered: false, blocked: true };
+          }
+          try {
+            [...journal.previous].reverse().forEach(([key, value]) => {
+              if (value === null) localStorage.removeItem(key);
+              else localStorage.setItem(key, String(value));
+            });
+            localStorage.removeItem('momo_restore_in_progress');
+            const notice = {
+              recoveredAt: new Date().toISOString(),
+              interruptedAt: journal.startedAt || null
+            };
+            localStorage.setItem('momo_storage_recovery_notice', JSON.stringify(notice));
+            this.storageRecoveryNotice = notice;
+            this.storageRecoveryBlocked = null;
+            return { recovered: true, blocked: false };
+          } catch (error) {
+            this.storageRecoveryBlocked = {
+              detectedAt: new Date().toISOString(),
+              reason: 'restore_journal_recovery_failed',
+              message: String(error?.message || error)
+            };
+            return { recovered: false, blocked: true };
+          }
         },
 
         // LocalStorage saving (legacy fallback for compatibility)
-        saveToLocalStorage() {
-          this.saveOrders();
-          this.saveExpenses();
-          this.saveInventory();
-          this.saveCrmNotesImmediately();
-          this.saveCrmFormulas();
-          localStorage.setItem('momo_closeoutRecords', JSON.stringify(this.closeoutRecords));
-          this.saveServicesConfigOnly();
+        saveToLocalStorage(options = {}) {
+          return this.persistCurrentStateStrict(
+            localStorage.getItem('momo_servicesConfigUpdatedAt'),
+            { queueCloud: options.queueCloud === true }
+          );
+        },
+        buildBusinessStorageEntries(servicesUpdatedAt = localStorage.getItem('momo_servicesConfigUpdatedAt')) {
+          return [
+            ['momo_orders', JSON.stringify(this.orders)],
+            ['momo_expenses', JSON.stringify(this.expenses)],
+            ['momo_inventory', JSON.stringify(this.inventory)],
+            ['momo_customers', JSON.stringify(this.customers)],
+            ['momo_prepaidLedger', JSON.stringify(this.prepaidLedger)],
+            ['momo_crmNotes', JSON.stringify(this.crmNotes)],
+            ['momo_crmFormulas', JSON.stringify(this.crmFormulas)],
+            ['momo_closeoutRecords', JSON.stringify(this.closeoutRecords)],
+            ['momo_servicesConfig', JSON.stringify(this.servicesConfig)],
+            ['momo_operation_logs', JSON.stringify(this.operationLogs)],
+            ['momo_data_schema_version', String(this.dataSchemaVersion)],
+            ['momo_servicesConfigUpdatedAt', servicesUpdatedAt || null]
+          ];
+        },
+        writeLocalStorageAtomically(entries = []) {
+          if (this.storageRecoveryBlocked) {
+            throw new Error('資料回復尚未完成，已阻止新的本機寫入');
+          }
+          const normalized = entries.map(([key, value]) => [String(key), value === null ? null : String(value)]);
+          const previous = new Map(normalized.map(([key]) => [key, localStorage.getItem(key)]));
+          let rollbackError = null;
+          try {
+            localStorage.setItem('momo_restore_in_progress', JSON.stringify({
+              version: 1,
+              startedAt: new Date().toISOString(),
+              previous: [...previous.entries()]
+            }));
+            normalized.forEach(([key, value]) => {
+              if (value === null) localStorage.removeItem(key);
+              else localStorage.setItem(key, value);
+            });
+            localStorage.removeItem('momo_restore_in_progress');
+          } catch (error) {
+            [...previous.entries()].reverse().forEach(([key, value]) => {
+              try {
+                if (value === null) localStorage.removeItem(key);
+                else localStorage.setItem(key, value);
+              } catch (rollbackFailure) {
+                rollbackError = rollbackError || rollbackFailure;
+              }
+            });
+            if (!rollbackError) {
+              try { localStorage.removeItem('momo_restore_in_progress'); } catch (_) {}
+            }
+            if (rollbackError) {
+              this.storageRecoveryBlocked = {
+                detectedAt: new Date().toISOString(),
+                reason: 'atomic_write_rollback_failed',
+                message: String(rollbackError?.message || rollbackError)
+              };
+              throw new Error(`本機儲存失敗，且回復舊資料時發生錯誤：${rollbackError.message || rollbackError}`);
+            }
+            throw new Error(`本機儲存空間不足或無法寫入，已完整回復原資料：${error.message || error}`);
+          }
+        },
+        persistCurrentStateStrict(servicesUpdatedAt = localStorage.getItem('momo_servicesConfigUpdatedAt'), options = {}) {
+          // All JSON is serialized before the first mutation. A synchronous journal then
+          // restores every touched key if any LocalStorage write fails.
+          this.reconcilePrepaidLedger();
+          const entries = this.buildBusinessStorageEntries(servicesUpdatedAt);
+          this.writeLocalStorageAtomically(entries);
+          if (options.queueCloud !== false) this.queueCloudSync();
+          return true;
         },
         saveOrders() {
+          const previousOrders = safeParse(localStorage.getItem('momo_orders'), []);
+          const previousCustomers = safeParse(localStorage.getItem('momo_customers'), []);
+          const previousLedger = safeParse(localStorage.getItem('momo_prepaidLedger'), []);
           try {
             this.reconcilePrepaidLedger();
-            localStorage.setItem('momo_orders', JSON.stringify(this.orders));
-            this.saveCustomerData();
+            this.writeLocalStorageAtomically([
+              ['momo_orders', JSON.stringify(this.orders)],
+              ['momo_customers', JSON.stringify(this.customers)],
+              ['momo_prepaidLedger', JSON.stringify(this.prepaidLedger)],
+              ['momo_data_schema_version', String(this.dataSchemaVersion)]
+            ]);
             const used = new Blob(Object.values(localStorage)).size;
             if (used > 4 * 1024 * 1024) { // 超過 4MB 警告
               this.showToast('儲存空間已使用超過 4MB，建議匯出備份後清理舊資料', 'error', 8000);
             }
             this.queueCloudSync();
-          } catch (e) {
-            this.showToast('儲存失敗！LocalStorage 容量已滿，請立即匯出備份', 'error');
+            return true;
+          } catch (error) {
+            this.orders = Array.isArray(previousOrders) ? previousOrders : [];
+            this.customers = Array.isArray(previousCustomers) ? previousCustomers : [];
+            this.prepaidLedger = Array.isArray(previousLedger) ? previousLedger : [];
+            this.showToast('業績儲存失敗，畫面已回復上次完整版本；請立即匯出備份', 'error', 9000);
+            throw error;
           }
         },
         saveExpenses() {
+          const previous = safeParse(localStorage.getItem('momo_expenses'), []);
           try {
-            localStorage.setItem('momo_expenses', JSON.stringify(this.expenses));
+            this.writeLocalStorageAtomically([['momo_expenses', JSON.stringify(this.expenses)]]);
             this.queueCloudSync();
-          } catch (e) {
-            this.showToast('儲存失敗！LocalStorage 容量已滿，請立即匯出備份', 'error');
+            return true;
+          } catch (error) {
+            this.expenses = Array.isArray(previous) ? previous : [];
+            this.showToast('支出儲存失敗，畫面已回復上次完整版本；請立即匯出備份', 'error', 9000);
+            throw error;
           }
         },
         saveInventory() {
+          const previous = safeParse(localStorage.getItem('momo_inventory'), []);
           try {
-            localStorage.setItem('momo_inventory', JSON.stringify(this.inventory));
+            this.writeLocalStorageAtomically([['momo_inventory', JSON.stringify(this.inventory)]]);
             this.queueCloudSync();
-          } catch (e) {
-            this.showToast('儲存失敗！LocalStorage 容量已滿，請立即匯出備份', 'error');
+            return true;
+          } catch (error) {
+            this.inventory = Array.isArray(previous) ? previous : [];
+            this.showToast('庫存儲存失敗，畫面已回復上次完整版本；請立即匯出備份', 'error', 9000);
+            throw error;
           }
         },
         saveServicesConfigOnly() {
-          localStorage.setItem('momo_servicesConfig', JSON.stringify(this.servicesConfig));
+          this.writeLocalStorageAtomically([['momo_servicesConfig', JSON.stringify(this.servicesConfig)]]);
           this.queueCloudSync();
+          return true;
         },
         // Immediate save for CRM notes
         saveCrmNotesImmediately() {
@@ -5004,7 +5318,7 @@
             clearTimeout(this.crmNotesTimer);
             this.crmNotesTimer = null;
           }
-          localStorage.setItem('momo_crmNotes', JSON.stringify(this.crmNotes));
+          this.writeLocalStorageAtomically([['momo_crmNotes', JSON.stringify(this.crmNotes)]]);
           this.queueCloudSync();
           this.recordOperation('crm_note_update', '修改 CRM 備註', '已更新顧客補充紀錄');
         },
@@ -5015,10 +5329,17 @@
           return this.crmFormulas[name];
         },
         setFormulaField(name, key, value) {
+          const previous = safeParse(localStorage.getItem('momo_crmFormulas'), {});
           const formula = this.ensureFormula(name);
           formula[key] = value;
           formula.updatedAt = new Date().toLocaleDateString('sv-SE');
-          localStorage.setItem('momo_crmFormulas', JSON.stringify(this.crmFormulas));
+          try {
+            this.writeLocalStorageAtomically([['momo_crmFormulas', JSON.stringify(this.crmFormulas)]]);
+            this.queueCloudSync();
+          } catch (error) {
+            this.crmFormulas = previous;
+            throw error;
+          }
         },
         saveCustomerProfile(customer) {
           if (!customer?.id) return;
@@ -5055,26 +5376,75 @@
             this.showToast('請先選擇要保留的顧客', 'error');
             return;
           }
-          const source = this.customerMap[sourceId];
-          const target = this.customerMap[targetId];
-          if (!source || !target) {
+          const source = this.rawCustomerMap[sourceId];
+          const target = this.rawCustomerMap[targetId];
+          if (!source || !target || source.archivedAt || source.mergedIntoCustomerId || target.archivedAt || target.mergedIntoCustomerId) {
             this.showToast('找不到要合併的顧客', 'error');
             return;
           }
-          this.showConfirm(`確定把「${source.name}」合併到「${target.name}」嗎？此動作會轉移業績、儲值、備註與配方。`, async () => {
-            this.orders.forEach(order => {
-              if (order.customerId === sourceId) {
-                order.customerId = targetId;
-                order.customerName = target.name;
-                order.gender = target.gender || order.gender;
-              }
-            });
+          this.showConfirm(`確定把「${source.name}」合併到「${target.name}」嗎？舊顧客會封存，帳務只會新增轉移分錄，不會改寫歷史。`, async () => {
+            const rollback = this.buildBackupData();
+            const mergedAt = new Date().toISOString();
+            const transferDate = new Date().toLocaleDateString('sv-SE');
+            const createdLedgerEntries = [];
+            const appendTransfer = payload => {
+              const entry = this.appendPrepaidLedgerEntry(payload);
+              if (entry) createdLedgerEntries.push(entry);
+              return entry;
+            };
+
+            const orderLinkedGroups = new Map();
             this.prepaidLedger.forEach(entry => {
-              if (entry.customerId === sourceId) {
-                entry.customerId = targetId;
-                entry.customerNameSnapshot = target.name;
-              }
+              if (entry.customerId !== sourceId || !entry.sourceOrderId) return;
+              const date = /^\d{4}-\d{2}-\d{2}$/.test(String(entry.date || '')) ? entry.date : transferDate;
+              const key = JSON.stringify([String(entry.sourceOrderId), date]);
+              const group = orderLinkedGroups.get(key) || {
+                sourceOrderId: String(entry.sourceOrderId),
+                date,
+                total: 0,
+                latest: entry
+              };
+              group.total += Number(entry.signedAmount) || 0;
+              group.latest = entry;
+              orderLinkedGroups.set(key, group);
             });
+
+            orderLinkedGroups.forEach(group => {
+              const amount = Math.round(Number(group.total) || 0);
+              if (!amount) return;
+              const common = {
+                bucket: group.latest?.bucket || (amount > 0 ? 'topup' : 'debit'),
+                date: group.date,
+                sourceOrderId: group.sourceOrderId,
+                transferGroupId: this.generateStableId('xfer'),
+                systemManaged: true,
+                serviceName: group.latest?.serviceName || '顧客合併帳務轉移',
+                paymentMethod: group.latest?.paymentMethod || '',
+                note: `顧客合併轉移：${source.name} → ${target.name}`
+              };
+              appendTransfer({ ...common, customerId: sourceId, signedAmount: -amount, kind: 'adjustment' });
+              appendTransfer({ ...common, customerId: targetId, signedAmount: amount, kind: 'adjustment' });
+            });
+
+            const sourceRemainingBalance = Math.round(this.prepaidLedger
+              .filter(entry => entry.customerId === sourceId)
+              .reduce((sum, entry) => sum + (Number(entry.signedAmount) || 0), 0));
+            if (sourceRemainingBalance) {
+              const common = {
+                bucket: sourceRemainingBalance > 0 ? 'topup' : 'debit',
+                date: transferDate,
+                sourceOrderId: null,
+                transferGroupId: this.generateStableId('xfer'),
+                systemManaged: true,
+                serviceName: '顧客合併餘額轉移',
+                paymentMethod: '',
+                note: `顧客合併餘額轉移：${source.name} → ${target.name}`
+              };
+              appendTransfer({ ...common, customerId: sourceId, signedAmount: -sourceRemainingBalance, kind: 'adjustment' });
+              appendTransfer({ ...common, customerId: targetId, signedAmount: sourceRemainingBalance, kind: 'adjustment' });
+            }
+
+            // 歷史訂單保留原顧客 ID；CRM/KPI 查詢時透過合併鏈聚合到最終顧客。
 
             const sourceNote = String(this.crmNotes[sourceId] || '').trim();
             if (sourceNote) {
@@ -5083,42 +5453,74 @@
 
             const sourceFormula = this.crmFormulas[sourceId] || {};
             const targetFormula = this.ensureFormula(targetId);
+            const mergeHistory = Array.isArray(targetFormula.mergeHistory) ? [...targetFormula.mergeHistory] : [];
+            mergeHistory.push({
+              sourceCustomerId: sourceId,
+              sourceName: source.name,
+              mergedAt,
+              formula: MomoCore.cloneJsonValue(sourceFormula)
+            });
             Object.entries(sourceFormula).forEach(([key, value]) => {
+              if (key === 'mergeHistory' || key === 'updatedAt') return;
               if (key === 'tags') {
                 const mergedTags = new Set([...(targetFormula.tags || []), ...(Array.isArray(value) ? value : [])]);
                 targetFormula.tags = [...mergedTags];
               } else if (value && !targetFormula[key]) {
                 targetFormula[key] = value;
+              } else if (value && targetFormula[key] && JSON.stringify(value) !== JSON.stringify(targetFormula[key])) {
+                const targetText = typeof targetFormula[key] === 'string' ? targetFormula[key] : JSON.stringify(targetFormula[key]);
+                const sourceText = typeof value === 'string' ? value : JSON.stringify(value);
+                targetFormula[key] = `${targetText}\n【合併自 ${source.name}】${sourceText}`;
               }
             });
+            targetFormula.mergeHistory = mergeHistory;
             targetFormula.updatedAt = new Date().toLocaleDateString('sv-SE');
 
             delete this.crmNotes[sourceId];
             delete this.crmFormulas[sourceId];
-            this.customers = this.customers.filter(customer => customer.id !== sourceId);
+            // 保留 A→B→C 的歷史鏈，不改寫已完成合併的指標；查詢時再解析到最終顧客。
+            source.mergedIntoCustomerId = targetId;
+            source.archivedAt = mergedAt;
+            source.updatedAt = mergedAt;
+            target.updatedAt = mergedAt;
             delete this.mergeTargetByCustomer[sourceId];
             this.expandedCrmCustomerName = targetId;
 
-            this.saveToLocalStorage();
+            try {
+              this.persistCurrentStateStrict(localStorage.getItem('momo_servicesConfigUpdatedAt'));
+            } catch (error) {
+              this.replaceBusinessStateFromBackup(rollback, true);
+              try {
+                this.persistCurrentStateStrict(rollback.momo_servicesConfigUpdatedAt || null);
+              } catch (rollbackError) {
+                console.error('Customer merge rollback failed:', rollbackError);
+              }
+              this.showToast(`顧客合併失敗，原資料已保留：${error.message || error}`, 'error', 9000);
+              return;
+            }
+            this.recordOperation('customer_merge', '合併顧客', `${source.name} → ${target.name} · 新增 ${createdLedgerEntries.length} 筆轉移分錄`, {
+              sourceId,
+              targetId,
+              transferredLedgerEntryIds: createdLedgerEntries.map(entry => entry.id)
+            });
             if (this.cloudReady && this.authUser) {
               try {
-                const payloads = this.buildCloudPayloads();
-                await this.syncVersionedChanges(payloads);
-                await this.upsertCloudRows('prepaid_ledger', payloads.prepaid_ledger.filter(entry => entry.customer_id === targetId), 'id');
-                await this.deleteCloudRecord('customers', 'id', sourceId);
+                this.clearQueuedCloudSync();
+                const synced = await this.pushCloudSnapshot();
+                if (!synced) throw new Error(this.cloudMessage || '雲端同步尚未完成');
               } catch (error) {
-                console.error('Cloud customer merge cleanup failed:', error);
-                this.showToast(`本機已合併，雲端清理稍後重試：${error.message}`, 'error', 8000);
+                console.error('Cloud customer merge sync failed:', error);
+                this.queueCloudSync(3000);
+                this.showToast(`本機已合併，雲端同步稍後重試：${error.message}`, 'error', 8000);
                 return;
               }
             }
-            this.recordOperation('customer_merge', '合併顧客', `${source.name} → ${target.name}`, { sourceId, targetId });
             this.showToast(`已合併到 ${target.name}`);
-          }, { title: '合併顧客資料', subtitle: `保留「${target.name}」並移入全部紀錄`, tone: 'warning', confirmLabel: '確認合併', loadingLabel: '合併中…' });
+          }, { title: '合併顧客資料', subtitle: `保留「${target.name}」，來源顧客封存供稽核`, tone: 'warning', confirmLabel: '確認合併', loadingLabel: '合併中…' });
         },
         saveCrmFormulas(name) {
           if (name && this.crmFormulas[name]) this.crmFormulas[name].updatedAt = new Date().toLocaleDateString('sv-SE');
-          localStorage.setItem('momo_crmFormulas', JSON.stringify(this.crmFormulas));
+          this.writeLocalStorageAtomically([['momo_crmFormulas', JSON.stringify(this.crmFormulas)]]);
           this.queueCloudSync();
           if (name) this.recordOperation('crm_update', '修改 CRM 配方/回訪', this.customerMap[name]?.name || name, { customerId: name });
         },
@@ -5138,7 +5540,7 @@
             const amount = Number(order.amount) || 0;
             const label = `${order.date || '未填日期'} ${order.customerName || '未知顧客'} ${order.serviceName || '未填服務'}`;
             const target = { tab: 'orders', orderId: order.id, customerId: order.customerId };
-            const key = [order.date, order.customerId || this.normalizeCustomerName(order.customerName), order.serviceName, amount].join('|');
+            const key = [order.date, order.customerId ? this.resolveMergedCustomerId(order.customerId) : this.normalizeCustomerName(order.customerName), order.serviceName, amount].join('|');
             orderKeyCounts[key] = (orderKeyCounts[key] || 0) + 1;
             if (!orderKeyFirst[key]) orderKeyFirst[key] = order;
 
@@ -5168,7 +5570,7 @@
 
           Object.entries(this.prepaidTotalsByCustomer || {}).forEach(([customerId, totals]) => {
             if (Number(totals.balance) < 0) {
-              const hasRecentLedger = (this.prepaidLedger || []).some(entry => entry.customerId === customerId && validDate(entry.date) && entry.date >= startDate);
+              const hasRecentLedger = (this.prepaidLedger || []).some(entry => this.resolveMergedCustomerId(entry.customerId) === customerId && validDate(entry.date) && entry.date >= startDate);
               if (!hasRecentLedger) return;
               const customer = this.customerMap[customerId];
               push('warning', 'negative_prepaid_balance', `${customer?.name || customerId} 儲值餘額為負數`, { tab: 'crm', customerId });
@@ -5310,14 +5712,20 @@
             this.showToast('請先輸入實際盤點現金', 'error');
             return false;
           }
+          const countedCash = Number(this.closeoutCashCount);
+          if (!Number.isSafeInteger(countedCash) || countedCash < 0) {
+            this.showToast('實際盤點現金必須是 0 以上的整數', 'error');
+            return false;
+          }
           const date = this.closeoutDate || new Date().toLocaleDateString('sv-SE');
           const totals = this.selectedCloseout;
-          const difference = Number(this.closeoutCashCount) - totals.actualCashIn;
+          const difference = countedCash - totals.actualCashIn;
           const wasUpdate = Boolean(this.closeoutRecords[date]);
+          const previous = wasUpdate ? MomoCore.cloneJsonValue(this.closeoutRecords[date]) : null;
           this.closeoutRecords[date] = {
             date,
             expectedCash: totals.actualCashIn,
-            countedCash: Number(this.closeoutCashCount),
+            countedCash,
             difference,
             cash: totals.cash,
             transfer: totals.transfer,
@@ -5335,7 +5743,14 @@
             note: this.closeoutNote.trim(),
             completedAt: new Date().toISOString()
           };
-          localStorage.setItem('momo_closeoutRecords', JSON.stringify(this.closeoutRecords));
+          try {
+            this.writeLocalStorageAtomically([['momo_closeoutRecords', JSON.stringify(this.closeoutRecords)]]);
+          } catch (error) {
+            if (previous) this.closeoutRecords[date] = previous;
+            else delete this.closeoutRecords[date];
+            this.showToast(`打烊儲存失敗，原鎖帳狀態已保留：${error.message || error}`, 'error', 9000);
+            return false;
+          }
           this.queueCloudSync();
           this.recordOperation('closeout_save', wasUpdate ? '更新打烊' : '完成打烊', `${date} 應有 NT$ ${this.formatNumber(totals.actualCashIn)} · 實點 NT$ ${this.formatNumber(this.closeoutCashCount)} · 差額 ${difference > 0 ? '+' : ''}NT$ ${this.formatNumber(difference)}`);
           this.showToast(difference === 0 ? `${date} 打烊完成，現金帳實相符` : `${date} 打烊已記錄，差額 NT$ ${this.formatNumber(difference)}`,
@@ -5563,6 +5978,13 @@
           if (cust.contact) lines.push(`聯絡：${cust.contact}`);
           this.copyTextToClipboard(lines.join('\n'), '顧客摘要已複製');
         },
+        copyCalendarCustomerId(cust) {
+          if (!cust?.id) {
+            this.showToast('找不到 Customer ID', 'error');
+            return;
+          }
+          this.copyTextToClipboard(`Customer ID: ${cust.id}`, 'Calendar Customer ID 已複製');
+        },
         dismissIosGuide() {
           this.showIosGuide = false;
           localStorage.setItem('momo_ios_guide_dismissed', '1');
@@ -5727,8 +6149,22 @@
         },
         getOrderActualMinutes(order) {
           return this.normalizeMinutes(order?.actualDurationMinutes)
-            || this.normalizeMinutes(order?.calendarDurationMinutes)
             || this.normalizeMinutes(order?.durationMinutes);
+        },
+        migrateLegacyCalendarActualDurations(fromSchemaVersion = 1) {
+          if (Number(fromSchemaVersion) >= 3) return 0;
+          let migrated = 0;
+          (this.orders || []).forEach(order => {
+            if (order?.source !== 'google_calendar' || order.actualDurationSource) return;
+            const actual = this.normalizeMinutes(order.actualDurationMinutes);
+            const scheduled = this.normalizeMinutes(order.calendarDurationMinutes);
+            if (!actual || !scheduled || actual !== scheduled) return;
+            order.actualDurationMinutes = null;
+            if (this.normalizeMinutes(order.durationMinutes) === scheduled) order.durationMinutes = null;
+            order.actualDurationSource = 'legacy_calendar_schedule_removed';
+            migrated += 1;
+          });
+          return migrated;
         },
         formatHours(value) {
           const hours = Math.round((Number(value) || 0) * 10) / 10;
@@ -5760,7 +6196,6 @@
               const serviceName = o.serviceName || '未填服務';
               const standardMinutes = this.getServiceMinutes(serviceName);
               const actualMinutes = this.getOrderActualMinutes(o);
-              if (!standardMinutes && !actualMinutes) return;
 
               if (!serviceMap[serviceName]) {
                 serviceMap[serviceName] = {
@@ -5772,38 +6207,45 @@
                   standardMinutesTotal: 0,
                   actualMinutesTotal: 0,
                   standardMatchedCount: 0,
-                  actualMatchedCount: 0
+                  actualMatchedCount: 0,
+                  items: []
                 };
               }
               const row = serviceMap[serviceName];
-              row.totalAmount += Number(o.amount) || 0;
+              const amount = Number(o.amount) || 0;
+              row.totalAmount += amount;
               row.count += 1;
+              row.items.push({ amount, actualMinutes, standardMinutes });
               if (standardMinutes) {
                 row.standardMinutesTotal += standardMinutes;
                 row.standardMatchedCount += 1;
-                row.standardAmount += Number(o.amount) || 0;
+                row.standardAmount += amount;
               }
               if (actualMinutes) {
                 row.actualMinutesTotal += actualMinutes;
                 row.actualMatchedCount += 1;
-                row.actualAmount += Number(o.amount) || 0;
+                row.actualAmount += amount;
               }
             });
 
           return Object.values(serviceMap)
             .map(item => {
+              const effective = MomoCore.calculateEffectiveTimeYield(item.items);
               const standardHours = item.standardMinutesTotal / 60;
               const actualHours = item.actualMinutesTotal / 60;
+              const effectiveHours = effective.effectiveMinutes / 60;
               const standardYieldPerHour = standardHours > 0 ? Math.round(item.standardAmount / standardHours) : 0;
               const actualYieldPerHour = actualHours > 0 ? Math.round(item.actualAmount / actualHours) : 0;
-              const yieldPerHour = actualYieldPerHour || standardYieldPerHour;
+              const yieldPerHour = effective.hourlyYield || 0;
               const minutesPerService = item.standardMatchedCount
                 ? Math.round(item.standardMinutesTotal / item.standardMatchedCount)
                 : 0;
               const actualMinutesPerService = item.actualMatchedCount
                 ? Math.round(item.actualMinutesTotal / item.actualMatchedCount)
                 : 0;
-              const averageMinutes = actualMinutesPerService || minutesPerService || 0;
+              const averageMinutes = effective.coveredCount
+                ? Math.round(effective.effectiveMinutes / effective.coveredCount)
+                : 0;
               const averageAmount = item.count ? Math.round(item.totalAmount / item.count) : 0;
               const actualCoverage = item.count ? Math.round(item.actualMatchedCount / item.count * 100) : 0;
               const standardCoverage = item.count ? Math.round(item.standardMatchedCount / item.count * 100) : 0;
@@ -5819,19 +6261,25 @@
                 : actualCoverage > 0
                   ? '部分實際'
                   : '標準估算';
-              const timeBasisLabel = actualCoverage >= 80
+              const timeBasisLabel = effective.mode === 'actual'
                 ? '實際工時'
-                : actualCoverage > 0
+                : effective.mode === 'mixed'
                   ? '混合工時'
-                  : '標準時長';
+                  : effective.mode === 'standard'
+                    ? '標準時長'
+                    : '工時缺漏';
+              const { items, ...publicItem } = item;
               return {
-                ...item,
+                ...publicItem,
                 averageAmount,
                 minutesPerService,
                 actualMinutesPerService,
                 averageMinutes,
                 totalHours: standardHours,
                 actualHours,
+                effectiveHours,
+                effectiveAmount: effective.coveredAmount,
+                effectiveCoverage: Math.round(effective.coverageRate * 100),
                 standardYieldPerHour,
                 actualYieldPerHour,
                 yieldPerHour,
@@ -5848,32 +6296,52 @@
             .sort((a, b) => b.yieldPerHour - a.yieldPerHour);
         },
         buildYieldSummary(items = [], serviceOrders = []) {
-          const totalAmount = items.reduce((sum, item) => sum + (Number(item.totalAmount) || 0), 0);
+          const eligibleOrders = (serviceOrders || []).filter(order => this.isOrderActive(order) && !this.isCorrectionSlip(order) && order.paymentMethod !== '儲值進帳');
+          const effective = MomoCore.calculateEffectiveTimeYield(eligibleOrders.map(order => ({
+            amount: Number(order.amount) || 0,
+            actualMinutes: this.getOrderActualMinutes(order),
+            standardMinutes: this.getServiceMinutes(order.serviceName)
+          })));
+          const totalAmount = eligibleOrders.reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
           const standardHours = items.reduce((sum, item) => sum + (Number(item.totalHours) || 0), 0);
           const actualHours = items.reduce((sum, item) => sum + (Number(item.actualHours) || 0), 0);
-          const serviceRevenue = (serviceOrders || []).reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
-          const actualAmount = (serviceOrders || [])
+          const serviceRevenue = totalAmount;
+          const actualAmount = eligibleOrders
             .filter(order => this.getOrderActualMinutes(order))
             .reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
           const actualAverage = actualHours > 0 ? Math.round(actualAmount / actualHours) : 0;
-          const standardAverage = standardHours > 0 ? Math.round(totalAmount / standardHours) : 0;
-          const unmatched = [...new Set((serviceOrders || [])
+          const standardAmount = eligibleOrders
+            .filter(order => this.getServiceMinutes(order.serviceName))
+            .reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
+          const standardAverage = standardHours > 0 ? Math.round(standardAmount / standardHours) : 0;
+          const unmatched = [...new Set(eligibleOrders
             .filter(o => !this.getServiceMinutes(o.serviceName))
             .map(o => o.serviceName)
             .filter(Boolean))];
-          const actualMissing = [...new Set((serviceOrders || [])
+          const actualMissing = [...new Set(eligibleOrders
             .filter(o => !this.getOrderActualMinutes(o))
             .map(o => o.serviceName)
             .filter(Boolean))];
+          const timeBasisLabel = effective.mode === 'actual'
+            ? '實際工時'
+            : effective.mode === 'mixed'
+              ? '混合工時'
+              : effective.mode === 'standard'
+                ? '標準工時'
+                : '工時未設定';
           return {
-            average: actualAverage || standardAverage,
+            average: effective.hourlyYield || 0,
             actualAverage,
             standardAverage,
             totalAmount,
             totalHours: Math.round(standardHours * 10) / 10,
             actualHours: Math.round(actualHours * 10) / 10,
+            effectiveHours: Math.round((effective.effectiveMinutes / 60) * 10) / 10,
+            effectiveAmount: effective.coveredAmount,
+            effectiveCoverage: Math.round(effective.coverageRate * 100),
+            timeBasisLabel,
             actualAmount,
-            actualCoverage: serviceRevenue > 0 ? Math.round(actualAmount / serviceRevenue * 100) : 0,
+            actualCoverage: effective.totalCount ? Math.round(effective.actualCount / effective.totalCount * 100) : 0,
             unmatched,
             actualMissing,
             highEfficiency: items.filter(item => item.level === '高效').length,
@@ -5884,83 +6352,12 @@
 
         // Helper to match service duration
         getServiceMinutes(name) {
-          if (!name) return null;
-          // Normalize: remove spaces around '+'
-          const cleaned = name.replace(/\s*\+\s*/g, '+').trim();
-
-          // 1. Direct dictionary lookup
-          if (this.serviceDictionary[cleaned]) {
-            return this.serviceDictionary[cleaned];
-          }
-
-          // 2. Combined service handling (split by '+' and sum duration)
-          if (cleaned.includes('+')) {
-            const parts = cleaned.split('+');
-            let totalMinutes = 0;
-            let matchedAny = false;
-            for (const part of parts) {
-              const minutes = this.getServiceMinutes(part);
-              if (minutes) {
-                totalMinutes += minutes;
-                matchedAny = true;
-              }
-            }
-            return matchedAny ? totalMinutes : null;
-          }
-
-          // 3. Fuzzy matching: search keys sorted by length descending
-          const sortedKeys = Object.keys(this.serviceDictionary).sort((a, b) => b.length - a.length);
-          for (const key of sortedKeys) {
-            if (cleaned.includes(key)) {
-              return this.serviceDictionary[key];
-            }
-          }
-          for (const key of sortedKeys) {
-            if (key.includes(cleaned)) {
-              return this.serviceDictionary[key];
-            }
-          }
-          return null;
+          return MomoCore.resolveServiceMetric(name, this.serviceDictionary);
         },
 
         // Helper to match service price
         getServicePrice(name) {
-          if (!name) return null;
-          const cleaned = name.replace(/\s*\+\s*/g, '+').trim();
-
-          // 1. Direct dictionary lookup
-          if (this.priceDictionary[cleaned]) {
-            return this.priceDictionary[cleaned];
-          }
-
-          // 2. Combined service handling (split by '+' and sum price)
-          if (cleaned.includes('+')) {
-            const parts = cleaned.split('+');
-            let totalPrice = 0;
-            let matchedAny = false;
-            for (const part of parts) {
-              const price = this.getServicePrice(part);
-              if (price) {
-                totalPrice += price;
-                matchedAny = true;
-              }
-            }
-            return matchedAny ? totalPrice : null;
-          }
-
-          // 3. Fuzzy matching: search keys sorted by length descending
-          const sortedKeys = Object.keys(this.priceDictionary).sort((a, b) => b.length - a.length);
-          for (const key of sortedKeys) {
-            if (cleaned.includes(key)) {
-              return this.priceDictionary[key];
-            }
-          }
-          for (const key of sortedKeys) {
-            if (key.includes(cleaned)) {
-              return this.priceDictionary[key];
-            }
-          }
-          return null;
+          return MomoCore.resolveServiceMetric(name, this.priceDictionary, { allowZero: true });
         },
 
         buildCalendarSyncPricingPayload() {
@@ -6077,7 +6474,7 @@
         // 判斷是否為封鎖時段（不約、卡 等行事曆佔位符）
         isBlockedSlot(name) {
           if (!name || !name.trim()) return true;
-          return BLOCKED_SLOT_KEYWORDS.some(k => name.includes(k));
+          return /^(?:不約|卡)(?:$|[\s｜|：:\-—_/])/.test(String(name).trim());
         },
 
         // 自訂確認對話框（取代瀏覽器原生 confirm()）
@@ -6180,7 +6577,7 @@
           this.calendarSyncRetryAt = null;
         },
         scheduleCalendarSyncRetry(options = {}, delayMs = 20000, reason = '遠端暫時無法回應') {
-          if (this.calendarSyncRetryTimer || !navigator.onLine) return false;
+          if (this.storageRecoveryBlocked || this.calendarSyncRetryTimer || !navigator.onLine) return false;
           const delay = Math.max(1000, Number(delayMs) || 20000);
           this.calendarSyncRetryAt = new Date(Date.now() + delay).toISOString();
           this.calendarAutoSyncStatus = 'waiting';
@@ -6263,6 +6660,7 @@
           const minSuccessInterval = 3 * 60 * 60 * 1000;
           const minRetryInterval = 30 * 60 * 1000;
 
+          if (this.storageRecoveryBlocked) return { run: false, reason: 'storage_recovery_blocked' };
           if (!this.online || !navigator.onLine) return { run: false, reason: 'offline' };
           if (document.hidden) return { run: false, reason: 'hidden' };
           if (this.syncing) return { run: false, reason: 'syncing' };
@@ -6277,6 +6675,7 @@
           return { run: false, reason: 'fresh' };
         },
         scheduleInitialCalendarAutoSync(delayMs = 3000) {
+          if (this.storageRecoveryBlocked) return;
           if (this.calendarAutoSyncTimer) clearTimeout(this.calendarAutoSyncTimer);
           if (this.calendarAutoSyncStatus === 'syncing' || this.syncing) return;
           this.calendarAutoSyncTimer = setTimeout(() => {
@@ -6365,6 +6764,10 @@
           }
         },
         async initAuth() {
+          if (this.storageRecoveryBlocked) {
+            this.authLoading = false;
+            return false;
+          }
           this.authLoading = true;
           const productionApi = 'https://mo2-z7d1.onrender.com';
           const candidates = [...new Set([
@@ -6844,7 +7247,9 @@
           return {
             customers: [
               ['name', '顧客姓名'],
-              ['gender', '性別']
+              ['gender', '性別'],
+              ['merged_into_customer_id', '合併至顧客'],
+              ['archived_at', '封存時間']
             ],
             orders: [
               ['order_date', '日期'],
@@ -7050,6 +7455,63 @@
           }
           this.cloudSyncPending = false;
         },
+        markCloudPendingWrite(reason = 'local_change') {
+          if (this.cloudApplying || !this.cloudLastSync) return null;
+          const pending = {
+            at: new Date().toISOString(),
+            reason,
+            ownerId: this.authUser?.id || null
+          };
+          this.cloudPendingWrite = pending;
+          try {
+            localStorage.setItem('momo_cloud_pending_write', JSON.stringify(pending));
+          } catch (error) {
+            this.cloudStatus = 'error';
+            this.cloudMessage = '本機已儲存，但無法建立雲端待同步保護標記；請先匯出 JSON';
+            this.showToast(this.cloudMessage, 'error', 9000);
+          }
+          return pending;
+        },
+        clearCloudPendingWrite() {
+          this.cloudPendingWrite = null;
+          localStorage.removeItem('momo_cloud_pending_write');
+        },
+        buildPendingWriteConflict(snapshot = {}) {
+          const payloads = this.buildCloudPayloads();
+          for (const table of Object.keys(this.versionedTableConfigs())) {
+            const remoteByKey = new Map((snapshot[table] || []).map(row => [this.cloudRowKey(table, row), row]));
+            const localByKey = new Map((payloads[table] || []).map(row => [this.cloudRowKey(table, row), row]));
+            const keys = new Set([...remoteByKey.keys(), ...localByKey.keys()]);
+            for (const key of keys) {
+              const localPayload = localByKey.get(key) || {};
+              const cloudRow = remoteByKey.get(key) || null;
+              if (this.cloudFingerprint(localPayload) !== this.cloudFingerprint(cloudRow)) {
+                return {
+                  table,
+                  key,
+                  label: `${this.versionedTableConfigs()[table]?.label || table}（上次同步未完成）`,
+                  localPayload,
+                  cloudRow,
+                  operation: 'resume'
+                };
+              }
+            }
+          }
+          const remoteLedger = new Map((snapshot.prepaid_ledger || []).map(row => [String(row.id), this.cloudFingerprint(row)]));
+          const localLedger = payloads.prepaid_ledger || [];
+          const ledgerRow = localLedger.find(row => remoteLedger.get(String(row.id)) !== this.cloudFingerprint(row));
+          if (ledgerRow) {
+            return {
+              table: 'prepaid_ledger',
+              key: String(ledgerRow.id),
+              label: '儲值帳本（上次同步未完成）',
+              localPayload: ledgerRow,
+              cloudRow: (snapshot.prepaid_ledger || []).find(row => String(row.id) === String(ledgerRow.id)) || null,
+              operation: 'resume'
+            };
+          }
+          return null;
+        },
         localVersionedChangePayloads(payloads = null) {
           const source = payloads || this.buildCloudPayloads();
           const changes = {};
@@ -7097,7 +7559,8 @@
           this.cloudVersionPollTimer = setInterval(() => this.checkRemoteVersions(), 60000);
         },
         async checkRemoteVersions() {
-          if (!this.cloudReady || this.cloudApplying || this.cloudSyncInFlight || this.cloudConflict || document.hidden) return;
+          if (this.storageRecoveryBlocked || this.cloudRestorePending || this.cloudPendingWrite || this.cloudSyncTimer
+            || !this.cloudReady || this.cloudApplying || this.cloudSyncInFlight || this.cloudConflict || document.hidden) return;
           try {
             const configs = this.versionedTableConfigs();
             let changed = false;
@@ -7125,13 +7588,16 @@
             console.warn('Remote version check skipped:', error);
           }
         },
-        applyCloudSnapshot(snapshot) {
+        applyCloudSnapshot(snapshot, options = {}) {
+          if (this.cloudRestorePending && !options.force) return false;
           this.cloudApplying = true;
           try {
             this.customers = (snapshot.customers || []).map(row => ({
               id: row.id,
               name: row.name,
               gender: row.gender || '女',
+              mergedIntoCustomerId: row.merged_into_customer_id || null,
+              archivedAt: row.archived_at || null,
               createdAt: row.created_at,
               updatedAt: row.updated_at,
               version: Number(row.version) || 1
@@ -7180,6 +7646,9 @@
               serviceName: row.service_name || '',
               paymentMethod: row.payment_method || '',
               note: row.note || '',
+              reversalOfEntryId: row.reversal_of_entry_id || null,
+              transferGroupId: row.transfer_group_id || null,
+              systemManaged: Boolean(row.system_managed),
               createdAt: row.created_at
             }));
             this.expenses = (snapshot.expenses || []).map(row => ({
@@ -7244,12 +7713,26 @@
             }
             this.captureCloudBaseline(snapshot);
             this.saveToLocalStorage();
+            return true;
           } finally {
             this.cloudApplying = false;
           }
         },
         async initializeCloudData() {
           if (!this.authUser || !this.authSession?.access_token) return;
+          if (this.storageRecoveryBlocked) {
+            this.cloudReady = false;
+            this.cloudStatus = 'error';
+            this.cloudMessage = '資料回復待處理，已停止雲端載入與同步';
+            return;
+          }
+          if (this.cloudRestorePending) {
+            this.cloudReady = false;
+            this.cloudMigrationNeeded = false;
+            this.cloudStatus = 'restore_pending';
+            this.cloudMessage = '本機還原版本已保護，雲端同步暫停；可下載 JSON，或重新載入雲端。';
+            return;
+          }
           this.cloudStatus = 'loading';
           this.cloudMessage = '正在檢查 Supabase 資料…';
           try {
@@ -7257,6 +7740,21 @@
             const cloudBusinessCount = ['customers', 'orders', 'prepaid_ledger', 'expenses', 'inventory', 'crm_profiles', 'closeouts']
               .reduce((sum, table) => sum + (snapshot[table] || []).length, 0);
             const migratedHere = localStorage.getItem(this.cloudMigrationKey()) === '1';
+            if (migratedHere && this.cloudPendingWrite) {
+              this.createPreCloudBackup();
+              this.captureCloudBaseline(snapshot);
+              const pendingConflict = this.buildPendingWriteConflict(snapshot);
+              if (pendingConflict) {
+                this.cloudReady = true;
+                this.cloudMigrationNeeded = false;
+                this.cloudConflict = pendingConflict;
+                this.cloudStatus = 'conflict';
+                this.cloudMessage = '偵測到上次未完成的同步；為避免覆蓋本機資料，請選擇保留本機或載入雲端';
+                this.showToast('上次同步尚未完成，本機資料已保留且未被雲端覆蓋', 'warning', 9000);
+                return;
+              }
+              this.clearCloudPendingWrite();
+            }
             if ((cloudBusinessCount > 0 || (snapshot.service_configs || []).length > 0)
               && this.hasMeaningfulLocalData() && !migratedHere) {
               this.cloudReady = false;
@@ -7300,11 +7798,16 @@
           const now = new Date().toISOString();
           const customerIds = new Set(this.customers.map(customer => customer.id));
           return {
-            customers: this.customers.filter(customer => customer.id && customer.name).map(customer => ({
+            customers: this.customers
+              .filter(customer => customer.id && customer.name)
+              .sort((a, b) => Number(Boolean(a.mergedIntoCustomerId)) - Number(Boolean(b.mergedIntoCustomerId)))
+              .map(customer => ({
               id: customer.id,
               owner_id: ownerId,
               name: customer.name,
               gender: customer.gender || '女',
+              merged_into_customer_id: customer.mergedIntoCustomerId || null,
+              archived_at: customer.archivedAt || null,
               created_at: customer.createdAt || now,
               updated_at: customer.updatedAt || now
             })),
@@ -7365,6 +7868,9 @@
               service_name: entry.serviceName || null,
               payment_method: entry.paymentMethod || null,
               note: entry.note || '',
+              reversal_of_entry_id: entry.reversalOfEntryId || null,
+              transfer_group_id: entry.transferGroupId || null,
+              system_managed: Boolean(entry.systemManaged),
               customer_name_snapshot: entry.customerNameSnapshot || this.customerMap[entry.customerId]?.name || '未知顧客',
               created_at: entry.createdAt || now
             })),
@@ -7431,17 +7937,28 @@
         async upsertCloudRows(table, rows, conflict, ignoreDuplicates = false) {
           if (!rows.length) return;
           const batchSize = 200;
-          for (let offset = 0; offset < rows.length; offset += batchSize) {
+          let batches = [];
+          if (table === 'prepaid_ledger') {
+            // DB 的 deferred transfer constraint 要求同一轉移組在同一 transaction。
+            // 同時先送原分錄再送 reversal，避免 BEFORE INSERT 找不到原分錄。
+            batches = MomoCore.buildPrepaidLedgerUploadBatches(rows, batchSize);
+          } else {
+            for (let offset = 0; offset < rows.length; offset += batchSize) {
+              batches.push(rows.slice(offset, offset + batchSize));
+            }
+          }
+          for (const batch of batches) {
             await this.cloudRequest(table, {
               method: 'POST',
               query: `on_conflict=${encodeURIComponent(conflict)}`,
-              body: rows.slice(offset, offset + batchSize),
+              body: batch,
               prefer: `${ignoreDuplicates ? 'resolution=ignore-duplicates' : 'resolution=merge-duplicates'},return=minimal`
             });
           }
         },
         async pushCloudSnapshot(initialMigration = false) {
           if (!this.authUser || !this.authSession?.access_token) return false;
+          if (this.storageRecoveryBlocked || this.cloudRestorePending) return false;
           if (!initialMigration && (!this.cloudReady || this.cloudApplying)) return false;
           if (!initialMigration && this.cloudConflict) return false;
           if (this.cloudSyncInFlight) {
@@ -7474,6 +7991,7 @@
             this.cloudMessage = `雲端已同步 · ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
             this.runIntegrityCheck(false);
             await this.createAutomaticBackup({ force: true, silent: true });
+            this.clearCloudPendingWrite();
             return true;
           } catch (error) {
             console.error('Cloud sync failed:', error);
@@ -7498,6 +8016,8 @@
           }
         },
         queueCloudSync(delay = 1200) {
+          if (this.storageRecoveryBlocked || this.cloudRestorePending) return;
+          this.markCloudPendingWrite('local_change');
           if (this.cloudApplying || !this.authUser) return;
           if (this.cloudConflict) return;
           if (!this.cloudReady) {
@@ -7514,8 +8034,15 @@
             this.pushCloudSnapshot();
           }, delay);
         },
+        assertCloudDeleteReady() {
+          if (this.cloudLastSync && (!this.cloudReady || !this.authUser)) {
+            this.showToast('此裝置曾同步雲端；請先恢復登入與連線，再執行刪除，避免資料之後復活', 'error', 9000);
+            return false;
+          }
+          return true;
+        },
         async deleteCloudRecord(table, column, value) {
-          if (!this.cloudReady || !this.authUser || !value) return;
+          if (!this.cloudReady || !this.authUser || !value) return false;
           try {
             const config = this.versionedTableConfigs()[table];
             const key = String(value);
@@ -7537,19 +8064,22 @@
               this.cloudConflict = error.conflict;
               this.cloudStatus = 'conflict';
               this.cloudMessage = '刪除前偵測到其他裝置修改，請選擇版本';
-              return;
+              return false;
             }
             if (this.cloudBaseline[table]) delete this.cloudBaseline[table][key];
+            return true;
           } catch (error) {
             console.error(`Cloud delete failed for ${table}:`, error);
             this.cloudStatus = 'error';
             this.cloudMessage = '雲端刪除失敗，請稍後重新同步';
+            return false;
           }
         },
         async useCloudConflictVersion() {
           this.clearQueuedCloudSync();
           this.cloudConflict = null;
-          await this.reloadCloudData();
+          const success = await this.reloadCloudData();
+          if (success) this.clearCloudPendingWrite();
         },
         async keepLocalConflictVersion() {
           const conflict = this.cloudConflict;
@@ -7561,12 +8091,15 @@
             if (conflict.operation === 'delete') {
               await this.forceDeleteCloudRow(conflict.table, conflict.localPayload);
             }
+            const payloads = this.buildCloudPayloads();
             const changed = await this.forceOverwriteLocalVersionedChanges();
+            await this.upsertCloudRows('prepaid_ledger', payloads.prepaid_ledger, 'id', true);
             this.cloudConflict = null;
             this.cloudReady = true;
             this.cloudStatus = 'synced';
             this.cloudLastSync = new Date().toISOString();
             localStorage.setItem('momo_cloud_last_sync', this.cloudLastSync);
+            this.clearCloudPendingWrite();
             this.cloudMessage = `已用本機覆蓋雲端 ${changed} 筆 · ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
             this.recordOperation('cloud_conflict_overwrite', '保留本機並覆蓋雲端', `${conflict.label} 衝突已處理；覆蓋待同步資料 ${changed} 筆`, { table: conflict.table, key: conflict.key, changed });
             this.showToast(`已保留本機版本並覆蓋雲端 ${changed} 筆`);
@@ -7579,7 +8112,7 @@
           }
         },
         async migrateLocalDataToSupabase() {
-          if (!this.cloudMigrationNeeded || this.cloudStatus === 'syncing') return;
+          if (this.storageRecoveryBlocked || !this.cloudMigrationNeeded || this.cloudStatus === 'syncing') return;
           const success = await this.pushCloudSnapshot(true);
           if (success) {
             try {
@@ -7593,8 +8126,18 @@
           }
           else this.cloudMigrationNeeded = true;
         },
-        async reloadCloudData(force = false) {
+        async reloadCloudData(force = false, discardRestoredLocal = false) {
+          if (this.storageRecoveryBlocked) {
+            this.showToast('資料回復尚未完成，已阻止載入雲端覆蓋本機', 'error', 8000);
+            return false;
+          }
           if (this.cloudStatus === 'loading' || this.cloudStatus === 'syncing') return;
+          if (this.cloudRestorePending && !discardRestoredLocal) {
+            this.showConfirm('目前裝置正在保護剛還原的本機版本。重新載入雲端會放棄這份本機還原內容；建議先下載 JSON 留存。確定繼續嗎？', async () => {
+              await this.reloadCloudData(true, true);
+            }, { title: '放棄本機還原版本', subtitle: '目前資料將由 Supabase 最新內容取代', tone: 'danger', confirmLabel: '載入雲端', loadingLabel: '載入中…' });
+            return;
+          }
           if (!this.authSession?.access_token) {
             this.showAuthSheet = true;
             this.showToast('請先登入雲端帳號，再載入雲端資料', 'error', 5000);
@@ -7615,7 +8158,8 @@
             await this.restoreSupabaseSession();
             const snapshot = await this.fetchCloudSnapshot();
             this.createPreCloudBackup();
-            this.applyCloudSnapshot(snapshot);
+            this.applyCloudSnapshot(snapshot, { force: discardRestoredLocal });
+            if (discardRestoredLocal) this.clearCloudRestorePending();
             this.startCloudVersionPolling();
             localStorage.setItem(this.cloudMigrationKey(), '1');
             this.cloudReady = true;
@@ -7627,10 +8171,14 @@
             this.runIntegrityCheck(false);
             await this.createAutomaticBackup({ silent: true });
             this.showToast('已重新載入 Supabase 資料');
+            return true;
           } catch (error) {
-            this.cloudStatus = 'error';
-            this.cloudMessage = '雲端重新載入失敗，本機資料未變更';
+            this.cloudStatus = this.cloudRestorePending ? 'restore_pending' : 'error';
+            this.cloudMessage = this.cloudRestorePending
+              ? '雲端載入失敗，本機還原版本仍受保護且未被覆蓋'
+              : '雲端重新載入失敗，本機資料未變更';
             this.showToast(`雲端載入失敗：${error.message}`, 'error', 7000);
+            return false;
           }
         },
 
@@ -7680,6 +8228,10 @@
         },
         syncFromApi(options = {}) {
           const syncOptions = this.normalizeCalendarSyncOptions(options);
+          if (this.storageRecoveryBlocked) {
+            if (!syncOptions.silent) this.showToast('資料回復尚未完成，行事曆同步已暫停', 'error', 8000);
+            return Promise.resolve(false);
+          }
           if (this._calendarSyncPromise) {
             if (!syncOptions.silent && !syncOptions.automatic) {
               const now = Date.now();
@@ -7698,6 +8250,7 @@
         },
         async _syncFromApiOnce(syncOptions = {}) {
           const silent = Boolean(syncOptions.silent);
+          if (this.storageRecoveryBlocked) return false;
           if (this.authConfig.required && !this.authSession?.access_token) {
             this.authError = '請先登入後再同步行事曆';
             if (!silent) this.showAuthSheet = true;
@@ -7781,7 +8334,35 @@
             const orders = resData.orders || (resData.data && resData.data.orders);
             if (resData && Array.isArray(orders)) {
               const cancelledEventIds = resData.cancelledEventIds || (resData.data && resData.data.cancelledEventIds) || [];
-              const report = this.washAndMergeOrders(orders, cancelledEventIds, { silent });
+              const backendIssues = resData.issues || (resData.data && resData.data.issues) || [];
+              const quarantinedEvents = resData.quarantinedEvents || (resData.data && resData.data.quarantinedEvents) || [];
+              const acceptedOrderIds = new Set((Array.isArray(orders) ? orders : [])
+                .map(order => String(order?.orderId || order?.order_id || '').trim().toLocaleLowerCase('zh-TW'))
+                .filter(Boolean));
+              const quarantinedEventIds = (Array.isArray(quarantinedEvents) ? quarantinedEvents : [])
+                .map(event => String(event?.sourceEventId || '').trim())
+                .filter(Boolean);
+              const quarantinedOrderIds = (Array.isArray(quarantinedEvents) ? quarantinedEvents : [])
+                .map(event => String(event?.orderId || '').trim().toLocaleLowerCase('zh-TW'))
+                .filter(orderId => orderId && !acceptedOrderIds.has(orderId));
+              const report = this.washAndMergeOrders(orders, cancelledEventIds, {
+                silent,
+                quarantinedEventIds,
+                quarantinedOrderIds
+              });
+              const normalizedBackendIssues = (Array.isArray(backendIssues) ? backendIssues : []).map((issue, index) => ({
+                ...issue,
+                id: issue.id || `${new Date().toISOString()}-backend-${index + 1}`,
+                type: issue.type || issue.code || 'calendar_quarantine',
+                severity: issue.severity || 'error',
+                message: issue.message || '行事曆事件未通過入帳規則，已隔離。',
+                source: 'backend'
+              }));
+              report.issues = [...normalizedBackendIssues, ...(report.issues || [])];
+              report.quarantined = Array.isArray(quarantinedEvents) ? quarantinedEvents.length : 0;
+              report.quarantinedEvents = Array.isArray(quarantinedEvents) ? quarantinedEvents : [];
+              report.skipped += report.quarantined;
+              report.warnings += normalizedBackendIssues.filter(issue => issue.severity === 'warning').length;
               this.lastSyncTime = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
               localStorage.setItem('momo_last_sync_time', this.lastSyncTime);
               this.syncReport = {
@@ -7814,6 +8395,10 @@
         },
 
         washAndMergeOrders(rawOrders, cancelledEventIds = [], options = {}) {
+          if (this.storageRecoveryBlocked) {
+            throw new Error('資料回復尚未完成，已阻止 Calendar 改寫本機資料');
+          }
+          const rollback = this.buildBackupData();
           let mergedCount = 0;
           let updatedCount = 0;
           let unchangedCount = 0;
@@ -7863,47 +8448,56 @@
               .filter(order => order.sourceEventId)
               .map(order => [String(order.sourceEventId), order])
           );
+          const byExternalOrderId = new Map(
+            this.orders
+              .filter(order => order.orderId)
+              .map(order => [String(order.orderId).trim().toLocaleLowerCase('zh-TW'), order])
+          );
+          const seenIncomingOrderIds = new Set();
 
           rawOrders.forEach(raw => {
-            // 1. Clean customer name: Regex ^([^\(（\-\s]+)
-            const rawName = raw.customerName || raw.name || '未知';
-            const nameMatch = rawName.match(/^([^\(（\-\s]+)/);
-            const customerName = nameMatch ? nameMatch[1] : rawName;
+            // Backend output is already accounting-normalized. Preserve legitimate
+            // spaces in names instead of truncating `王 小美` to `王`.
+            const rawName = String(raw.customerName || raw.name || '');
+            const customerName = rawName.trim().replace(/\s+/g, ' ');
 
             if (this.isBlockedSlot(customerName)) {
               skippedCount++;
-              addIssue('blocked_slot', 'warning', `封鎖時段已跳過：${customerName}`, { customerName, rawName });
               return; // Skip sync for block slots
             }
 
-            // 2. Clean service name: filter "Service:" and truncate after ( or （
-            const rawService = raw.serviceName || raw.service || '一般服務';
+            // Preserve service tokens; only normalize explicit plus separators and notes.
+            const rawService = String(raw.serviceName || raw.service || '');
             let serviceName = rawService.replace(/Service:\s*/gi, '');
             // 移除 [大分類] 與 (圓括號備註)
             serviceName = serviceName.replace(/\[.*?\]/g, ' ');
             serviceName = serviceName.replace(/（.*?）/g, ' ');
             serviceName = serviceName.replace(/\(.*?\)/g, ' ');
-            // 合併多個空格為 " + "
-            serviceName = serviceName.trim().split(/\s+/).join(' + ');
+            serviceName = serviceName
+              .replace(/\s*[+＋]\s*/g, ' + ')
+              .replace(/\s+/g, ' ')
+              .trim();
 
             // 3. Gender determination: 只從姓名判斷，避免「男生短髮」污染女客性別
             const isMale = /[先生哥男\u{1F466}]/u.test(rawName);
             const gender = isMale ? '男' : '女';
 
-            // 4. Payment method: default "現金"
-            const paymentMethod = raw.paymentMethod || '現金';
+            // 4. 付款方式必須由行事曆明確提供，不把缺漏誤判成現金。
+            const paymentMethod = String(raw.paymentMethod || '').trim();
             const topupChannel = paymentMethod === '儲值進帳'
-              ? (raw.topupChannel === '轉帳' ? '轉帳' : '現金')
+              ? (['現金', '轉帳'].includes(raw.topupChannel) ? raw.topupChannel : null)
               : null;
 
             // Extract amount & date
             const amount = Number(raw.amount) || 0;
             const cashAmount = Number(raw.cashAmount) || 0;
-            const date = raw.date || new Date().toLocaleDateString('sv-SE');
-            const sourceEventId = String(raw.sourceEventId || raw.eventId || '');
-            const orderId = raw.orderId || raw.order_id || null;
-            const actualDurationMinutes = this.normalizeMinutes(raw.actualDurationMinutes || raw.calendarDurationMinutes);
-            const calendarDurationMinutes = this.normalizeMinutes(raw.calendarDurationMinutes || raw.actualDurationMinutes);
+            const date = String(raw.date || '').trim();
+            const sourceEventId = String(raw.sourceEventId || raw.eventId || '').trim();
+            const orderId = String(raw.orderId || raw.order_id || '').trim() || null;
+            const normalizedOrderId = orderId ? orderId.toLocaleLowerCase('zh-TW') : '';
+            const calendarCustomerId = String(raw.customerId || raw.customer_id || '').trim();
+            const actualDurationMinutes = this.normalizeMinutes(raw.actualDurationMinutes);
+            const calendarDurationMinutes = this.normalizeMinutes(raw.calendarDurationMinutes);
             const calendarStart = raw.calendarStart || raw.calendar_start_at || null;
             const calendarEnd = raw.calendarEnd || raw.calendar_end_at || null;
             const pricingSource = raw.pricingSource || raw.pricing_source || null;
@@ -7913,9 +8507,12 @@
               : [];
             const serviceConfigUpdatedAt = raw.serviceConfigUpdatedAt || raw.service_config_updated_at || null;
 
+            const validPaymentMethods = ['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'];
+            const today = new Date().toLocaleDateString('sv-SE');
+            const calendarEndMs = calendarEnd ? Date.parse(calendarEnd) : NaN;
             if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !customerName.trim() || !serviceName.trim()) {
               skippedCount++;
-              addIssue('invalid_required_fields', 'error', '行事曆資料缺少日期、顧客或服務名稱，已跳過。', {
+              addIssue('invalid_required_fields', 'error', '行事曆資料缺少日期、顧客或服務名稱，已隔離且未入帳。', {
                 date,
                 customerName,
                 serviceName,
@@ -7924,7 +8521,112 @@
               });
               return;
             }
-            if (this.isDateLocked(date)) {
+            if (!sourceEventId || !orderId) {
+              skippedCount++;
+              addIssue(!orderId ? 'missing_order_id' : 'missing_event_id', 'error', !orderId
+                ? '行事曆事件缺少 Order ID，已隔離且未入帳。'
+                : '行事曆事件缺少 Event ID，已隔離且未入帳。', {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                orderId,
+                amount
+              });
+              return;
+            }
+            if (date > today || (Number.isFinite(calendarEndMs) && calendarEndMs > Date.now())) {
+              skippedCount++;
+              addIssue('future_or_incomplete_event', 'error', '尚未完成的未來預約不會提前列入營收。', {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                orderId
+              });
+              return;
+            }
+            if (amount <= 0) {
+              skippedCount++;
+              addIssue('invalid_amount', 'error', `服務「${serviceName}」缺少有效正金額，已隔離且未入帳。`, {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                orderId,
+                amount,
+                pricingSource,
+                unmatchedServices: pricingUnmatchedServices
+              });
+              return;
+            }
+            if (!validPaymentMethods.includes(paymentMethod)) {
+              skippedCount++;
+              addIssue('invalid_payment', 'error', `付款方式「${paymentMethod || '未填'}」無效，已隔離且未入帳。`, {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                orderId,
+                amount,
+                paymentMethod
+              });
+              return;
+            }
+            if (paymentMethod === '儲值進帳' && !topupChannel) {
+              skippedCount++;
+              addIssue('missing_topup_channel', 'error', '儲值進帳必須明確標示現金或轉帳收款，該事件未入帳。', {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                orderId,
+                amount
+              });
+              return;
+            }
+            if (paymentMethod === '現金＋儲值扣款' && (cashAmount <= 0 || cashAmount >= amount)) {
+              skippedCount++;
+              addIssue('invalid_mixed_payment', 'error', '混合付款的現金金額需大於 0 且小於消費總額，該事件未入帳。', {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                orderId,
+                amount,
+                cashAmount,
+                paymentMethod
+              });
+              return;
+            }
+            if (seenIncomingOrderIds.has(normalizedOrderId)) {
+              skippedCount++;
+              warningCount++;
+              addIssue('duplicate_order_id', 'warning', `Order ID「${orderId}」重複，後續事件已去重且未重複入帳。`, {
+                date,
+                customerName,
+                serviceName,
+                sourceEventId,
+                orderId,
+                amount
+              });
+              return;
+            }
+            // 先辨識既有來源，再判斷鎖帳。完全相同的舊事件應計為 unchanged，
+            // 只有鎖帳日的新事件才需要逐筆警告。
+            let existing = byExternalOrderId.get(normalizedOrderId) || bySourceEventId.get(sourceEventId) || null;
+            if (!existing && sourceEventId) {
+              const legacyCandidates = this.orders.filter(order =>
+                !order.sourceEventId
+                && String(order.id || '').startsWith('sync_')
+                && order.date === date
+                && order.customerName === customerName
+                && (Number(order.amount) === amount || (order.source === 'google_calendar' && Number(order.amount) > 0))
+                && order.serviceName === serviceName
+              );
+              if (legacyCandidates.length === 1) existing = legacyCandidates[0];
+            }
+            if (this.isDateLocked(date) && !existing) {
               skippedCount++;
               warningCount++;
               addIssue('date_locked', 'warning', `${date} 已打烊鎖帳，同步資料已跳過。`, {
@@ -7935,38 +8637,6 @@
                 amount
               });
               return;
-            }
-            if (!sourceEventId) {
-              warningCount++;
-              addIssue('missing_event_id', 'warning', '行事曆事件沒有 Event ID，已用舊版去重規則處理。', {
-                date,
-                customerName,
-                serviceName,
-                amount
-              });
-            }
-            if (amount <= 0) {
-              warningCount++;
-              addIssue('zero_amount', 'warning', `服務「${serviceName}」金額為 0，請確認價目表或行事曆金額。`, {
-                date,
-                customerName,
-                serviceName,
-                sourceEventId,
-                amount,
-                pricingSource,
-                unmatchedServices: pricingUnmatchedServices
-              });
-            }
-            if (!['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'].includes(paymentMethod)) {
-              warningCount++;
-              addIssue('invalid_payment', 'warning', `付款方式「${paymentMethod}」不是系統支援項目。`, {
-                date,
-                customerName,
-                serviceName,
-                sourceEventId,
-                amount,
-                paymentMethod
-              });
             }
             if (pricingSource === 'unmatched_service_config' || pricingUnmatchedServices.length) {
               warningCount++;
@@ -7982,19 +8652,62 @@
                 unmatchedServices: unmatched
               });
             }
-            if (paymentMethod === '現金＋儲值扣款' && (cashAmount <= 0 || cashAmount >= amount)) {
-              warningCount++;
-              addIssue('invalid_mixed_payment', 'warning', '混合付款的現金金額需大於 0 且小於消費總額。', {
-                date,
-                customerName,
-                serviceName,
-                sourceEventId,
-                amount,
-                cashAmount,
-                paymentMethod
-              });
+            // Order ID 是會計唯一鍵；Event ID 只用來追蹤來源事件。
+            let syncedCustomer = null;
+            if (calendarCustomerId) {
+              const referencedCustomer = this.rawCustomerMap[calendarCustomerId];
+              if (!referencedCustomer) {
+                skippedCount++;
+                addIssue('unknown_customer_id', 'error', `Customer ID「${calendarCustomerId}」不存在，為避免扣錯同名顧客，該事件已隔離。`, {
+                  date,
+                  customerName,
+                  customerId: calendarCustomerId,
+                  serviceName,
+                  sourceEventId,
+                  orderId,
+                  amount
+                });
+                return;
+              }
+              syncedCustomer = this.rawCustomerMap[this.resolveMergedCustomerId(referencedCustomer.id)] || referencedCustomer;
+              if (this.normalizeCustomerName(syncedCustomer.name) !== this.normalizeCustomerName(customerName)) {
+                warningCount++;
+                addIssue('customer_id_name_mismatch', 'warning', `Calendar 姓名「${customerName}」與 Customer ID 顧客「${syncedCustomer.name}」不同，已依 Customer ID 入帳。`, {
+                  date,
+                  customerName,
+                  customerId: calendarCustomerId,
+                  serviceName,
+                  sourceEventId,
+                  orderId,
+                  amount
+                });
+              }
+            } else {
+              const existingIdentity = existing?.customerId ? this.rawCustomerMap[existing.customerId] : null;
+              const incomingNameKey = this.normalizeCustomerName(customerName);
+              const existingNameMatches = existingIdentity && [existing.customerName, existingIdentity.name]
+                .some(name => this.normalizeCustomerName(name) === incomingNameKey);
+              if (existingNameMatches) {
+                syncedCustomer = this.rawCustomerMap[this.resolveMergedCustomerId(existingIdentity.id)] || existingIdentity;
+              }
             }
-            const syncedCustomer = this.findOrCreateCustomer(customerName, gender);
+            if (!syncedCustomer && !calendarCustomerId) {
+              const nameMatches = this.findCustomersByName(customerName);
+              if (nameMatches.length > 1) {
+                skippedCount++;
+                addIssue('ambiguous_customer_name', 'error', `顧客「${customerName}」有 ${nameMatches.length} 位同名資料，請在 Calendar 描述加入 Customer ID 後再同步。`, {
+                  date,
+                  customerName,
+                  customerIds: nameMatches.map(customer => customer.id),
+                  serviceName,
+                  sourceEventId,
+                  orderId,
+                  amount
+                });
+                return;
+              }
+              syncedCustomer = nameMatches[0] || this.findOrCreateCustomer(customerName, gender);
+            }
             if (!syncedCustomer) {
               skippedCount++;
               addIssue('customer_create_failed', 'error', `顧客「${customerName}」建立失敗，該筆同步已跳過。`, {
@@ -8007,23 +8720,10 @@
               return;
             }
             const customerId = syncedCustomer.id;
+            seenIncomingOrderIds.add(normalizedOrderId);
 
-            // 舊版後端尚未回傳 Event ID 時，維持原本去重行為，避免部署過渡期產生重複
-            if (!sourceEventId) {
-              const legacyExisting = this.orders.find(order =>
-                this.isOrderActive(order)
-                && order.date === date
-                && order.customerName === customerName
-                && (Number(order.amount) === amount || (order.source === 'google_calendar' && Number(order.amount) > 0))
-                && order.serviceName === serviceName
-              );
-              if (legacyExisting) {
-                if (!legacyExisting.customerId) legacyExisting.customerId = customerId;
-                unchangedCount++;
-                return;
-              }
-              this.orders.push({
-                id: 'sync_' + Math.random().toString(36).substr(2, 9),
+            if (existing && this.isDateLocked(existing.date)) {
+              const lockedIncoming = {
                 date,
                 customerId,
                 customerName: syncedCustomer.name,
@@ -8032,35 +8732,27 @@
                 amount,
                 paymentMethod,
                 cashAmount: paymentMethod === '現金＋儲值扣款' ? cashAmount : null,
-                topupChannel,
-                source: 'google_calendar',
-                sourceEventId: null,
-                orderId,
-                calendarStart,
-                calendarEnd,
-                calendarDurationMinutes,
-                actualDurationMinutes,
-                pricingSource,
-                pricingUnmatchedServices,
-                serviceConfigUpdatedAt,
-                syncStatus: 'active',
-                lastSyncedAt: new Date().toISOString()
-              });
-              mergedCount++;
+                topupChannel
+              };
+              const lockedChangedFields = ['date', 'customerId', 'customerName', 'gender', 'serviceName', 'amount', 'paymentMethod', 'cashAmount', 'topupChannel']
+                .filter(key => JSON.stringify(existing[key] ?? null) !== JSON.stringify(lockedIncoming[key] ?? null));
+              if (lockedChangedFields.length) {
+                skippedCount++;
+                warningCount++;
+                addIssue('locked_calendar_change', 'warning', `${existing.date} 已打烊鎖帳；Calendar 異動未改寫原單，請用更正單處理。`, {
+                  date: existing.date,
+                  incomingDate: date,
+                  customerName: existing.customerName,
+                  serviceName: existing.serviceName,
+                  sourceEventId,
+                  orderId,
+                  amount,
+                  fields: lockedChangedFields
+                });
+              } else {
+                unchangedCount++;
+              }
               return;
-            }
-
-            // 第一次新版同步：將舊 sync_* 紀錄接上 Google Event ID，避免重複新增
-            let existing = sourceEventId ? bySourceEventId.get(sourceEventId) : null;
-            if (!existing && sourceEventId) {
-              existing = this.orders.find(order =>
-                !order.sourceEventId
-                && String(order.id || '').startsWith('sync_')
-                && order.date === date
-                && order.customerName === customerName
-                && (Number(order.amount) === amount || (order.source === 'google_calendar' && Number(order.amount) > 0))
-                && order.serviceName === serviceName
-              );
             }
 
             const syncedFields = {
@@ -8089,34 +8781,41 @@
 
             if (!existing) {
               const newOrder = {
-                id: sourceEventId ? `gcal_${sourceEventId}` : 'sync_' + Math.random().toString(36).substr(2, 9),
+                id: `gcal_${sourceEventId}`,
                 ...syncedFields
               };
               this.orders.push(newOrder);
-              if (sourceEventId) bySourceEventId.set(sourceEventId, newOrder);
+              bySourceEventId.set(sourceEventId, newOrder);
+              byExternalOrderId.set(normalizedOrderId, newOrder);
               mergedCount++;
             } else {
-              const mergedFields = { ...syncedFields };
-              if (Number(existing.amount) > 0) {
-                mergedFields.amount = Number(existing.amount) || 0;
-                mergedFields.paymentMethod = existing.paymentMethod || syncedFields.paymentMethod;
-                mergedFields.cashAmount = existing.cashAmount === undefined ? syncedFields.cashAmount : existing.cashAmount;
-                mergedFields.topupChannel = existing.topupChannel === undefined ? syncedFields.topupChannel : existing.topupChannel;
-                mergedFields.pricingSource = existing.pricingSource || 'preserved_existing_order';
-                mergedFields.pricingUnmatchedServices = Array.isArray(existing.pricingUnmatchedServices) ? existing.pricingUnmatchedServices : [];
-                mergedFields.serviceConfigUpdatedAt = existing.serviceConfigUpdatedAt || serviceConfigUpdatedAt;
-              }
-              const changed = ['date', 'customerId', 'customerName', 'gender', 'serviceName', 'amount', 'paymentMethod', 'cashAmount', 'topupChannel', 'calendarStart', 'calendarEnd', 'calendarDurationMinutes', 'actualDurationMinutes', 'pricingSource', 'pricingUnmatchedServices', 'serviceConfigUpdatedAt', 'syncStatus']
+              const mergedFields = {
+                ...syncedFields,
+                // Calendar provides scheduled occupancy, not actual chair time. Preserve
+                // a manually-entered actual duration when a later sync returns null.
+                actualDurationMinutes: actualDurationMinutes ?? existing.actualDurationMinutes ?? null
+              };
+              const changed = ['date', 'customerId', 'customerName', 'gender', 'serviceName', 'amount', 'paymentMethod', 'cashAmount', 'topupChannel', 'sourceEventId', 'orderId', 'calendarStart', 'calendarEnd', 'calendarDurationMinutes', 'actualDurationMinutes', 'pricingSource', 'pricingUnmatchedServices', 'serviceConfigUpdatedAt', 'syncStatus']
                 .some(key => JSON.stringify(existing[key] ?? null) !== JSON.stringify(mergedFields[key] ?? null));
               Object.assign(existing, mergedFields);
-              if (sourceEventId) bySourceEventId.set(sourceEventId, existing);
+              bySourceEventId.set(sourceEventId, existing);
+              byExternalOrderId.set(normalizedOrderId, existing);
               changed ? updatedCount++ : unchangedCount++;
             }
           });
 
           const cancelledSet = new Set(cancelledEventIds.map(String));
+          const quarantinedSet = new Set((options.quarantinedEventIds || []).map(String));
+          const quarantinedOrderSet = new Set((options.quarantinedOrderIds || [])
+            .map(value => String(value || '').trim().toLocaleLowerCase('zh-TW'))
+            .filter(Boolean));
           this.orders.forEach(order => {
-            if (order.source === 'google_calendar' && order.sourceEventId && cancelledSet.has(String(order.sourceEventId))) {
+            const sourceEventId = String(order.sourceEventId || '');
+            const externalOrderId = String(order.orderId || '').trim().toLocaleLowerCase('zh-TW');
+            const shouldDeactivate = cancelledSet.has(sourceEventId)
+              || quarantinedSet.has(sourceEventId)
+              || (externalOrderId && quarantinedOrderSet.has(externalOrderId));
+            if (order.source === 'google_calendar' && sourceEventId && shouldDeactivate) {
               if (this.isDateLocked(order.date)) {
                 skippedCount++;
                 warningCount++;
@@ -8132,11 +8831,22 @@
               }
               if (order.syncStatus !== 'cancelled') cancelledCount++;
               order.syncStatus = 'cancelled';
+              order.syncQuarantineReason = quarantinedSet.has(sourceEventId) ? 'calendar_validation_failed' : null;
               order.lastSyncedAt = new Date().toISOString();
             }
           });
 
-          this.saveOrders();
+          try {
+            this.persistCurrentStateStrict(localStorage.getItem('momo_servicesConfigUpdatedAt'));
+          } catch (error) {
+            this.replaceBusinessStateFromBackup(rollback, true);
+            try {
+              this.persistCurrentStateStrict(rollback.momo_servicesConfigUpdatedAt || null);
+            } catch (rollbackError) {
+              console.error('Calendar sync rollback failed:', rollbackError);
+            }
+            throw new Error(`Calendar 同步無法完整儲存，已回復同步前資料：${error.message || error}`);
+          }
           if (!options.silent) {
             if (mergedCount || updatedCount || cancelledCount) {
               this.showToast(`同步完成：新增 ${mergedCount}、更新 ${updatedCount}、取消 ${cancelledCount} 筆`);
@@ -8360,11 +9070,35 @@
           await this.$nextTick();
           try {
           // Filter out items with empty names
-          const filtered = this.tempServicesConfig.filter(s => s.name && s.name.trim());
+          const filtered = this.tempServicesConfig.filter(s => s.name && s.name.trim()).map(service => ({
+            ...service,
+            name: String(service.name).trim(),
+            duration: Math.round(Number(service.duration) || 0),
+            price: Math.round(Number(service.price) || 0)
+          }));
+          if (filtered.some(service => service.duration <= 0 || service.price < 0)) {
+            this.showToast('每個服務都需要正確的標準時間與非負定價', 'error', 7000);
+            return;
+          }
+          const keys = filtered.map(service => MomoCore.normalizeServiceName(service.name));
+          if (new Set(keys).size !== keys.length) {
+            this.showToast('價目表有重複服務名稱（空格或全形＋視為同一項），請合併後再儲存', 'error', 8000);
+            return;
+          }
+          const previous = MomoCore.cloneJsonValue(this.servicesConfig);
+          const updatedAt = new Date().toISOString();
           this.servicesConfig = JSON.parse(JSON.stringify(filtered));
           this.tempServicesConfig = JSON.parse(JSON.stringify(filtered));
-          localStorage.setItem('momo_servicesConfig', JSON.stringify(this.servicesConfig));
-          localStorage.setItem('momo_servicesConfigUpdatedAt', new Date().toISOString());
+          try {
+            this.writeLocalStorageAtomically([
+              ['momo_servicesConfig', JSON.stringify(this.servicesConfig)],
+              ['momo_servicesConfigUpdatedAt', updatedAt]
+            ]);
+          } catch (error) {
+            this.servicesConfig = previous;
+            this.tempServicesConfig = MomoCore.cloneJsonValue(previous);
+            throw error;
+          }
           this.queueCloudSync();
           this.recordOperation('service_config_update', '更新服務定價', `服務項目 ${this.servicesConfig.length} 項`);
           this.showToast('服務價目表已儲存');
@@ -8647,28 +9381,23 @@
           const month = this.selectedMonth;
           const salary = this.kpis.momoSalary;
           const revenue = this.kpis.revenue;
+          const date = `${year}-${month}-01`;
+          if (!this.assertDateUnlocked(date)) return;
+          const salaryId = `salary_${year}${month}`;
 
-          // 檢查該月是否已有薪資紀錄
-          const existing = this.expenses.find(e => {
-            const [y, m] = e.date.split('-');
-            return y === year && m === month && e.category === '薪資';
-          });
+          // 只更新系統產生的固定 ID，保留使用者手動新增的薪資紀錄。
+          const existing = this.expenses.find(e => e.id === salaryId);
 
           const doImport = () => {
-            // 移除舊的薪資紀錄（若有）
-            this.expenses = this.expenses.filter(e => {
-              const [y, m] = e.date.split('-');
-              return !(y === year && m === month && e.category === '薪資');
-            });
-            // 寫入新薪資
-            const date = `${year}-${month}-01`;
-            this.expenses.push({
-              id: 'salary_' + year + month,
+            const payload = {
+              id: salaryId,
               date,
               category: '薪資',
               amount: salary,
               notes: `MOMO薪水 ${year}年${parseInt(month)}月（營業額 NT$${revenue.toLocaleString()} × 45%）`
-            });
+            };
+            if (existing) Object.assign(existing, payload);
+            else this.expenses.push(payload);
             this.saveExpenses();
             this.showExpenseForm = false;
             this.showToast(`薪水 NT$ ${salary.toLocaleString()} 已寫入 ${parseInt(month)} 月支出！`);
@@ -8676,7 +9405,7 @@
 
           if (existing) {
             this.showConfirm(
-              `${parseInt(month)} 月已有薪資紀錄（NT$ ${existing.amount.toLocaleString()}），確定要用本月最新業績重新計算並覆蓋嗎？`,
+              `${parseInt(month)} 月已有系統薪資紀錄（NT$ ${existing.amount.toLocaleString()}），確定要用本月最新業績重新計算嗎？手動薪資紀錄不會被刪除。`,
               doImport,
               { title: '更新本月薪資支出', subtitle: '現有薪資紀錄將被最新計算取代', tone: 'warning', confirmLabel: '重新計算並覆蓋' }
             );
@@ -8688,6 +9417,10 @@
         // --- Tab 2: Orders CRUD ---
         addOrder() {
           if (!this.assertDateUnlocked(this.newOrder.date)) return;
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(this.newOrder.date || '')) || this.newOrder.date > this.todayDate) {
+            this.showToast('業績日期不可晚於今天；未完成預約不會提前入帳', 'error', 6000);
+            return;
+          }
           const totalAmount = Number(this.newOrder.amount) || 0;
           const cashAmount = Number(this.newOrder.cashAmount) || 0;
           const serviceName = String(this.newOrder.serviceName || '').trim();
@@ -8708,7 +9441,13 @@
             return;
           }
           const selectedCustomer = this.customerMap[this.newOrder.customerId];
-          const existingCustomer = selectedCustomer || this.findCustomerByName(this.newOrder.customerName);
+          const sameNameCustomers = selectedCustomer ? [] : this.findCustomersByName(this.newOrder.customerName);
+          if (!selectedCustomer && !this.newOrder.createNewCustomer && sameNameCustomers.length > 1) {
+            this.showToast(`找到 ${sameNameCustomers.length} 位同名顧客，請從清單選擇正確顧客；儲值扣款不會猜測綁定`, 'error', 8000);
+            return;
+          }
+          const existingCustomer = selectedCustomer
+            || (this.newOrder.createNewCustomer ? null : sameNameCustomers[0] || null);
           const warnings = this.collectNewOrderWarnings(existingCustomer, totalAmount, cashAmount, serviceName);
           if (warnings.length) {
             this.showConfirm(`新增前請確認：\n\n${warnings.join('\n')}\n\n仍要寫入這筆業績嗎？`, () => this.createOrderFromForm(), {
@@ -8728,7 +9467,7 @@
           const duplicate = this.orders.find(order => {
             if (!this.isOrderActive(order) || order.date !== date) return false;
             const sameCustomer = order.customerId && customer?.id
-              ? order.customerId === customer.id
+              ? this.resolveMergedCustomerId(order.customerId) === this.resolveMergedCustomerId(customer.id)
               : this.normalizeCustomerName(order.customerName) === normalizedName;
             return sameCustomer
               && String(order.serviceName || '').trim() === serviceName
@@ -8820,14 +9559,15 @@
             return;
           }
           if (!this.assertDateUnlocked(order?.date)) return;
-          this.showConfirm('確定要刪除這筆業績紀錄嗎？', () => {
-            this.orders = this.orders.filter(o => o.id !== id);
+          this.showConfirm('確定要刪除這筆業績紀錄嗎？系統會保留稽核資料並自動沖回相關儲值分錄。', () => {
+            order.syncStatus = 'cancelled';
+            order.deletedAt = new Date().toISOString();
+            order.updatedAt = order.deletedAt;
             if (this.expandedOrderId === id) this.expandedOrderId = null;
-            this.deleteCloudRecord('orders', 'id', id);
             this.saveOrders();
-            this.recordOperation('order_delete', '刪除業績', `${order?.date || ''} ${order?.customerName || ''} ${order?.serviceName || ''} · NT$ ${this.formatNumber(order?.amount || 0)}`, { orderId: id });
+            this.recordOperation('order_delete', '刪除業績（保留稽核）', `${order?.date || ''} ${order?.customerName || ''} ${order?.serviceName || ''} · NT$ ${this.formatNumber(order?.amount || 0)}`, { orderId: id });
             this.showToast('業績已刪除');
-          }, { title: '刪除業績紀錄', subtitle: `${order?.date || ''} ${order?.customerName || ''}`.trim(), tone: 'danger', confirmLabel: '刪除業績' });
+          }, { title: '刪除業績紀錄', subtitle: `${order?.date || ''} ${order?.customerName || ''} · 原資料保留供稽核`.trim(), tone: 'danger', confirmLabel: '刪除業績' });
         },
         toggleOrderDate(date) {
           this.collapsedOrderDates = {
@@ -8878,11 +9618,22 @@
         deleteExpense(id) {
           const expense = this.expenses.find(e => e.id === id);
           if (!this.assertDateUnlocked(expense?.date)) return;
-          this.showConfirm('確定要刪除這筆支出嗎？', () => {
+          this.showConfirm('確定要刪除這筆支出嗎？', async () => {
+            if (!this.assertCloudDeleteReady()) return;
+            const previous = MomoCore.cloneJsonValue(this.expenses);
             this.expenses = this.expenses.filter(e => e.id !== id);
             if (this.expandedExpenseId === id) this.expandedExpenseId = null;
-            this.deleteCloudRecord('expenses', 'id', id);
-            this.saveExpenses();
+            try {
+              this.saveExpenses();
+              if (this.cloudReady && this.authUser) {
+                const deleted = await this.deleteCloudRecord('expenses', 'id', id);
+                if (!deleted) throw new Error(this.cloudMessage || '雲端支出未刪除');
+              }
+            } catch (error) {
+              this.expenses = previous;
+              this.saveExpenses();
+              throw new Error(`刪除支出失敗，原紀錄已回復：${error.message || error}`);
+            }
             this.recordOperation('expense_delete', '刪除支出', `${expense?.date || ''} ${expense?.category || ''} · NT$ ${this.formatNumber(expense?.amount || 0)}`, { expenseId: id });
             this.showToast('支出已刪除');
           }, { title: '刪除支出紀錄', subtitle: `${expense?.date || ''} ${expense?.category || ''}`.trim(), tone: 'danger', confirmLabel: '刪除支出' });
@@ -8991,11 +9742,22 @@
           return { key: 'ok', label: '庫存正常' };
         },
         deleteInventoryItem(id) {
-          this.showConfirm('確定要刪除此庫存品項嗎？', () => {
+          this.showConfirm('確定要刪除此庫存品項嗎？', async () => {
+            if (!this.assertCloudDeleteReady()) return;
+            const previous = MomoCore.cloneJsonValue(this.inventory);
             this.inventory = this.inventory.filter(i => i.id !== id);
             if (this.expandedInventoryId === id) this.expandedInventoryId = null;
-            this.deleteCloudRecord('inventory', 'id', id);
-            this.saveInventory();
+            try {
+              this.saveInventory();
+              if (this.cloudReady && this.authUser) {
+                const deleted = await this.deleteCloudRecord('inventory', 'id', id);
+                if (!deleted) throw new Error(this.cloudMessage || '雲端庫存未刪除');
+              }
+            } catch (error) {
+              this.inventory = previous;
+              this.saveInventory();
+              throw new Error(`刪除庫存失敗，原品項已回復：${error.message || error}`);
+            }
             this.showToast('商品已從庫存移除');
           }, { title: '刪除庫存品項', subtitle: '刪除後不再顯示於庫存清單', tone: 'danger', confirmLabel: '刪除品項' });
         },
@@ -9007,9 +9769,14 @@
             clearTimeout(this.crmNotesTimer);
           }
           this.crmNotesTimer = setTimeout(() => {
-            localStorage.setItem('momo_crmNotes', JSON.stringify(this.crmNotes));
-            this.crmNotesTimer = null;
-            this.queueCloudSync();
+            try {
+              this.writeLocalStorageAtomically([['momo_crmNotes', JSON.stringify(this.crmNotes)]]);
+              this.queueCloudSync();
+            } catch (error) {
+              this.showToast(`CRM 備註儲存失敗：${error.message || error}`, 'error', 8000);
+            } finally {
+              this.crmNotesTimer = null;
+            }
           }, 1000); // 1-second debounce
         },
 
@@ -9049,6 +9816,7 @@
           if (!this.hasMeaningfulLocalData()) {
             addIssue('warning', 'no_local_data', '目前沒有可用的本機業務資料；若不是新裝置，請先重新載入雲端或匯入備份。');
           }
+          if (this.storageRecoveryBlocked) addIssue('error', 'storage_recovery_blocked', '偵測到未完成的本機寫入回復；雲端與 Calendar 已暫停，請使用還原前保護快照。');
           if (integrity.status === 'error') addIssue('error', 'integrity_error', `完整性檢查有 ${integrity.errorCount} 個錯誤。`);
           if (integrity.status === 'warning') addIssue('warning', 'integrity_warning', `完整性檢查有 ${integrity.warningCount} 個提醒。`);
           if (this.backupStatus === 'error') addIssue('error', 'backup_error', '最近一次雲端備份失敗，請重新建立備份。');
@@ -9056,6 +9824,8 @@
           (this.cloudBackupHealth.issues || []).forEach(issue => addIssue(issue.severity, issue.code || issue.type, issue.message));
           if (this.cloudStatus === 'conflict' || this.cloudConflict) addIssue('error', 'cloud_conflict', '雲端有版本衝突，請先選擇保留雲端或保留本機。');
           if (this.cloudStatus === 'error') addIssue('error', 'cloud_error', this.cloudMessage || '雲端同步狀態異常。');
+          if (this.cloudRestorePending) addIssue('warning', 'cloud_restore_pending', '本機還原版本正在受保護，雲端同步已暫停；請先下載 JSON 或明確載回雲端。');
+          if (this.cloudPendingWrite) addIssue('warning', 'cloud_pending_write', '本機有尚未完成的雲端同步；重開 App 時不會自動用雲端覆蓋。');
           if (this.cloudMigrationNeeded) addIssue('warning', 'cloud_migration', '本機資料尚未完成首次搬移到 Supabase。');
           if (this.cloudSyncPending || this.cloudSyncInFlight) addIssue('warning', 'cloud_pending', '有本機修改正在等待雲端同步。');
           try {
@@ -9083,7 +9853,7 @@
           try {
             const report = this.buildDataSafetyReport();
             this.safetyReport = report;
-            localStorage.setItem('momo_safety_report', JSON.stringify(report));
+            try { localStorage.setItem('momo_safety_report', JSON.stringify(report)); } catch (_) {}
             if (showResult) {
               const firstIssue = report.issues?.[0]?.message;
               this.showToast(
@@ -9126,7 +9896,7 @@
           }
         },
         buildBackupData() {
-          return {
+          return MomoCore.cloneJsonValue({
             schemaVersion: this.dataSchemaVersion,
             createdAt: new Date().toISOString(),
             momo_orders: this.orders,
@@ -9140,40 +9910,87 @@
             momo_servicesConfig: this.servicesConfig,
             momo_servicesConfigUpdatedAt: localStorage.getItem('momo_servicesConfigUpdatedAt') || null,
             momo_operationLogs: this.operationLogs
-          };
+          });
         },
-        applyBackupData(data) {
-          if (!data || !data.momo_orders || !data.momo_expenses || !data.momo_inventory || !data.momo_crmNotes) {
-            throw new Error('JSON 欄位不完整');
-          }
-          this.orders = Array.isArray(data.momo_orders) ? data.momo_orders : [];
-          this.expenses = Array.isArray(data.momo_expenses) ? data.momo_expenses : [];
-          this.inventory = Array.isArray(data.momo_inventory) ? data.momo_inventory : [];
-          this.customers = Array.isArray(data.momo_customers) ? data.momo_customers : [];
-          this.prepaidLedger = Array.isArray(data.momo_prepaidLedger) ? data.momo_prepaidLedger : [];
-          this.crmNotes = data.momo_crmNotes || {};
-          this.crmFormulas = data.momo_crmFormulas || {};
-          this.closeoutRecords = data.momo_closeoutRecords || {};
-          this.operationLogs = Array.isArray(data.momo_operationLogs) ? data.momo_operationLogs : [];
+        replaceBusinessStateFromBackup(payload = {}, servicesIncluded = true) {
+          this.orders = MomoCore.cloneJsonValue(payload.momo_orders || []);
+          this.expenses = MomoCore.cloneJsonValue(payload.momo_expenses || []);
+          this.inventory = MomoCore.cloneJsonValue(payload.momo_inventory || []);
+          this.customers = MomoCore.cloneJsonValue(payload.momo_customers || []);
+          this.prepaidLedger = MomoCore.cloneJsonValue(payload.momo_prepaidLedger || []);
+          this.crmNotes = MomoCore.cloneJsonValue(payload.momo_crmNotes || {});
+          this.crmFormulas = MomoCore.cloneJsonValue(payload.momo_crmFormulas || {});
+          this.closeoutRecords = MomoCore.cloneJsonValue(payload.momo_closeoutRecords || {});
+          this.operationLogs = MomoCore.cloneJsonValue(payload.momo_operationLogs || []);
+          if (servicesIncluded) this.servicesConfig = MomoCore.cloneJsonValue(payload.momo_servicesConfig || []);
+          this.migrateLegacyCalendarActualDurations(payload.schemaVersion || 1);
           this.migrateCustomerIdentity();
           this.reconcilePrepaidLedger();
-          const servicesIncluded = Array.isArray(data.momo_servicesConfig);
-          if (servicesIncluded) {
-            this.servicesConfig = data.momo_servicesConfig;
-            localStorage.setItem('momo_servicesConfigUpdatedAt', data.momo_servicesConfigUpdatedAt || data.createdAt || new Date().toISOString());
+        },
+        shouldPauseCloudAfterRestore() {
+          return Boolean(this.cloudReady || this.cloudLastSync || localStorage.getItem('momo_cloud_last_sync'));
+        },
+        markCloudRestorePending(source = 'backup_restore') {
+          if (!this.shouldPauseCloudAfterRestore()) return false;
+          const pending = {
+            at: new Date().toISOString(),
+            source,
+            ownerId: this.authUser?.id || null
+          };
+          localStorage.setItem('momo_cloud_restore_pending', JSON.stringify(pending));
+          this.cloudRestorePending = pending;
+          this.cloudReady = false;
+          this.cloudMigrationNeeded = false;
+          this.cloudSyncPending = false;
+          if (this.cloudSyncTimer) clearTimeout(this.cloudSyncTimer);
+          this.cloudSyncTimer = null;
+          if (this.cloudVersionPollTimer) clearInterval(this.cloudVersionPollTimer);
+          this.cloudVersionPollTimer = null;
+          this.cloudStatus = 'restore_pending';
+          this.cloudMessage = '本機還原版本已保護，雲端同步暫停；可先下載 JSON，或重新載入雲端放棄本機還原。';
+          return true;
+        },
+        clearCloudRestorePending() {
+          localStorage.removeItem('momo_cloud_restore_pending');
+          this.cloudRestorePending = null;
+        },
+        applyBackupData(data, options = {}) {
+          const validation = MomoCore.validateAndNormalizeBackupPayload(data, {
+            currentSchemaVersion: this.dataSchemaVersion
+          });
+          if (!validation.ok) throw new Error(validation.errors.join('；'));
+
+          const rollback = this.buildBackupData();
+          try {
+            this.replaceBusinessStateFromBackup(validation.data, validation.servicesIncluded);
+            const integrity = this.runIntegrityCheck(false);
+            if (integrity.errorCount > 0) {
+              throw new Error(`備份完整性檢查未通過（${integrity.errorCount} 個錯誤）`);
+            }
+            const servicesUpdatedAt = validation.servicesIncluded
+              ? (validation.data.momo_servicesConfigUpdatedAt || validation.data.createdAt || new Date().toISOString())
+              : localStorage.getItem('momo_servicesConfigUpdatedAt');
+            this.persistCurrentStateStrict(servicesUpdatedAt);
+            this.markCloudRestorePending(options.source || 'backup_restore');
+            this.runDataSafetyCheck(false);
+            return validation.servicesIncluded;
+          } catch (error) {
+            try {
+              this.replaceBusinessStateFromBackup(rollback, true);
+              this.persistCurrentStateStrict(rollback.momo_servicesConfigUpdatedAt || null);
+            } catch (rollbackError) {
+              console.error('Backup rollback failed:', rollbackError);
+              throw new Error(`${error.message || error}；回復原資料也失敗：${rollbackError.message || rollbackError}`);
+            }
+            throw error;
           }
-          this.saveToLocalStorage();
-          this.runIntegrityCheck(false);
-          this.runDataSafetyCheck(false);
-          return servicesIncluded;
         },
         runIntegrityCheck(showResult = true) {
           const issues = [];
           const addIssue = (severity, code, message, extra = {}) => {
             if (issues.length < 100) issues.push({ severity, code, message, ...extra });
           };
-          const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))
-            && !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
+          const validDate = MomoCore.isValidISODate;
           const checkDuplicateIds = (label, rows) => {
             const seen = new Set();
             (rows || []).forEach(row => {
@@ -9191,20 +10008,24 @@
 
           const customerIds = new Set(this.customers.map(customer => customer.id).filter(Boolean));
           const sourceEvents = new Set();
+          const externalOrderIds = new Set();
+          const reversedEntryIds = new Set();
           this.customers.forEach(customer => {
             if (!String(customer.name || '').trim()) addIssue('error', 'customer_missing_name', `顧客 ${customer.id || '未知'} 缺少姓名`, { tab: 'crm', customerId: customer.id });
+            if (customer.mergedIntoCustomerId && !customerIds.has(customer.mergedIntoCustomerId)) addIssue('error', 'customer_merge_target_missing', `封存顧客 ${customer.id || '未知'} 的合併目標不存在`, { tab: 'crm', customerId: customer.id });
+            if (customer.mergedIntoCustomerId && !customer.archivedAt) addIssue('warning', 'customer_merge_not_archived', `顧客 ${customer.id || '未知'} 已合併但尚未標記封存`, { tab: 'crm', customerId: customer.id });
           });
           this.orders.forEach(order => {
             const target = { tab: 'orders', orderId: order.id, customerId: order.customerId };
             if (!customerIds.has(order.customerId)) addIssue('error', 'order_orphan_customer', `業績 ${order.id || '未知'} 找不到對應顧客`, target);
             if (!validDate(order.date)) addIssue('error', 'order_invalid_date', `業績 ${order.id || '未知'} 日期格式錯誤`, target);
-            if (!Number.isFinite(Number(order.amount))
+            if (!MomoCore.isFiniteNumericInput(order.amount)
               || (!this.isCorrectionSlip(order) && Number(order.amount) < 0)
               || (this.isCorrectionSlip(order) && Number(order.amount) === 0)) {
               addIssue('error', 'order_invalid_amount', `業績 ${order.id || '未知'} 金額錯誤`, target);
             }
             if (!['現金', '轉帳', '儲值扣款', '現金＋儲值扣款', '儲值進帳'].includes(order.paymentMethod)) addIssue('error', 'order_invalid_payment', `業績 ${order.id || '未知'} 付款方式錯誤`, target);
-            if (order.paymentMethod === '儲值進帳' && !['現金', '轉帳'].includes(this.getTopupChannel(order))) addIssue('error', 'order_invalid_topup_channel', `業績 ${order.id || '未知'} 儲值收款方式錯誤`, target);
+            if (order.paymentMethod === '儲值進帳' && !['現金', '轉帳'].includes(order.topupChannel)) addIssue('error', 'order_invalid_topup_channel', `業績 ${order.id || '未知'} 儲值收款方式錯誤`, target);
             if (!this.isCorrectionSlip(order) && order.paymentMethod === '現金＋儲值扣款' && !(Number(order.cashAmount) > 0 && Number(order.cashAmount) < Number(order.amount))) {
               addIssue('error', 'order_invalid_mixed_payment', `業績 ${order.id || '未知'} 混合付款金額錯誤`, target);
             }
@@ -9212,21 +10033,30 @@
               if (sourceEvents.has(order.sourceEventId)) addIssue('error', 'duplicate_calendar_event', `Google 行事曆事件重複：${order.sourceEventId}`, target);
               sourceEvents.add(order.sourceEventId);
             }
+            if (order.orderId && order.source === 'google_calendar' && this.isOrderActive(order)) {
+              const accountingKey = String(order.orderId).trim().toLocaleLowerCase('zh-TW');
+              if (externalOrderIds.has(accountingKey)) addIssue('error', 'duplicate_calendar_order_id', `Google 行事曆 Order ID 重複：${order.orderId}`, target);
+              externalOrderIds.add(accountingKey);
+            }
           });
           this.expenses.forEach(expense => {
             const target = { tab: 'expenses', expenseId: expense.id };
             if (!validDate(expense.date)) addIssue('error', 'expense_invalid_date', `支出 ${expense.id || '未知'} 日期格式錯誤`, target);
-            if (!Number.isFinite(Number(expense.amount)) || Number(expense.amount) < 0) addIssue('error', 'expense_invalid_amount', `支出 ${expense.id || '未知'} 金額錯誤`, target);
+            if (!MomoCore.isFiniteNumericInput(expense.amount) || Number(expense.amount) < 0) addIssue('error', 'expense_invalid_amount', `支出 ${expense.id || '未知'} 金額錯誤`, target);
           });
           this.inventory.forEach(item => {
             if (!String(item.name || '').trim()) addIssue('error', 'inventory_missing_name', `庫存 ${item.id || '未知'} 缺少品名`);
-            if (!Number.isInteger(Number(item.stock)) || Number(item.stock) < 0) addIssue('error', 'inventory_invalid_stock', `庫存「${item.name || item.id}」數量錯誤`);
+            if (!MomoCore.isFiniteNumericInput(item.stock) || !Number.isInteger(Number(item.stock)) || Number(item.stock) < 0) addIssue('error', 'inventory_invalid_stock', `庫存「${item.name || item.id}」數量錯誤`);
           });
           this.prepaidLedger.forEach(entry => {
             const target = { tab: 'crm', customerId: entry.customerId };
             if (!customerIds.has(entry.customerId)) addIssue('error', 'ledger_orphan_customer', `儲值帳本 ${entry.id || '未知'} 找不到對應顧客`, target);
             if (!validDate(entry.date)) addIssue('error', 'ledger_invalid_date', `儲值帳本 ${entry.id || '未知'} 日期格式錯誤`, target);
-            if (!Number.isFinite(Number(entry.signedAmount)) || Number(entry.signedAmount) === 0) addIssue('error', 'ledger_invalid_amount', `儲值帳本 ${entry.id || '未知'} 金額錯誤`, target);
+            if (!MomoCore.isFiniteNumericInput(entry.signedAmount) || Number(entry.signedAmount) === 0) addIssue('error', 'ledger_invalid_amount', `儲值帳本 ${entry.id || '未知'} 金額錯誤`, target);
+            if (entry.reversalOfEntryId) {
+              if (reversedEntryIds.has(entry.reversalOfEntryId)) addIssue('error', 'ledger_duplicate_reversal', `儲值帳本分錄 ${entry.reversalOfEntryId} 被重複沖銷`, target);
+              reversedEntryIds.add(entry.reversalOfEntryId);
+            }
           });
           Object.keys(this.crmNotes || {}).forEach(customerId => {
             if (!customerIds.has(customerId)) addIssue('warning', 'orphan_crm_note', `CRM 備註找不到顧客：${customerId}`, { tab: 'crm', customerId });
@@ -9256,7 +10086,7 @@
             issues
           };
           this.integrityReport = report;
-          localStorage.setItem('momo_integrity_report', JSON.stringify(report));
+          try { localStorage.setItem('momo_integrity_report', JSON.stringify(report)); } catch (_) {}
           if (showResult) {
             const preview = issues.slice(0, 2).map(issue => issue.message).join('；');
             this.showToast(
@@ -9379,9 +10209,8 @@
             const payload = this.buildBackupData();
             const integrity = this.runIntegrityCheck(false);
             const createdAt = new Date().toISOString();
-            await this.cloudRequest('data_backups', {
+            const createdRows = await this.cloudRequest('data_backups', {
               method: 'POST',
-              query: 'on_conflict=owner_id,backup_date',
               body: [{
                 owner_id: this.authUser.id,
                 backup_date: today,
@@ -9391,8 +10220,11 @@
                 integrity,
                 created_at: createdAt
               }],
-              prefer: `${force ? 'resolution=merge-duplicates' : 'resolution=ignore-duplicates'},return=minimal`
+              prefer: 'return=representation'
             });
+            if (!Array.isArray(createdRows) || !createdRows[0]?.id || !createdRows[0]?.payload) {
+              throw new Error('雲端未回傳可驗證的備份內容');
+            }
             await this.pruneCloudBackups({ silent: true });
             this.lastBackupAt = createdAt;
             this.lastCloudBackupAt = createdAt;
@@ -9450,16 +10282,22 @@
           reader.onload = (e) => {
             try {
               const data = JSON.parse(e.target.result);
-              this.createLocalBackupSnapshot('pre_restore', { silent: true, force: true });
-              const servicesIncluded = this.applyBackupData(data);
+              const validation = MomoCore.validateAndNormalizeBackupPayload(data, { currentSchemaVersion: this.dataSchemaVersion });
+              if (!validation.ok) throw new Error(validation.errors.join('；'));
+              const protection = this.createLocalBackupSnapshot('pre_restore', { silent: true, force: true });
+              if (!protection) throw new Error('無法建立還原前保護快照，已取消匯入');
+              const servicesIncluded = this.applyBackupData(data, { source: 'json_import_restore' });
               this.recordOperation('backup_import', '匯入備份還原', `訂單 ${this.orders.length} 筆、顧客 ${this.customers.length} 位`);
+              const pendingMessage = this.cloudRestorePending
+                ? 'JSON 備份已還原；為避免雲端舊資料回灌，同步已暫停'
+                : null;
               this.showToast(
-                servicesIncluded ? '備份還原成功，系統已更新資料' : '備份還原完成，但此備份不含服務定價設定，已保留現有定價',
-                servicesIncluded ? 'success' : 'error',
-                servicesIncluded ? 3000 : 6000
+                pendingMessage || (servicesIncluded ? '備份還原成功，系統已更新資料' : '備份還原完成，但此備份不含服務定價設定，已保留現有定價'),
+                pendingMessage || !servicesIncluded ? 'warning' : 'success',
+                pendingMessage ? 8000 : (servicesIncluded ? 3000 : 6000)
               );
             } catch (err) {
-              this.showToast('備份還原失敗，請上傳正確的 MOMO 備份 JSON 檔案', 'error');
+              this.showToast(`備份還原失敗：${err.message || '請上傳正確的 MOMO 備份 JSON 檔案'}`, 'error', 8000);
             }
           };
           reader.readAsText(file);
@@ -9515,7 +10353,11 @@
           this.showDataTools = false;
         },
         downloadCSV(filename, headers, rows) {
-          const escape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+          const escape = value => {
+            const raw = String(value ?? '');
+            const safe = typeof value === 'string' && /^[\t\r ]*[=+\-@]/.test(raw) ? `'${raw}` : raw;
+            return `"${safe.replace(/"/g, '""')}"`;
+          };
           const csvContent = '\uFEFF' + [headers, ...rows].map(row => row.map(escape).join(',')).join('\r\n');
           const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
           const url = URL.createObjectURL(blob);
@@ -9526,7 +10368,11 @@
           setTimeout(() => URL.revokeObjectURL(url), 0);
         },
         downloadSectionedCSV(filename, sections) {
-          const escape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+          const escape = value => {
+            const raw = String(value ?? '');
+            const safe = typeof value === 'string' && /^[\t\r ]*[=+\-@]/.test(raw) ? `'${raw}` : raw;
+            return `"${safe.replace(/"/g, '""')}"`;
+          };
           const lines = [];
           (sections || []).forEach((section, index) => {
             if (index > 0) lines.push([]);

@@ -18,6 +18,60 @@
     return Math.round(Number(value) || 0);
   }
 
+  function normalizeServiceName(value) {
+    return String(value || '')
+      .normalize('NFKC')
+      .trim()
+      .replace(/\s*\+\s*/g, '+')
+      .replace(/\s+/g, ' ');
+  }
+
+  function buildServiceMetricDictionary(services = [], field = 'duration') {
+    const dictionary = {};
+    (Array.isArray(services) ? services : []).forEach(service => {
+      const key = normalizeServiceName(service?.name);
+      const value = Number(service?.[field]);
+      if (key && Number.isFinite(value)) dictionary[key] = value;
+    });
+    return dictionary;
+  }
+
+  function resolveServiceMetric(name, dictionary = {}, options = {}) {
+    const key = normalizeServiceName(name);
+    const allowZero = Boolean(options.allowZero);
+    if (!key) return null;
+    if (Object.prototype.hasOwnProperty.call(dictionary, key)) {
+      const value = Number(dictionary[key]);
+      if (Number.isFinite(value) && (allowZero ? value >= 0 : value > 0)) return value;
+    }
+    if (!key.includes('+')) return null;
+    const parts = key.split('+').map(normalizeServiceName).filter(Boolean);
+    if (!parts.length) return null;
+    let total = 0;
+    for (const part of parts) {
+      const value = resolveServiceMetric(part, dictionary, options);
+      if (value === null) return null;
+      total += value;
+    }
+    return total;
+  }
+
+  function calculatePeriodKpis(orders = [], expenses = []) {
+    const serviceOrders = (Array.isArray(orders) ? orders : [])
+      .filter(order => isOrderActive(order) && order?.paymentMethod !== PAYMENT.PREPAID_TOPUP);
+    const ordersCount = serviceOrders.filter(order => !isCorrectionSlip(order)).length;
+    const revenue = serviceOrders.reduce((sum, order) => sum + (Number(order?.amount) || 0), 0);
+    const totalExpenses = (Array.isArray(expenses) ? expenses : [])
+      .reduce((sum, expense) => sum + (Number(expense?.amount) || 0), 0);
+    return {
+      revenue,
+      ordersCount,
+      aov: ordersCount > 0 ? Math.round(revenue / ordersCount) : 0,
+      momoSalary: Math.round(revenue * 0.45),
+      netProfit: revenue - totalExpenses
+    };
+  }
+
   function isOrderActive(order) {
     return !order || order.syncStatus !== 'cancelled';
   }
@@ -134,8 +188,10 @@
   function prepaidKindForTarget(target, bucket, fallback = 'adjustment') {
     const amount = Number(target) || 0;
     if (!amount) return fallback;
-    if (bucket === 'topup') return amount > 0 ? 'topup' : 'reversal';
-    if (bucket === 'debit') return amount < 0 ? 'debit' : 'reversal';
+    // `reversal` is reserved for an explicit reversal_of_entry_id. Order-linked
+    // corrections are append-only adjustments, even when their sign is reversed.
+    if (bucket === 'topup') return amount > 0 ? 'topup' : 'adjustment';
+    if (bucket === 'debit') return amount < 0 ? 'debit' : 'adjustment';
     return amount > 0 ? 'topup' : 'debit';
   }
 
@@ -163,12 +219,22 @@
     return Boolean(entry?.id)
       && entry.kind !== 'reversal'
       && Number(entry.signedAmount)
+      && !String(entry.sourceOrderId || '').trim()
+      && !entry.systemManaged
+      && !String(entry.transferGroupId || '').trim()
+      && !String(entry.note || '').startsWith('顧客合併')
       && !prepaidEntryReversed(prepaidLedger, entry);
   }
 
   function buildPrepaidReversalPayload(entry = {}, date = new Date().toLocaleDateString('sv-SE')) {
     const amount = toMoney(entry.signedAmount);
-    if (!amount) return null;
+    if (!entry?.id
+      || entry.kind === 'reversal'
+      || String(entry.sourceOrderId || '').trim()
+      || entry.systemManaged
+      || String(entry.transferGroupId || '').trim()
+      || String(entry.note || '').startsWith('顧客合併')
+      || !amount) return null;
     return {
       customerId: entry.customerId,
       signedAmount: -amount,
@@ -180,6 +246,585 @@
       paymentMethod: entry.paymentMethod || '',
       note: `手動沖銷:${entry.id}｜原日 ${entry.date}`,
       reversalOfEntryId: entry.id
+    };
+  }
+
+  function buildPrepaidLedgerUploadBatches(rows = [], batchSize = 200) {
+    const limit = Math.max(2, Math.floor(Number(batchSize) || 200));
+    const ordered = (Array.isArray(rows) ? [...rows] : [])
+      .sort((a, b) => Number(Boolean(a?.reversal_of_entry_id || a?.reversalOfEntryId))
+        - Number(Boolean(b?.reversal_of_entry_id || b?.reversalOfEntryId)));
+    const grouped = new Map();
+    ordered.forEach(row => {
+      const groupId = String(row?.transfer_group_id || row?.transferGroupId || '').trim();
+      if (!groupId) return;
+      if (!grouped.has(groupId)) grouped.set(groupId, []);
+      grouped.get(groupId).push(row);
+    });
+    const emittedGroups = new Set();
+    const units = [];
+    ordered.forEach(row => {
+      const groupId = String(row?.transfer_group_id || row?.transferGroupId || '').trim();
+      if (!groupId) units.push([row]);
+      else if (!emittedGroups.has(groupId)) {
+        emittedGroups.add(groupId);
+        units.push(grouped.get(groupId));
+      }
+    });
+    const batches = [];
+    let current = [];
+    units.forEach(unit => {
+      if (current.length && current.length + unit.length > limit) {
+        batches.push(current);
+        current = [];
+      }
+      current.push(...unit);
+    });
+    if (current.length) batches.push(current);
+    return batches;
+  }
+
+  function planPrepaidLedgerReconciliation(orders = [], existingEntries = [], options = {}) {
+    const fallbackDate = /^\d{4}-\d{2}-\d{2}$/.test(String(options.today || ''))
+      ? String(options.today)
+      : new Date().toLocaleDateString('sv-SE');
+    const orderRows = (Array.isArray(orders) ? orders : []).filter(order => order?.id);
+    const orderIds = new Set(orderRows.map(order => String(order.id)));
+    const accountingOrderIds = options.accountingOrderIds === undefined
+      ? null
+      : new Set(Array.from(options.accountingOrderIds || [], value => String(value)));
+    const resolveCustomerId = typeof options.resolveCustomerId === 'function'
+      ? value => String(options.resolveCustomerId(value) || value || '').trim()
+      : value => String(value || '').trim();
+    const groups = new Map();
+    const keysByOrder = new Map();
+    const keyFor = (orderId, customerId, date, bucket) => JSON.stringify([
+      String(orderId), String(customerId), String(date), String(bucket)
+    ]);
+
+    (Array.isArray(existingEntries) ? existingEntries : []).forEach(entry => {
+      const orderId = String(entry?.sourceOrderId || '').trim();
+      const customerId = resolveCustomerId(entry?.customerId);
+      if (!orderId || !customerId) return;
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(String(entry.date || ''))
+        ? String(entry.date)
+        : fallbackDate;
+      const bucket = entry.bucket === 'topup' ? 'topup' : 'debit';
+      const key = keyFor(orderId, customerId, date, bucket);
+      const group = groups.get(key) || {
+        orderId,
+        customerId,
+        date,
+        bucket,
+        total: 0,
+        latest: null
+      };
+      group.total += Number(entry.signedAmount) || 0;
+      group.latest = entry;
+      groups.set(key, group);
+      if (!keysByOrder.has(orderId)) keysByOrder.set(orderId, new Set());
+      keysByOrder.get(orderId).add(key);
+    });
+
+    const adjustments = [];
+    const addAdjustment = payload => {
+      const normalized = { ...payload, signedAmount: toMoney(payload.signedAmount) };
+      if (normalized.signedAmount) adjustments.push(normalized);
+    };
+
+    orderRows.forEach(order => {
+      const orderId = String(order.id);
+      const customerId = resolveCustomerId(order.customerId);
+      if (!customerId) return;
+      const included = accountingOrderIds === null || accountingOrderIds.has(orderId);
+      const target = included ? getOrderPrepaidTarget(order) : 0;
+      const targetDate = /^\d{4}-\d{2}-\d{2}$/.test(String(order.date || ''))
+        ? String(order.date)
+        : fallbackDate;
+      const targetBucket = target ? getOrderPrepaidBucket(order) : null;
+      const targetKey = targetBucket ? keyFor(orderId, customerId, targetDate, targetBucket) : null;
+      const relatedKeys = [...(keysByOrder.get(orderId) || [])];
+
+      relatedKeys.forEach(key => {
+        if (targetKey && key === targetKey) return;
+        const group = groups.get(key);
+        const currentTotal = toMoney(group?.total);
+        if (!group || !currentTotal) return;
+        addAdjustment({
+          customerId: group.customerId,
+          signedAmount: -currentTotal,
+          kind: 'adjustment',
+          bucket: group.bucket,
+          date: group.date,
+          sourceOrderId: orderId,
+          serviceName: order.serviceName || group.latest?.serviceName || '',
+          paymentMethod: order.paymentMethod || group.latest?.paymentMethod || '',
+          note: group.customerId !== customerId
+            ? '訂單改綁其他顧客，原顧客分錄歸零'
+            : group.date !== targetDate
+              ? '訂單日期異動，原日期分錄歸零'
+              : '訂單付款類型異動，原付款分錄歸零'
+        });
+      });
+
+      if (!target || !targetKey || !targetBucket) return;
+      const currentGroup = groups.get(targetKey);
+      const difference = toMoney(target - toMoney(currentGroup?.total));
+      if (!difference) return;
+      addAdjustment({
+        customerId,
+        signedAmount: difference,
+        kind: currentGroup ? 'adjustment' : prepaidKindForTarget(target, targetBucket, 'adjustment'),
+        bucket: targetBucket,
+        date: targetDate,
+        sourceOrderId: orderId,
+        serviceName: order.serviceName || '',
+        paymentMethod: order.paymentMethod || '',
+        note: currentGroup ? '訂單內容異動，於訂單日期追加差額' : '由訂單建立'
+      });
+    });
+
+    keysByOrder.forEach((keys, orderId) => {
+      if (orderIds.has(orderId)) return;
+      [...keys].forEach(key => {
+        const group = groups.get(key);
+        const currentTotal = toMoney(group?.total);
+        if (!group || !currentTotal) return;
+        addAdjustment({
+          customerId: group.customerId,
+          signedAmount: -currentTotal,
+          kind: 'adjustment',
+          bucket: group.bucket,
+          date: group.date,
+          sourceOrderId: orderId,
+          serviceName: group.latest?.serviceName || '',
+          paymentMethod: group.latest?.paymentMethod || '',
+          note: '原訂單已刪除，於原日期追加歸零分錄'
+        });
+      });
+    });
+
+    return adjustments;
+  }
+
+  function buildOrderPrepaidDateAdjustments(order = {}, existingEntries = []) {
+    const orderId = String(order?.id || '').trim();
+    const customerId = String(order?.customerId || '').trim();
+    const targetDate = String(order?.date || '').trim();
+    if (!orderId || !customerId || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) return [];
+
+    return planPrepaidLedgerReconciliation([order], existingEntries, {
+      today: targetDate,
+      accountingOrderIds: [orderId]
+    });
+  }
+
+  function positiveNumber(value) {
+    const number = Number(value);
+    return Number.isFinite(number) && number > 0 ? number : 0;
+  }
+
+  function resolveEffectiveMinutes(actualMinutes, standardMinutes) {
+    const actual = positiveNumber(actualMinutes);
+    if (actual) return { effectiveMinutes: actual, source: 'actual' };
+    const standard = positiveNumber(standardMinutes);
+    if (standard) return { effectiveMinutes: standard, source: 'standard' };
+    return { effectiveMinutes: 0, source: 'missing' };
+  }
+
+  function calculateEffectiveTimeYield(items = []) {
+    const summary = {
+      totalAmount: 0,
+      coveredAmount: 0,
+      uncoveredAmount: 0,
+      effectiveMinutes: 0,
+      hourlyYield: null,
+      actualCount: 0,
+      standardCount: 0,
+      missingCount: 0,
+      coveredCount: 0,
+      totalCount: 0,
+      coverageRate: 0,
+      mode: 'missing'
+    };
+
+    (Array.isArray(items) ? items : []).forEach(item => {
+      const amountValue = Number(item?.coveredAmount ?? item?.amount ?? 0);
+      const amount = Number.isFinite(amountValue) ? amountValue : 0;
+      const actualMinutes = item?.actualMinutes ?? item?.actualDurationMinutes;
+      const standardMinutes = item?.standardMinutes ?? item?.estimatedMinutes;
+      const resolution = resolveEffectiveMinutes(actualMinutes, standardMinutes);
+
+      summary.totalCount += 1;
+      summary.totalAmount += amount;
+      if (!resolution.effectiveMinutes) {
+        summary.missingCount += 1;
+        summary.uncoveredAmount += amount;
+        return;
+      }
+
+      summary.coveredCount += 1;
+      summary.coveredAmount += amount;
+      summary.effectiveMinutes += resolution.effectiveMinutes;
+      if (resolution.source === 'actual') summary.actualCount += 1;
+      else summary.standardCount += 1;
+    });
+
+    if (summary.effectiveMinutes > 0) {
+      summary.hourlyYield = Math.round((summary.coveredAmount * 60) / summary.effectiveMinutes);
+    }
+    summary.coverageRate = summary.totalCount ? summary.coveredCount / summary.totalCount : 0;
+    summary.mode = summary.actualCount && summary.standardCount
+      ? 'mixed'
+      : summary.actualCount
+        ? 'actual'
+        : summary.standardCount
+          ? 'standard'
+          : 'missing';
+    return summary;
+  }
+
+  function cloneJsonValue(value) {
+    const serialized = JSON.stringify(value);
+    if (serialized === undefined) throw new TypeError('資料不是可備份的 JSON 值');
+    return JSON.parse(serialized);
+  }
+
+  function isPlainRecord(value) {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  function isValidISODate(value) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
+    if (!match) return false;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const parsed = new Date(Date.UTC(year, month - 1, day));
+    return parsed.getUTCFullYear() === year
+      && parsed.getUTCMonth() === month - 1
+      && parsed.getUTCDate() === day;
+  }
+
+  function isFiniteNumericInput(value) {
+    return (typeof value === 'number' || typeof value === 'string')
+      && value !== ''
+      && !(typeof value === 'string' && !value.trim())
+      && Number.isFinite(Number(value));
+  }
+
+  function isValidTimestamp(value) {
+    return (typeof value === 'string' || value instanceof Date)
+      && String(value).trim() !== ''
+      && Number.isFinite(Date.parse(value));
+  }
+
+  function validateAndNormalizeBackupPayload(payload, options = {}) {
+    const errors = [];
+    const warnings = [];
+    const currentSchemaVersion = Math.max(1, Number(options.currentSchemaVersion) || 2);
+    if (!isPlainRecord(payload)) {
+      return {
+        ok: false,
+        errors: ['備份內容必須是 JSON 物件'],
+        warnings,
+        data: null,
+        servicesIncluded: false
+      };
+    }
+
+    const schemaVersion = Number(payload.schemaVersion);
+    if (!Number.isInteger(schemaVersion) || schemaVersion < 1) {
+      errors.push('schemaVersion 缺漏或格式不正確');
+    } else if (schemaVersion > currentSchemaVersion) {
+      errors.push(`備份版本 v${schemaVersion} 高於系統支援的 v${currentSchemaVersion}`);
+    } else if (schemaVersion < currentSchemaVersion) {
+      warnings.push(`備份版本 v${schemaVersion} 將以相容模式載入`);
+    }
+
+    const requiredArrays = [
+      'momo_orders',
+      'momo_expenses',
+      'momo_inventory',
+      'momo_customers',
+      'momo_prepaidLedger'
+    ];
+    const optionalArrays = ['momo_servicesConfig', 'momo_operationLogs'];
+    const requiredRecords = ['momo_crmNotes'];
+    const optionalRecords = ['momo_crmFormulas', 'momo_closeoutRecords'];
+
+    requiredArrays.forEach(key => {
+      if (!Array.isArray(payload[key])) errors.push(`${key} 必須是陣列`);
+      else if (payload[key].some(item => !isPlainRecord(item))) errors.push(`${key} 內含無效資料列`);
+    });
+    optionalArrays.forEach(key => {
+      if (payload[key] !== undefined && !Array.isArray(payload[key])) errors.push(`${key} 必須是陣列`);
+      else if (Array.isArray(payload[key]) && payload[key].some(item => !isPlainRecord(item))) errors.push(`${key} 內含無效資料列`);
+    });
+    requiredRecords.forEach(key => {
+      if (!isPlainRecord(payload[key])) errors.push(`${key} 必須是物件`);
+    });
+    optionalRecords.forEach(key => {
+      if (payload[key] !== undefined && !isPlainRecord(payload[key])) errors.push(`${key} 必須是物件`);
+    });
+
+    const validDate = isValidISODate;
+    const nonEmpty = value => typeof value === 'string' && Boolean(value.trim());
+    const finiteNumber = isFiniteNumericInput;
+    const safeInteger = value => finiteNumber(value) && Number.isSafeInteger(Number(value));
+    const validateUniqueIds = (key, rows) => {
+      if (!Array.isArray(rows)) return;
+      const ids = new Set();
+      rows.forEach((row, index) => {
+        const id = String(row?.id || '').trim();
+        if (!id) errors.push(`${key}[${index}] 缺少 id`);
+        else if (ids.has(id)) errors.push(`${key} 含重複 id：${id}`);
+        else ids.add(id);
+      });
+    };
+
+    validateUniqueIds('momo_orders', payload.momo_orders);
+    (Array.isArray(payload.momo_orders) ? payload.momo_orders : []).forEach((row, index) => {
+      if (!validDate(row?.date)) errors.push(`momo_orders[${index}] 日期格式不正確`);
+      if (!nonEmpty(row?.customerName)) errors.push(`momo_orders[${index}] 缺少顧客姓名`);
+      if (!nonEmpty(row?.serviceName)) errors.push(`momo_orders[${index}] 缺少服務項目`);
+      const amount = finiteNumber(row?.amount) ? Number(row.amount) : NaN;
+      const correction = isCorrectionSlip(row);
+      if (!Number.isFinite(amount) || (correction ? amount === 0 : amount <= 0)) errors.push(`momo_orders[${index}] 金額格式不正確`);
+      if (schemaVersion >= 3 && !safeInteger(row?.amount)) errors.push(`momo_orders[${index}] 金額必須是安全整數`);
+      if (![PAYMENT.CASH, PAYMENT.TRANSFER, PAYMENT.PREPAID_DEBIT, PAYMENT.MIXED, PAYMENT.PREPAID_TOPUP].includes(row?.paymentMethod)) {
+        errors.push(`momo_orders[${index}] 付款方式不正確`);
+      }
+      const cashPresent = row?.cashAmount !== null && row?.cashAmount !== undefined && row?.cashAmount !== '';
+      if (row?.paymentMethod === PAYMENT.MIXED) {
+        if (!finiteNumber(row?.cashAmount) || Number(row.cashAmount) <= 0 || Number(row.cashAmount) >= amount) {
+          errors.push(`momo_orders[${index}] 混合付款拆帳不正確`);
+        }
+        if (schemaVersion >= 3 && !safeInteger(row?.cashAmount)) errors.push(`momo_orders[${index}] 現金拆帳必須是安全整數`);
+      } else if (cashPresent) {
+        errors.push(`momo_orders[${index}] 非混合付款不可含 cashAmount`);
+      }
+      const topupChannel = row?.topupChannel;
+      if (row?.paymentMethod === PAYMENT.PREPAID_TOPUP) {
+        if (![PAYMENT.CASH, PAYMENT.TRANSFER].includes(topupChannel)) errors.push(`momo_orders[${index}] 儲值收款方式不正確`);
+      } else if (topupChannel !== null && topupChannel !== undefined && topupChannel !== '') {
+        errors.push(`momo_orders[${index}] 非儲值進帳不可含 topupChannel`);
+      }
+      ['actualDurationMinutes', 'calendarDurationMinutes'].forEach(field => {
+        const value = row?.[field];
+        if (value !== null && value !== undefined && value !== ''
+          && (!safeInteger(value) || Number(value) <= 0)) {
+          errors.push(`momo_orders[${index}] ${field} 必須是正整數`);
+        }
+      });
+    });
+
+    validateUniqueIds('momo_customers', payload.momo_customers);
+    (Array.isArray(payload.momo_customers) ? payload.momo_customers : []).forEach((row, index) => {
+      if (!nonEmpty(row?.name)) errors.push(`momo_customers[${index}] 缺少姓名`);
+    });
+
+    const customerRows = Array.isArray(payload.momo_customers) ? payload.momo_customers : [];
+    const customerIds = new Set(customerRows.map(row => String(row?.id || '').trim()).filter(Boolean));
+    const customerById = new Map(customerRows.map(row => [String(row?.id || '').trim(), row]));
+    customerRows.forEach((row, index) => {
+      const targetId = String(row?.mergedIntoCustomerId || row?.merged_into_customer_id || '').trim();
+      const archivedAt = row?.archivedAt || row?.archived_at || null;
+      if (archivedAt && !isValidTimestamp(archivedAt)) errors.push(`momo_customers[${index}] 封存時間格式不正確`);
+      if (targetId && (!customerIds.has(targetId) || targetId === String(row?.id || '').trim())) {
+        errors.push(`momo_customers[${index}] 合併目標不存在或指向自己`);
+      }
+      if (targetId && !archivedAt) errors.push(`momo_customers[${index}] 合併後未封存`);
+      const visited = new Set();
+      let cursor = String(row?.id || '').trim();
+      let terminal = null;
+      while (cursor && customerById.has(cursor)) {
+        if (visited.has(cursor)) {
+          errors.push(`momo_customers 合併鏈形成循環：${cursor}`);
+          terminal = null;
+          break;
+        }
+        visited.add(cursor);
+        terminal = customerById.get(cursor);
+        cursor = String(terminal?.mergedIntoCustomerId || terminal?.merged_into_customer_id || '').trim();
+      }
+      if (targetId && terminal && !cursor && (terminal.archivedAt || terminal.archived_at)) {
+        errors.push(`momo_customers[${index}] 合併鏈終點必須是未封存顧客`);
+      }
+    });
+
+    const orderRows = Array.isArray(payload.momo_orders) ? payload.momo_orders : [];
+    const orderIds = new Set(orderRows.map(row => String(row?.id || '').trim()).filter(Boolean));
+    orderRows.forEach((row, index) => {
+      const customerId = String(row?.customerId || '').trim();
+      if (schemaVersion >= 3 && (!customerId || !customerIds.has(customerId))) {
+        errors.push(`momo_orders[${index}] 顧客關聯不存在`);
+      } else if (customerId && !customerIds.has(customerId)) {
+        errors.push(`momo_orders[${index}] 顧客關聯不存在`);
+      }
+    });
+
+    const ledgerRows = Array.isArray(payload.momo_prepaidLedger) ? payload.momo_prepaidLedger : [];
+    validateUniqueIds('momo_prepaidLedger', ledgerRows);
+    ledgerRows.forEach((row, index) => {
+      if (!nonEmpty(row?.customerId)) errors.push(`momo_prepaidLedger[${index}] 缺少 customerId`);
+      if (!finiteNumber(row?.signedAmount) || Number(row.signedAmount) === 0) errors.push(`momo_prepaidLedger[${index}] 金額格式不正確`);
+      if (schemaVersion >= 3 && !safeInteger(row?.signedAmount)) errors.push(`momo_prepaidLedger[${index}] 金額必須是安全整數`);
+      if (!validDate(row?.date)) errors.push(`momo_prepaidLedger[${index}] 日期格式不正確`);
+      if (!['topup', 'debit', 'adjustment', 'reversal'].includes(row?.kind)) errors.push(`momo_prepaidLedger[${index}] kind 不正確`);
+      if (!['topup', 'debit'].includes(row?.bucket)) errors.push(`momo_prepaidLedger[${index}] bucket 不正確`);
+      const signedAmount = Number(row?.signedAmount);
+      if (row?.kind === 'topup' && !(row?.bucket === 'topup' && signedAmount > 0)) errors.push(`momo_prepaidLedger[${index}] 進帳正負號或 bucket 不正確`);
+      if (row?.kind === 'debit' && !(row?.bucket === 'debit' && signedAmount < 0)) errors.push(`momo_prepaidLedger[${index}] 扣款正負號或 bucket 不正確`);
+      if (row?.customerId && !customerIds.has(String(row.customerId))) errors.push(`momo_prepaidLedger[${index}] 顧客關聯不存在`);
+      if (row?.sourceOrderId && !orderIds.has(String(row.sourceOrderId))) errors.push(`momo_prepaidLedger[${index}] 訂單關聯不存在`);
+      const reversalId = String(row?.reversalOfEntryId || '').trim();
+      if ((row?.kind === 'reversal') !== Boolean(reversalId)) errors.push(`momo_prepaidLedger[${index}] 沖銷關聯不正確`);
+    });
+    const ledgerById = new Map(ledgerRows.map(row => [String(row?.id || '').trim(), row]));
+    const reversalTargets = new Set();
+    const transferGroups = new Map();
+    ledgerRows.forEach((row, index) => {
+      const reversalId = String(row?.reversalOfEntryId || '').trim();
+      const original = ledgerById.get(reversalId);
+      if (reversalId && !original) errors.push(`momo_prepaidLedger[${index}] 找不到原沖銷分錄`);
+      if (reversalId && reversalTargets.has(reversalId)) errors.push(`momo_prepaidLedger 重複沖銷原分錄：${reversalId}`);
+      if (reversalId) reversalTargets.add(reversalId);
+      if (row?.kind === 'reversal' && original) {
+        if (original.kind === 'reversal'
+          || original.systemManaged
+          || original.transferGroupId
+          || original.sourceOrderId
+          || row.systemManaged
+          || row.transferGroupId
+          || row.sourceOrderId
+          || String(original.note || '').startsWith('顧客合併')
+          || String(original.customerId) !== String(row.customerId)
+          || original.bucket !== row.bucket
+          || Number(row.signedAmount) !== -Number(original.signedAmount)) {
+          errors.push(`momo_prepaidLedger[${index}] 未完整反向沖銷原分錄`);
+        }
+      }
+      if (row?.transferGroupId && !row?.systemManaged) errors.push(`momo_prepaidLedger[${index}] 合併轉移分錄未標記 systemManaged`);
+      if (row?.transferGroupId) {
+        const key = String(row.transferGroupId);
+        if (!transferGroups.has(key)) transferGroups.set(key, []);
+        transferGroups.get(key).push(row);
+      }
+    });
+    transferGroups.forEach((rows, groupId) => {
+      const customers = new Set(rows.map(row => String(row.customerId)));
+      const net = rows.reduce((sum, row) => sum + Number(row.signedAmount || 0), 0);
+      const shapeMatches = rows.length === 2
+        && customers.size === 2
+        && net === 0
+        && rows.every(row => row.kind === 'adjustment' && row.systemManaged)
+        && rows[0].bucket === rows[1].bucket
+        && rows[0].date === rows[1].date
+        && String(rows[0].sourceOrderId || '') === String(rows[1].sourceOrderId || '');
+      if (!shapeMatches) errors.push(`momo_prepaidLedger 合併轉移組 ${groupId} 必須是兩筆互抵分錄`);
+    });
+
+    validateUniqueIds('momo_expenses', payload.momo_expenses);
+    (Array.isArray(payload.momo_expenses) ? payload.momo_expenses : []).forEach((row, index) => {
+      if (!validDate(row?.date) || !finiteNumber(row?.amount) || Number(row.amount) < 0
+        || (schemaVersion >= 3 && !safeInteger(row?.amount))) errors.push(`momo_expenses[${index}] 格式不正確`);
+    });
+    validateUniqueIds('momo_inventory', payload.momo_inventory);
+    (Array.isArray(payload.momo_inventory) ? payload.momo_inventory : []).forEach((row, index) => {
+      if (!nonEmpty(row?.name) || !finiteNumber(row?.stock) || Number(row.stock) < 0
+        || (schemaVersion >= 3 && !safeInteger(row?.stock))) errors.push(`momo_inventory[${index}] 格式不正確`);
+      if (row?.minStock !== undefined && (!safeInteger(row.minStock) || Number(row.minStock) <= 0)) {
+        errors.push(`momo_inventory[${index}] 安全庫存格式不正確`);
+      }
+    });
+    (Array.isArray(payload.momo_servicesConfig) ? payload.momo_servicesConfig : []).forEach((row, index) => {
+      if (!nonEmpty(row?.name) || !finiteNumber(row?.duration) || Number(row.duration) <= 0 || !finiteNumber(row?.price) || Number(row.price) < 0
+        || (schemaVersion >= 3 && (!safeInteger(row?.duration) || !safeInteger(row?.price)))) {
+        errors.push(`momo_servicesConfig[${index}] 格式不正確`);
+      }
+    });
+    if (isPlainRecord(payload.momo_crmNotes)) {
+      Object.entries(payload.momo_crmNotes).forEach(([customerId, note]) => {
+        if (schemaVersion >= 3 && !customerIds.has(customerId)) errors.push(`momo_crmNotes 顧客關聯不存在：${customerId}`);
+        if (typeof note !== 'string') errors.push(`momo_crmNotes[${customerId}] 必須是文字`);
+      });
+    }
+    if (isPlainRecord(payload.momo_crmFormulas)
+      && Object.values(payload.momo_crmFormulas).some(value => !isPlainRecord(value))) {
+      errors.push('momo_crmFormulas 內含無效顧客資料');
+    }
+    if (isPlainRecord(payload.momo_crmFormulas)) {
+      Object.keys(payload.momo_crmFormulas).forEach(customerId => {
+        if (schemaVersion >= 3 && !customerIds.has(customerId)) errors.push(`momo_crmFormulas 顧客關聯不存在：${customerId}`);
+      });
+    }
+    if (isPlainRecord(payload.momo_closeoutRecords)) {
+      const moneyFields = [
+        'expectedCash', 'countedCash', 'difference', 'cash', 'transfer', 'prepaidOut',
+        'prepaidIn', 'cashPrepaidIn', 'transferPrepaidIn', 'serviceRevenue', 'expenses', 'netProfit'
+      ];
+      Object.entries(payload.momo_closeoutRecords).forEach(([date, row]) => {
+        if (!isPlainRecord(row)) {
+          errors.push(`momo_closeoutRecords[${date}] 內含無效日結資料`);
+          return;
+        }
+        if (!validDate(date) || (schemaVersion >= 3 ? row.date !== date : (row.date && row.date !== date))) {
+          errors.push(`momo_closeoutRecords[${date}] 日期關聯不正確`);
+        }
+        moneyFields.forEach(field => {
+          const missing = row[field] === undefined || row[field] === null || row[field] === '';
+          if ((schemaVersion >= 3 && missing)
+            || (!missing && (!finiteNumber(row[field]) || (schemaVersion >= 3 && !safeInteger(row[field]))))) {
+            errors.push(`momo_closeoutRecords[${date}] ${field} 格式不正確`);
+          }
+        });
+        ['ordersCount', 'serviceOrdersCount', 'topupCount'].forEach(field => {
+          if (row[field] !== undefined && (!safeInteger(row[field]) || Number(row[field]) < 0)) {
+            errors.push(`momo_closeoutRecords[${date}] ${field} 格式不正確`);
+          }
+        });
+        if (schemaVersion >= 3 && row.ordersCount === undefined) errors.push(`momo_closeoutRecords[${date}] 缺少 ordersCount`);
+        if ((schemaVersion >= 3 && !row.completedAt) || (row.completedAt && !isValidTimestamp(row.completedAt))) {
+          errors.push(`momo_closeoutRecords[${date}] completedAt 格式不正確`);
+        }
+      });
+    }
+    if (payload.createdAt !== undefined) {
+      const createdAt = String(payload.createdAt || '');
+      if (!createdAt || Number.isNaN(Date.parse(createdAt))) errors.push('createdAt 格式不正確');
+    }
+    if (payload.momo_servicesConfigUpdatedAt !== undefined
+      && payload.momo_servicesConfigUpdatedAt !== null
+      && typeof payload.momo_servicesConfigUpdatedAt !== 'string') {
+      errors.push('momo_servicesConfigUpdatedAt 必須是字串或 null');
+    }
+
+    if (errors.length) {
+      return {
+        ok: false,
+        errors,
+        warnings,
+        data: null,
+        servicesIncluded: Array.isArray(payload.momo_servicesConfig)
+      };
+    }
+
+    const normalized = {
+      schemaVersion,
+      createdAt: payload.createdAt || null
+    };
+    [...requiredArrays, ...requiredRecords, ...optionalArrays, ...optionalRecords].forEach(key => {
+      if (payload[key] !== undefined) normalized[key] = cloneJsonValue(payload[key]);
+    });
+    normalized.momo_servicesConfigUpdatedAt = payload.momo_servicesConfigUpdatedAt ?? null;
+
+    return {
+      ok: true,
+      errors,
+      warnings,
+      data: normalized,
+      servicesIncluded: Array.isArray(payload.momo_servicesConfig)
     };
   }
 
@@ -211,6 +856,10 @@
   return {
     PAYMENT,
     toMoney,
+    normalizeServiceName,
+    buildServiceMetricDictionary,
+    resolveServiceMetric,
+    calculatePeriodKpis,
     isOrderActive,
     isCorrectionSlip,
     getTopupChannel,
@@ -226,6 +875,15 @@
     prepaidEntryReversed,
     canReversePrepaidEntry,
     buildPrepaidReversalPayload,
+    buildPrepaidLedgerUploadBatches,
+    planPrepaidLedgerReconciliation,
+    buildOrderPrepaidDateAdjustments,
+    resolveEffectiveMinutes,
+    calculateEffectiveTimeYield,
+    cloneJsonValue,
+    isValidISODate,
+    isFiniteNumericInput,
+    validateAndNormalizeBackupPayload,
     evaluatePwaReloadGuard,
     shouldRetryCalendarSync
   };

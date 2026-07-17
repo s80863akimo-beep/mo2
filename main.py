@@ -28,8 +28,11 @@ SUPABASE_PUBLISHABLE_KEY = os.getenv(
     "SUPABASE_PUBLISHABLE_KEY",
     os.getenv("SUPABASE_ANON_KEY", ""),
 )
-# Make scheduled sync must stay usable without a short-lived Supabase user token.
-REQUIRE_AUTH = False
+# Authentication remains opt-in for local development and scheduled syncs, but
+# production can now enforce it through the environment instead of a code edit.
+REQUIRE_AUTH = os.getenv("REQUIRE_AUTH", "false").strip().lower() in {
+    "1", "true", "yes", "on",
+}
 
 
 def supabase_auth_configured() -> bool:
@@ -174,93 +177,131 @@ app.add_middleware(
 
 def parse_order_id(description: str) -> str | None:
     """從行事曆 description 抓出 Order ID。"""
-    m = re.search(r"Order\s*ID\s*[：:]\s*([A-Z0-9_-]+)", description, re.IGNORECASE)
-    return m.group(1) if m else None
+    raw = parse_labeled_value(description, ["Order ID"])
+    return raw if raw and re.fullmatch(r"[A-Z0-9_-]+", raw, re.IGNORECASE) else None
+
+
+def parse_customer_id(description: str) -> str | None:
+    """讀取完整 Customer ID；格式不完整時不可截斷或猜測。"""
+    raw = parse_labeled_value(description, ["Customer ID", "顧客 ID", "顧客ID"])
+    return raw if raw and re.fullmatch(r"[A-Z0-9_-]+", raw, re.IGNORECASE) else None
 
 
 def parse_service_text(description: str) -> str:
     """擷取 Service: 後方、下一個換行前的完整文字。"""
-    m = re.search(r"(?:Service|服務項目|服務)\s*[：:]\s*([^\r\n]+)", description, re.IGNORECASE)
+    m = re.search(r"^\s*(?:Service|服務項目|服務)\s*[：:]\s*([^\r\n]+)\s*$", description, re.IGNORECASE | re.MULTILINE)
     return m.group(1).strip() if m else ""
 
 
 def parse_labeled_value(description: str, labels: list[str]) -> str | None:
     """讀取 description 中指定標籤後方、同一行的值。"""
-    pattern = rf"(?:{'|'.join(re.escape(label) for label in labels)})\s*[：:]\s*([^\r\n]+)"
-    match = re.search(pattern, description, re.IGNORECASE)
+    pattern = rf"^\s*(?:{'|'.join(re.escape(label) for label in labels)})\s*[：:]\s*([^\r\n]+)\s*$"
+    match = re.search(pattern, description, re.IGNORECASE | re.MULTILINE)
     return match.group(1).strip() if match else None
 
 
-def parse_payment_method(description: str, service_text: str) -> str:
-    """解析付款方式；未標示時才使用現金，避免儲值金流被誤分類。"""
+def parse_payment_method(description: str, service_text: str) -> str | None:
+    """解析明確標示的付款方式；缺失或無效時回傳 ``None``。
+
+    付款方式會直接影響現金與儲值帳，因此不能再把未填資料默認成現金。
+    ``service_text`` 參數保留給既有呼叫端相容，但不會拿服務名稱猜金流。
+    """
     raw = parse_labeled_value(
         description,
         ["Payment Method", "Payment", "付款方式", "付款", "金流"],
     )
-    candidate = (raw or "").strip().lower()
-    if (("現金" in candidate and ("儲值扣款" in candidate or "儲值付款" in candidate))
-            or "混合付款" in candidate):
+    candidate = re.sub(r"\s+", "", (raw or "").strip().lower()).replace("＋", "+")
+    if not candidate:
+        return None
+    if re.search(r"(?:非|不是|待確認|待定|未確認|或|/|、|，|,)", candidate):
+        return None
+    if candidate in {"現金+儲值扣款", "現金+儲值付款", "混合付款"}:
         return "現金＋儲值扣款"
-    for alias, normalized in PAYMENT_ALIASES.items():
-        if alias.lower() in candidate:
-            return normalized
-
-    combined = f"{description}\n{service_text}".lower()
-    if (("現金" in combined and ("儲值扣款" in combined or "儲值付款" in combined))
-            or "混合付款" in combined):
-        return "現金＋儲值扣款"
-    if "儲值扣款" in combined or "儲值付款" in combined:
-        return "儲值扣款"
-    if "儲值進帳" in combined or "儲值入帳" in combined or "儲值專用" in combined:
+    if re.fullmatch(
+        r"(?:儲值進帳|儲值入帳|topup)(?:[（(](?:現金|cash|轉帳|銀行轉帳|匯款|transfer)[）)])?",
+        candidate,
+    ):
         return "儲值進帳"
-    if "轉帳" in combined or "匯款" in combined or "transfer" in combined:
+    if candidate in {"儲值扣款", "儲值付款", "儲值金扣款", "prepaid", "prepaiddebit"}:
+        return "儲值扣款"
+    if candidate in {"銀行轉帳", "轉帳", "匯款", "transfer", "banktransfer"}:
         return "轉帳"
-    return "現金"
+    if candidate in {"現金", "cash"}:
+        return "現金"
+
+    return None
 
 
-def parse_topup_channel(description: str, payment_method: str) -> str | None:
-    """儲值進帳的收款管道；舊資料未標示時沿用現金。"""
+def parse_topup_channel(description: str, payment_method: str | None) -> str | None:
+    """解析儲值進帳收款管道；未明確標示時不猜測。"""
     if payment_method != "儲值進帳":
         return None
     raw = parse_labeled_value(
         description,
         ["Topup Channel", "Payment Channel", "儲值方式", "收款方式", "入帳方式"],
     )
-    candidate = (raw or description).lower()
-    if "轉帳" in candidate or "匯款" in candidate or "transfer" in candidate:
-        return "轉帳"
-    return "現金"
+    payment_raw = parse_labeled_value(
+        description,
+        ["Payment Method", "Payment", "付款方式", "付款", "金流"],
+    )
+    def canonical_channel(value: str | None) -> str | None:
+        candidate = re.sub(r"\s+", "", (value or "").strip().lower())
+        if not candidate or re.search(r"(?:非|不是|待確認|待定|未確認|或|/|、|，|,)", candidate):
+            return None
+        if candidate in {"現金", "cash"}:
+            return "現金"
+        if candidate in {"轉帳", "銀行轉帳", "匯款", "transfer", "banktransfer"}:
+            return "轉帳"
+        return None
+
+    if raw is not None:
+        return canonical_channel(raw)
+    payment_candidate = re.sub(r"\s+", "", (payment_raw or "").strip().lower())
+    match = re.fullmatch(
+        r"(?:儲值進帳|儲值入帳|topup)[（(]([^）)]+)[）)]",
+        payment_candidate,
+    )
+    if match:
+        return canonical_channel(match.group(1))
+    return None
+
+
+def parse_labeled_money(description: str, labels: list[str]) -> tuple[bool, int | None]:
+    """Return ``(label_present, amount)`` and reject partial/negative expressions."""
+    pattern = rf"^\s*(?:{'|'.join(re.escape(label) for label in labels)})\s*[：:]\s*([^\r\n]*)\s*$"
+    match = re.search(pattern, description, re.IGNORECASE | re.MULTILINE)
+    if not match:
+        return False, None
+    raw = match.group(1).strip()
+    money_match = re.fullmatch(
+        r"(?:NT\$|TWD|\$)?\s*((?:0|[1-9][0-9]*|[1-9][0-9]{0,2}(?:,[0-9]{3})+))\s*(?:元)?",
+        raw,
+        re.IGNORECASE,
+    )
+    if not money_match:
+        return True, None
+    return True, int(money_match.group(1).replace(",", ""))
 
 
 def parse_explicit_amount(description: str) -> int | None:
-    """解析行事曆明確填寫的金額，支援千分位與 NT$。"""
-    raw = parse_labeled_value(description, ["Amount", "Price", "金額", "價格", "收款"])
-    if not raw:
-        return None
-    match = re.search(r"(?:NT\$|TWD|\$)?\s*([0-9][0-9,]*)", raw, re.IGNORECASE)
-    if not match:
-        return None
-    return int(match.group(1).replace(",", ""))
+    """解析行事曆明確填寫的金額；格式錯誤時不做部分數字猜測。"""
+    return parse_labeled_money(description, ["Amount", "Price", "金額", "價格", "收款"])[1]
 
 
 def parse_cash_amount(description: str) -> int | None:
     """解析混合付款中的現金金額。"""
-    raw = parse_labeled_value(description, ["Cash Amount", "現金金額", "現金付款"])
-    if not raw:
-        return None
-    match = re.search(r"(?:NT\$|TWD|\$)?\s*([0-9][0-9,]*)", raw, re.IGNORECASE)
-    return int(match.group(1).replace(",", "")) if match else None
+    return parse_labeled_money(description, ["Cash Amount", "現金金額", "現金付款"])[1]
 
 
 def parse_customer_name(summary: str) -> str:
     """清理事件標題中的 MOMO、括號備註與前後分隔符。"""
     if not summary:
-        return "預約顧客"
+        return ""
     name = re.sub(r"momo", " ", summary, flags=re.IGNORECASE)
     name = re.sub(r"[\(（].*?[\)）]", " ", name)
     name = re.sub(r"^[\s\-—_|:：]+|[\s\-—_|:：]+$", "", name)
     name = re.sub(r"\s{2,}", " ", name).strip()
-    return name or "預約顧客"
+    return name
 
 
 def calc_amount(service_text: str) -> int:
@@ -321,12 +362,21 @@ def calc_amount_with_service_config(
                 "source": "unmatched_service_config",
                 "unmatched": [str(service_text or "").strip()] if service_text else [],
             }
-        amount = calc_amount(service_text)
-        return {
-            "amount": amount,
-            "source": "backend_price_table" if amount > 0 else "unmatched_backend_price_table",
-            "unmatched": [] if amount > 0 else [str(service_text or "").strip()],
+        backend_lookup = {
+            normalize_service_key(name): price
+            for name, price in PRICE_TABLE.items()
+            if normalize_service_key(name) and price > 0
         }
+        result = calc_amount_with_service_config(
+            service_text,
+            backend_lookup,
+            allow_backend_fallback=False,
+        )
+        if result["amount"] > 0:
+            result["source"] = "backend_price_table_combo" if result["source"] == "service_config_combo" else "backend_price_table"
+        else:
+            result["source"] = "unmatched_backend_price_table"
+        return result
 
     normalized_full = normalize_service_key(service_text)
     if not normalized_full:
@@ -362,11 +412,18 @@ def get_event_date(event: dict) -> str | None:
     """
     start = event.get("start", {})
     if "dateTime" in start:
-        dt = datetime.fromisoformat(start["dateTime"].replace("Z", "+00:00"))
-        dt_tw = dt.astimezone(TW)
-        return dt_tw.strftime("%Y-%m-%d")
+        try:
+            dt = datetime.fromisoformat(str(start["dateTime"]).replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=TW)
+            return dt.astimezone(TW).strftime("%Y-%m-%d")
+        except (TypeError, ValueError):
+            return None
     elif "date" in start:
-        return start["date"]
+        try:
+            return datetime.strptime(str(start["date"]), "%Y-%m-%d").strftime("%Y-%m-%d")
+        except (TypeError, ValueError):
+            return None
     return None
 
 
@@ -381,14 +438,68 @@ def get_event_time_info(event: dict) -> dict:
             "calendarDurationMinutes": None,
         }
 
-    start_dt = datetime.fromisoformat(start["dateTime"].replace("Z", "+00:00"))
-    end_dt = datetime.fromisoformat(end["dateTime"].replace("Z", "+00:00"))
+    try:
+        start_dt = datetime.fromisoformat(str(start["dateTime"]).replace("Z", "+00:00"))
+        end_dt = datetime.fromisoformat(str(end["dateTime"]).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return {
+            "calendarStart": None,
+            "calendarEnd": None,
+            "calendarDurationMinutes": None,
+        }
+    if start_dt.tzinfo is None:
+        start_dt = start_dt.replace(tzinfo=TW)
+    if end_dt.tzinfo is None:
+        end_dt = end_dt.replace(tzinfo=TW)
     duration_minutes = max(0, round((end_dt - start_dt).total_seconds() / 60))
     return {
         "calendarStart": start_dt.astimezone(TW).isoformat(),
         "calendarEnd": end_dt.astimezone(TW).isoformat(),
         "calendarDurationMinutes": duration_minutes or None,
     }
+
+
+def is_blocked_calendar_slot(event: dict) -> bool:
+    """辨識只用來保留時間、不應進會計帳的行事曆事件。"""
+    summary = str(event.get("summary") or "").strip()
+    if not summary:
+        return False
+    return bool(re.match(r"^(?:不約|卡)(?:$|[\s｜|：:\-—_/])", summary))
+
+
+def get_event_completion_issue(event: dict, now: datetime) -> str | None:
+    """回傳事件尚未完成的原因；完成則回傳 ``None``。
+
+    Calendar 的 ``confirmed`` 只代表預約沒有被取消，不代表服務已完成，
+    因此以結束時間為入帳界線；全天事件則以 Google 的結束日（不含）判斷。
+    """
+    if event.get("status") == "tentative":
+        return "tentative_event"
+
+    end = event.get("end") or {}
+    if end.get("dateTime"):
+        try:
+            end_dt = datetime.fromisoformat(str(end["dateTime"]).replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            return "invalid_end_time"
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.replace(tzinfo=TW)
+        if end_dt.astimezone(TW) > now.astimezone(TW):
+            return "event_not_finished"
+        return None
+
+    if end.get("date"):
+        try:
+            end_date = datetime.strptime(str(end["date"]), "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            return "invalid_end_time"
+        # Google all-day end dates are exclusive. An event ending tomorrow is
+        # still in progress today; one ending today has already completed.
+        if end_date > now.astimezone(TW).date():
+            return "event_not_finished"
+        return None
+
+    return "missing_end_time"
 
 
 def get_calendar_service():
@@ -546,6 +657,8 @@ def sync_calendar(
 
     seen_orders: set[str] = set()
     orders: list[dict] = []
+    issues: list[dict] = []
+    quarantined_events: list[dict] = []
     cancelled_event_ids: list[str] = []
     selected_month_revenue = 0
     selected_month_cash_in = 0
@@ -556,11 +669,22 @@ def sync_calendar(
         "orders_parsed": 0,
         "missing_description": 0,
         "missing_order_id": 0,
+        "invalid_order_id": 0,
+        "missing_customer": 0,
+        "invalid_customer_id": 0,
+        "missing_service": 0,
+        "missing_event_id": 0,
         "duplicates": 0,
         "cancelled": 0,
+        "blocked_slots": 0,
+        "future_or_incomplete": 0,
         "missing_date": 0,
+        "invalid_amount": 0,
         "zero_amount": 0,
+        "invalid_payment": 0,
+        "missing_topup_channel": 0,
         "invalid_mixed_payment": 0,
+        "quarantined": 0,
         "service_price_items": len(service_price_lookup),
         "unmatched_price_table": 0,
     }
@@ -578,32 +702,157 @@ def sync_calendar(
     payment_summary = {"現金": 0, "轉帳": 0, "儲值扣款": 0, "儲值進帳": 0}
     selected_month_prefix = f"{y:04d}-{m:02d}"
 
+    def quarantine(
+        event: dict,
+        code: str,
+        message: str,
+        *,
+        order_id: str | None = None,
+        event_date: str | None = None,
+        severity: str = "warning",
+    ) -> None:
+        """將不可入帳事件留下可追蹤摘要，但不納入任何金流統計。"""
+        source_event_id = event.get("id")
+        issue = {
+            "type": code,
+            "severity": severity,
+            "message": message,
+            "sourceEventId": source_event_id,
+            "orderId": order_id,
+            "date": event_date,
+        }
+        issues.append(issue)
+        quarantined_events.append({
+            **issue,
+            "summary": str(event.get("summary") or "").strip(),
+        })
+        diagnostics["quarantined"] += 1
+
     for event in events:
         if event.get("status") == "cancelled":
             diagnostics["cancelled"] += 1
             if event.get("id"):
                 cancelled_event_ids.append(event["id"])
             continue
+
+        # 「不約／卡」只是保留時段，不是異常訂單，也不應污染會計警報。
+        if is_blocked_calendar_slot(event):
+            diagnostics["blocked_slots"] += 1
+            continue
+
         desc = event.get("description", "") or ""
         if not desc:
             diagnostics["missing_description"] += 1
+            quarantine(event, "missing_description", "行事曆事件缺少描述，未入帳。", severity="error")
             continue
 
+        order_id_raw = parse_labeled_value(desc, ["Order ID"])
         order_id = parse_order_id(desc)
         if not order_id:
-            diagnostics["missing_order_id"] += 1
+            issue_code = "invalid_order_id" if order_id_raw is not None else "missing_order_id"
+            diagnostics[issue_code] += 1
+            quarantine(
+                event,
+                issue_code,
+                "行事曆 Order ID 格式無效，僅可使用英數字、底線與連字號，未入帳。"
+                if order_id_raw is not None
+                else "行事曆事件缺少 Order ID，未入帳。",
+                severity="error",
+            )
+            continue
+        order_id = order_id.strip().upper()
+
+        customer_id_raw = parse_labeled_value(desc, ["Customer ID", "顧客 ID", "顧客ID"])
+        customer_id = parse_customer_id(desc)
+        if customer_id_raw is not None and customer_id is None:
+            diagnostics["invalid_customer_id"] += 1
+            quarantine(
+                event,
+                "invalid_customer_id",
+                "Calendar Customer ID 格式無效，未入帳。",
+                order_id=order_id,
+                severity="error",
+            )
+            continue
+
         source_event_id = event.get("id")
-        dedupe_id = source_event_id or order_id
-        if not dedupe_id:
-            diagnostics["duplicates"] += 1
+        if not source_event_id:
+            diagnostics["missing_event_id"] += 1
+            quarantine(
+                event,
+                "missing_event_id",
+                "行事曆事件缺少 Event ID，無法可靠追蹤來源，未入帳。",
+                order_id=order_id,
+                severity="error",
+            )
             continue
-        if dedupe_id in seen_orders:
-            diagnostics["duplicates"] += 1
+
+        event_date = get_event_date(event)
+        if not event_date:
+            diagnostics["missing_date"] += 1
+            quarantine(
+                event,
+                "missing_date",
+                "行事曆事件缺少有效日期，未入帳。",
+                order_id=order_id,
+                severity="error",
+            )
             continue
-        seen_orders.add(dedupe_id)
+
+        completion_issue = get_event_completion_issue(event, now)
+        if completion_issue:
+            diagnostics["future_or_incomplete"] += 1
+            quarantine(
+                event,
+                completion_issue,
+                "服務尚未結束或事件時間無法確認，暫不入帳。",
+                order_id=order_id,
+                event_date=event_date,
+            )
+            continue
+
+        summary = event.get("summary", "") or ""
+        customer_name = parse_customer_name(summary)
+        if not customer_name:
+            diagnostics["missing_customer"] += 1
+            quarantine(
+                event,
+                "missing_customer",
+                "行事曆事件缺少顧客姓名，未入帳。",
+                order_id=order_id,
+                event_date=event_date,
+                severity="error",
+            )
+            continue
 
         service_text = parse_service_text(desc)
-        explicit_amount = parse_explicit_amount(desc)
+        if not service_text:
+            diagnostics["missing_service"] += 1
+            quarantine(
+                event,
+                "missing_service",
+                "行事曆事件缺少服務項目，未入帳。",
+                order_id=order_id,
+                event_date=event_date,
+                severity="error",
+            )
+            continue
+
+        explicit_amount_present, explicit_amount = parse_labeled_money(
+            desc,
+            ["Amount", "Price", "金額", "價格", "收款"],
+        )
+        if explicit_amount_present and explicit_amount is None:
+            diagnostics["invalid_amount"] += 1
+            quarantine(
+                event,
+                "invalid_amount",
+                "行事曆金額格式無效；不可使用負數、算式或待確認文字，未入帳。",
+                order_id=order_id,
+                event_date=event_date,
+                severity="error",
+            )
+            continue
         if explicit_amount is not None:
             amount = explicit_amount
             pricing_source = "calendar_explicit_amount"
@@ -620,26 +869,78 @@ def sync_calendar(
             if pricing_unmatched_services:
                 diagnostics["unmatched_price_table"] += 1
         payment_method = parse_payment_method(desc, service_text)
+        if payment_method is None:
+            diagnostics["invalid_payment"] += 1
+            quarantine(
+                event,
+                "invalid_payment",
+                "行事曆事件缺少有效付款方式，未入帳。",
+                order_id=order_id,
+                event_date=event_date,
+                severity="error",
+            )
+            continue
+
         topup_channel = parse_topup_channel(desc, payment_method)
-        parsed_cash_amount = parse_cash_amount(desc) if payment_method == "現金＋儲值扣款" else None
+        if payment_method == "儲值進帳" and topup_channel is None:
+            diagnostics["missing_topup_channel"] += 1
+            quarantine(
+                event,
+                "missing_topup_channel",
+                "儲值進帳必須明確標示現金或轉帳收款，未入帳。",
+                order_id=order_id,
+                event_date=event_date,
+                severity="error",
+            )
+            continue
+        parsed_cash_amount = None
+        if payment_method == "現金＋儲值扣款":
+            _, parsed_cash_amount = parse_labeled_money(
+                desc,
+                ["Cash Amount", "現金金額", "現金付款"],
+            )
         cash_amount = min(amount, max(0, parsed_cash_amount or 0))
         prepaid_amount = amount - cash_amount if payment_method == "現金＋儲值扣款" else 0
         if payment_method == "現金＋儲值扣款" and (
             parsed_cash_amount is None or cash_amount <= 0 or cash_amount >= amount
         ):
             diagnostics["invalid_mixed_payment"] += 1
-        category = classify_service(service_text)
-        event_date = get_event_date(event)
-        if not event_date:
-            diagnostics["missing_date"] += 1
+            quarantine(
+                event,
+                "invalid_mixed_payment",
+                "混合付款的現金金額必須大於 0 且小於總額，未入帳。",
+                order_id=order_id,
+                event_date=event_date,
+                severity="error",
+            )
             continue
+        category = classify_service(service_text)
         if amount <= 0:
             diagnostics["zero_amount"] += 1
-        time_info = get_event_time_info(event)
+            quarantine(
+                event,
+                "zero_amount",
+                "行事曆事件缺少正確金額或服務定價，未入帳。",
+                order_id=order_id,
+                event_date=event_date,
+                severity="error",
+            )
+            continue
 
-        # 從事件標題（summary）提取姓名並清理
-        summary = event.get("summary", "") or ""
-        customer_name = parse_customer_name(summary)
+        # 只讓通過完整會計驗證的事件占用 Order ID；避免第一筆壞資料
+        # 擋掉同一 Order ID 後續的完整事件。
+        if order_id in seen_orders:
+            diagnostics["duplicates"] += 1
+            quarantine(
+                event,
+                "duplicate_order_id",
+                f"Order ID {order_id} 重複，已保留同步範圍內第一筆有效事件。",
+                order_id=order_id,
+                event_date=event_date,
+            )
+            continue
+        seen_orders.add(order_id)
+        time_info = get_event_time_info(event)
 
         if payment_method != "儲值進帳":
             range_revenue += amount
@@ -667,6 +968,8 @@ def sync_calendar(
             "orderId":       order_id,
             "customer_name": customer_name,
             "customerName":  customer_name,  # 前後端相容
+            "customer_id":   customer_id,
+            "customerId":    customer_id,
             "service":       service_text,
             "serviceName":   service_text,
             "category":      category,
@@ -678,7 +981,8 @@ def sync_calendar(
             "calendarStart":  time_info["calendarStart"],
             "calendarEnd":    time_info["calendarEnd"],
             "calendarDurationMinutes": time_info["calendarDurationMinutes"],
-            "actualDurationMinutes":   time_info["calendarDurationMinutes"],
+            # Calendar 只知道排程占用時間；實際施作時間需由現場另行填寫。
+            "actualDurationMinutes":   None,
             "pricingSource": pricing_source,
             "pricingUnmatchedServices": pricing_unmatched_services,
             "serviceConfigUpdatedAt": service_config_updated_at,
@@ -745,6 +1049,8 @@ def sync_calendar(
         ),
         "range_order_count": len(orders),
         "orders":          orders,
+        "issues":          issues,
+        "quarantinedEvents": quarantined_events,
         "cancelledEventIds": cancelled_event_ids,
         "daily_revenue":   daily_revenue,
         "range_daily_revenue": range_daily_revenue,
