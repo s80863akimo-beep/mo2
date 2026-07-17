@@ -9,6 +9,7 @@ const {
   buildPrepaidLedgerUploadBatches,
   buildPrepaidReversalPayload,
   buildServiceMetricDictionary,
+  calculateCustomerOperationKpis,
   calculatePeriodKpis,
   calculateCloseoutTotals,
   planPrepaidLedgerReconciliation,
@@ -770,6 +771,51 @@ function emptyBackup(overrides = {}) {
   assert.equal(grouped.customer_0[0].id, 'ledger_0');
   assert.equal(grouped.customer_0[5].id, 'ledger_5000');
   assert(Object.values(grouped).every(group => group.length <= 6));
+}
+
+{
+  const serviceOrder = (id, customerId, date, amount, overrides = {}) => ({
+    id,
+    customerId,
+    date,
+    amount,
+    paymentMethod: PAYMENT.CASH,
+    serviceName: '剪髮',
+    syncStatus: 'active',
+    ...overrides
+  });
+  const kpis = calculateCustomerOperationKpis([
+    serviceOrder('a0', 'cust_a', '2026-02-01', 100),
+    serviceOrder('a1', 'cust_a', '2026-05-01', 100),
+    serviceOrder('a2', 'cust_a', '2026-06-01', 200),
+    serviceOrder('a3', 'cust_a', '2026-07-01', 300),
+    serviceOrder('a4', 'cust_a', '2026-07-02', 50, { correctionSlip: true }),
+    serviceOrder('b0', 'cust_b', '2026-03-01', 200),
+    serviceOrder('c0', 'cust_c', '2025-12-01', 300),
+    serviceOrder('d0', 'cust_d', '2026-06-15', 400),
+    serviceOrder('e0', 'cust_e', '2026-01-20', 400),
+    serviceOrder('e1', 'cust_e', '2026-05-20', 500),
+    serviceOrder('topup', 'cust_a', '2026-06-10', 1000, { paymentMethod: PAYMENT.PREPAID_TOPUP }),
+    serviceOrder('cancelled', 'cust_b', '2026-06-20', 999, { syncStatus: 'cancelled' })
+  ], '2026-07-17');
+
+  assert.equal(kpis.currentStart, '2026-04-19');
+  assert.equal(kpis.previousStart, '2026-01-19');
+  assert.deepEqual(kpis.returnRate, { value: 67, numerator: 2, denominator: 3 });
+  assert.deepEqual(kpis.fixedCustomerRate, { value: 25, numerator: 1, denominator: 4 });
+  assert.deepEqual(kpis.dormantRate, { value: 20, numerator: 1, denominator: 5 });
+  assert.deepEqual(kpis.returnRevenue, {
+    value: 1150,
+    totalServiceRevenue: 1550,
+    share: 74,
+    customerCount: 2
+  });
+
+  const empty = calculateCustomerOperationKpis([], '2026-07-17');
+  assert.equal(empty.returnRate.value, null);
+  assert.equal(empty.fixedCustomerRate.value, null);
+  assert.equal(empty.dormantRate.value, null);
+  assert.deepEqual(empty.returnRevenue, { value: 0, totalServiceRevenue: 0, share: null, customerCount: 0 });
 }
 
 {

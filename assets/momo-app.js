@@ -1,5 +1,5 @@
     const { createApp, markRaw } = Vue;
-    const APP_VERSION = '2026.07.17-data-correction-1';
+    const APP_VERSION = '2026.07.17-customer-kpis-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -2034,6 +2034,63 @@
             negativeBalanceCount: list.filter(c => c.prepaidBalance < 0).length
           };
         },
+        customerOperationKpis() {
+          const rows = this.accountingOrders
+            .filter(order => order?.customerId
+              && order.customerName
+              && !this.isBlockedSlot(order.customerName))
+            .map(order => ({
+              ...order,
+              customerId: this.resolveMergedCustomerId(order.customerId)
+            }));
+          return MomoCore.calculateCustomerOperationKpis(
+            rows,
+            new Date().toLocaleDateString('sv-SE')
+          );
+        },
+        customerOperationKpiCards() {
+          const kpis = this.customerOperationKpis;
+          const percentText = value => value === null ? '—' : `${value}%`;
+          return [
+            {
+              key: 'return_rate',
+              label: '回流率',
+              value: percentText(kpis.returnRate.value),
+              detail: `${kpis.returnRate.numerator} / ${kpis.returnRate.denominator} 位前期顧客再次到店`,
+              definition: `前 ${kpis.returnWindowDays} 天有到店的顧客中，近 ${kpis.returnWindowDays} 天再次到店`,
+              tone: 'emerald'
+            },
+            {
+              key: 'fixed_customer_rate',
+              label: '固定客比例',
+              value: percentText(kpis.fixedCustomerRate.value),
+              detail: `${kpis.fixedCustomerRate.numerator} / ${kpis.fixedCustomerRate.denominator} 位近期顧客達固定客門檻`,
+              definition: `近 ${kpis.fixedWindowDays} 天至少 ${kpis.fixedVisitCount} 個不同到店日`,
+              tone: 'sky'
+            },
+            {
+              key: 'dormant_rate',
+              label: '沉睡率',
+              value: percentText(kpis.dormantRate.value),
+              detail: `${kpis.dormantRate.numerator} / ${kpis.dormantRate.denominator} 位歷史顧客已沉睡`,
+              definition: `有服務紀錄且最後到店已滿 ${kpis.dormantDays} 天`,
+              tone: 'amber'
+            },
+            {
+              key: 'return_revenue',
+              label: '回流營收',
+              value: `NT$ ${this.formatNumber(kpis.returnRevenue.value)}`,
+              detail: `${kpis.returnRevenue.customerCount} 位回流顧客 · 佔近 ${kpis.returnWindowDays} 天服務營收 ${percentText(kpis.returnRevenue.share)}`,
+              definition: `近 ${kpis.returnWindowDays} 天由本期前已有服務紀錄的顧客貢獻`,
+              tone: 'violet'
+            }
+          ];
+        },
+        customerOperationKpiPeriodLabel() {
+          const kpis = this.customerOperationKpis;
+          const short = value => String(value || '').replace(/-/g, '/');
+          return `${short(kpis.currentStart)}–${short(kpis.asOf)} · 服務業績自動更新`;
+        },
         crmReturnSegments() {
           const list = this.crmList;
           const count = key => list.filter(c => c.returnGroup === key).length;
@@ -3444,18 +3501,25 @@
           const runtimeMonitorCheck = params.get('runtime_monitor_check') === '1';
           const crmObservationCheck = params.get('crm_observation_check') === '1';
           const dataCorrectionCheck = params.get('data_correction_check') === '1';
-          if (!runtimeMonitorCheck && !crmObservationCheck && !dataCorrectionCheck) return false;
-          this.localQaRoute = dataCorrectionCheck ? 'data-correction' : crmObservationCheck ? 'crm-observation' : 'runtime-monitor';
+          const customerKpiCheck = params.get('customer_kpi_check') === '1';
+          if (!runtimeMonitorCheck && !crmObservationCheck && !dataCorrectionCheck && !customerKpiCheck) return false;
+          this.localQaRoute = dataCorrectionCheck
+            ? 'data-correction'
+            : customerKpiCheck
+              ? 'customer-kpis'
+              : crmObservationCheck
+                ? 'crm-observation'
+                : 'runtime-monitor';
           this.showAuthSheet = false;
           if (dataCorrectionCheck) {
             this.activeTab = 'safety';
             this.safetyMaintenanceSection = '';
             this.dataCorrectionFilter = 'all';
-          } else if (crmObservationCheck) {
+          } else if (crmObservationCheck || customerKpiCheck) {
             this.activeTab = 'crm';
             this.crmViewMode = 'customers';
-            this.crmShowInsights = true;
-            this.crmSortMode = 'observation';
+            this.crmShowInsights = crmObservationCheck;
+            this.crmSortMode = crmObservationCheck ? 'observation' : 'lastDate';
           } else {
             this.activeTab = 'safety';
             this.safetyMaintenanceSection = 'maintenance';

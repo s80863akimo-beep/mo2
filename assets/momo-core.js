@@ -1210,6 +1210,116 @@
     return new Date(epoch + Math.max(0, Number(days) || 0) * 86400000).toISOString().slice(0, 10);
   }
 
+  function crmShiftDays(date, days) {
+    const epoch = crmDateEpoch(date);
+    if (epoch === null) return '';
+    return new Date(epoch + (Number(days) || 0) * 86400000).toISOString().slice(0, 10);
+  }
+
+  function calculateCustomerOperationKpis(orders = [], todayDate = '', options = {}) {
+    const today = crmDateEpoch(todayDate) === null
+      ? new Date().toISOString().slice(0, 10)
+      : String(todayDate);
+    const returnWindowDays = Math.max(1, Math.round(Number(options.returnWindowDays) || 90));
+    const fixedWindowDays = Math.max(returnWindowDays, Math.round(Number(options.fixedWindowDays) || 180));
+    const dormantDays = Math.max(1, Math.round(Number(options.dormantDays) || 180));
+    const fixedVisitCount = Math.max(2, Math.round(Number(options.fixedVisitCount) || 3));
+    const currentStart = crmShiftDays(today, -(returnWindowDays - 1));
+    const previousEnd = crmShiftDays(currentStart, -1);
+    const previousStart = crmShiftDays(currentStart, -returnWindowDays);
+    const fixedStart = crmShiftDays(today, -(fixedWindowDays - 1));
+    const percent = (numerator, denominator) => denominator > 0
+      ? Math.round(numerator / denominator * 100)
+      : null;
+    const inRange = (date, start, end) => date >= start && date <= end;
+
+    const serviceOrders = (Array.isArray(orders) ? orders : [])
+      .filter(order => order && isOrderActive(order)
+        && order.paymentMethod !== PAYMENT.PREPAID_TOPUP
+        && String(order.customerId || '').trim()
+        && crmDateEpoch(order.date) !== null
+        && String(order.date) <= today)
+      .map(order => ({
+        ...order,
+        customerId: String(order.customerId).trim(),
+        date: String(order.date),
+        amount: Number(order.amount) || 0
+      }));
+    const visits = serviceOrders.filter(order => !isCorrectionSlip(order));
+    const visitDatesByCustomer = new Map();
+    visits.forEach(order => {
+      if (!visitDatesByCustomer.has(order.customerId)) visitDatesByCustomer.set(order.customerId, new Set());
+      visitDatesByCustomer.get(order.customerId).add(order.date);
+    });
+
+    const customersInRange = (start, end) => {
+      const ids = new Set();
+      visits.forEach(order => {
+        if (inRange(order.date, start, end)) ids.add(order.customerId);
+      });
+      return ids;
+    };
+    const previousCustomers = customersInRange(previousStart, previousEnd);
+    const currentCustomers = customersInRange(currentStart, today);
+    const returnedCustomers = new Set([...previousCustomers].filter(customerId => currentCustomers.has(customerId)));
+
+    const fixedActiveCustomers = customersInRange(fixedStart, today);
+    const fixedCustomers = new Set([...fixedActiveCustomers].filter(customerId => {
+      const dates = visitDatesByCustomer.get(customerId) || new Set();
+      return [...dates].filter(date => inRange(date, fixedStart, today)).length >= fixedVisitCount;
+    }));
+
+    const historicalCustomers = new Set(visitDatesByCustomer.keys());
+    const dormantCustomers = new Set([...historicalCustomers].filter(customerId => {
+      const dates = [...(visitDatesByCustomer.get(customerId) || [])].sort();
+      const lastDate = dates[dates.length - 1] || '';
+      return lastDate && crmDateDiffDays(today, lastDate) >= dormantDays;
+    }));
+
+    const priorCustomers = new Set();
+    visits.forEach(order => {
+      if (order.date < currentStart) priorCustomers.add(order.customerId);
+    });
+    const currentRevenueRows = serviceOrders.filter(order => inRange(order.date, currentStart, today));
+    const totalServiceRevenue = Math.round(currentRevenueRows.reduce((sum, order) => sum + order.amount, 0));
+    const returningRevenueRows = currentRevenueRows.filter(order => priorCustomers.has(order.customerId));
+    const returnRevenue = Math.round(returningRevenueRows.reduce((sum, order) => sum + order.amount, 0));
+    const revenueReturningCustomers = new Set(returningRevenueRows.map(order => order.customerId));
+
+    return {
+      asOf: today,
+      returnWindowDays,
+      fixedWindowDays,
+      dormantDays,
+      fixedVisitCount,
+      currentStart,
+      previousStart,
+      previousEnd,
+      fixedStart,
+      returnRate: {
+        value: percent(returnedCustomers.size, previousCustomers.size),
+        numerator: returnedCustomers.size,
+        denominator: previousCustomers.size
+      },
+      fixedCustomerRate: {
+        value: percent(fixedCustomers.size, fixedActiveCustomers.size),
+        numerator: fixedCustomers.size,
+        denominator: fixedActiveCustomers.size
+      },
+      dormantRate: {
+        value: percent(dormantCustomers.size, historicalCustomers.size),
+        numerator: dormantCustomers.size,
+        denominator: historicalCustomers.size
+      },
+      returnRevenue: {
+        value: returnRevenue,
+        totalServiceRevenue,
+        share: percent(returnRevenue, totalServiceRevenue),
+        customerCount: revenueReturningCustomers.size
+      }
+    };
+  }
+
   function matchingCrmServiceCycles(serviceName = '') {
     const text = String(serviceName || '').trim();
     const matches = CRM_SERVICE_CYCLES.filter(cycle => cycle.pattern.test(text));
@@ -1481,6 +1591,7 @@
     evaluatePwaReloadGuard,
     shouldRetryCalendarSync,
     groupRecentRowsByCustomer,
+    calculateCustomerOperationKpis,
     classifyCrmServiceCycle,
     buildCrmServiceObservations,
     calculateCrmSpendTrend,
