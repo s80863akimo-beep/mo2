@@ -1,5 +1,7 @@
-const CACHE_NAME = 'momohair-shell-v121-report-safety-list-density';
-const APP_VERSION = '2026.07.17-report-safety-list-density-1';
+const APP_VERSION = '2026.07.17-ledger-calendar-integrity-1';
+// Cache identity is derived from the release identity so a failed install can
+// never partially overwrite the currently active app shell.
+const CACHE_NAME = `momohair-shell-${APP_VERSION}`;
 const APP_SHELL = [
   '/',
   `/assets/tailwind.css?v=${APP_VERSION}`,
@@ -13,6 +15,7 @@ const APP_SHELL = [
   '/icons/apple-touch-icon.png',
   '/icons/momo-logo-mark.png'
 ];
+const APP_SHELL_PATHS = new Set(APP_SHELL.map((url) => new URL(url, self.location.origin).pathname));
 
 async function isValidAppShellResponse(response) {
   if (!response || !response.ok) return false;
@@ -24,6 +27,18 @@ async function isValidAppShellResponse(response) {
   } catch (error) {
     return false;
   }
+}
+
+async function isValidShellAssetResponse(url, response) {
+  if (!response || !response.ok) return false;
+  const pathname = new URL(url, self.location.origin).pathname;
+  if (pathname === '/') return isValidAppShellResponse(response);
+  const contentType = (response.headers.get('content-type') || '').toLowerCase();
+  if (pathname.endsWith('.js')) return contentType.includes('javascript');
+  if (pathname.endsWith('.css')) return contentType.includes('text/css');
+  if (pathname.endsWith('.webmanifest')) return contentType.includes('json') || contentType.includes('manifest');
+  if (/\.(?:png|jpg|jpeg|webp|svg)$/.test(pathname)) return contentType.startsWith('image/');
+  return true;
 }
 
 async function fetchAndUpdateAppShell(request) {
@@ -39,18 +54,23 @@ self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then(async (cache) => {
     await Promise.all(APP_SHELL.map(async (url) => {
       const response = await fetch(url, { cache: 'reload' });
-      if (response.ok) await cache.put(url, response);
+      if (!await isValidShellAssetResponse(url, response)) {
+        throw new Error(`Invalid app shell response: ${url}`);
+      }
+      await cache.put(url, response);
     }));
   }));
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(
-      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-    ))
+    Promise.all([
+      caches.keys().then((keys) => Promise.all(
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+      )),
+      self.clients.claim()
+    ])
   );
-  self.clients.claim();
 });
 
 self.addEventListener('message', (event) => {
@@ -78,28 +98,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname === '/assets/tailwind.css') {
+  if (APP_SHELL_PATHS.has(url.pathname) && url.pathname !== '/') {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        const networkUpdate = fetch(request, { cache: 'reload' }).then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)));
+      (async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        const previousVersion = await caches.match(url.pathname, { ignoreSearch: true });
+        try {
+          const response = await fetch(request, { cache: 'reload' });
+          if (!await isValidShellAssetResponse(request.url, response.clone())) {
+            throw new Error(`Invalid shell asset response: ${url.pathname}`);
           }
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put(request, response.clone());
           return response;
-        }).catch(() => null);
-        event.waitUntil(networkUpdate);
-        return cached || networkUpdate;
-      })
+        } catch (error) {
+          return previousVersion || Response.error();
+        }
+      })()
     );
     return;
   }
 
   event.respondWith(
-    caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+    caches.match(request).then((cached) => cached || fetch(request).then(async (response) => {
       if (response.ok) {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(request, response.clone());
       }
       return response;
     }))

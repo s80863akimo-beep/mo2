@@ -4,18 +4,31 @@ const MomoCore = require('../assets/momo-core.js');
 const {
   PAYMENT,
   buildLockedOrderCorrectionLines,
+  buildOrderPrepaidDateAdjustments,
+  buildPrepaidLedgerUploadBatches,
   buildPrepaidReversalPayload,
+  buildServiceMetricDictionary,
+  calculatePeriodKpis,
+  planPrepaidLedgerReconciliation,
+  calculateEffectiveTimeYield,
   canReversePrepaidEntry,
+  cloneJsonValue,
   evaluatePwaReloadGuard,
   getMixedCashAmount,
   getMixedPrepaidAmount,
   getOrderPrepaidBucket,
   getOrderPrepaidTarget,
   isCorrectionSlip,
+  isFiniteNumericInput,
+  isValidISODate,
+  normalizeServiceName,
   orderMoneyVector,
   prepaidEntryReversed,
   prepaidKindForTarget,
-  shouldRetryCalendarSync
+  resolveServiceMetric,
+  resolveEffectiveMinutes,
+  shouldRetryCalendarSync,
+  validateAndNormalizeBackupPayload
 } = MomoCore;
 
 function baseOrder(overrides = {}) {
@@ -29,6 +42,21 @@ function baseOrder(overrides = {}) {
     amount: 1000,
     paymentMethod: PAYMENT.CASH,
     syncStatus: 'active',
+    ...overrides
+  };
+}
+
+function emptyBackup(overrides = {}) {
+  return {
+    schemaVersion: 3,
+    momo_orders: [],
+    momo_expenses: [],
+    momo_inventory: [],
+    momo_customers: [],
+    momo_prepaidLedger: [],
+    momo_crmNotes: {},
+    momo_crmFormulas: {},
+    momo_closeoutRecords: {},
     ...overrides
   };
 }
@@ -78,7 +106,7 @@ function baseOrder(overrides = {}) {
   assert.equal(isCorrectionSlip(topupRefund), true);
   assert.equal(getOrderPrepaidBucket(topupRefund), 'topup');
   assert.equal(getOrderPrepaidTarget(topupRefund), -500);
-  assert.equal(prepaidKindForTarget(-500, 'topup'), 'reversal');
+  assert.equal(prepaidKindForTarget(-500, 'topup'), 'adjustment');
 }
 
 {
@@ -127,6 +155,431 @@ function baseOrder(overrides = {}) {
   );
   assert.equal(prepaidEntryReversed(reversedLedger, entry), true);
   assert.equal(canReversePrepaidEntry(reversedLedger, entry), false);
+}
+
+{
+  const orderLinkedEntry = {
+    id: 'txn_order_1',
+    customerId: 'cust_a',
+    sourceOrderId: 'ord_1',
+    signedAmount: -800,
+    kind: 'debit',
+    bucket: 'debit',
+    date: '2026-07-02'
+  };
+
+  assert.equal(canReversePrepaidEntry([orderLinkedEntry], orderLinkedEntry), false);
+  assert.equal(buildPrepaidReversalPayload(orderLinkedEntry, '2026-07-06'), null);
+
+  const systemTransfer = {
+    ...orderLinkedEntry,
+    id: 'txn_transfer_1',
+    sourceOrderId: null,
+    systemManaged: true,
+    transferGroupId: 'xfer_1',
+    note: '顧客合併轉移：A → B'
+  };
+  assert.equal(buildPrepaidReversalPayload(systemTransfer, '2026-07-06'), null);
+}
+
+{
+  const existingRows = Array.from({ length: 199 }, (_, index) => ({ id: `txn_${index}` }));
+  const transferPair = [
+    { id: 'txn_transfer_a', transfer_group_id: 'xfer_boundary' },
+    { id: 'txn_transfer_b', transfer_group_id: 'xfer_boundary' }
+  ];
+  const batches = buildPrepaidLedgerUploadBatches([...existingRows, ...transferPair], 200);
+  assert.deepEqual(batches.map(batch => batch.length), [199, 2]);
+  assert.deepEqual(batches[1].map(row => row.id), ['txn_transfer_a', 'txn_transfer_b']);
+
+  const reversalFirst = buildPrepaidLedgerUploadBatches([
+    { id: 'txn_reversal', reversal_of_entry_id: 'txn_original' },
+    { id: 'txn_original' }
+  ], 200).flat();
+  assert.deepEqual(reversalFirst.map(row => row.id), ['txn_original', 'txn_reversal']);
+}
+
+{
+  const entry = {
+    id: 'txn_legacy',
+    customerId: 'cust_a',
+    signedAmount: 500,
+    kind: 'topup',
+    date: '2026-07-01'
+  };
+  const ledger = [
+    entry,
+    { id: 'txn_legacy_reversal', kind: 'reversal', signedAmount: -500, note: '手動沖銷:txn_legacy｜原日 2026-07-01' }
+  ];
+
+  assert.equal(prepaidEntryReversed(ledger, entry), true);
+  assert.equal(canReversePrepaidEntry(ledger, entry), false);
+}
+
+{
+  const movedOrder = baseOrder({
+    id: 'ord_move',
+    date: '2026-08-01',
+    paymentMethod: PAYMENT.PREPAID_TOPUP,
+    amount: 1000
+  });
+  const existing = [{
+    id: 'txn_old_date',
+    sourceOrderId: 'ord_move',
+    customerId: 'cust_a',
+    signedAmount: 1000,
+    kind: 'topup',
+    bucket: 'topup',
+    date: '2026-07-31'
+  }];
+  const adjustments = buildOrderPrepaidDateAdjustments(movedOrder, existing);
+
+  assert.deepEqual(adjustments.map(entry => [entry.date, entry.signedAmount, entry.kind]), [
+    ['2026-07-31', -1000, 'adjustment'],
+    ['2026-08-01', 1000, 'topup']
+  ]);
+  assert.deepEqual(buildOrderPrepaidDateAdjustments(movedOrder, [...existing, ...adjustments]), []);
+}
+
+{
+  const switchedOrder = baseOrder({
+    id: 'ord_switch',
+    date: '2026-07-20',
+    paymentMethod: PAYMENT.PREPAID_DEBIT,
+    amount: 1000
+  });
+  const oldTopup = [{
+    id: 'txn_switch_old',
+    sourceOrderId: 'ord_switch',
+    customerId: 'cust_a',
+    signedAmount: 1000,
+    kind: 'topup',
+    bucket: 'topup',
+    date: '2026-07-20'
+  }];
+  const planned = planPrepaidLedgerReconciliation([switchedOrder], oldTopup, {
+    today: '2026-07-20',
+    accountingOrderIds: ['ord_switch']
+  });
+
+  assert.deepEqual(planned.map(entry => [entry.bucket, entry.signedAmount, entry.kind]), [
+    ['topup', -1000, 'adjustment'],
+    ['debit', -1000, 'debit']
+  ]);
+  assert.deepEqual(planPrepaidLedgerReconciliation([switchedOrder], [...oldTopup, ...planned], {
+    today: '2026-07-20',
+    accountingOrderIds: ['ord_switch']
+  }), []);
+}
+
+{
+  const movedCustomerOrder = baseOrder({
+    id: 'ord_customer_move',
+    customerId: 'cust_b',
+    date: '2026-08-02',
+    paymentMethod: PAYMENT.PREPAID_TOPUP,
+    amount: 800
+  });
+  const prior = [{
+    id: 'txn_customer_old',
+    sourceOrderId: 'ord_customer_move',
+    customerId: 'cust_a',
+    signedAmount: 800,
+    kind: 'topup',
+    bucket: 'topup',
+    date: '2026-08-01'
+  }];
+  const planned = planPrepaidLedgerReconciliation([movedCustomerOrder], prior, {
+    today: '2026-08-02',
+    accountingOrderIds: ['ord_customer_move']
+  });
+  assert.deepEqual(planned.map(entry => [entry.customerId, entry.date, entry.signedAmount]), [
+    ['cust_a', '2026-08-01', -800],
+    ['cust_b', '2026-08-02', 800]
+  ]);
+
+  const orphanPlan = planPrepaidLedgerReconciliation([], prior, { today: '2026-08-02' });
+  assert.deepEqual(orphanPlan.map(entry => [entry.date, entry.signedAmount, entry.kind]), [
+    ['2026-08-01', -800, 'adjustment']
+  ]);
+}
+
+{
+  const mergedOrder = baseOrder({
+    id: 'ord_merged_customer',
+    customerId: 'cust_a',
+    paymentMethod: PAYMENT.PREPAID_DEBIT,
+    amount: 1000
+  });
+  const ledger = [
+    { id: 'txn_original', sourceOrderId: mergedOrder.id, customerId: 'cust_a', signedAmount: -1000, kind: 'debit', bucket: 'debit', date: mergedOrder.date },
+    { id: 'txn_xfer_out', sourceOrderId: mergedOrder.id, customerId: 'cust_a', signedAmount: 1000, kind: 'adjustment', bucket: 'debit', date: mergedOrder.date, transferGroupId: 'xfer_1', systemManaged: true },
+    { id: 'txn_xfer_in', sourceOrderId: mergedOrder.id, customerId: 'cust_b', signedAmount: -1000, kind: 'adjustment', bucket: 'debit', date: mergedOrder.date, transferGroupId: 'xfer_1', systemManaged: true }
+  ];
+  const planned = planPrepaidLedgerReconciliation([mergedOrder], ledger, {
+    today: mergedOrder.date,
+    accountingOrderIds: [mergedOrder.id],
+    resolveCustomerId: customerId => customerId === 'cust_a' ? 'cust_b' : customerId
+  });
+  assert.deepEqual(planned, []);
+}
+
+{
+  const durationDictionary = buildServiceMetricDictionary([
+    { name: '洗 + 剪', duration: 90 },
+    { name: '染', duration: 120 },
+    { name: '護', duration: 45 }
+  ], 'duration');
+  assert.equal(normalizeServiceName(' 洗 ＋ 剪 '), '洗+剪');
+  assert.equal(resolveServiceMetric('洗＋剪', durationDictionary), 90);
+  assert.equal(resolveServiceMetric('染 + 護', durationDictionary), 165);
+
+  const kpis = calculatePeriodKpis([
+    baseOrder({ id: 'ord_service', amount: 1000 }),
+    baseOrder({ id: 'ord_correction', correctionSlip: true, amount: -200 }),
+    baseOrder({ id: 'ord_topup', paymentMethod: PAYMENT.PREPAID_TOPUP, amount: 3000 })
+  ], [{ amount: 100 }]);
+  assert.deepEqual(kpis, {
+    revenue: 800,
+    ordersCount: 1,
+    aov: 800,
+    momoSalary: 360,
+    netProfit: 700
+  });
+}
+
+{
+  assert.deepEqual(resolveEffectiveMinutes(75, 90), { effectiveMinutes: 75, source: 'actual' });
+  assert.deepEqual(resolveEffectiveMinutes(null, 90), { effectiveMinutes: 90, source: 'standard' });
+  assert.deepEqual(resolveEffectiveMinutes(0, null), { effectiveMinutes: 0, source: 'missing' });
+
+  const summary = calculateEffectiveTimeYield([
+    { amount: 1000, actualMinutes: 60, standardMinutes: 90 },
+    { amount: 1000, actualMinutes: null, standardMinutes: 60 },
+    { amount: 500, actualMinutes: null, standardMinutes: null }
+  ]);
+  assert.equal(summary.totalAmount, 2500);
+  assert.equal(summary.coveredAmount, 2000);
+  assert.equal(summary.uncoveredAmount, 500);
+  assert.equal(summary.effectiveMinutes, 120);
+  assert.equal(summary.hourlyYield, 1000);
+  assert.equal(summary.mode, 'mixed');
+  assert.equal(summary.actualCount, 1);
+  assert.equal(summary.standardCount, 1);
+  assert.equal(summary.missingCount, 1);
+}
+
+{
+  const backup = {
+    schemaVersion: 2,
+    createdAt: '2026-07-06T12:00:00.000Z',
+    momo_orders: [{
+      id: 'ord_1',
+      date: '2026-07-06',
+      customerId: 'cust_a',
+      customerName: 'Customer A',
+      serviceName: 'Color',
+      amount: 1000,
+      paymentMethod: PAYMENT.CASH
+    }],
+    momo_expenses: [],
+    momo_inventory: [],
+    momo_customers: [{ id: 'cust_a', name: 'Customer A' }],
+    momo_prepaidLedger: [],
+    momo_crmNotes: { cust_a: 'prefers quiet appointments' },
+    momo_crmFormulas: {},
+    momo_closeoutRecords: {},
+    momo_servicesConfig: [{ name: 'Color', duration: 120, price: 1000 }],
+    momo_operationLogs: []
+  };
+  const result = validateAndNormalizeBackupPayload(backup, { currentSchemaVersion: 2 });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.servicesIncluded, true);
+  assert.notEqual(result.data, backup);
+  backup.momo_orders[0].amount = 9999;
+  assert.equal(result.data.momo_orders[0].amount, 1000);
+  assert.deepEqual(cloneJsonValue({ nested: [1, 2] }), { nested: [1, 2] });
+
+  const withoutOptionalFields = validateAndNormalizeBackupPayload({
+    schemaVersion: 2,
+    momo_orders: [],
+    momo_expenses: [],
+    momo_inventory: [],
+    momo_customers: [],
+    momo_prepaidLedger: [],
+    momo_crmNotes: {}
+  }, { currentSchemaVersion: 2 });
+  assert.equal(withoutOptionalFields.ok, true);
+  assert.equal(withoutOptionalFields.servicesIncluded, false);
+}
+
+{
+  const invalidBackup = {
+    schemaVersion: 2,
+    momo_orders: {},
+    momo_expenses: [],
+    momo_inventory: [],
+    momo_customers: [],
+    momo_prepaidLedger: [],
+    momo_crmNotes: {}
+  };
+  const invalidResult = validateAndNormalizeBackupPayload(invalidBackup, { currentSchemaVersion: 2 });
+  const missingVersion = validateAndNormalizeBackupPayload({
+    ...invalidBackup,
+    schemaVersion: undefined,
+    momo_orders: []
+  }, { currentSchemaVersion: 2 });
+  const futureVersion = validateAndNormalizeBackupPayload({
+    ...invalidBackup,
+    schemaVersion: 3,
+    momo_orders: []
+  }, { currentSchemaVersion: 2 });
+  const invalidOptionalField = validateAndNormalizeBackupPayload({
+    ...invalidBackup,
+    momo_orders: [],
+    momo_servicesConfig: {}
+  }, { currentSchemaVersion: 2 });
+
+  assert.equal(invalidResult.ok, false);
+  assert(invalidResult.errors.some(message => message.includes('momo_orders')));
+  assert.equal(missingVersion.ok, false);
+  assert(missingVersion.errors.some(message => message.includes('schemaVersion')));
+  assert.equal(futureVersion.ok, false);
+  assert(futureVersion.errors.some(message => message.includes('高於系統支援')));
+  assert.equal(invalidOptionalField.ok, false);
+  assert(invalidOptionalField.errors.some(message => message.includes('momo_servicesConfig')));
+
+  const invalidSemanticRow = validateAndNormalizeBackupPayload({
+    schemaVersion: 3,
+    momo_orders: [{}],
+    momo_expenses: [],
+    momo_inventory: [],
+    momo_customers: [],
+    momo_prepaidLedger: [],
+    momo_crmNotes: {}
+  }, { currentSchemaVersion: 3 });
+  assert.equal(invalidSemanticRow.ok, false);
+  assert(invalidSemanticRow.errors.some(message => message.includes('momo_orders[0]')));
+
+  const cyclicCustomers = validateAndNormalizeBackupPayload({
+    schemaVersion: 3,
+    momo_orders: [],
+    momo_expenses: [],
+    momo_inventory: [],
+    momo_customers: [
+      { id: 'a', name: 'A', mergedIntoCustomerId: 'b', archivedAt: '2026-07-01T00:00:00Z' },
+      { id: 'b', name: 'B', mergedIntoCustomerId: 'a', archivedAt: '2026-07-01T00:00:00Z' }
+    ],
+    momo_prepaidLedger: [],
+    momo_crmNotes: {}
+  }, { currentSchemaVersion: 3 });
+  assert.equal(cyclicCustomers.ok, false);
+  assert(cyclicCustomers.errors.some(message => message.includes('循環')));
+}
+
+{
+  assert.equal(isValidISODate('2026-02-30'), false);
+  assert.equal(isValidISODate('2026-02-28'), true);
+  assert.equal(isFiniteNumericInput(null), false);
+  assert.equal(isFiniteNumericInput('  '), false);
+
+  const customer = { id: 'cust_a', name: 'Customer A' };
+  const invalidDate = validateAndNormalizeBackupPayload(emptyBackup({
+    momo_customers: [customer],
+    momo_orders: [baseOrder({ date: '2026-02-30' })]
+  }), { currentSchemaVersion: 3 });
+  assert.equal(invalidDate.ok, false);
+  assert(invalidDate.errors.some(message => message.includes('日期格式')));
+
+  const nullAmount = validateAndNormalizeBackupPayload(emptyBackup({
+    momo_customers: [customer],
+    momo_orders: [baseOrder({ amount: null })]
+  }), { currentSchemaVersion: 3 });
+  assert.equal(nullAmount.ok, false);
+  assert(nullAmount.errors.some(message => message.includes('金額格式')));
+
+  const topupWithoutChannel = validateAndNormalizeBackupPayload(emptyBackup({
+    momo_customers: [customer],
+    momo_orders: [baseOrder({ paymentMethod: PAYMENT.PREPAID_TOPUP, topupChannel: null })]
+  }), { currentSchemaVersion: 3 });
+  assert.equal(topupWithoutChannel.ok, false);
+  assert(topupWithoutChannel.errors.some(message => message.includes('儲值收款方式')));
+
+  const archivedTerminal = validateAndNormalizeBackupPayload(emptyBackup({
+    momo_customers: [
+      { id: 'cust_a', name: 'A', mergedIntoCustomerId: 'cust_b', archivedAt: '2026-07-01T00:00:00Z' },
+      { id: 'cust_b', name: 'B', archivedAt: '2026-07-02T00:00:00Z' }
+    ]
+  }), { currentSchemaVersion: 3 });
+  assert.equal(archivedTerminal.ok, false);
+  assert(archivedTerminal.errors.some(message => message.includes('鏈終點')));
+
+  const invalidArchivedAt = validateAndNormalizeBackupPayload(emptyBackup({
+    momo_customers: [
+      { id: 'cust_a', name: 'A', mergedIntoCustomerId: 'cust_b', archivedAt: 'not-a-time' },
+      { id: 'cust_b', name: 'B' }
+    ]
+  }), { currentSchemaVersion: 3 });
+  assert.equal(invalidArchivedAt.ok, false);
+  assert(invalidArchivedAt.errors.some(message => message.includes('封存時間')));
+
+  const validHistoricalChain = validateAndNormalizeBackupPayload(emptyBackup({
+    momo_customers: [
+      { id: 'cust_a', name: 'A', mergedIntoCustomerId: 'cust_b', archivedAt: '2026-07-01T00:00:00Z' },
+      { id: 'cust_b', name: 'B', mergedIntoCustomerId: 'cust_c', archivedAt: '2026-07-02T00:00:00Z' },
+      { id: 'cust_c', name: 'C' }
+    ]
+  }), { currentSchemaVersion: 3 });
+  assert.equal(validHistoricalChain.ok, true);
+
+  const fractionalMoney = validateAndNormalizeBackupPayload(emptyBackup({
+    momo_customers: [customer],
+    momo_orders: [baseOrder({ amount: 1000.5 })]
+  }), { currentSchemaVersion: 3 });
+  assert.equal(fractionalMoney.ok, false);
+  assert(fractionalMoney.errors.some(message => message.includes('安全整數')));
+
+  const invalidCloseout = validateAndNormalizeBackupPayload(emptyBackup({
+    momo_closeoutRecords: {
+      '2026-07-01': {
+        date: '2026-07-02',
+        expectedCash: 100,
+        countedCash: 100,
+        difference: 0,
+        cash: 100,
+        transfer: 0,
+        prepaidOut: 0,
+        prepaidIn: 0,
+        cashPrepaidIn: 0,
+        transferPrepaidIn: 0,
+        serviceRevenue: 100,
+        expenses: 0,
+        netProfit: 100,
+        ordersCount: 1,
+        completedAt: 'not-a-time'
+      }
+    }
+  }), { currentSchemaVersion: 3 });
+  assert.equal(invalidCloseout.ok, false);
+  assert(invalidCloseout.errors.some(message => message.includes('日期關聯')));
+  assert(invalidCloseout.errors.some(message => message.includes('completedAt')));
+
+  const originalLedger = {
+    id: 'txn_manual', customerId: 'cust_a', signedAmount: 500, kind: 'topup', bucket: 'topup', date: '2026-07-01'
+  };
+  const invalidSystemReversal = validateAndNormalizeBackupPayload(emptyBackup({
+    momo_customers: [customer],
+    momo_prepaidLedger: [
+      originalLedger,
+      {
+        id: 'txn_reversal', customerId: 'cust_a', signedAmount: -500, kind: 'reversal', bucket: 'topup',
+        date: '2026-07-02', reversalOfEntryId: 'txn_manual', systemManaged: true
+      }
+    ]
+  }), { currentSchemaVersion: 3 });
+  assert.equal(invalidSystemReversal.ok, false);
+  assert(invalidSystemReversal.errors.some(message => message.includes('未完整反向沖銷')));
 }
 
 {

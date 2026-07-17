@@ -1,5 +1,5 @@
-fastapi
-uvicorn[standard]
-google-api-python-client
-python-dotenv
-httpx
+fastapi==0.133.1
+uvicorn[standard]==0.41.0
+google-api-python-client==2.194.0
+python-dotenv==1.2.2
+httpx==0.28.1

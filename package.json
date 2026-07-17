@@ -1,7 +1,10 @@
 {
   "scripts": {
     "build:css": "tailwindcss -i ./src/tailwind.css -o ./assets/tailwind.css --minify",
-    "test": "node tests/momo-core.test.js"
+    "check:js": "node --check assets/momo-core.js && node --check assets/momo-app.js && node --check service-worker.js",
+    "test:js": "node tests/momo-core.test.js",
+    "test:py": "python -m unittest discover -s tests -p \"test*.py\" -v",
+    "test": "npm run check:js && npm run test:js && npm run test:py"
   },
   "devDependencies": {
     "tailwindcss": "3.4.17"
