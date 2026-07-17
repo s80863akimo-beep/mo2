@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.17-ledger-calendar-integrity-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.17-memory-stability-1">
 
   <!-- Vue 3 Global Build (local copy for reliable PWA startup) -->
-  <script src="/assets/vue.global.prod.js?v=2026.07.17-ledger-calendar-integrity-1"></script>
+  <script src="/assets/vue.global.prod.js?v=2026.07.17-memory-stability-1"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.17-ledger-calendar-integrity-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.17-memory-stability-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -617,7 +617,7 @@
               </div>
               <div class="p-4 sm:p-5">
                 <div class="text-[10px] font-black text-slate-400 tracking-wider">今日應有現金</div>
-                <div class="mt-1 text-2xl font-black text-slate-800">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div>
+                <div class="mt-1 text-2xl font-black text-slate-800">NT$ {{ formatNumber(todayCloseout.expectedCash) }}</div>
                 <p class="text-[10px] text-slate-400 font-semibold mt-1">現金服務 + 現金儲值</p>
               </div>
               <div class="p-4 sm:p-5">
@@ -681,7 +681,7 @@
                 <h2 class="text-base sm:text-xl font-black text-slate-800 flex items-center gap-2">
                   每日打烊對帳
                 </h2>
-                <p class="text-[10px] sm:text-xs text-slate-400 font-bold mt-1">可選日期補打烊，自動拆成現金、儲值扣款、儲值進帳與應有現金</p>
+                <p class="text-[10px] sm:text-xs text-slate-400 font-bold mt-1">可選日期補打烊，應有現金會納入開店零用金、現金收入與抽屜支出</p>
               </div>
               <div class="text-left sm:text-right">
                 <div class="text-[10px] font-black text-slate-400">{{ selectedCloseoutDateLabel }} 工作室淨利</div>
@@ -692,7 +692,11 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-2.5 p-4 sm:p-6">
+            <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2.5 p-4 sm:p-6">
+              <div class="rounded-2xl bg-amber-50/60 border border-amber-100 p-3">
+                <div class="text-[10px] font-black text-slate-400">開店零用金</div>
+                <div class="text-lg font-black text-amber-700 mt-1">NT$ {{ formatNumber(selectedCloseout.openingCash) }}</div>
+              </div>
               <div class="rounded-2xl bg-orange-50/50 border border-orange-100/50 p-3">
                 <div class="text-[10px] font-black text-slate-400">現金收入</div>
                 <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(selectedCloseout.cash) }}</div>
@@ -713,13 +717,19 @@
               <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3">
                 <div class="text-[10px] font-black text-slate-400">選定日支出</div>
                 <div class="text-lg font-black text-slate-800 mt-1">NT$ {{ formatNumber(selectedCloseout.expenses) }}</div>
+                <div class="text-[9px] font-bold text-rose-500 mt-1">抽屜支付 {{ formatNumber(selectedCloseout.cashExpenses) }}</div>
               </div>
             </div>
 
-            <div class="px-4 sm:px-6 pb-4 grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2.5 items-end">
+            <div class="px-4 sm:px-6 pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 items-end">
               <label class="block">
                 <span class="block text-[10px] font-black text-slate-400 mb-1">打烊日期</span>
                 <input type="date" v-model="closeoutDate" @change="loadCloseoutFormForDate" class="jelly-input w-full min-h-[44px] rounded-2xl border border-orange-100 bg-white px-4 text-sm font-black text-slate-700">
+              </label>
+              <label class="block">
+                <span class="block text-[10px] font-black text-slate-400 mb-1">開店零用金</span>
+                <input type="number" inputmode="numeric" min="0" v-model.number="closeoutOpeningCash" placeholder="例如：2,000"
+                       class="jelly-input w-full min-h-[44px] rounded-2xl border border-amber-100 bg-amber-50/30 px-4 text-sm font-black text-slate-700">
               </label>
               <label class="block">
                 <span class="block text-[10px] font-black text-slate-400 mb-1">實際盤點現金</span>
@@ -751,7 +761,7 @@
               <div class="rounded-3xl bg-slate-900 text-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <div class="text-[10px] font-black text-white/50 tracking-wider">{{ selectedCloseoutDateLabel }} 應有現金</div>
-                  <div class="text-2xl font-black mt-1">NT$ {{ formatNumber(selectedCloseout.actualCashIn) }}</div>
+                  <div class="text-2xl font-black mt-1">NT$ {{ formatNumber(selectedCloseout.expectedCash) }}</div>
                   <p class="text-[10px] text-white/50 font-semibold mt-1">只含現金服務與現金儲值，不含轉帳及儲值扣款</p>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-right">
@@ -1078,8 +1088,8 @@
                 </div>
                 <div class="momo-metric-cell momo-page-metric today-metric-card today-metric-card--cash rounded-2xl bg-white border border-slate-200 p-3">
                   <div class="text-[10px] font-black text-slate-400">應有現金</div>
-                  <div class="today-metric-value text-xl sm:text-2xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.actualCashIn) }}</div>
-                  <div class="text-[10px] font-bold text-slate-400 mt-1">現金 + 現金儲值</div>
+                  <div class="today-metric-value text-xl sm:text-2xl font-black text-slate-800 mt-1">NT$ {{ formatNumber(todayCloseout.expectedCash) }}</div>
+                  <div class="text-[10px] font-bold text-slate-400 mt-1">零用金＋現金收入－抽屜支出</div>
                 </div>
                 <div class="momo-metric-cell momo-page-metric today-metric-card today-metric-card--expense rounded-2xl bg-white border border-slate-200 p-3">
                   <div class="text-[10px] font-black text-slate-400">今日支出</div>
@@ -1195,12 +1205,13 @@
                 </div>
                 <div class="momo-dialog-body momo-form-body daily-form-body closeout-sheet-body ios-sheet-body p-4 space-y-4 max-h-[75vh] overflow-y-auto">
                   <label class="momo-form-field daily-form-field block"><span class="momo-form-label daily-form-label block text-[10px] font-black text-slate-400 mb-1">打烊日期</span><input type="date" v-model="closeoutDate" @change="loadCloseoutFormForDate" class="jelly-input w-full min-h-[46px] rounded-xl border border-slate-200 px-4 text-sm font-black"></label>
+                  <label class="momo-form-field daily-form-field block"><span class="momo-form-label daily-form-label block text-[10px] font-black text-slate-400 mb-1">開店零用金</span><input type="number" inputmode="numeric" min="0" v-model.number="closeoutOpeningCash" placeholder="例如：2,000" class="jelly-input w-full min-h-[46px] rounded-xl border border-amber-100 bg-amber-50/40 px-4 text-sm font-black"></label>
                   <div class="daily-form-summary p-4 rounded-xl bg-slate-900 text-white">
                     <div class="flex items-center justify-between gap-3">
-                      <div><div class="text-[10px] font-black text-white/50">應有現金</div><div class="text-3xl font-black">NT$ {{ formatNumber(selectedCloseout.actualCashIn) }}</div></div>
+                      <div><div class="text-[10px] font-black text-white/50">應有現金</div><div class="text-3xl font-black">NT$ {{ formatNumber(selectedCloseout.expectedCash) }}</div></div>
                       <div class="text-right"><div class="text-[10px] text-white/50 font-black">服務營收</div><div class="text-sm font-black">NT$ {{ formatNumber(selectedCloseout.serviceRevenue) }}</div></div>
                     </div>
-                    <div class="mt-3 text-[10px] font-bold text-white/50">只要輸入實際盤點現金，系統會自動算差額並鎖帳。</div>
+                    <div class="mt-3 text-[10px] font-bold text-white/50">零用金＋現金收入＋現金儲值－抽屜支出，再與實際盤點比較。</div>
                   </div>
                   <div class="closeout-money-grid grid grid-cols-2 gap-2">
                     <div class="rounded-xl bg-orange-50 border border-orange-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">現金</div><div class="text-sm font-black text-slate-800">NT$ {{ formatNumber(selectedCloseout.cash) }}</div></div>
@@ -1227,7 +1238,9 @@
                       <div class="p-3 rounded-xl bg-sky-50"><div class="text-[10px] font-black text-slate-400">儲值扣款</div><div class="text-base font-black text-slate-800">NT$ {{ formatNumber(selectedCloseout.prepaidOut) }}</div></div>
                       <div class="p-3 rounded-xl bg-indigo-50"><div class="text-[10px] font-black text-slate-400">轉帳收入</div><div class="text-base font-black text-indigo-700">NT$ {{ formatNumber(selectedCloseout.transfer) }}</div></div>
                       <div class="p-3 rounded-xl bg-emerald-50"><div class="text-[10px] font-black text-slate-400">儲值進帳</div><div class="text-base font-black text-emerald-700">NT$ {{ formatNumber(selectedCloseout.prepaidIn) }}</div><div class="text-[9px] font-bold text-slate-400">現金 {{ formatNumber(selectedCloseout.cashPrepaidIn) }}／轉帳 {{ formatNumber(selectedCloseout.transferPrepaidIn) }}</div></div>
-                      <div class="p-3 rounded-xl bg-slate-50 col-span-2"><div class="text-[10px] font-black text-slate-400">選定日支出</div><div class="text-base font-black text-slate-800">NT$ {{ formatNumber(selectedCloseout.expenses) }}</div></div>
+                      <div class="p-3 rounded-xl bg-amber-50"><div class="text-[10px] font-black text-slate-400">開店零用金</div><div class="text-base font-black text-amber-700">NT$ {{ formatNumber(selectedCloseout.openingCash) }}</div></div>
+                      <div class="p-3 rounded-xl bg-rose-50"><div class="text-[10px] font-black text-slate-400">抽屜現金支出</div><div class="text-base font-black text-rose-600">NT$ {{ formatNumber(selectedCloseout.cashExpenses) }}</div></div>
+                      <div class="p-3 rounded-xl bg-slate-50 col-span-2"><div class="text-[10px] font-black text-slate-400">選定日全部支出</div><div class="text-base font-black text-slate-800">NT$ {{ formatNumber(selectedCloseout.expenses) }}</div></div>
                     </div>
                   </details>
                   <div v-if="selectedCloseoutRecord" class="momo-feedback-state is-warning rounded-xl px-3 py-2 text-[11px] font-black">{{ selectedCloseoutDateLabel }} 已鎖帳；新增、修改、刪除該日業績與支出會被擋下。</div>
@@ -1924,6 +1937,14 @@
                          class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-700">
                 </div>
                 <div class="daily-form-field">
+                  <label class="daily-form-label block text-xs font-black text-slate-400 uppercase mb-1">付款來源</label>
+                  <select v-model="newExpense.paymentMethod" required
+                          class="w-full jelly-input bg-orange-50/30 border border-orange-100 rounded-2xl px-3 py-2.5 text-sm font-semibold text-slate-700">
+                    <option value="現金">現金（從抽屜付款，會扣除應有現金）</option>
+                    <option value="非現金">轉帳／刷卡／其他（不影響抽屜）</option>
+                  </select>
+                </div>
+                <div class="daily-form-field">
                   <label class="daily-form-label block text-xs font-black text-slate-400 uppercase mb-1">備註說明</label>
                   <input type="text" v-model="newExpense.notes" placeholder="例如：進貨護髮膜一套"
                          autocorrect="on" autocapitalize="sentences"
@@ -2036,6 +2057,7 @@
                           <td class="px-4 py-3 text-sm font-semibold text-slate-600">
                             <div class="flex items-center gap-2">
                               <span class="truncate">{{ expense.notes || '未填備註' }}</span>
+                              <span class="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black" :class="expense.paymentMethod === '現金' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-500'">{{ expense.paymentMethod === '現金' ? '抽屜現金' : '非現金' }}</span>
                             </div>
                           </td>
                           <td class="px-4 py-3 text-right text-sm font-black text-slate-800">NT$ {{ formatNumber(expense.amount) }}</td>
@@ -2050,6 +2072,7 @@
                               <label class="col-span-2 text-[10px] font-black text-slate-400">日期<input type="date" v-model="expenseEditDraft(expense).date" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"></label>
                               <label class="col-span-2 text-[10px] font-black text-slate-400">分類<select v-model="expenseEditDraft(expense).category" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"><option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option></select></label>
                               <label class="col-span-2 text-[10px] font-black text-slate-400">金額<input type="number" v-model.number="expenseEditDraft(expense).amount" min="0" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-black text-right"></label>
+                              <label class="col-span-3 text-[10px] font-black text-slate-400">付款來源<select v-model="expenseEditDraft(expense).paymentMethod" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-bold"><option value="現金">現金（抽屜）</option><option value="非現金">轉帳／其他</option></select></label>
                               <label class="col-span-3 text-[10px] font-black text-slate-400">備註<input type="text" v-model="expenseEditDraft(expense).notes" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-semibold"></label>
                               <button @click.stop="cancelExpenseDraft(expense)" class="min-h-[40px] rounded-xl bg-white border border-slate-200 text-slate-500 text-xs font-black">取消</button>
                               <button @click.stop="saveExpenseDraft(expense)" :disabled="!expenseDraftHasChanges(expense)" class="min-h-[40px] rounded-xl text-xs font-black disabled:opacity-40" :class="expenseDraftHasChanges(expense) ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'">儲存</button>
@@ -2074,7 +2097,7 @@
                           </span>
                           <span class="text-sm font-black text-slate-800 truncate">{{ expense.notes || '未填備註' }}</span>
                         </div>
-                        <div class="mt-0.5 text-[11px] font-semibold text-slate-400 truncate">{{ expense.date }}</div>
+                        <div class="mt-0.5 text-[11px] font-semibold text-slate-400 truncate">{{ expense.date }} · {{ expense.paymentMethod === '現金' ? '抽屜現金' : '非現金' }}</div>
                       </div>
                       <div class="shrink-0 text-sm font-black text-slate-800 tabular-nums">NT$ {{ formatNumber(expense.amount) }}</div>
                     </button>
@@ -2085,6 +2108,7 @@
                         </div>
                         <label class="text-[10px] font-black text-slate-400">日期<input type="date" v-model="expenseEditDraft(expense).date" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-xs font-bold"></label>
                         <label class="text-[10px] font-black text-slate-400">分類<select v-model="expenseEditDraft(expense).category" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-2 py-2.5 text-xs font-bold"><option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option></select></label>
+                        <label class="col-span-2 text-[10px] font-black text-slate-400">付款來源<select v-model="expenseEditDraft(expense).paymentMethod" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-2 py-2.5 text-xs font-bold"><option value="現金">現金（抽屜）</option><option value="非現金">轉帳／其他</option></select></label>
                       </div>
                       <label class="block text-[10px] font-black text-slate-400">備註<input type="text" v-model="expenseEditDraft(expense).notes" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-semibold"></label>
                       <label class="block text-[10px] font-black text-slate-400">金額<input type="number" inputmode="decimal" v-model.number="expenseEditDraft(expense).amount" min="0" class="mt-1 w-full bg-white border border-orange-100 rounded-xl px-3 py-2.5 text-sm font-black text-right"></label>
@@ -4230,9 +4254,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.17-ledger-calendar-integrity-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.17-memory-stability-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.17-ledger-calendar-integrity-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.17-memory-stability-1"></script>
 </body>
 </html>

@@ -142,6 +142,7 @@ create table if not exists public.expenses (
   expense_date date not null,
   category text not null,
   amount bigint not null check (amount >= 0),
+  payment_method text not null default '非現金' check (payment_method in ('現金', '非現金')),
   notes text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -171,6 +172,7 @@ create table if not exists public.crm_profiles (
 create table if not exists public.closeouts (
   owner_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   closeout_date date not null,
+  opening_cash bigint not null default 0 check (opening_cash >= 0),
   expected_cash bigint not null default 0,
   counted_cash bigint not null default 0,
   difference bigint not null default 0,
@@ -180,6 +182,7 @@ create table if not exists public.closeouts (
   prepaid_in bigint not null default 0,
   cash_prepaid_in bigint not null default 0,
   transfer_prepaid_in bigint not null default 0,
+  cash_expenses bigint not null default 0 check (cash_expenses >= 0),
   service_revenue bigint not null default 0,
   expenses bigint not null default 0,
   net_profit bigint not null default 0,
@@ -221,10 +224,60 @@ alter table public.prepaid_ledger add column if not exists reversal_of_entry_id 
 alter table public.prepaid_ledger add column if not exists transfer_group_id text;
 alter table public.prepaid_ledger add column if not exists system_managed boolean not null default false;
 alter table public.expenses add column if not exists version bigint not null default 1;
+alter table public.expenses add column if not exists payment_method text not null default '非現金';
 alter table public.inventory add column if not exists version bigint not null default 1;
 alter table public.crm_profiles add column if not exists version bigint not null default 1;
 alter table public.closeouts add column if not exists version bigint not null default 1;
+alter table public.closeouts add column if not exists opening_cash bigint not null default 0;
+alter table public.closeouts add column if not exists cash_expenses bigint not null default 0;
 alter table public.service_configs add column if not exists version bigint not null default 1;
+
+update public.expenses
+set payment_method = '非現金'
+where payment_method is null
+   or payment_method not in ('現金', '非現金');
+update public.closeouts
+set opening_cash = coalesce(opening_cash, 0),
+    cash_expenses = coalesce(cash_expenses, 0)
+where opening_cash is null
+   or cash_expenses is null;
+alter table public.expenses
+  alter column payment_method set default '非現金',
+  alter column payment_method set not null;
+alter table public.closeouts
+  alter column opening_cash set default 0,
+  alter column opening_cash set not null,
+  alter column cash_expenses set default 0,
+  alter column cash_expenses set not null;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.expenses'::regclass
+      and conname = 'expenses_payment_method_check'
+  ) then
+    alter table public.expenses
+      add constraint expenses_payment_method_check
+      check (payment_method in ('現金', '非現金'));
+  end if;
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.closeouts'::regclass
+      and conname = 'closeouts_opening_cash_check'
+  ) then
+    alter table public.closeouts
+      add constraint closeouts_opening_cash_check check (opening_cash >= 0);
+  end if;
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.closeouts'::regclass
+      and conname = 'closeouts_cash_expenses_check'
+  ) then
+    alter table public.closeouts
+      add constraint closeouts_cash_expenses_check check (cash_expenses >= 0);
+  end if;
+end $$;
 
 create index if not exists customers_owner_name_idx on public.customers (owner_id, name);
 create index if not exists customers_owner_active_name_idx

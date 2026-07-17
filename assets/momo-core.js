@@ -14,6 +14,11 @@
     PREPAID_TOPUP: '儲值進帳'
   };
 
+  const EXPENSE_PAYMENT = {
+    CASH: '現金',
+    NON_CASH: '非現金'
+  };
+
   function toMoney(value) {
     return Math.round(Number(value) || 0);
   }
@@ -95,6 +100,97 @@
 
   function getMixedPrepaidAmount(order = {}) {
     return Math.max(0, (Number(order && order.amount) || 0) - getMixedCashAmount(order));
+  }
+
+  function normalizeExpensePaymentMethod(value) {
+    return value === EXPENSE_PAYMENT.CASH ? EXPENSE_PAYMENT.CASH : EXPENSE_PAYMENT.NON_CASH;
+  }
+
+  function calculateCloseoutTotals(orders = [], expenses = [], options = {}) {
+    const openingCash = Math.max(0, toMoney(options.openingCash));
+    const closeoutOrders = (Array.isArray(orders) ? orders : []).filter(isOrderActive);
+    const closeoutExpenses = Array.isArray(expenses) ? expenses : [];
+    const countableOrders = closeoutOrders.filter(order => !isCorrectionSlip(order));
+    const serviceOrdersCount = countableOrders.filter(order => order.paymentMethod !== PAYMENT.PREPAID_TOPUP).length;
+    const totals = {
+      openingCash,
+      cash: 0,
+      transfer: 0,
+      prepaidOut: 0,
+      prepaidIn: 0,
+      cashPrepaidIn: 0,
+      transferPrepaidIn: 0,
+      other: 0,
+      serviceRevenue: 0,
+      actualCashIn: 0,
+      cashExpenses: 0,
+      expectedCash: 0,
+      expenses: closeoutExpenses.reduce((sum, expense) => sum + toMoney(expense?.amount), 0),
+      netProfit: 0,
+      ordersCount: countableOrders.length,
+      serviceOrdersCount,
+      topupCount: countableOrders.length - serviceOrdersCount
+    };
+
+    closeoutOrders.forEach(order => {
+      if (!Object.values(PAYMENT).includes(order?.paymentMethod)) {
+        totals.other += toMoney(order?.amount);
+        totals.serviceRevenue += toMoney(order?.amount);
+        return;
+      }
+      const vector = orderMoneyVector(order);
+      totals.cash += vector.cash;
+      totals.transfer += vector.transfer;
+      totals.prepaidOut += vector.prepaidOut;
+      totals.prepaidIn += vector.prepaidIn;
+      totals.cashPrepaidIn += vector.cashPrepaidIn;
+      totals.transferPrepaidIn += vector.transferPrepaidIn;
+      totals.serviceRevenue += vector.serviceRevenue;
+    });
+
+    totals.cashExpenses = closeoutExpenses
+      .filter(expense => normalizeExpensePaymentMethod(expense?.paymentMethod) === EXPENSE_PAYMENT.CASH)
+      .reduce((sum, expense) => sum + toMoney(expense?.amount), 0);
+    totals.actualCashIn = totals.cash + totals.cashPrepaidIn;
+    totals.expectedCash = totals.openingCash + totals.actualCashIn - totals.cashExpenses;
+    totals.netProfit = totals.serviceRevenue - totals.expenses;
+    return totals;
+  }
+
+  function upsertGeneratedSalaryExpense(expenses = [], options = {}) {
+    const year = String(options.year || '').trim();
+    const month = String(options.month || '').trim().padStart(2, '0');
+    if (!/^\d{4}$/.test(year) || !/^(0[1-9]|1[0-2])$/.test(month)) {
+      throw new Error('薪資月份格式不正確');
+    }
+    const id = `salary_${year}${month}`;
+    const existing = (Array.isArray(expenses) ? expenses : []).find(expense => expense?.id === id) || null;
+    const salary = Math.max(0, toMoney(options.salary));
+    const revenue = Math.max(0, toMoney(options.revenue));
+    const record = {
+      ...(existing || {}),
+      id,
+      date: `${year}-${month}-01`,
+      category: '薪資',
+      amount: salary,
+      paymentMethod: EXPENSE_PAYMENT.NON_CASH,
+      notes: `MOMO薪資 ${year}年${Number(month)}月｜本月業績 NT$${revenue.toLocaleString()} × 45%`,
+      generatedBy: 'salary_import'
+    };
+    const result = existing
+      ? expenses.map(expense => expense?.id === id ? record : expense)
+      : [...(Array.isArray(expenses) ? expenses : []), record];
+    return { expenses: result, record, existing };
+  }
+
+  function sanitizeCsvCellValue(value) {
+    const raw = String(value ?? '');
+    if (typeof value !== 'string') return raw;
+    return /^[\u0009\u000A\u000D\u0020]*[=+\-@]/.test(raw) ? `'${raw}` : raw;
+  }
+
+  function escapeCsvCell(value) {
+    return `"${sanitizeCsvCellValue(value).replace(/"/g, '""')}"`;
   }
 
   function emptyMoneyVector() {
@@ -729,6 +825,11 @@
     (Array.isArray(payload.momo_expenses) ? payload.momo_expenses : []).forEach((row, index) => {
       if (!validDate(row?.date) || !finiteNumber(row?.amount) || Number(row.amount) < 0
         || (schemaVersion >= 3 && !safeInteger(row?.amount))) errors.push(`momo_expenses[${index}] 格式不正確`);
+      const paymentMethod = row?.paymentMethod;
+      if ((schemaVersion >= 4 && paymentMethod === undefined)
+        || (paymentMethod !== undefined && !Object.values(EXPENSE_PAYMENT).includes(paymentMethod))) {
+        errors.push(`momo_expenses[${index}] 支出付款方式不正確`);
+      }
     });
     validateUniqueIds('momo_inventory', payload.momo_inventory);
     (Array.isArray(payload.momo_inventory) ? payload.momo_inventory : []).forEach((row, index) => {
@@ -764,6 +865,7 @@
         'expectedCash', 'countedCash', 'difference', 'cash', 'transfer', 'prepaidOut',
         'prepaidIn', 'cashPrepaidIn', 'transferPrepaidIn', 'serviceRevenue', 'expenses', 'netProfit'
       ];
+      if (schemaVersion >= 4) moneyFields.push('openingCash', 'cashExpenses', 'actualCashIn');
       Object.entries(payload.momo_closeoutRecords).forEach(([date, row]) => {
         if (!isPlainRecord(row)) {
           errors.push(`momo_closeoutRecords[${date}] 內含無效日結資料`);
@@ -779,6 +881,24 @@
             errors.push(`momo_closeoutRecords[${date}] ${field} 格式不正確`);
           }
         });
+        if (schemaVersion >= 4 && (Number(row.openingCash) < 0 || Number(row.cashExpenses) < 0)) {
+          errors.push(`momo_closeoutRecords[${date}] 開店零用金或現金支出不可為負數`);
+        }
+        if (schemaVersion >= 4
+          && safeInteger(row.openingCash)
+          && safeInteger(row.actualCashIn)
+          && safeInteger(row.cashExpenses)
+          && safeInteger(row.expectedCash)
+          && Number(row.expectedCash) !== Number(row.openingCash) + Number(row.actualCashIn) - Number(row.cashExpenses)) {
+          errors.push(`momo_closeoutRecords[${date}] 應有現金公式不平衡`);
+        }
+        if (schemaVersion >= 4
+          && safeInteger(row.countedCash)
+          && safeInteger(row.expectedCash)
+          && safeInteger(row.difference)
+          && Number(row.difference) !== Number(row.countedCash) - Number(row.expectedCash)) {
+          errors.push(`momo_closeoutRecords[${date}] 帳實差額公式不平衡`);
+        }
         ['ordersCount', 'serviceOrdersCount', 'topupCount'].forEach(field => {
           if (row[field] !== undefined && (!safeInteger(row[field]) || Number(row[field]) < 0)) {
             errors.push(`momo_closeoutRecords[${date}] ${field} 格式不正確`);
@@ -853,8 +973,27 @@
     return errorName === 'AbortError' || errorName === 'TypeError';
   }
 
+  // Rows must already be ordered newest-first. Keeping only the visible tail per
+  // customer prevents CRM from retaining and re-sorting the full ledger N times.
+  function groupRecentRowsByCustomer(rows = [], resolveCustomerId = null, limit = 6) {
+    const groups = Object.create(null);
+    const maxRows = Math.max(0, Math.floor(Number(limit) || 0));
+    if (!maxRows) return groups;
+    (Array.isArray(rows) ? rows : []).forEach(row => {
+      const rawCustomerId = typeof resolveCustomerId === 'function'
+        ? resolveCustomerId(row?.customerId, row)
+        : row?.customerId;
+      const customerId = String(rawCustomerId || '').trim();
+      if (!customerId) return;
+      if (!groups[customerId]) groups[customerId] = [];
+      if (groups[customerId].length < maxRows) groups[customerId].push(row);
+    });
+    return groups;
+  }
+
   return {
     PAYMENT,
+    EXPENSE_PAYMENT,
     toMoney,
     normalizeServiceName,
     buildServiceMetricDictionary,
@@ -865,6 +1004,11 @@
     getTopupChannel,
     getMixedCashAmount,
     getMixedPrepaidAmount,
+    normalizeExpensePaymentMethod,
+    calculateCloseoutTotals,
+    upsertGeneratedSalaryExpense,
+    sanitizeCsvCellValue,
+    escapeCsvCell,
     emptyMoneyVector,
     orderMoneyVector,
     orderCorrectionLinesFromVector,
@@ -885,6 +1029,7 @@
     isFiniteNumericInput,
     validateAndNormalizeBackupPayload,
     evaluatePwaReloadGuard,
-    shouldRetryCalendarSync
+    shouldRetryCalendarSync,
+    groupRecentRowsByCustomer
   };
 });

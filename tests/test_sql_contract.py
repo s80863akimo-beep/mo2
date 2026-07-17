@@ -11,6 +11,7 @@ class SqlIntegrityContractTest(unittest.TestCase):
     def setUpClass(cls):
         cls.schema = (ROOT / "supabase_schema.sql").read_text(encoding="utf-8")
         cls.migration = (ROOT / "supabase_integrity_hardening_migration.sql").read_text(encoding="utf-8")
+        cls.cash_migration = (ROOT / "supabase_cash_closeout_csv_safety_migration.sql").read_text(encoding="utf-8")
 
     def test_migration_is_transactional_and_repeatable(self):
         normalized = self.migration.strip().lower()
@@ -51,10 +52,29 @@ class SqlIntegrityContractTest(unittest.TestCase):
             self.assertIn("data_backups_no_update", sql)
             self.assertIn("before update on public.data_backups", sql)
 
+    def test_cash_closeout_migration_is_repeatable_and_preserves_history(self):
+        normalized = self.cash_migration.strip().lower()
+        self.assertTrue(normalized.startswith("-- momohair cash closeout"))
+        self.assertIn("begin;", normalized)
+        self.assertIn("commit;", normalized)
+        self.assertIn("add column if not exists payment_method", normalized)
+        self.assertIn("default '非現金'", self.cash_migration)
+        self.assertIn("add column if not exists opening_cash", normalized)
+        self.assertIn("add column if not exists cash_expenses", normalized)
+        self.assertNotIn("delete from public.expenses", normalized)
+        self.assertIn("update public.expenses", normalized)
+        self.assertIn("alter column payment_method set not null", normalized)
+        self.assertIn("alter column opening_cash set not null", normalized)
+        self.assertIn("alter column cash_expenses set not null", normalized)
+        for sql in (self.schema, self.cash_migration):
+            self.assertIn("payment_method in ('現金', '非現金')", sql)
+            self.assertIn("opening_cash >= 0", sql)
+            self.assertIn("cash_expenses >= 0", sql)
+
 
 class PwaVersionContractTest(unittest.TestCase):
     def test_cached_assets_share_one_version(self):
-        expected = "2026.07.17-ledger-calendar-integrity-1"
+        expected = "2026.07.17-memory-stability-1"
         index = (ROOT / "index.html").read_text(encoding="utf-8")
         service_worker = (ROOT / "service-worker.js").read_text(encoding="utf-8")
         app = (ROOT / "assets" / "momo-app.js").read_text(encoding="utf-8")

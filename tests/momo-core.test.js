@@ -3,31 +3,38 @@ const MomoCore = require('../assets/momo-core.js');
 
 const {
   PAYMENT,
+  EXPENSE_PAYMENT,
   buildLockedOrderCorrectionLines,
   buildOrderPrepaidDateAdjustments,
   buildPrepaidLedgerUploadBatches,
   buildPrepaidReversalPayload,
   buildServiceMetricDictionary,
   calculatePeriodKpis,
+  calculateCloseoutTotals,
   planPrepaidLedgerReconciliation,
   calculateEffectiveTimeYield,
   canReversePrepaidEntry,
   cloneJsonValue,
   evaluatePwaReloadGuard,
+  escapeCsvCell,
   getMixedCashAmount,
   getMixedPrepaidAmount,
   getOrderPrepaidBucket,
   getOrderPrepaidTarget,
+  groupRecentRowsByCustomer,
   isCorrectionSlip,
   isFiniteNumericInput,
   isValidISODate,
   normalizeServiceName,
+  normalizeExpensePaymentMethod,
   orderMoneyVector,
   prepaidEntryReversed,
   prepaidKindForTarget,
   resolveServiceMetric,
   resolveEffectiveMinutes,
   shouldRetryCalendarSync,
+  sanitizeCsvCellValue,
+  upsertGeneratedSalaryExpense,
   validateAndNormalizeBackupPayload
 } = MomoCore;
 
@@ -59,6 +66,86 @@ function emptyBackup(overrides = {}) {
     momo_closeoutRecords: {},
     ...overrides
   };
+}
+
+{
+  const manualSalary = {
+    id: 'exp_manual_salary',
+    date: '2026-07-15',
+    category: '薪資',
+    amount: 5000,
+    paymentMethod: EXPENSE_PAYMENT.CASH,
+    notes: '臨時助理薪資'
+  };
+  const first = upsertGeneratedSalaryExpense([manualSalary], {
+    year: '2026', month: '07', salary: 45000, revenue: 100000
+  });
+  assert.equal(first.expenses.length, 2);
+  assert.deepEqual(first.expenses.find(row => row.id === manualSalary.id), manualSalary);
+  assert.equal(first.record.id, 'salary_202607');
+  assert.equal(first.record.paymentMethod, EXPENSE_PAYMENT.NON_CASH);
+
+  const second = upsertGeneratedSalaryExpense(first.expenses, {
+    year: '2026', month: '07', salary: 49500, revenue: 110000
+  });
+  assert.equal(second.expenses.length, 2);
+  assert.equal(second.expenses.find(row => row.id === manualSalary.id).amount, 5000);
+  assert.equal(second.expenses.find(row => row.id === 'salary_202607').amount, 49500);
+}
+
+{
+  const totals = calculateCloseoutTotals([
+    baseOrder({ id: 'cash', amount: 1000, paymentMethod: PAYMENT.CASH }),
+    baseOrder({ id: 'transfer', amount: 500, paymentMethod: PAYMENT.TRANSFER }),
+    baseOrder({ id: 'mixed', amount: 800, paymentMethod: PAYMENT.MIXED, cashAmount: 200 }),
+    baseOrder({ id: 'topup', amount: 300, paymentMethod: PAYMENT.PREPAID_TOPUP, topupChannel: PAYMENT.CASH })
+  ], [
+    { id: 'cash_expense', amount: 250, paymentMethod: EXPENSE_PAYMENT.CASH },
+    { id: 'transfer_expense', amount: 400, paymentMethod: EXPENSE_PAYMENT.NON_CASH },
+    { id: 'legacy_expense', amount: 100 }
+  ], { openingCash: 2000 });
+
+  assert.equal(totals.openingCash, 2000);
+  assert.equal(totals.actualCashIn, 1500);
+  assert.equal(totals.cashExpenses, 250);
+  assert.equal(totals.expectedCash, 3250);
+  assert.equal(totals.expenses, 750);
+  assert.equal(totals.netProfit, 1550);
+  assert.equal(totals.serviceOrdersCount, 3);
+  assert.equal(totals.topupCount, 1);
+  assert.equal(normalizeExpensePaymentMethod(undefined), EXPENSE_PAYMENT.NON_CASH);
+}
+
+{
+  assert.equal(sanitizeCsvCellValue('=HYPERLINK("https://evil")'), "'=HYPERLINK(\"https://evil\")");
+  assert.equal(sanitizeCsvCellValue('  +SUM(A1:A2)'), "'  +SUM(A1:A2)");
+  assert.equal(sanitizeCsvCellValue('\t@cmd'), "'\t@cmd");
+  assert.equal(sanitizeCsvCellValue(-42), '-42');
+  assert.equal(escapeCsvCell('=1+1'), '"\'=1+1"');
+  assert.equal(escapeCsvCell('safe "name"'), '"safe ""name"""');
+}
+
+{
+  const missingExpensePayment = validateAndNormalizeBackupPayload(emptyBackup({
+    schemaVersion: 4,
+    momo_expenses: [{ id: 'exp_1', date: '2026-07-01', amount: 100 }]
+  }), { currentSchemaVersion: 4 });
+  assert.equal(missingExpensePayment.ok, false);
+  assert(missingExpensePayment.errors.some(message => message.includes('支出付款方式')));
+
+  const validCashCloseout = validateAndNormalizeBackupPayload(emptyBackup({
+    schemaVersion: 4,
+    momo_closeoutRecords: {
+      '2026-07-01': {
+        date: '2026-07-01', openingCash: 2000, actualCashIn: 1500, cashExpenses: 250,
+        expectedCash: 3250, countedCash: 3250, difference: 0, cash: 1200, transfer: 500,
+        prepaidOut: 600, prepaidIn: 300, cashPrepaidIn: 300, transferPrepaidIn: 0,
+        serviceRevenue: 2300, expenses: 750, netProfit: 1550, ordersCount: 4,
+        completedAt: '2026-07-01T12:00:00Z'
+      }
+    }
+  }), { currentSchemaVersion: 4 });
+  assert.equal(validCashCloseout.ok, true);
 }
 
 {
@@ -599,6 +686,24 @@ function emptyBackup(overrides = {}) {
   assert.equal(shouldRetryCalendarSync({ online: true, status: 401, retryAttempt: 0 }), false);
   assert.equal(shouldRetryCalendarSync({ online: true, status: 503, retryAttempt: 1 }), false);
   assert.equal(shouldRetryCalendarSync({ online: false, errorName: 'TypeError', retryAttempt: 0 }), false);
+}
+
+{
+  const rows = Array.from({ length: 10000 }, (_, index) => ({
+    id: `ledger_${index}`,
+    customerId: `alias_${index % 1000}`,
+    date: `2026-07-${String(31 - (index % 30)).padStart(2, '0')}`
+  }));
+  const grouped = groupRecentRowsByCustomer(
+    rows,
+    customerId => customerId.replace('alias_', 'customer_'),
+    6
+  );
+  assert.equal(Object.keys(grouped).length, 1000);
+  assert.equal(grouped.customer_0.length, 6);
+  assert.equal(grouped.customer_0[0].id, 'ledger_0');
+  assert.equal(grouped.customer_0[5].id, 'ledger_5000');
+  assert(Object.values(grouped).every(group => group.length <= 6));
 }
 
 console.log('momo-core tests passed');

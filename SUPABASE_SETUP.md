@@ -19,7 +19,8 @@
 3. `supabase_closeout_summary_migration.sql`
 4. `supabase_backup_migration.sql`
 5. `supabase_order_correction_slip_migration.sql`
-6. **最後執行** `supabase_integrity_hardening_migration.sql`
+6. `supabase_cash_closeout_csv_safety_migration.sql`
+7. **最後執行** `supabase_integrity_hardening_migration.sql`
 
 `supabase_closeout_counts_migration.sql` 的欄位已包含在 closeout summary migration；只有早期已執行 summary、但仍缺少兩個筆數欄位的專案才需要補跑。
 
@@ -35,6 +36,7 @@
 - 已有 closeout 的日期視為鎖帳：原訂單不能更新或刪除，也不能新增一般訂單。唯一更新例外是補登 `actual_duration_minutes`；顧客合併不改寫歷史訂單。帳務更正需在尚未鎖帳的日期新增 correction slip，並參照已鎖帳的原訂單與原日期。
 - Google Calendar 有效訂單的 `external_order_id` 會以去除前後空白、忽略大小寫的方式維持唯一；Event ID 僅追蹤來源事件。
 - `data_backups` 同一天可新增多份快照。既有快照不能覆寫，但保留清理舊快照所需的刪除權限。
+- `expenses.payment_method` 明確區分抽屜現金與非現金支出；打烊應有現金採「開店零用金＋現金收入＋現金儲值進帳－抽屜現金支出」。
 
 針對舊資料新增的外鍵與檢查條件使用 `NOT VALID`：migration 不會因歷史瑕疵整批中斷，但所有新寫入都會立即套用。修好舊資料後，可依 `supabase_integrity_hardening_migration.sql` 末尾的指令逐項 `VALIDATE CONSTRAINT`。
 
