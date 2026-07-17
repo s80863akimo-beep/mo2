@@ -973,6 +973,24 @@
     return errorName === 'AbortError' || errorName === 'TypeError';
   }
 
+  // Rows must already be ordered newest-first. Keeping only the visible tail per
+  // customer prevents CRM from retaining and re-sorting the full ledger N times.
+  function groupRecentRowsByCustomer(rows = [], resolveCustomerId = null, limit = 6) {
+    const groups = Object.create(null);
+    const maxRows = Math.max(0, Math.floor(Number(limit) || 0));
+    if (!maxRows) return groups;
+    (Array.isArray(rows) ? rows : []).forEach(row => {
+      const rawCustomerId = typeof resolveCustomerId === 'function'
+        ? resolveCustomerId(row?.customerId, row)
+        : row?.customerId;
+      const customerId = String(rawCustomerId || '').trim();
+      if (!customerId) return;
+      if (!groups[customerId]) groups[customerId] = [];
+      if (groups[customerId].length < maxRows) groups[customerId].push(row);
+    });
+    return groups;
+  }
+
   return {
     PAYMENT,
     EXPENSE_PAYMENT,
@@ -1011,6 +1029,7 @@
     isFiniteNumericInput,
     validateAndNormalizeBackupPayload,
     evaluatePwaReloadGuard,
-    shouldRetryCalendarSync
+    shouldRetryCalendarSync,
+    groupRecentRowsByCustomer
   };
 });

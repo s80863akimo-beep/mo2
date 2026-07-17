@@ -21,6 +21,7 @@ const {
   getMixedPrepaidAmount,
   getOrderPrepaidBucket,
   getOrderPrepaidTarget,
+  groupRecentRowsByCustomer,
   isCorrectionSlip,
   isFiniteNumericInput,
   isValidISODate,
@@ -685,6 +686,24 @@ function emptyBackup(overrides = {}) {
   assert.equal(shouldRetryCalendarSync({ online: true, status: 401, retryAttempt: 0 }), false);
   assert.equal(shouldRetryCalendarSync({ online: true, status: 503, retryAttempt: 1 }), false);
   assert.equal(shouldRetryCalendarSync({ online: false, errorName: 'TypeError', retryAttempt: 0 }), false);
+}
+
+{
+  const rows = Array.from({ length: 10000 }, (_, index) => ({
+    id: `ledger_${index}`,
+    customerId: `alias_${index % 1000}`,
+    date: `2026-07-${String(31 - (index % 30)).padStart(2, '0')}`
+  }));
+  const grouped = groupRecentRowsByCustomer(
+    rows,
+    customerId => customerId.replace('alias_', 'customer_'),
+    6
+  );
+  assert.equal(Object.keys(grouped).length, 1000);
+  assert.equal(grouped.customer_0.length, 6);
+  assert.equal(grouped.customer_0[0].id, 'ledger_0');
+  assert.equal(grouped.customer_0[5].id, 'ledger_5000');
+  assert(Object.values(grouped).every(group => group.length <= 6));
 }
 
 console.log('momo-core tests passed');

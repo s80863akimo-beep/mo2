@@ -1,5 +1,5 @@
-    const { createApp } = Vue;
-    const APP_VERSION = '2026.07.17-cash-closeout-csv-safety-1';
+    const { createApp, markRaw } = Vue;
+    const APP_VERSION = '2026.07.17-memory-stability-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -146,7 +146,7 @@
           cloudSyncInFlight: false,
           cloudSyncPending: false,
           cloudApplying: false,
-          cloudBaseline: {},
+          cloudBaseline: markRaw({}),
           cloudPendingWrite: safeParse(localStorage.getItem('momo_cloud_pending_write'), null),
           cloudConflict: null,
           cloudTopupChannelSupported: true,
@@ -177,7 +177,7 @@
           backupStatus: 'idle',
           lastBackupAt: localStorage.getItem('momo_last_backup_at') || null,
           lastCloudBackupAt: localStorage.getItem('momo_last_cloud_backup_at') || null,
-          backupSnapshots: safeParse(localStorage.getItem('momo_backup_snapshots'), []),
+          backupSnapshots: markRaw(safeParse(localStorage.getItem('momo_backup_snapshots'), [])),
           cloudBackups: safeParse(localStorage.getItem('momo_cloud_backups'), []),
           cloudBackupStatus: 'idle',
           cloudBackupError: '',
@@ -243,6 +243,8 @@
           pwaLastCheckedAt: null,
           pwaAutoCheckTimer: null,
           pwaAutoCheckInterval: null,
+          startupSystemCheckTimer: null,
+          startupSystemCheckIdleHandle: null,
           pwaStatus: '初始化中',
           showMobileAddOrderForm: false,
           expandedOrderId: null,
@@ -699,16 +701,14 @@
             .filter(snapshot => snapshot?.id && snapshot?.createdAt)
             .map(snapshot => {
               const counts = snapshot.counts || {};
-              let sizeBytes = 0;
-              try { sizeBytes = new Blob([JSON.stringify(snapshot.payload || {})]).size; }
-              catch (error) { sizeBytes = 0; }
+              const sizeBytes = Math.max(0, Number(snapshot.sizeBytes) || 0);
               return {
                 ...snapshot,
                 reasonLabel: this.backupReasonLabel(snapshot.reason),
                 totalRecords: Object.values(counts).reduce((sum, value) => sum + (Number(value) || 0), 0),
                 counts,
                 sizeBytes,
-                sizeText: this.formatBytes(sizeBytes),
+                sizeText: sizeBytes ? this.formatBytes(sizeBytes) : '既有快照',
                 tone: snapshot.integrityStatus === 'error' ? 'error' : snapshot.integrityStatus === 'warning' ? 'warn' : 'ok'
               };
             })
@@ -1961,6 +1961,28 @@
             .slice(0, 3);
         },
 
+        crmPrepaidTimelineByCustomer() {
+          const grouped = MomoCore.groupRecentRowsByCustomer(
+            this.prepaidLedgerEntries,
+            customerId => this.resolveMergedCustomerId(customerId),
+            6
+          );
+          const timelines = Object.create(null);
+          Object.entries(grouped).forEach(([customerId, entries]) => {
+            timelines[customerId] = entries.map(entry => ({
+              id: entry.id,
+              date: entry.date,
+              signedAmount: Number(entry.signedAmount) || 0,
+              amount: Math.abs(Number(entry.signedAmount) || 0),
+              type: Number(entry.signedAmount) >= 0 ? 'in' : 'out',
+              bucket: entry.bucket,
+              note: entry.note || entry.serviceName || (entry.bucket === 'topup' ? '儲值進帳' : '儲值扣款'),
+              balanceAfter: Number(entry.balanceAfter) || 0
+            }));
+          });
+          return timelines;
+        },
+
         // CRM Aggregation & Grid
         crmList() {
           const map = {};
@@ -2065,7 +2087,7 @@
                   const countMap = effective.source === 'actual' ? record.serviceActualCountMap : record.serviceStandardCountMap;
                   countMap[serviceName] = (countMap[serviceName] || 0) + 1;
                 }
-                record.recentOrders.push({
+                const recentOrder = {
                   id: o.id,
                   date: o.date,
                   serviceName,
@@ -2077,7 +2099,11 @@
                   timeSource: effective.source,
                   yieldPerHour: basisMinutes ? Math.round(amount / (basisMinutes / 60)) : 0,
                   correctionSlip: false
-                });
+                };
+                record.recentOrders.push(recentOrder);
+                record.recentOrders.sort((a, b) => String(b.date).localeCompare(String(a.date))
+                  || String(b.id).localeCompare(String(a.id)));
+                if (record.recentOrders.length > 8) record.recentOrders.length = 8;
               }
             }
           });
@@ -2153,26 +2179,7 @@
                 ? `${order.actualMinutes ? '實際' : '標準'} ${this.formatMinutesCompact(order.basisMinutes)}`
                 : '工時未設定'
             }));
-            let combinedPrepaidBalance = 0;
-            const prepaidHistory = this.prepaidLedgerEntries
-              .filter(entry => this.resolveMergedCustomerId(entry.customerId) === cust.id)
-              .sort((a, b) => String(a.date).localeCompare(String(b.date))
-                || String(a.createdAt).localeCompare(String(b.createdAt))
-                || String(a.id).localeCompare(String(b.id)))
-              .map(entry => {
-                combinedPrepaidBalance += Number(entry.signedAmount) || 0;
-                return {
-                id: entry.id,
-                date: entry.date,
-                signedAmount: Number(entry.signedAmount) || 0,
-                amount: Math.abs(Number(entry.signedAmount) || 0),
-                type: Number(entry.signedAmount) >= 0 ? 'in' : 'out',
-                bucket: entry.bucket,
-                note: entry.note || entry.serviceName || (entry.bucket === 'topup' ? '儲值進帳' : '儲值扣款'),
-                  balanceAfter: combinedPrepaidBalance
-                };
-              });
-            const prepaidTimeline = prepaidHistory.slice(-6).reverse();
+            const prepaidTimeline = this.crmPrepaidTimelineByCustomer[cust.id] || [];
             const formulaTimeline = this.buildCustomerFormulaTimeline(cust, formula, recentOrders);
             const returnStatus = this.getCustomerReturnStatus({
               count: cust.count,
@@ -3127,7 +3134,6 @@
           localStorage.removeItem('momo_storage_recovery_notice');
           this.storageRecoveryNotice = null;
         }
-        this.runDataSafetyCheck(false);
         if (this.storageRecoveryBlocked) {
           this.authLoading = false;
           this.calendarAutoSyncStatus = 'error';
@@ -3142,7 +3148,7 @@
             .finally(() => this.scheduleInitialCalendarAutoSync());
         }
         this.setupPwaUpdateListener();
-        setTimeout(() => this.runSystemStatusCheck(false), 3500);
+        this.scheduleStartupSystemCheck();
         window.addEventListener('online', () => {
           this.online = true;
           if (this.storageRecoveryBlocked) return;
@@ -3196,11 +3202,40 @@
         if (this.headerSyncFeedbackTimer) clearTimeout(this.headerSyncFeedbackTimer);
         if (this.pwaAutoCheckTimer) clearTimeout(this.pwaAutoCheckTimer);
         if (this.pwaAutoCheckInterval) clearInterval(this.pwaAutoCheckInterval);
+        if (this.startupSystemCheckTimer) clearTimeout(this.startupSystemCheckTimer);
+        if (this.startupSystemCheckIdleHandle && 'cancelIdleCallback' in window) {
+          window.cancelIdleCallback(this.startupSystemCheckIdleHandle);
+        }
         if (this.iosViewportResizeHandler && window.visualViewport) window.visualViewport.removeEventListener('resize', this.iosViewportResizeHandler);
         if (this.iosViewportRaf) cancelAnimationFrame(this.iosViewportRaf);
         document.body.classList.remove('momo-ios-perf');
       },
       methods: {
+        scheduleStartupSystemCheck(delay = 8000) {
+          if (this.startupSystemCheckTimer) clearTimeout(this.startupSystemCheckTimer);
+          if (this.startupSystemCheckIdleHandle && 'cancelIdleCallback' in window) {
+            window.cancelIdleCallback(this.startupSystemCheckIdleHandle);
+          }
+          const run = () => {
+            this.startupSystemCheckTimer = null;
+            this.startupSystemCheckIdleHandle = null;
+            if (document.hidden) {
+              this.startupSystemCheckTimer = setTimeout(() => this.scheduleStartupSystemCheck(0), 5000);
+              return;
+            }
+            this.runSystemStatusCheck(false).catch(error => {
+              console.warn('Startup system check skipped:', error);
+            });
+          };
+          this.startupSystemCheckTimer = setTimeout(() => {
+            this.startupSystemCheckTimer = null;
+            if ('requestIdleCallback' in window) {
+              this.startupSystemCheckIdleHandle = window.requestIdleCallback(run, { timeout: 6000 });
+            } else {
+              run();
+            }
+          }, Math.max(0, Number(delay) || 0));
+        },
         scrollToTopForNavigation() {
           window.scrollTo({ top: 0, behavior: this.iosPerfMode ? 'auto' : 'smooth' });
         },
@@ -3406,7 +3441,7 @@
             const candidate = normalized.slice(0, keep);
             try {
               localStorage.setItem('momo_backup_snapshots', JSON.stringify(candidate));
-              this.backupSnapshots = candidate;
+              this.backupSnapshots = markRaw(candidate);
               return candidate;
             } catch (error) {
               lastError = error;
@@ -3414,7 +3449,7 @@
           }
           if (!normalized.length) {
             localStorage.setItem('momo_backup_snapshots', '[]');
-            this.backupSnapshots = [];
+            this.backupSnapshots = markRaw([]);
             return [];
           }
           throw lastError || new Error('本機快照容量不足');
@@ -3423,6 +3458,9 @@
           if (!force && this.backupSnapshotRows[0]?.createdDate === new Date().toLocaleDateString('sv-SE')) return this.backupSnapshotRows[0];
           const createdAt = new Date().toISOString();
           const payload = this.buildBackupData();
+          let sizeBytes = 0;
+          try { sizeBytes = new Blob([JSON.stringify(payload)]).size; }
+          catch (error) { sizeBytes = 0; }
           const integrity = this.runIntegrityCheck(false);
           const snapshot = {
             id: this.generateStableId('snap'),
@@ -3436,6 +3474,7 @@
             integrityStatus: integrity.status,
             errorCount: integrity.errorCount,
             warningCount: integrity.warningCount,
+            sizeBytes,
             payload
           };
           const previous = Array.isArray(this.backupSnapshots) ? [...this.backupSnapshots] : [];
@@ -3449,7 +3488,7 @@
             return snapshot;
           } catch (error) {
             console.warn('Local snapshot failed:', error);
-            this.backupSnapshots = previous;
+            this.backupSnapshots = markRaw(previous);
             this.backupStatus = 'error';
             if (!silent) this.showToast('本機快照建立失敗，請先下載 JSON 備份或清理舊快照', 'error', 7000);
             return null;
@@ -3548,7 +3587,7 @@
           }
           return metadata;
         },
-        async fetchCloudBackupList({ silent = true } = {}) {
+        async fetchCloudBackupList({ silent = true, refreshSafety = true } = {}) {
           if (!this.authUser || !this.authSession?.access_token) {
             this.cloudBackups = [];
             this.cloudBackupStatus = 'idle';
@@ -3569,7 +3608,7 @@
             });
             this.persistCloudBackups(Array.isArray(rows) ? rows : []);
             this.cloudBackupStatus = 'ready';
-            this.runDataSafetyCheck(false);
+            if (refreshSafety) this.runDataSafetyCheck(false);
             if (!silent) {
               this.showToast(this.cloudBackups.length ? `已載入 ${this.cloudBackups.length} 份雲端備份` : '雲端目前沒有備份', this.cloudBackups.length ? 'success' : 'info');
             }
@@ -3578,7 +3617,7 @@
             console.error('Cloud backup list failed:', error);
             this.cloudBackupStatus = 'error';
             this.cloudBackupError = error.message || '雲端備份清單讀取失敗';
-            this.runDataSafetyCheck(false);
+            if (refreshSafety) this.runDataSafetyCheck(false);
             if (!silent) this.showToast(`雲端備份讀取失敗：${this.cloudBackupError}`, 'error', 8000);
             return [];
           }
@@ -6947,7 +6986,7 @@
           this.cloudMigrationNeeded = false;
           this.cloudStatus = 'idle';
           this.cloudMessage = '尚未連接雲端資料';
-          this.cloudBaseline = {};
+          this.cloudBaseline = markRaw({});
           this.cloudConflict = null;
           this.cloudBackups = [];
           this.cloudBackupStatus = 'idle';
@@ -6998,7 +7037,15 @@
               closeoutRecords: this.closeoutRecords,
               servicesConfig: this.servicesConfig
             };
-            localStorage.setItem(`momo_precloud_backup_${Date.now()}`, JSON.stringify(backup));
+            const existingKeys = [];
+            for (let index = 0; index < localStorage.length; index += 1) {
+              const key = localStorage.key(index);
+              if (key?.startsWith('momo_precloud_backup_')) existingKeys.push(key);
+            }
+            existingKeys.sort().reverse();
+            const targetKey = existingKeys[0] || 'momo_precloud_backup_latest';
+            localStorage.setItem(targetKey, JSON.stringify(backup));
+            existingKeys.slice(1).forEach(key => localStorage.removeItem(key));
           } catch (error) {
             console.warn('Pre-cloud backup skipped:', error);
           }
@@ -7237,25 +7284,27 @@
         },
         captureCloudBaseline(snapshot) {
           const baseline = {};
-          Object.keys(this.versionedTableConfigs()).forEach(table => {
+          const configs = this.versionedTableConfigs();
+          Object.keys(configs).forEach(table => {
             baseline[table] = {};
             (snapshot[table] || []).forEach(row => {
               baseline[table][this.cloudRowKey(table, row)] = {
                 version: Number(row.version) || 1,
                 fingerprint: this.cloudFingerprint(row),
-                row
+                keyPayload: Object.fromEntries(configs[table].keys.map(key => [key, row?.[key]]))
               };
             });
           });
-          this.cloudBaseline = baseline;
+          this.cloudBaseline = markRaw(baseline);
         },
         setCloudBaselineRow(table, row) {
           if (!this.cloudBaseline[table]) this.cloudBaseline[table] = {};
+          const config = this.versionedTableConfigs()[table];
           const key = this.cloudRowKey(table, row);
           this.cloudBaseline[table][key] = {
             version: Number(row.version) || 1,
             fingerprint: this.cloudFingerprint(row),
-            row
+            keyPayload: Object.fromEntries(config.keys.map(field => [field, row?.[field]]))
           };
           this.applyLocalVersion(table, key, Number(row.version) || 1);
         },
@@ -8125,7 +8174,7 @@
               prefer: 'return=representation'
             });
             if (baseline && (!Array.isArray(rows) || !rows.length)) {
-              const payload = baseline.row || { [column]: value };
+              const payload = baseline.keyPayload || { [column]: value };
               const cloudRow = await this.fetchCurrentCloudRow(table, payload);
               const error = this.makeVersionConflict(table, payload, cloudRow, 'delete');
               this.cloudConflict = error.conflict;
@@ -9941,7 +9990,7 @@
           try {
             await this.checkPwaUpdate(false);
             if (this.cloudReady && this.authUser && this.cloudBackupStatus !== 'loading' && this.cloudBackupStatus !== 'restoring') {
-              await this.fetchCloudBackupList({ silent: true });
+              await this.fetchCloudBackupList({ silent: true, refreshSafety: false });
             }
             const report = this.buildDataSafetyReport();
             this.safetyReport = report;
@@ -10315,7 +10364,7 @@
             this.backupStatus = 'ready';
             this.runDataSafetyCheck(false);
             try {
-              await this.fetchCloudBackupList({ silent: true });
+              await this.fetchCloudBackupList({ silent: true, refreshSafety: false });
             } catch (error) {
               console.warn('Cloud backup list refresh skipped:', error);
             }
