@@ -76,9 +76,14 @@ class PostgresIntegrityIntegrationTests(unittest.TestCase):
         migration_sql = (
             ROOT / "supabase_integrity_hardening_migration.sql"
         ).read_text(encoding="utf-8")
+        cash_migration_sql = (
+            ROOT / "supabase_cash_closeout_csv_safety_migration.sql"
+        ).read_text(encoding="utf-8")
 
         # A clean install and two migration passes prove the migration is rerunnable.
         cls.connection.execute(schema_sql)
+        cls.connection.execute(cash_migration_sql)
+        cls.connection.execute(cash_migration_sql)
         cls.connection.execute(migration_sql)
         cls.connection.execute(migration_sql)
 
@@ -483,6 +488,59 @@ class PostgresIntegrityIntegrationTests(unittest.TestCase):
                 (Jsonb({"sequence": 99}), backups[0][0]),
             )
         self.assertEqual(context.exception.sqlstate, "55000")
+
+    def test_expense_payment_and_closeout_cash_fields_are_constrained(self):
+        expense_id = f"{self.prefix}-expense"
+        self.connection.execute(
+            """
+            insert into public.expenses (id, owner_id, expense_date, category, amount)
+            values (%s, %s, '2026-07-06', '材料費', 300)
+            """,
+            (expense_id, self.owner_id),
+        )
+        payment_method = self.connection.execute(
+            "select payment_method from public.expenses where id = %s",
+            (expense_id,),
+        ).fetchone()[0]
+        self.assertEqual(payment_method, "非現金")
+
+        with self.assertRaises(psycopg.Error):
+            self.connection.execute(
+                """
+                insert into public.expenses (
+                  id, owner_id, expense_date, category, amount, payment_method
+                ) values (%s, %s, '2026-07-06', '材料費', 100, '信用卡')
+                """,
+                (f"{expense_id}-invalid", self.owner_id),
+            )
+
+        self.connection.execute(
+            """
+            insert into public.closeouts (
+              owner_id, closeout_date, opening_cash, cash_expenses,
+              expected_cash, counted_cash, difference
+            ) values (%s, '2026-07-06', 2000, 300, 3200, 3200, 0)
+            """,
+            (self.owner_id,),
+        )
+        cash_fields = self.connection.execute(
+            """
+            select opening_cash, cash_expenses
+            from public.closeouts
+            where owner_id = %s and closeout_date = '2026-07-06'
+            """,
+            (self.owner_id,),
+        ).fetchone()
+        self.assertEqual(cash_fields, (2000, 300))
+
+        with self.assertRaises(psycopg.Error):
+            self.connection.execute(
+                """
+                insert into public.closeouts (owner_id, closeout_date, opening_cash)
+                values (%s, '2026-07-07', -1)
+                """,
+                (self.owner_id,),
+            )
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
     const { createApp } = Vue;
-    const APP_VERSION = '2026.07.17-ledger-calendar-integrity-1';
+    const APP_VERSION = '2026.07.17-cash-closeout-csv-safety-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -111,7 +111,7 @@
           inventory: [],
           customers: [],
           prepaidLedger: [],
-          dataSchemaVersion: 3,
+          dataSchemaVersion: 4,
           todayDate: todayStr,
           crmNotes: {},
 
@@ -152,6 +152,8 @@
           cloudTopupChannelSupported: true,
           cloudCloseoutBreakdownSupported: true,
           cloudCloseoutCountSupported: true,
+          cloudCloseoutCashFlowSupported: true,
+          cloudExpensePaymentSupported: true,
           cloudActualTimeSupported: true,
           cloudCorrectionSlipSupported: true,
           cloudVersionPollTimer: null,
@@ -202,6 +204,7 @@
           showOperationLogModal: false,
           closeoutRecords: {},
           closeoutDate: todayStr,
+          closeoutOpeningCash: 0,
           closeoutCashCount: null,
           closeoutNote: '',
           editSnapshots: {},
@@ -309,6 +312,7 @@
             date: todayStr,
             category: '材料費',
             amount: null,
+            paymentMethod: '現金',
             notes: ''
           },
           newInventory: {
@@ -1351,14 +1355,17 @@
             .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
         },
         selectedCloseout() {
-          return this.calculateCloseoutForDate(this.closeoutDate || new Date().toLocaleDateString('sv-SE'));
+          return this.calculateCloseoutForDate(
+            this.closeoutDate || new Date().toLocaleDateString('sv-SE'),
+            this.closeoutOpeningCash
+          );
         },
         todayCloseout() {
           return this.calculateCloseoutForDate(new Date().toLocaleDateString('sv-SE'));
         },
         todayCloseoutDifference() {
           if (this.closeoutCashCount === null || this.closeoutCashCount === '') return null;
-          return Number(this.closeoutCashCount) - this.selectedCloseout.actualCashIn;
+          return Number(this.closeoutCashCount) - this.selectedCloseout.expectedCash;
         },
         todayCloseoutRecord() {
           return this.closeoutRecords[new Date().toLocaleDateString('sv-SE')] || null;
@@ -1407,7 +1414,7 @@
           const unclosedItems = this.unclosedCloseoutDates.map(item => ({
             severity: 'warning',
             code: `closeout_missing_${item.date}`,
-            message: `${item.date} 尚未打烊，應有現金 NT$ ${this.formatNumber(item.actualCashIn)}`,
+            message: `${item.date} 尚未打烊，應有現金 NT$ ${this.formatNumber(item.expectedCash)}`,
             tab: 'closeout',
             date: item.date
           }));
@@ -1452,7 +1459,7 @@
               severity: 'warning',
               priority: 70,
               title: `${item.label} 尚未打烊`,
-              message: `${item.ordersCount || 0} 筆業績 · 應有現金 NT$ ${this.formatNumber(item.actualCashIn)} · 支出 NT$ ${this.formatNumber(item.expenses)}`,
+              message: `${item.ordersCount || 0} 筆業績 · 應有現金 NT$ ${this.formatNumber(item.expectedCash)} · 支出 NT$ ${this.formatNumber(item.expenses)}`,
               action: 'closeout',
               actionLabel: '打烊',
               date: item.date
@@ -2965,6 +2972,7 @@
         newExpenseDraftDirty() {
           return Boolean(
             (this.newExpense.amount !== null && this.newExpense.amount !== '')
+            || this.newExpense.paymentMethod !== '現金'
             || String(this.newExpense.notes || '').trim()
           );
         },
@@ -2982,7 +2990,10 @@
             ? null
             : Number(this.closeoutCashCount);
           const savedCount = record ? Number(record.countedCash) : null;
+          const currentOpeningCash = Math.max(0, Number(this.closeoutOpeningCash) || 0);
+          const savedOpeningCash = record ? Math.max(0, Number(record.openingCash) || 0) : 0;
           return currentCount !== savedCount
+            || currentOpeningCash !== savedOpeningCash
             || String(this.closeoutNote || '').trim() !== String(record?.note || '').trim();
         },
         hasUnsavedAppWork() {
@@ -2994,7 +3005,7 @@
           });
           const dirtyExpenseEdit = Object.entries(this.expenseEditDrafts || {}).some(([id, draft]) => {
             const expense = this.expenses.find(row => String(row.id) === String(id));
-            return Boolean(expense) && ['date', 'category', 'amount', 'notes'].some(field =>
+            return Boolean(expense) && ['date', 'category', 'amount', 'paymentMethod', 'notes'].some(field =>
               JSON.stringify(expense?.[field] ?? null) !== JSON.stringify(draft?.[field] ?? null)
             );
           });
@@ -3213,54 +3224,17 @@
           const stock = Number(item.stock) || 0;
           return stock > 0 && stock < this.inventorySafetyStock(item);
         },
-        calculateCloseoutForDate(date) {
+        calculateCloseoutForDate(date, openingCash = null) {
           const closeoutOrders = this.accountingOrders
             .filter(o => this.isOrderActive(o) && o.date === date && o.customerName && !this.isBlockedSlot(o.customerName));
-          const closeoutExpenses = this.expenses
-            .filter(e => e.date === date)
-            .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-          const countableOrders = closeoutOrders.filter(o => !this.isCorrectionSlip(o));
-          const serviceOrdersCount = countableOrders.filter(o => o.paymentMethod !== '儲值進帳').length;
-          const topupCount = countableOrders.length - serviceOrdersCount;
-          const totals = {
-            cash: 0,
-            transfer: 0,
-            prepaidOut: 0,
-            prepaidIn: 0,
-            cashPrepaidIn: 0,
-            transferPrepaidIn: 0,
-            other: 0,
-            serviceRevenue: 0,
-            actualCashIn: 0,
-            expenses: closeoutExpenses,
-            netProfit: 0,
-            ordersCount: countableOrders.length,
-            serviceOrdersCount,
-            topupCount
-          };
-
-          closeoutOrders.forEach(o => {
-            const amount = Number(o.amount) || 0;
-            if (o.paymentMethod === '現金') totals.cash += amount;
-            else if (o.paymentMethod === '轉帳') totals.transfer += amount;
-            else if (o.paymentMethod === '儲值扣款') totals.prepaidOut += amount;
-            else if (o.paymentMethod === '現金＋儲值扣款') {
-              totals.cash += this.getMixedCashAmount(o);
-              totals.prepaidOut += this.getMixedPrepaidAmount(o);
-            }
-            else if (o.paymentMethod === '儲值進帳') {
-              totals.prepaidIn += amount;
-              if (this.getTopupChannel(o) === '轉帳') totals.transferPrepaidIn += amount;
-              else totals.cashPrepaidIn += amount;
-            }
-            else totals.other += amount;
-
-            if (o.paymentMethod !== '儲值進帳') totals.serviceRevenue += amount;
+          const closeoutExpenses = this.expenses.filter(e => e.date === date);
+          const savedOpeningCash = this.closeoutRecords?.[date]?.openingCash;
+          const resolvedOpeningCash = openingCash === null || openingCash === undefined
+            ? savedOpeningCash
+            : openingCash;
+          return MomoCore.calculateCloseoutTotals(closeoutOrders, closeoutExpenses, {
+            openingCash: resolvedOpeningCash
           });
-
-          totals.actualCashIn = totals.cash + totals.cashPrepaidIn;
-          totals.netProfit = totals.serviceRevenue - totals.expenses;
-          return totals;
         },
         getSettlementCloseoutForDate(date) {
           const live = this.calculateCloseoutForDate(date);
@@ -3283,6 +3257,10 @@
           const transferPrepaidIn = amount(record.transferPrepaidIn);
           const serviceRevenue = amount(record.serviceRevenue);
           const expenses = amount(record.expenses);
+          const openingCash = amount(record.openingCash);
+          const cashExpenses = record.cashExpenses === undefined || record.cashExpenses === null
+            ? Math.max(0, live.cashExpenses)
+            : Math.max(0, amount(record.cashExpenses));
           const netProfit = record.netProfit === undefined || record.netProfit === null
             ? serviceRevenue - expenses
             : amount(record.netProfit);
@@ -3300,7 +3278,7 @@
             ? cash + cashPrepaidIn
             : amount(record.actualCashIn);
           const expectedCash = record.expectedCash === undefined || record.expectedCash === null
-            ? actualCashIn
+            ? openingCash + actualCashIn - cashExpenses
             : amount(record.expectedCash);
           const countedCash = record.countedCash === undefined || record.countedCash === null
             ? expectedCash
@@ -3310,6 +3288,7 @@
             date,
             source: 'snapshot',
             sourceLabel: '打烊快照',
+            openingCash,
             cash,
             transfer,
             prepaidOut,
@@ -3319,6 +3298,7 @@
             other: amount(record.other),
             serviceRevenue,
             actualCashIn,
+            cashExpenses,
             expenses,
             netProfit,
             ordersCount,
@@ -4234,6 +4214,7 @@
             date: expense.date || new Date().toLocaleDateString('sv-SE'),
             category: expense.category || this.expenseCategories[0] || '其他',
             amount: Number(expense.amount) || 0,
+            paymentMethod: MomoCore.normalizeExpensePaymentMethod(expense.paymentMethod),
             notes: expense.notes || ''
           };
         },
@@ -4262,7 +4243,7 @@
         },
         expenseDraftHasChanges(expense) {
           const draft = this.expenseEditDraft(expense);
-          return ['date', 'category', 'amount', 'notes'].some(field =>
+          return ['date', 'category', 'amount', 'paymentMethod', 'notes'].some(field =>
             JSON.stringify(expense?.[field] ?? null) !== JSON.stringify(draft?.[field] ?? null)
           );
         },
@@ -4281,9 +4262,10 @@
           const normalized = {
             ...draft,
             amount: Number(draft.amount) || 0,
+            paymentMethod: MomoCore.normalizeExpensePaymentMethod(draft.paymentMethod),
             notes: String(draft.notes || '').trim()
           };
-          const changed = ['date', 'category', 'amount', 'notes'].filter(field =>
+          const changed = ['date', 'category', 'amount', 'paymentMethod', 'notes'].filter(field =>
             JSON.stringify(before?.[field] ?? null) !== JSON.stringify(normalized?.[field] ?? null)
           );
           if (!changed.length) {
@@ -5105,17 +5087,33 @@
           const parsedExpenses = safeParse(localStorage.getItem('momo_expenses'), clone(defaultExpenses));
           const parsedInventory = safeParse(localStorage.getItem('momo_inventory'), clone(defaultInventory));
           this.orders = Array.isArray(parsedOrders) ? parsedOrders : clone(defaultOrders);
-          this.expenses = Array.isArray(parsedExpenses) ? parsedExpenses : clone(defaultExpenses);
+          this.expenses = (Array.isArray(parsedExpenses) ? parsedExpenses : clone(defaultExpenses)).map(expense => ({
+            ...expense,
+            paymentMethod: MomoCore.normalizeExpensePaymentMethod(expense?.paymentMethod)
+          }));
           this.inventory = Array.isArray(parsedInventory) ? parsedInventory : clone(defaultInventory);
           this.customers = safeParse(localStorage.getItem('momo_customers'), []);
           this.prepaidLedger = safeParse(localStorage.getItem('momo_prepaidLedger'), []);
           this.crmNotes = safeParse(localStorage.getItem('momo_crmNotes'), clone(defaultCrmNotes));
           this.crmFormulas = safeParse(localStorage.getItem('momo_crmFormulas'), {});
-          this.closeoutRecords = safeParse(localStorage.getItem('momo_closeoutRecords'), {});
+          const parsedCloseouts = safeParse(localStorage.getItem('momo_closeoutRecords'), {});
+          this.closeoutRecords = Object.fromEntries(Object.entries(parsedCloseouts || {}).map(([date, record]) => {
+            const cash = Math.round(Number(record?.cash) || 0);
+            const cashPrepaidIn = Math.round(Number(record?.cashPrepaidIn) || 0);
+            return [date, {
+              ...record,
+              openingCash: Math.max(0, Math.round(Number(record?.openingCash) || 0)),
+              cashExpenses: Math.max(0, Math.round(Number(record?.cashExpenses) || 0)),
+              actualCashIn: record?.actualCashIn === undefined || record?.actualCashIn === null
+                ? cash + cashPrepaidIn
+                : Math.round(Number(record.actualCashIn) || 0)
+            }];
+          }));
           const savedServicesConfig = safeParse(localStorage.getItem('momo_servicesConfig'), clone(defaultServicesConfig));
           this.servicesConfig = Array.isArray(savedServicesConfig) ? savedServicesConfig : clone(defaultServicesConfig);
           const todayRecord = this.closeoutRecords[new Date().toLocaleDateString('sv-SE')];
           if (todayRecord) {
+            this.closeoutOpeningCash = Math.max(0, Number(todayRecord.openingCash) || 0);
             this.closeoutCashCount = todayRecord.countedCash;
             this.closeoutNote = todayRecord.note || '';
           }
@@ -5694,6 +5692,7 @@
         loadCloseoutFormForDate() {
           const date = this.closeoutDate || new Date().toLocaleDateString('sv-SE');
           const record = this.closeoutRecords[date];
+          this.closeoutOpeningCash = record ? Math.max(0, Number(record.openingCash) || 0) : 0;
           this.closeoutCashCount = record ? record.countedCash : null;
           this.closeoutNote = record ? (record.note || '') : '';
         },
@@ -5708,6 +5707,11 @@
           this.showExpenseForm = true;
         },
         saveSelectedCloseout() {
+          const openingCash = Number(this.closeoutOpeningCash) || 0;
+          if (!Number.isSafeInteger(openingCash) || openingCash < 0) {
+            this.showToast('開店零用金必須是 0 以上的整數', 'error');
+            return false;
+          }
           if (this.closeoutCashCount === null || this.closeoutCashCount === '') {
             this.showToast('請先輸入實際盤點現金', 'error');
             return false;
@@ -5719,12 +5723,13 @@
           }
           const date = this.closeoutDate || new Date().toLocaleDateString('sv-SE');
           const totals = this.selectedCloseout;
-          const difference = countedCash - totals.actualCashIn;
+          const difference = countedCash - totals.expectedCash;
           const wasUpdate = Boolean(this.closeoutRecords[date]);
           const previous = wasUpdate ? MomoCore.cloneJsonValue(this.closeoutRecords[date]) : null;
           this.closeoutRecords[date] = {
             date,
-            expectedCash: totals.actualCashIn,
+            openingCash: totals.openingCash,
+            expectedCash: totals.expectedCash,
             countedCash,
             difference,
             cash: totals.cash,
@@ -5735,6 +5740,7 @@
             transferPrepaidIn: totals.transferPrepaidIn,
             serviceRevenue: totals.serviceRevenue,
             actualCashIn: totals.actualCashIn,
+            cashExpenses: totals.cashExpenses,
             expenses: totals.expenses,
             netProfit: totals.netProfit,
             ordersCount: totals.ordersCount,
@@ -5752,7 +5758,7 @@
             return false;
           }
           this.queueCloudSync();
-          this.recordOperation('closeout_save', wasUpdate ? '更新打烊' : '完成打烊', `${date} 應有 NT$ ${this.formatNumber(totals.actualCashIn)} · 實點 NT$ ${this.formatNumber(this.closeoutCashCount)} · 差額 ${difference > 0 ? '+' : ''}NT$ ${this.formatNumber(difference)}`);
+          this.recordOperation('closeout_save', wasUpdate ? '更新打烊' : '完成打烊', `${date} 應有 NT$ ${this.formatNumber(totals.expectedCash)} · 實點 NT$ ${this.formatNumber(this.closeoutCashCount)} · 差額 ${difference > 0 ? '+' : ''}NT$ ${this.formatNumber(difference)}`);
           this.showToast(difference === 0 ? `${date} 打烊完成，現金帳實相符` : `${date} 打烊已記錄，差額 NT$ ${this.formatNumber(difference)}`,
             difference === 0 ? 'success' : 'warning', 5000);
           return true;
@@ -5777,12 +5783,14 @@
           const diff = Number(record.difference) || 0;
           const line = [
             `摸摸頭 momohair 打烊摘要 ${record.date}`,
+            `開店零用金：NT$ ${this.formatNumber(record.openingCash || 0)}`,
             `服務營收：NT$ ${this.formatNumber(record.serviceRevenue)}`,
             `現金收入：NT$ ${this.formatNumber(record.cash || 0)}`,
             `轉帳收入：NT$ ${this.formatNumber(record.transfer || 0)}`,
             `儲值扣款：NT$ ${this.formatNumber(record.prepaidOut || 0)}`,
             `儲值進帳：NT$ ${this.formatNumber(record.prepaidIn || 0)}（現金 ${this.formatNumber(record.cashPrepaidIn || 0)}／轉帳 ${this.formatNumber(record.transferPrepaidIn || 0)}）`,
             `今日支出：NT$ ${this.formatNumber(record.expenses)}`,
+            `抽屜現金支出：NT$ ${this.formatNumber(record.cashExpenses || 0)}`,
             `工作室淨利：NT$ ${this.formatNumber(record.netProfit ?? ((record.serviceRevenue || 0) - (record.expenses || 0)))}`,
             `應有現金：NT$ ${this.formatNumber(record.expectedCash)}`,
             `實點現金：NT$ ${this.formatNumber(record.countedCash)}`,
@@ -5816,9 +5824,10 @@
         buildCloseoutDraftRecord() {
           const totals = this.selectedCloseout;
           const counted = this.closeoutCashCount === null || this.closeoutCashCount === '' ? null : Number(this.closeoutCashCount);
-          const expected = totals.actualCashIn;
+          const expected = totals.expectedCash;
           return {
             date: this.closeoutDate || new Date().toLocaleDateString('sv-SE'),
+            openingCash: totals.openingCash,
             expectedCash: expected,
             countedCash: counted ?? expected,
             difference: counted === null ? 0 : counted - expected,
@@ -5830,6 +5839,7 @@
             transferPrepaidIn: totals.transferPrepaidIn,
             serviceRevenue: totals.serviceRevenue,
             actualCashIn: totals.actualCashIn,
+            cashExpenses: totals.cashExpenses,
             expenses: totals.expenses,
             netProfit: totals.netProfit,
             ordersCount: totals.ordersCount,
@@ -5839,7 +5849,7 @@
           };
         },
         setCloseoutCashToExpected() {
-          this.closeoutCashCount = this.selectedCloseout.actualCashIn;
+          this.closeoutCashCount = this.selectedCloseout.expectedCash;
           this.showToast('已帶入應有現金', 'info');
         },
         copyCloseoutDraftSummary() {
@@ -7031,8 +7041,18 @@
               && requestBody
               && orderCorrectionColumns.some(column => detail.includes(column))
               && /(column|schema cache|could not find|PGRST204)/i.test(detail);
+            const expensePaymentColumns = ['payment_method'];
+            const missingExpensePayment = table === 'expenses'
+              && requestBody
+              && expensePaymentColumns.some(column => detail.includes(column))
+              && /(column|schema cache|could not find|PGRST204)/i.test(detail);
             const closeoutBreakdownColumns = ['cash', 'transfer', 'prepaid_out', 'prepaid_in', 'cash_prepaid_in', 'transfer_prepaid_in', 'net_profit', 'orders_count'];
             const closeoutCountColumns = ['service_orders_count', 'topup_count'];
+            const closeoutCashFlowColumns = ['opening_cash', 'cash_expenses'];
+            const missingCloseoutCashFlow = table === 'closeouts'
+              && requestBody
+              && closeoutCashFlowColumns.some(column => detail.includes(column))
+              && /(column|schema cache|could not find|PGRST204)/i.test(detail);
             const missingCloseoutCounts = table === 'closeouts'
               && requestBody
               && closeoutCountColumns.some(column => detail.includes(column))
@@ -7087,6 +7107,42 @@
               requestBody = Array.isArray(requestBody)
                 ? requestBody.map(stripOrderCorrectionSlip)
                 : stripOrderCorrectionSlip(requestBody);
+              response = await execute();
+              if (response.status === 401 && await this.refreshSupabaseSession()) response = await execute();
+              if (response.ok) {
+                if (response.status === 204) return null;
+                const retryText = await response.text();
+                return retryText ? JSON.parse(retryText) : null;
+              }
+            }
+            if (missingExpensePayment) {
+              this.cloudExpensePaymentSupported = false;
+              const stripExpensePayment = row => {
+                const copy = { ...row };
+                expensePaymentColumns.forEach(column => delete copy[column]);
+                return copy;
+              };
+              requestBody = Array.isArray(requestBody)
+                ? requestBody.map(stripExpensePayment)
+                : stripExpensePayment(requestBody);
+              response = await execute();
+              if (response.status === 401 && await this.refreshSupabaseSession()) response = await execute();
+              if (response.ok) {
+                if (response.status === 204) return null;
+                const retryText = await response.text();
+                return retryText ? JSON.parse(retryText) : null;
+              }
+            }
+            if (missingCloseoutCashFlow) {
+              this.cloudCloseoutCashFlowSupported = false;
+              const stripCloseoutCashFlow = row => {
+                const copy = { ...row };
+                closeoutCashFlowColumns.forEach(column => delete copy[column]);
+                return copy;
+              };
+              requestBody = Array.isArray(requestBody)
+                ? requestBody.map(stripCloseoutCashFlow)
+                : stripCloseoutCashFlow(requestBody);
               response = await execute();
               if (response.status === 401 && await this.refreshSupabaseSession()) response = await execute();
               if (response.ok) {
@@ -7656,6 +7712,7 @@
               date: row.expense_date,
               category: row.category,
               amount: Number(row.amount) || 0,
+              paymentMethod: MomoCore.normalizeExpensePaymentMethod(row.payment_method),
               notes: row.notes || '',
               version: Number(row.version) || 1
             }));
@@ -7676,6 +7733,7 @@
             });
             this.closeoutRecords = Object.fromEntries((snapshot.closeouts || []).map(row => [row.closeout_date, {
               date: row.closeout_date,
+              openingCash: Math.max(0, Number(row.opening_cash) || 0),
               expectedCash: Number(row.expected_cash) || 0,
               countedCash: Number(row.counted_cash) || 0,
               difference: Number(row.difference) || 0,
@@ -7685,6 +7743,8 @@
               prepaidIn: Number(row.prepaid_in) || 0,
               cashPrepaidIn: Number(row.cash_prepaid_in) || 0,
               transferPrepaidIn: Number(row.transfer_prepaid_in) || 0,
+              actualCashIn: Number(row.cash) + Number(row.cash_prepaid_in) || 0,
+              cashExpenses: Math.max(0, Number(row.cash_expenses) || 0),
               serviceRevenue: Number(row.service_revenue) || 0,
               expenses: Number(row.expenses) || 0,
               netProfit: Number(row.net_profit) || 0,
@@ -7880,6 +7940,9 @@
               expense_date: expense.date,
               category: expense.category || '其他',
               amount: Math.max(0, Math.round(Number(expense.amount) || 0)),
+              ...(this.cloudExpensePaymentSupported ? {
+                payment_method: MomoCore.normalizeExpensePaymentMethod(expense.paymentMethod)
+              } : {}),
               notes: expense.notes || '',
               created_at: expense.createdAt || now,
               updated_at: now
@@ -7903,6 +7966,10 @@
             closeouts: Object.values(this.closeoutRecords || {}).filter(record => record?.date).map(record => ({
               owner_id: ownerId,
               closeout_date: record.date,
+              ...(this.cloudCloseoutCashFlowSupported ? {
+                opening_cash: Math.max(0, Math.round(Number(record.openingCash) || 0)),
+                cash_expenses: Math.max(0, Math.round(Number(record.cashExpenses) || 0))
+              } : {}),
               expected_cash: Math.round(Number(record.expectedCash) || 0),
               counted_cash: Math.round(Number(record.countedCash) || 0),
               difference: Math.round(Number(record.difference) || 0),
@@ -9268,8 +9335,14 @@
             },
             {
               title: '支出明細',
-              headers: ['日期', '支出分類', '金額(NT$)', '備註'],
-              rows: this.settlementExpenses.map(expense => [expense.date, expense.category, expense.amount, expense.notes || ''])
+              headers: ['日期', '支出分類', '付款來源', '金額(NT$)', '備註'],
+              rows: this.settlementExpenses.map(expense => [
+                expense.date,
+                expense.category,
+                MomoCore.normalizeExpensePaymentMethod(expense.paymentMethod),
+                expense.amount,
+                expense.notes || ''
+              ])
             },
             {
               title: '時間產值分析',
@@ -9314,17 +9387,11 @@
             this.annualMonthlyData.reduce((s, m) => s + m.count, 0),
             this.annualSummary.totalRevenue > 0 && this.annualSummary.totalExpenses === 0 ? '全年支出為 0，淨利率待確認' : '已包含支出資料'
           ]);
-          let csv = '\uFEFF';
-          csv += [`"${this.selectedYear} 年 年度損益報表"`, ''].join('\n');
-          csv += [headers.map(h => `"${h}"`).join(','),
-                  ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
-          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-          const url  = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `MOMO損益報表_${this.selectedYear}年.csv`;
-          link.click();
-          URL.revokeObjectURL(url);
+          this.downloadSectionedCSV(`MOMO損益報表_${this.selectedYear}年.csv`, [{
+            title: `${this.selectedYear} 年 年度損益報表`,
+            headers,
+            rows
+          }]);
           this.showToast(`${this.selectedYear} 年度損益報表已匯出`);
         },
         exportAnnualReportCSV() {
@@ -9378,7 +9445,7 @@
           if (this.selectedMonth === 'All' || this.kpis.momoSalary === 0) return;
 
           const year  = this.selectedYear;
-          const month = this.selectedMonth;
+          const month = String(this.selectedMonth).padStart(2, '0');
           const salary = this.kpis.momoSalary;
           const revenue = this.kpis.revenue;
           const date = `${year}-${month}-01`;
@@ -9389,15 +9456,13 @@
           const existing = this.expenses.find(e => e.id === salaryId);
 
           const doImport = () => {
-            const payload = {
-              id: salaryId,
-              date,
-              category: '薪資',
-              amount: salary,
-              notes: `MOMO薪水 ${year}年${parseInt(month)}月（營業額 NT$${revenue.toLocaleString()} × 45%）`
-            };
-            if (existing) Object.assign(existing, payload);
-            else this.expenses.push(payload);
+            const result = MomoCore.upsertGeneratedSalaryExpense(this.expenses, {
+              year,
+              month,
+              salary,
+              revenue
+            });
+            this.expenses = result.expenses;
             this.saveExpenses();
             this.showExpenseForm = false;
             this.showToast(`薪水 NT$ ${salary.toLocaleString()} 已寫入 ${parseInt(month)} 月支出！`);
@@ -9599,12 +9664,13 @@
             date: this.newExpense.date,
             category: this.newExpense.category,
             amount: Number(this.newExpense.amount) || 0,
+            paymentMethod: MomoCore.normalizeExpensePaymentMethod(this.newExpense.paymentMethod),
             notes: this.newExpense.notes.trim()
           };
           this.expenses.push(expense);
 
           this.saveExpenses();
-          this.recordOperation('expense_create', '新增支出', `${expense.date} ${expense.category} · NT$ ${this.formatNumber(expense.amount)}`, { expenseId: id });
+          this.recordOperation('expense_create', '新增支出', `${expense.date} ${expense.category} · ${expense.paymentMethod} NT$ ${this.formatNumber(expense.amount)}`, { expenseId: id });
           this.showToast('支出新增成功！');
 
           // Reset inputs except date
@@ -9914,13 +9980,28 @@
         },
         replaceBusinessStateFromBackup(payload = {}, servicesIncluded = true) {
           this.orders = MomoCore.cloneJsonValue(payload.momo_orders || []);
-          this.expenses = MomoCore.cloneJsonValue(payload.momo_expenses || []);
+          this.expenses = MomoCore.cloneJsonValue(payload.momo_expenses || []).map(expense => ({
+            ...expense,
+            paymentMethod: MomoCore.normalizeExpensePaymentMethod(expense?.paymentMethod)
+          }));
           this.inventory = MomoCore.cloneJsonValue(payload.momo_inventory || []);
           this.customers = MomoCore.cloneJsonValue(payload.momo_customers || []);
           this.prepaidLedger = MomoCore.cloneJsonValue(payload.momo_prepaidLedger || []);
           this.crmNotes = MomoCore.cloneJsonValue(payload.momo_crmNotes || {});
           this.crmFormulas = MomoCore.cloneJsonValue(payload.momo_crmFormulas || {});
-          this.closeoutRecords = MomoCore.cloneJsonValue(payload.momo_closeoutRecords || {});
+          const restoredCloseouts = MomoCore.cloneJsonValue(payload.momo_closeoutRecords || {});
+          this.closeoutRecords = Object.fromEntries(Object.entries(restoredCloseouts).map(([date, record]) => {
+            const cash = Math.round(Number(record?.cash) || 0);
+            const cashPrepaidIn = Math.round(Number(record?.cashPrepaidIn) || 0);
+            return [date, {
+              ...record,
+              openingCash: Math.max(0, Math.round(Number(record?.openingCash) || 0)),
+              cashExpenses: Math.max(0, Math.round(Number(record?.cashExpenses) || 0)),
+              actualCashIn: record?.actualCashIn === undefined || record?.actualCashIn === null
+                ? cash + cashPrepaidIn
+                : Math.round(Number(record.actualCashIn) || 0)
+            }];
+          }));
           this.operationLogs = MomoCore.cloneJsonValue(payload.momo_operationLogs || []);
           if (servicesIncluded) this.servicesConfig = MomoCore.cloneJsonValue(payload.momo_servicesConfig || []);
           this.migrateLegacyCalendarActualDurations(payload.schemaVersion || 1);
@@ -10043,6 +10124,7 @@
             const target = { tab: 'expenses', expenseId: expense.id };
             if (!validDate(expense.date)) addIssue('error', 'expense_invalid_date', `支出 ${expense.id || '未知'} 日期格式錯誤`, target);
             if (!MomoCore.isFiniteNumericInput(expense.amount) || Number(expense.amount) < 0) addIssue('error', 'expense_invalid_amount', `支出 ${expense.id || '未知'} 金額錯誤`, target);
+            if (!Object.values(MomoCore.EXPENSE_PAYMENT).includes(expense.paymentMethod)) addIssue('error', 'expense_invalid_payment', `支出 ${expense.id || '未知'} 付款來源錯誤`, target);
           });
           this.inventory.forEach(item => {
             if (!String(item.name || '').trim()) addIssue('error', 'inventory_missing_name', `庫存 ${item.id || '未知'} 缺少品名`);
@@ -10346,19 +10428,14 @@
           this.showDataTools = false;
         },
         exportExpensesCSV() {
-          const headers = ['日期', '支出分類', '金額(NT$)', '備註'];
-          const rows = this.filteredExpenses.map(e => [e.date, e.category, e.amount, e.notes || '']);
+          const headers = ['日期', '支出分類', '付款來源', '金額(NT$)', '備註'];
+          const rows = this.filteredExpenses.map(e => [e.date, e.category, MomoCore.normalizeExpensePaymentMethod(e.paymentMethod), e.amount, e.notes || '']);
           this.downloadCSV(`MOMO支出明細_${this.selectedYear}-${this.selectedMonth}.csv`, headers, rows);
           this.showToast('支出明細 CSV 已匯出');
           this.showDataTools = false;
         },
         downloadCSV(filename, headers, rows) {
-          const escape = value => {
-            const raw = String(value ?? '');
-            const safe = typeof value === 'string' && /^[\t\r ]*[=+\-@]/.test(raw) ? `'${raw}` : raw;
-            return `"${safe.replace(/"/g, '""')}"`;
-          };
-          const csvContent = '\uFEFF' + [headers, ...rows].map(row => row.map(escape).join(',')).join('\r\n');
+          const csvContent = '\uFEFF' + [headers, ...rows].map(row => row.map(MomoCore.escapeCsvCell).join(',')).join('\r\n');
           const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
@@ -10368,11 +10445,6 @@
           setTimeout(() => URL.revokeObjectURL(url), 0);
         },
         downloadSectionedCSV(filename, sections) {
-          const escape = value => {
-            const raw = String(value ?? '');
-            const safe = typeof value === 'string' && /^[\t\r ]*[=+\-@]/.test(raw) ? `'${raw}` : raw;
-            return `"${safe.replace(/"/g, '""')}"`;
-          };
           const lines = [];
           (sections || []).forEach((section, index) => {
             if (index > 0) lines.push([]);
@@ -10380,7 +10452,7 @@
             if (section.headers?.length) lines.push(section.headers);
             (section.rows || []).forEach(row => lines.push(row));
           });
-          const csvContent = '\uFEFF' + lines.map(row => row.map(escape).join(',')).join('\r\n');
+          const csvContent = '\uFEFF' + lines.map(row => row.map(MomoCore.escapeCsvCell).join(',')).join('\r\n');
           const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
