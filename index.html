@@ -26,20 +26,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.17-runtime-monitoring-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.17-crm-observation-3">
 
   <!-- Vue 3 Global Build (local copy for reliable PWA startup) -->
-  <script src="/assets/vue.global.prod.js?v=2026.07.17-runtime-monitoring-1"></script>
+  <script src="/assets/vue.global.prod.js?v=2026.07.17-crm-observation-3"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.17-runtime-monitoring-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.17-crm-observation-3">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
 
     <!-- Supabase owner login (only enforced after Render enables REQUIRE_AUTH) -->
     <transition name="fade">
-      <div v-if="showAuthSheet" class="momo-dialog-overlay fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-slate-900/45 sm:p-6"
+      <div v-if="showAuthSheet && !localQaRoute" class="momo-dialog-overlay fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-slate-900/45 sm:p-6"
            @click="!authConfig.required && (showAuthSheet = false)">
         <section class="momo-dialog momo-dialog--sm momo-dialog--auth ios-sheet w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-white border border-orange-100 p-6 macaron-shadow-lg safe-pb" @click.stop>
           <div class="ios-sheet-handle sm:hidden"></div>
@@ -2496,14 +2496,38 @@
               <div class="crm-insights-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="text-base sm:text-lg font-black text-slate-800">顧客回流分析</h3>
+                    <h3 class="text-base sm:text-lg font-black text-slate-800">顧客觀察中心</h3>
+                    <span class="px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-[9px] font-black text-emerald-700">純觀察 · 不聯絡</span>
                   </div>
-                  <p class="text-[10px] font-bold text-slate-400 mt-0.5">依最後消費日、常做服務週期、累計價值與儲值狀態分群</p>
+                  <p class="text-[10px] font-bold text-slate-400 mt-0.5">依各服務週期、近期客單、到店間隔與儲值狀態自動整理，只供店內判讀</p>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                   <button @click="crmFilterMode = 'all'; crmSearchQuery = ''" class="min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black">全部顧客</button>
                   <button @click="crmShowInsights = false" aria-label="關閉回流分析" class="crm-icon-button min-h-[38px] w-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-lg font-semibold"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
                 </div>
+              </div>
+
+              <div class="grid grid-cols-2 lg:grid-cols-4 border-b border-slate-100">
+                <button @click="crmFilterMode = 'observationHigh'; crmShowInsights = false; crmSortMode = 'observation'" class="p-4 text-left border-r border-b lg:border-b-0 border-slate-100 bg-rose-50/35 hover:bg-rose-50 transition-colors">
+                  <div class="text-[10px] font-black text-rose-500">優先觀察</div>
+                  <div class="mt-1 text-2xl font-black text-rose-700">{{ crmObservationStats.high }}</div>
+                  <div class="mt-1 text-[9px] font-bold text-slate-400">多項訊號同時出現</div>
+                </button>
+                <button @click="crmFilterMode = 'observationAttention'; crmShowInsights = false; crmSortMode = 'observation'" class="p-4 text-left lg:border-r border-b lg:border-b-0 border-slate-100 bg-amber-50/35 hover:bg-amber-50 transition-colors">
+                  <div class="text-[10px] font-black text-amber-600">需要留意</div>
+                  <div class="mt-1 text-2xl font-black text-amber-700">{{ crmObservationStats.attention }}</div>
+                  <div class="mt-1 text-[9px] font-bold text-slate-400">回流或帳務有變化</div>
+                </button>
+                <button @click="crmFilterMode = 'spendDown'; crmShowInsights = false; crmSortMode = 'observation'" class="p-4 text-left border-r border-slate-100 bg-violet-50/35 hover:bg-violet-50 transition-colors">
+                  <div class="text-[10px] font-black text-violet-600">近期客單下降</div>
+                  <div class="mt-1 text-2xl font-black text-violet-700">{{ crmObservationStats.spendDown }}</div>
+                  <div class="mt-1 text-[9px] font-bold text-slate-400">近 2–3 次對照前期</div>
+                </button>
+                <button @click="crmFilterMode = 'paceSlower'; crmShowInsights = false; crmSortMode = 'observation'" class="p-4 text-left bg-sky-50/35 hover:bg-sky-50 transition-colors">
+                  <div class="text-[10px] font-black text-sky-600">到店間隔變慢</div>
+                  <div class="mt-1 text-2xl font-black text-sky-700">{{ crmObservationStats.paceSlower }}</div>
+                  <div class="mt-1 text-[9px] font-bold text-slate-400">最近間隔對照過往</div>
+                </button>
               </div>
 
               <div class="grid grid-cols-2 lg:grid-cols-6 divide-x divide-y lg:divide-y-0 divide-slate-100">
@@ -2540,13 +2564,26 @@
                   </div>
                 </div>
                 <div class="p-4 sm:p-6">
-                  <h4 class="text-sm font-black text-slate-800">服務週期口徑</h4>
-                  <p class="text-[10px] font-bold text-slate-400 mt-0.5">系統用常做服務推估，不代表一定要主動聯絡。</p>
-                  <div class="mt-3 flex flex-wrap gap-2">
-                    <span v-for="cycle in crmReturnCycleCards" :key="'cycle-' + cycle.label" class="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[10px] font-black text-slate-600">{{ cycle.label }} · {{ cycle.days }} 天</span>
+                  <h4 class="text-sm font-black text-slate-800">各服務獨立週期</h4>
+                  <p class="text-[10px] font-bold text-slate-400 mt-0.5">同一位顧客的剪、染、燙、護會分開計算，不再只看最常做的項目。</p>
+                  <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
+                    <div v-for="cycle in crmReturnCycleCards" :key="'cycle-' + cycle.key" class="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-[10px] font-black text-slate-700">{{ cycle.label }} · {{ cycle.days }} 天</span>
+                        <span class="text-[9px] font-black text-slate-400">{{ cycle.customers }} 人</span>
+                      </div>
+                      <div class="mt-1 text-[9px] font-bold text-slate-400">接近 {{ cycle.upcoming }} · 超期 {{ cycle.overdue }}</div>
+                    </div>
                   </div>
-                  <div class="mt-3 rounded-2xl bg-orange-50/60 border border-orange-100 px-3 py-2 text-[10px] font-bold text-orange-700 leading-relaxed">
-                    「儲值久未來」會另外標出，因為那代表帳上仍有負債，但客人已一段時間沒有回來。
+                  <div v-if="crmObservationLeaders.length" class="mt-3 rounded-2xl border border-orange-100 bg-orange-50/40 p-2.5">
+                    <div class="px-1 text-[10px] font-black text-orange-700">目前較需要觀察</div>
+                    <button v-for="cust in crmObservationLeaders.slice(0, 3)" :key="'observation-leader-' + cust.id" @click="goToCustomerCRM(cust.id)" class="mt-1.5 w-full rounded-xl bg-white border border-orange-100 px-3 py-2 text-left">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-[10px] font-black text-slate-700 truncate">{{ cust.name }}</span>
+                        <span class="text-[9px] font-black" :class="cust.observationLevel === 'high' ? 'text-rose-600' : cust.observationLevel === 'attention' ? 'text-amber-700' : 'text-sky-700'">{{ cust.observationLabel }}</span>
+                      </div>
+                      <div class="mt-0.5 text-[9px] font-bold text-slate-400 truncate">{{ cust.observationReason }}</div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2560,7 +2597,7 @@
                 </div>
                 <button @click="crmShowInsights = !crmShowInsights" :aria-expanded="crmShowInsights" class="crm-directory-insights momo-command-secondary min-h-[36px] px-3 rounded-xl border text-[11px] font-black"
                         :class="crmShowInsights ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200'">
-                  {{ crmShowInsights ? '收合分析' : '回流分析' }}
+                  {{ crmShowInsights ? '收合觀察' : '顧客觀察' }}
                 </button>
               </div>
               <div class="crm-directory-controls momo-command-search-row flex flex-col sm:flex-row gap-2">
@@ -2571,6 +2608,7 @@
                   <button v-if="crmSearchQuery" @click="crmSearchQuery = ''" aria-label="清除顧客搜尋" class="crm-search-clear absolute right-2.5 top-1/2 -translate-y-1/2 min-h-8 w-8 text-slate-400 font-black text-sm"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
                 </div>
                 <select v-model="crmSortMode" aria-label="顧客排序" class="crm-sort-select momo-command-filter-control min-h-[44px] jelly-input bg-white border border-orange-100 rounded-2xl px-3 text-xs font-black text-slate-600 sm:w-44">
+                  <option value="observation">優先觀察</option>
                   <option value="lastDate">最近來訪</option>
                   <option value="totalSpent">消費最高</option>
                   <option value="prepaidLow">儲值最低</option>
@@ -2659,6 +2697,7 @@
                         <h4 class="font-black text-slate-800 truncate">{{ cust.name }}</h4>
                         <span class="crm-customer-gender" :class="cust.gender === '男' ? 'is-male' : 'is-female'">{{ cust.gender }}</span>
                         <span class="crm-customer-status momo-status-badge momo-status-tone text-[9px] font-black px-2 py-1 rounded-lg border shrink-0" :class="crmCustomerStatusTone(cust)">{{ cust.statusLabel }}</span>
+                        <span v-if="cust.observationLevel !== 'normal'" class="text-[9px] font-black px-2 py-1 rounded-lg border shrink-0" :class="cust.observationLevel === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' : cust.observationLevel === 'attention' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-sky-50 text-sky-700 border-sky-100'">{{ cust.observationLabel }}</span>
                       </div>
                       <div class="crm-customer-meta">
                         <span>{{ cust.count }} 次消費</span>
@@ -2675,8 +2714,8 @@
                     <div class="crm-customer-metric"><div class="crm-customer-metric-label">儲值</div><div class="crm-customer-metric-value" :class="cust.prepaidBalance > 0 ? 'text-emerald-700' : cust.prepaidBalance < 0 ? 'text-rose-600' : 'text-slate-500'">NT$ {{ formatNumber(cust.prepaidBalance) }}</div></div>
                   </div>
                   <div class="crm-customer-preference min-w-0">
-                    <div class="text-[9px] font-black text-slate-400">回流觀察</div>
-                    <div class="mt-0.5 text-[10px] font-bold text-slate-500 truncate">{{ cust.returnReason }}</div>
+                    <div class="text-[9px] font-black text-slate-400">觀察原因</div>
+                    <div class="mt-0.5 text-[10px] font-bold text-slate-500 truncate">{{ cust.observationReason }}</div>
                   </div>
                   <span class="crm-customer-open" aria-hidden="true"><svg class="momo-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
                 </button>
@@ -2831,9 +2870,10 @@
 
                   <details open class="rounded-2xl border border-violet-100 bg-white overflow-hidden">
                     <summary class="min-h-[44px] cursor-pointer px-3 flex items-center justify-between text-xs font-black text-slate-600">
-                      <span>儲值與回流觀察</span><span class="text-[10px] text-violet-500">{{ cust.returnLabel }}</span>
+                      <span>儲值與顧客觀察</span><span class="text-[10px]" :class="cust.observationLevel === 'high' ? 'text-rose-600' : cust.observationLevel === 'attention' ? 'text-amber-700' : 'text-violet-500'">{{ cust.observationLabel }}</span>
                     </summary>
                     <div class="p-3 pt-1 space-y-3">
+                      <div class="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2 text-[10px] font-bold text-emerald-700">此區只做店內觀察，不會自動聯絡、傳訊或產生話術。</div>
                       <div class="grid grid-cols-3 gap-2">
                         <div class="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">儲值餘額</div><div class="text-xs font-black text-emerald-700">NT$ {{ formatNumber(cust.prepaidBalance) }}</div></div>
                         <div class="rounded-xl bg-white border border-violet-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">價值分群</div><div class="text-xs font-black text-slate-700">{{ cust.valueTierLabel }}</div></div>
@@ -2842,6 +2882,40 @@
                       <div class="grid grid-cols-2 gap-2">
                         <div class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">預估週期</div><div class="text-xs font-black text-slate-700">{{ cust.revisitDays }} 天</div></div>
                         <div class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2"><div class="text-[9px] font-black text-slate-400">預估回流日</div><div class="text-xs font-black text-slate-700">{{ cust.returnDueDate || '尚無' }}</div></div>
+                      </div>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div class="rounded-xl border px-3 py-2" :class="cust.spendTrend.direction === 'down' ? 'bg-rose-50 border-rose-100' : cust.spendTrend.direction === 'up' ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100'">
+                          <div class="text-[9px] font-black text-slate-400">近期客單趨勢</div>
+                          <div class="text-xs font-black" :class="cust.spendTrend.direction === 'down' ? 'text-rose-600' : cust.spendTrend.direction === 'up' ? 'text-emerald-700' : 'text-slate-700'">{{ cust.spendTrend.label }}<span v-if="cust.spendTrend.percent !== null"> {{ cust.spendTrend.percent > 0 ? '+' : '' }}{{ cust.spendTrend.percent }}%</span></div>
+                          <div v-if="cust.spendTrend.sampleSize" class="mt-0.5 text-[9px] font-bold text-slate-400">近 {{ cust.spendTrend.sampleSize }} 次 NT$ {{ formatNumber(cust.spendTrend.recentAverage) }} · 前期 NT$ {{ formatNumber(cust.spendTrend.previousAverage) }}</div>
+                        </div>
+                        <div class="rounded-xl border px-3 py-2" :class="cust.visitPaceTrend.direction === 'slower' ? 'bg-amber-50 border-amber-100' : cust.visitPaceTrend.direction === 'faster' ? 'bg-sky-50 border-sky-100' : 'bg-slate-50 border-slate-100'">
+                          <div class="text-[9px] font-black text-slate-400">到店間隔趨勢</div>
+                          <div class="text-xs font-black" :class="cust.visitPaceTrend.direction === 'slower' ? 'text-amber-700' : cust.visitPaceTrend.direction === 'faster' ? 'text-sky-700' : 'text-slate-700'">{{ cust.visitPaceTrend.label }}<span v-if="cust.visitPaceTrend.percent !== null"> {{ cust.visitPaceTrend.percent > 0 ? '+' : '' }}{{ cust.visitPaceTrend.percent }}%</span></div>
+                          <div v-if="cust.visitPaceTrend.percent !== null" class="mt-0.5 text-[9px] font-bold text-slate-400">最近 {{ cust.visitPaceTrend.recentIntervalDays }} 天 · 過往約 {{ cust.visitPaceTrend.baselineIntervalDays }} 天</div>
+                        </div>
+                      </div>
+                      <div class="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
+                        <div class="flex items-center justify-between gap-2">
+                          <div class="text-[10px] font-black text-slate-600">系統判斷原因</div>
+                          <div class="text-[9px] font-black text-slate-400">觀察分數 {{ cust.observationScore }}</div>
+                        </div>
+                        <div class="mt-2 flex flex-wrap gap-1.5">
+                          <span v-for="reason in cust.observationReasons" :key="reason" class="px-2 py-1 rounded-lg bg-white border border-slate-200 text-[9px] font-bold text-slate-600">{{ reason }}</span>
+                          <span v-if="!cust.observationReasons.length" class="text-[9px] font-bold text-emerald-700">目前沒有特殊變化</span>
+                        </div>
+                      </div>
+                      <div v-if="cust.serviceObservations.length" class="rounded-2xl border border-sky-100 bg-sky-50/25 overflow-hidden">
+                        <div class="px-3 py-2 border-b border-sky-100 bg-white/70 text-[10px] font-black text-slate-700">各服務獨立週期</div>
+                        <div class="divide-y divide-sky-100/70">
+                          <div v-for="row in cust.serviceObservations" :key="'service-observation-' + row.key" class="px-3 py-2.5 flex items-center justify-between gap-3">
+                            <div class="min-w-0">
+                              <div class="text-xs font-black text-slate-700">{{ row.label }} · {{ row.cycleDays }} 天</div>
+                              <div class="mt-0.5 text-[9px] font-bold text-slate-400 truncate">上次 {{ row.lastDate }} · 預估 {{ row.dueDate }} · 共 {{ row.count }} 次</div>
+                            </div>
+                            <span class="shrink-0 px-2 py-1 rounded-lg text-[9px] font-black" :class="row.group === 'dormant' ? 'bg-rose-50 text-rose-600' : row.group === 'overdue' ? 'bg-orange-50 text-orange-700' : row.group === 'upcoming' ? 'bg-sky-50 text-sky-700' : 'bg-emerald-50 text-emerald-700'">{{ row.statusLabel }}</span>
+                          </div>
+                        </div>
                       </div>
                       <div class="flex flex-wrap gap-1.5">
                         <button v-for="tag in crmTagPresets" :key="tag" type="button" @click="toggleCustomerDraftTag(cust, tag)" class="min-h-[32px] px-2.5 rounded-xl border text-[10px] font-black" :class="crmDraftFormula(cust).tags.includes(tag) ? 'bg-violet-600 text-white border-violet-600' : 'bg-violet-50 text-violet-600 border-violet-100'">{{ tag }}</button>
@@ -4262,9 +4336,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.17-runtime-monitoring-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.17-crm-observation-3"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.17-runtime-monitoring-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.17-crm-observation-3"></script>
 </body>
 </html>

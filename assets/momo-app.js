@@ -1,5 +1,5 @@
     const { createApp, markRaw } = Vue;
-    const APP_VERSION = '2026.07.17-runtime-monitoring-1';
+    const APP_VERSION = '2026.07.17-crm-observation-3';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -136,6 +136,7 @@
           authUser: null,
           authError: '',
           showAuthSheet: false,
+          localQaRoute: '',
           cloudReady: false,
           cloudMigrationNeeded: false,
           cloudStatus: 'idle',
@@ -1900,6 +1901,10 @@
             { value: 'inactive', label: '90天未回' },
             { value: 'dormant', label: '180天沉睡' },
             { value: 'prepaidDormant', label: '儲值久未來' },
+            { value: 'observationHigh', label: '優先觀察' },
+            { value: 'observationAttention', label: '需要留意' },
+            { value: 'spendDown', label: '客單下降' },
+            { value: 'paceSlower', label: '到店變慢' },
             { value: 'vip', label: '高價值/VIP' },
             { value: 'prepaid', label: '有儲值餘額' },
             { value: 'needsTopup', label: '餘額偏低' },
@@ -1997,13 +2002,46 @@
           }));
         },
         crmReturnCycleCards() {
-          return [
-            { label: '剪髮', days: 45 },
-            { label: '染髮', days: 60 },
-            { label: '護髮/頭皮', days: 45 },
-            { label: '燙髮', days: 120 },
-            { label: '未分類', days: 60 }
+          const definitions = [
+            { key: 'cut', label: '剪髮', days: 45 },
+            { key: 'color', label: '染髮', days: 60 },
+            { key: 'care', label: '護髮／頭皮', days: 45 },
+            { key: 'perm', label: '燙髮', days: 120 },
+            { key: 'other', label: '其他服務', days: 60 }
           ];
+          return definitions.map(definition => {
+            const rows = this.crmList
+              .map(customer => customer.serviceObservations.find(row => row.key === definition.key))
+              .filter(Boolean);
+            return {
+              ...definition,
+              customers: rows.length,
+              upcoming: rows.filter(row => row.group === 'upcoming').length,
+              overdue: rows.filter(row => ['overdue', 'dormant'].includes(row.group)).length
+            };
+          });
+        },
+
+        crmObservationStats() {
+          const list = this.crmList.filter(customer => customer.count > 0);
+          return {
+            high: list.filter(customer => customer.observationLevel === 'high').length,
+            attention: list.filter(customer => customer.observationLevel === 'attention').length,
+            watch: list.filter(customer => customer.observationLevel === 'watch').length,
+            spendDown: list.filter(customer => customer.spendTrend.direction === 'down').length,
+            paceSlower: list.filter(customer => customer.visitPaceTrend.direction === 'slower').length,
+            observed: list.filter(customer => customer.observationLevel !== 'normal').length,
+            eligible: list.length
+          };
+        },
+
+        crmObservationLeaders() {
+          return this.crmList
+            .filter(customer => customer.count > 0 && customer.observationLevel !== 'normal')
+            .sort((a, b) => b.observation.levelRank - a.observation.levelRank
+              || b.observationScore - a.observationScore
+              || b.totalSpent - a.totalSpent)
+            .slice(0, 5);
         },
 
         crmActionRecent() {
@@ -2051,6 +2089,7 @@
               firstDate: '',
               serviceMap: {},
               serviceAmountMap: {},
+              serviceLastDateMap: {},
               serviceActualMinutesMap: {},
               serviceStandardMinutesMap: {},
               serviceEffectiveMinutesMap: {},
@@ -2085,6 +2124,7 @@
                 firstDate: '',
                 serviceMap: {},
                 serviceAmountMap: {},
+                serviceLastDateMap: {},
                 serviceActualMinutesMap: {},
                 serviceStandardMinutesMap: {},
                 serviceEffectiveMinutesMap: {},
@@ -2120,6 +2160,9 @@
                 record.count += 1;
                 record.serviceMap[serviceName] = (record.serviceMap[serviceName] || 0) + 1;
                 record.serviceAmountMap[serviceName] = (record.serviceAmountMap[serviceName] || 0) + amount;
+                if (!record.serviceLastDateMap[serviceName] || o.date > record.serviceLastDateMap[serviceName]) {
+                  record.serviceLastDateMap[serviceName] = o.date;
+                }
                 if (standardMinutes) {
                   record.standardMinutesTotal += standardMinutes;
                   record.standardMinutesCount += 1;
@@ -2233,6 +2276,17 @@
             }));
             const prepaidTimeline = this.crmPrepaidTimelineByCustomer[cust.id] || [];
             const formulaTimeline = this.buildCustomerFormulaTimeline(cust, formula, recentOrders);
+            const serviceObservations = MomoCore.buildCrmServiceObservations(
+              Object.keys(cust.serviceMap).map(serviceName => ({
+                serviceName,
+                date: cust.serviceLastDateMap[serviceName],
+                count: cust.serviceMap[serviceName],
+                totalAmount: cust.serviceAmountMap[serviceName]
+              })),
+              today.toLocaleDateString('sv-SE')
+            );
+            const spendTrend = MomoCore.calculateCrmSpendTrend(recentOrders);
+            const visitPaceTrend = MomoCore.calculateCrmVisitPaceTrend(recentOrders);
             const returnStatus = this.getCustomerReturnStatus({
               count: cust.count,
               daysSinceLastVisit,
@@ -2240,6 +2294,16 @@
               prepaidDormant,
               prepaidBalance,
               valueTier
+            });
+            const observation = MomoCore.buildCrmObservationProfile({
+              returnGroup: returnStatus.group,
+              prepaidBalance,
+              prepaidLow,
+              prepaidDormant,
+              valueTier,
+              spendTrend,
+              visitPaceTrend,
+              serviceObservations
             });
 
             let statusLabel = returnStatus.label;
@@ -2272,6 +2336,12 @@
               returnReason: returnStatus.reason,
               returnProgress: returnStatus.progress,
               returnUrgency: returnStatus.urgency,
+              observation,
+              observationLevel: observation.level,
+              observationLabel: observation.label,
+              observationScore: observation.score,
+              observationReasons: observation.reasons,
+              observationReason: observation.primaryReason,
               valueTier,
               valueTierLabel,
               tags,
@@ -2287,6 +2357,9 @@
               workTimeLabel,
               workTimeBasis,
               workHourYield,
+              spendTrend,
+              visitPaceTrend,
+              serviceObservations,
               servicePreferenceRows,
               orderTimeline,
               prepaidTimeline,
@@ -2315,6 +2388,10 @@
             if (this.crmFilterMode === 'overdue') filterMatch = c.returnGroup === 'overdue';
             if (this.crmFilterMode === 'dormant') filterMatch = c.returnGroup === 'dormant';
             if (this.crmFilterMode === 'prepaidDormant') filterMatch = c.prepaidDormant;
+            if (this.crmFilterMode === 'observationHigh') filterMatch = c.observationLevel === 'high';
+            if (this.crmFilterMode === 'observationAttention') filterMatch = c.observationLevel === 'attention';
+            if (this.crmFilterMode === 'spendDown') filterMatch = c.spendTrend.direction === 'down';
+            if (this.crmFilterMode === 'paceSlower') filterMatch = c.visitPaceTrend.direction === 'slower';
             if (this.crmFilterMode === 'coreStable') filterMatch = c.valueTier === 'high' && ['stable', 'upcoming'].includes(c.returnGroup);
             if (this.crmFilterMode === 'highValueAtRisk') filterMatch = c.valueTier === 'high' && ['overdue', 'inactive', 'dormant', 'prepaidDormant'].includes(c.returnGroup);
             if (this.crmFilterMode === 'regularStable') filterMatch = c.valueTier !== 'high' && ['stable', 'upcoming'].includes(c.returnGroup);
@@ -2328,6 +2405,9 @@
           });
 
           const sorters = {
+            observation: (a, b) => b.observation.levelRank - a.observation.levelRank
+              || b.observationScore - a.observationScore
+              || b.totalSpent - a.totalSpent,
             lastDate: (a, b) => b.lastDate.localeCompare(a.lastDate),
             totalSpent: (a, b) => b.totalSpent - a.totalSpent,
             prepaidLow: (a, b) => a.prepaidBalance - b.prepaidBalance,
@@ -3272,11 +3352,22 @@
       methods: {
         applyLocalRuntimeMonitorQaRoute() {
           if (!['localhost', '127.0.0.1'].includes(window.location.hostname)) return false;
-          if (new URLSearchParams(window.location.search).get('runtime_monitor_check') !== '1') return false;
+          const params = new URLSearchParams(window.location.search);
+          const runtimeMonitorCheck = params.get('runtime_monitor_check') === '1';
+          const crmObservationCheck = params.get('crm_observation_check') === '1';
+          if (!runtimeMonitorCheck && !crmObservationCheck) return false;
+          this.localQaRoute = crmObservationCheck ? 'crm-observation' : 'runtime-monitor';
           this.showAuthSheet = false;
-          this.activeTab = 'safety';
-          this.safetyMaintenanceSection = 'maintenance';
-          this.safetyMaintenanceView = 'system';
+          if (crmObservationCheck) {
+            this.activeTab = 'crm';
+            this.crmViewMode = 'customers';
+            this.crmShowInsights = true;
+            this.crmSortMode = 'observation';
+          } else {
+            this.activeTab = 'safety';
+            this.safetyMaintenanceSection = 'maintenance';
+            this.safetyMaintenanceView = 'system';
+          }
           return true;
         },
         scheduleStartupSystemCheck(delay = 8000) {
@@ -6365,12 +6456,7 @@
           return parsed.toLocaleDateString('sv-SE');
         },
         getCustomerReturnCycleDays(serviceName = '') {
-          const text = String(serviceName || '');
-          if (/燙|縮毛|離子|溫塑/.test(text)) return 120;
-          if (/染|特殊色|補染|漂/.test(text)) return 60;
-          if (/護|保養|修護|頭皮|養護|療程/.test(text)) return 45;
-          if (/剪|瀏海/.test(text)) return 45;
-          return 60;
+          return MomoCore.classifyCrmServiceCycle(serviceName).days;
         },
         getCustomerReturnStatus({ count = 0, daysSinceLastVisit = 0, revisitDays = 60, prepaidDormant = false } = {}) {
           const days = Math.max(0, Number(daysSinceLastVisit) || 0);
@@ -10921,10 +11007,11 @@
           this.showDataTools = false;
         },
         exportCrmCSV() {
-          const headers = ['顧客ID', '顧客姓名', '性別', '來訪次數', '累計消費', '平均客單', '最後來訪', '距今天數', '偏好服務', '儲值餘額', '回流狀態', '價值分群', '建議週期(天)', '預估回流日', '觀察原因', '染髮配方', '燙髮藥水', '髮況', '喜好', '注意事項'];
+          const headers = ['顧客ID', '顧客姓名', '性別', '來訪次數', '累計消費', '平均客單', '最後來訪', '距今天數', '偏好服務', '儲值餘額', '回流狀態', '觀察層級', '觀察分數', '系統觀察原因', '近期客單趨勢', '到店間隔趨勢', '各服務週期', '價值分群', '建議週期(天)', '預估回流日', '染髮配方', '燙髮藥水', '髮況', '喜好', '注意事項'];
           const rows = this.crmList.map(c => {
             const f = this.crmFormulas[c.id] || {};
-            return [c.id, c.name, c.gender, c.count, c.totalSpent, c.avgTicket, c.lastDate, c.daysSinceLastVisit, c.primaryService, c.prepaidBalance, c.returnLabel, c.valueTierLabel, c.revisitDays, c.returnDueDate, c.returnReason, f.color || '', f.perm || '', f.hair || '', f.preference || '', f.caution || ''];
+            const serviceSummary = c.serviceObservations.map(row => `${row.label}:${row.statusLabel}(上次${row.lastDate})`).join('；');
+            return [c.id, c.name, c.gender, c.count, c.totalSpent, c.avgTicket, c.lastDate, c.daysSinceLastVisit, c.primaryService, c.prepaidBalance, c.returnLabel, c.observationLabel, c.observationScore, c.observationReasons.join('；'), c.spendTrend.label, c.visitPaceTrend.label, serviceSummary, c.valueTierLabel, c.revisitDays, c.returnDueDate, f.color || '', f.perm || '', f.hair || '', f.preference || '', f.caution || ''];
           });
           this.downloadCSV(`MOMO顧客CRM_${new Date().toLocaleDateString('sv-SE')}.csv`, headers, rows);
           this.showToast('CRM 顧客 CSV 已匯出');

@@ -991,6 +991,211 @@
     return groups;
   }
 
+  const CRM_SERVICE_CYCLES = Object.freeze([
+    { key: 'cut', label: '剪髮', days: 45, pattern: /剪髮|剪|瀏海/ },
+    { key: 'color', label: '染髮', days: 60, pattern: /染髮|特殊色|補染|挑染|漂髮|漂|染/ },
+    { key: 'perm', label: '燙髮', days: 120, pattern: /燙髮|縮毛|離子|冷塑|溫塑|熱塑|燙/ },
+    { key: 'care', label: '護髮／頭皮', days: 45, pattern: /頭皮調理|頭皮淨化|頭皮|護髮|結構護|水療|保養|修護|養護|護理|療程|護/ }
+  ]);
+
+  function crmDateEpoch(value) {
+    const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const epoch = Date.UTC(year, month - 1, day);
+    const parsed = new Date(epoch);
+    if (!Number.isFinite(epoch)
+      || parsed.getUTCFullYear() !== year
+      || parsed.getUTCMonth() !== month - 1
+      || parsed.getUTCDate() !== day) return null;
+    return epoch;
+  }
+
+  function crmDateDiffDays(laterDate, earlierDate) {
+    const later = crmDateEpoch(laterDate);
+    const earlier = crmDateEpoch(earlierDate);
+    if (later === null || earlier === null) return 0;
+    return Math.max(0, Math.floor((later - earlier) / 86400000));
+  }
+
+  function crmAddDays(date, days) {
+    const epoch = crmDateEpoch(date);
+    if (epoch === null) return '';
+    return new Date(epoch + Math.max(0, Number(days) || 0) * 86400000).toISOString().slice(0, 10);
+  }
+
+  function matchingCrmServiceCycles(serviceName = '') {
+    const text = String(serviceName || '').trim();
+    const matches = CRM_SERVICE_CYCLES.filter(cycle => cycle.pattern.test(text));
+    return matches.length ? matches : [{ key: 'other', label: '其他服務', days: 60, pattern: null }];
+  }
+
+  function classifyCrmServiceCycle(serviceName = '') {
+    const matches = matchingCrmServiceCycles(serviceName);
+    const preferredOrder = ['perm', 'color', 'care', 'cut', 'other'];
+    return preferredOrder.map(key => matches.find(item => item.key === key)).find(Boolean) || matches[0];
+  }
+
+  function buildCrmServiceObservations(orders = [], todayDate = '') {
+    const today = crmDateEpoch(todayDate) === null
+      ? new Date().toISOString().slice(0, 10)
+      : String(todayDate);
+    const grouped = Object.create(null);
+
+    (Array.isArray(orders) ? orders : []).forEach(order => {
+      const date = String(order?.date || '');
+      if (crmDateEpoch(date) === null) return;
+      matchingCrmServiceCycles(order?.serviceName).forEach(cycle => {
+        if (!grouped[cycle.key]) {
+          grouped[cycle.key] = {
+            key: cycle.key,
+            label: cycle.label,
+            cycleDays: cycle.days,
+            count: 0,
+            totalSpent: 0,
+            lastDate: '',
+            lastService: ''
+          };
+        }
+        const row = grouped[cycle.key];
+        row.count += Math.max(1, Number(order?.count) || 1);
+        row.totalSpent += Number(order?.totalAmount ?? order?.amount) || 0;
+        if (!row.lastDate || date > row.lastDate) {
+          row.lastDate = date;
+          row.lastService = String(order?.serviceName || cycle.label);
+        }
+      });
+    });
+
+    const severity = { dormant: 3, overdue: 2, upcoming: 1, stable: 0 };
+    return Object.values(grouped).map(row => {
+      const daysSince = crmDateDiffDays(today, row.lastDate);
+      const dueDate = crmAddDays(row.lastDate, row.cycleDays);
+      const overdueDays = Math.max(0, daysSince - row.cycleDays);
+      let group = 'stable';
+      let statusLabel = '週期內';
+      if (daysSince >= Math.max(180, row.cycleDays * 2)) {
+        group = 'dormant';
+        statusLabel = '久未出現';
+      } else if (daysSince > row.cycleDays) {
+        group = 'overdue';
+        statusLabel = `超過 ${overdueDays} 天`;
+      } else if (daysSince >= Math.round(row.cycleDays * 0.8)) {
+        group = 'upcoming';
+        statusLabel = '接近週期';
+      }
+      return {
+        ...row,
+        daysSince,
+        dueDate,
+        overdueDays,
+        group,
+        statusLabel,
+        progress: Math.min(200, Math.round(daysSince / row.cycleDays * 100))
+      };
+    }).sort((a, b) => (severity[b.group] || 0) - (severity[a.group] || 0)
+      || String(a.dueDate).localeCompare(String(b.dueDate))
+      || a.label.localeCompare(b.label, 'zh-Hant'));
+  }
+
+  function calculateCrmSpendTrend(orders = []) {
+    const rows = (Array.isArray(orders) ? orders : [])
+      .filter(order => crmDateEpoch(order?.date) !== null && Number.isFinite(Number(order?.amount)))
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.id || '').localeCompare(String(a.id || '')));
+    const sampleSize = Math.min(3, Math.floor(rows.length / 2));
+    if (sampleSize < 2) {
+      return { direction: 'insufficient', label: '資料不足', percent: null, recentAverage: 0, previousAverage: 0, sampleSize: 0 };
+    }
+    const average = list => Math.round(list.reduce((sum, row) => sum + (Number(row.amount) || 0), 0) / list.length);
+    const recentAverage = average(rows.slice(0, sampleSize));
+    const previousAverage = average(rows.slice(sampleSize, sampleSize * 2));
+    const percent = previousAverage > 0 ? Math.round((recentAverage - previousAverage) / previousAverage * 100) : null;
+    const direction = percent === null || Math.abs(percent) < 15 ? 'stable' : percent > 0 ? 'up' : 'down';
+    const label = direction === 'up' ? '近期客單上升' : direction === 'down' ? '近期客單下降' : '近期客單持平';
+    return { direction, label, percent, recentAverage, previousAverage, sampleSize };
+  }
+
+  function calculateCrmVisitPaceTrend(orders = []) {
+    const dates = [...new Set((Array.isArray(orders) ? orders : [])
+      .map(order => String(order?.date || ''))
+      .filter(date => crmDateEpoch(date) !== null))]
+      .sort((a, b) => b.localeCompare(a));
+    if (dates.length < 4) {
+      return { direction: 'insufficient', label: '資料不足', recentIntervalDays: 0, baselineIntervalDays: 0, percent: null };
+    }
+    const recentIntervalDays = crmDateDiffDays(dates[0], dates[1]);
+    const baselineIntervals = [];
+    for (let index = 1; index < Math.min(dates.length - 1, 4); index += 1) {
+      baselineIntervals.push(crmDateDiffDays(dates[index], dates[index + 1]));
+    }
+    const baselineIntervalDays = Math.max(1, Math.round(baselineIntervals.reduce((sum, days) => sum + days, 0) / baselineIntervals.length));
+    const percent = Math.round((recentIntervalDays - baselineIntervalDays) / baselineIntervalDays * 100);
+    const direction = percent > 25 ? 'slower' : percent < -25 ? 'faster' : 'stable';
+    const label = direction === 'slower' ? '到店間隔變慢' : direction === 'faster' ? '到店間隔變快' : '到店節奏持平';
+    return { direction, label, recentIntervalDays, baselineIntervalDays, percent };
+  }
+
+  function buildCrmObservationProfile(input = {}) {
+    const reasons = [];
+    let score = 0;
+    const returnGroup = String(input.returnGroup || 'stable');
+    const riskGroups = new Set(['overdue', 'inactive', 'dormant', 'prepaidDormant']);
+    const groupScores = { upcoming: 6, overdue: 15, inactive: 25, dormant: 35, prepaidDormant: 30 };
+    score += groupScores[returnGroup] || 0;
+    if (returnGroup === 'upcoming') reasons.push('接近常見整理週期');
+    if (returnGroup === 'overdue') reasons.push('已超過常見整理週期');
+    if (returnGroup === 'inactive') reasons.push('已超過 90 天未消費');
+    if (returnGroup === 'dormant') reasons.push('已超過 180 天未消費');
+    if (returnGroup === 'prepaidDormant') reasons.push('仍有儲值餘額且已久未消費');
+
+    const prepaidBalance = Number(input.prepaidBalance) || 0;
+    if (prepaidBalance < 0) {
+      score += 45;
+      reasons.unshift('儲值餘額為負，需先確認帳務');
+    } else if (input.prepaidDormant && returnGroup !== 'prepaidDormant') {
+      score += 15;
+      reasons.push('仍有儲值餘額且已久未消費');
+    } else if (input.prepaidLow) {
+      score += 5;
+      reasons.push('儲值餘額接近一次平均消費');
+    }
+
+    if (input.valueTier === 'high' && riskGroups.has(returnGroup)) {
+      score += 10;
+      reasons.push('屬於高價值顧客且回流放慢');
+    }
+    if (input.spendTrend?.direction === 'down') {
+      score += 8;
+      reasons.push(`近期平均客單下降 ${Math.abs(Number(input.spendTrend.percent) || 0)}%`);
+    }
+    if (input.visitPaceTrend?.direction === 'slower') {
+      score += 7;
+      reasons.push(`最近到店間隔比過往慢 ${Math.abs(Number(input.visitPaceTrend.percent) || 0)}%`);
+    }
+
+    const serviceRisks = (Array.isArray(input.serviceObservations) ? input.serviceObservations : [])
+      .filter(row => ['overdue', 'dormant'].includes(row.group));
+    if (serviceRisks.length) {
+      if (!riskGroups.has(returnGroup)) score += 12;
+      const lead = serviceRisks[0];
+      reasons.push(`${lead.label}距上次 ${lead.daysSince} 天，已超過 ${lead.cycleDays} 天週期`);
+    }
+
+    score = Math.min(100, score);
+    const level = score >= 45 ? 'high' : score >= 25 ? 'attention' : score >= 10 ? 'watch' : 'normal';
+    const labels = { high: '優先觀察', attention: '需要留意', watch: '持續觀察', normal: '狀態平穩' };
+    return {
+      score,
+      level,
+      levelRank: { normal: 0, watch: 1, attention: 2, high: 3 }[level],
+      label: labels[level],
+      reasons: [...new Set(reasons)].slice(0, 4),
+      primaryReason: reasons[0] || '目前回流、消費與儲值狀態平穩'
+    };
+  }
+
   function classifyMemoryPressure(sample = {}, thresholds = {}) {
     const usedBytes = Math.max(0, Number(sample.usedBytes) || 0);
     const limitBytes = Math.max(0, Number(sample.limitBytes) || 0);
@@ -1089,6 +1294,11 @@
     evaluatePwaReloadGuard,
     shouldRetryCalendarSync,
     groupRecentRowsByCustomer,
+    classifyCrmServiceCycle,
+    buildCrmServiceObservations,
+    calculateCrmSpendTrend,
+    calculateCrmVisitPaceTrend,
+    buildCrmObservationProfile,
     classifyMemoryPressure,
     evaluatePreviousRuntimeSession,
     classifyMainThreadStall
