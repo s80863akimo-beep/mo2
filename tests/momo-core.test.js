@@ -14,8 +14,13 @@ const {
   planPrepaidLedgerReconciliation,
   calculateEffectiveTimeYield,
   canReversePrepaidEntry,
+  classifyCrmServiceCycle,
   classifyMemoryPressure,
   classifyMainThreadStall,
+  buildCrmObservationProfile,
+  buildCrmServiceObservations,
+  calculateCrmSpendTrend,
+  calculateCrmVisitPaceTrend,
   cloneJsonValue,
   evaluatePwaReloadGuard,
   evaluatePreviousRuntimeSession,
@@ -707,6 +712,77 @@ function emptyBackup(overrides = {}) {
   assert.equal(grouped.customer_0[0].id, 'ledger_0');
   assert.equal(grouped.customer_0[5].id, 'ledger_5000');
   assert(Object.values(grouped).every(group => group.length <= 6));
+}
+
+{
+  assert.deepEqual(
+    { ...classifyCrmServiceCycle('染髮＋剪髮'), pattern: null },
+    { key: 'color', label: '染髮', days: 60, pattern: null }
+  );
+  assert.equal(classifyCrmServiceCycle('溫塑燙').days, 120);
+  assert.equal(classifyCrmServiceCycle('頭皮初淨調理').key, 'care');
+  assert.equal(classifyCrmServiceCycle('造型').key, 'other');
+  assert.deepEqual(buildCrmServiceObservations([{ serviceName: '剪髮', date: '2026-02-30' }], '2026-07-17'), []);
+}
+
+{
+  const rows = buildCrmServiceObservations([
+    { serviceName: '染髮＋剪髮', date: '2026-04-01', count: 2, totalAmount: 5000 },
+    { serviceName: '頭皮調理', date: '2026-07-01', count: 3, totalAmount: 3600 },
+    { serviceName: '溫塑燙', date: '2026-01-01', count: 1, totalAmount: 4200 }
+  ], '2026-07-17');
+  const color = rows.find(row => row.key === 'color');
+  const cut = rows.find(row => row.key === 'cut');
+  const care = rows.find(row => row.key === 'care');
+  assert.equal(color.count, 2);
+  assert.equal(color.dueDate, '2026-05-31');
+  assert.equal(color.group, 'overdue');
+  assert.equal(cut.group, 'overdue');
+  assert.equal(care.group, 'stable');
+  assert.equal(rows[0].key, 'perm');
+}
+
+{
+  const spend = calculateCrmSpendTrend([
+    { id: '4', date: '2026-07-01', amount: 1200 },
+    { id: '3', date: '2026-06-01', amount: 1000 },
+    { id: '2', date: '2026-05-01', amount: 600 },
+    { id: '1', date: '2026-04-01', amount: 600 }
+  ]);
+  assert.equal(spend.direction, 'up');
+  assert.equal(spend.recentAverage, 1100);
+  assert.equal(spend.previousAverage, 600);
+  assert.equal(calculateCrmSpendTrend([{ date: '2026-07-01', amount: 1000 }]).direction, 'insufficient');
+
+  const pace = calculateCrmVisitPaceTrend([
+    { date: '2026-07-10' },
+    { date: '2026-05-01' },
+    { date: '2026-04-01' },
+    { date: '2026-03-01' }
+  ]);
+  assert.equal(pace.direction, 'slower');
+  assert.equal(pace.recentIntervalDays, 70);
+}
+
+{
+  const priority = buildCrmObservationProfile({
+    returnGroup: 'dormant',
+    valueTier: 'high',
+    prepaidBalance: 3000,
+    spendTrend: { direction: 'down', percent: -30 },
+    visitPaceTrend: { direction: 'slower', percent: 50 },
+    serviceObservations: []
+  });
+  assert.equal(priority.level, 'high');
+  assert(priority.score >= 45);
+  assert(priority.reasons.some(reason => reason.includes('高價值')));
+
+  const serviceWatch = buildCrmObservationProfile({
+    returnGroup: 'stable',
+    serviceObservations: [{ label: '染髮', group: 'overdue', daysSince: 90, cycleDays: 60 }]
+  });
+  assert.equal(serviceWatch.level, 'watch');
+  assert(serviceWatch.primaryReason.includes('染髮'));
 }
 
 {
