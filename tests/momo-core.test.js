@@ -14,8 +14,11 @@ const {
   planPrepaidLedgerReconciliation,
   calculateEffectiveTimeYield,
   canReversePrepaidEntry,
+  classifyMemoryPressure,
+  classifyMainThreadStall,
   cloneJsonValue,
   evaluatePwaReloadGuard,
+  evaluatePreviousRuntimeSession,
   escapeCsvCell,
   getMixedCashAmount,
   getMixedPrepaidAmount,
@@ -704,6 +707,46 @@ function emptyBackup(overrides = {}) {
   assert.equal(grouped.customer_0[0].id, 'ledger_0');
   assert.equal(grouped.customer_0[5].id, 'ledger_5000');
   assert(Object.values(grouped).every(group => group.length <= 6));
+}
+
+{
+  assert.deepEqual(
+    classifyMemoryPressure({ usedBytes: 500, limitBytes: 1000, previousUsedBytes: 480, elapsedMs: 30000 }),
+    { supported: true, usedBytes: 500, limitBytes: 1000, percent: 50, growthBytes: 20, elapsedMs: 30000, severity: 'ok', reason: 'normal' }
+  );
+  assert.equal(classifyMemoryPressure({ usedBytes: 760, limitBytes: 1000 }).severity, 'warning');
+  assert.equal(classifyMemoryPressure({ usedBytes: 900, limitBytes: 1000 }).severity, 'error');
+  assert.equal(classifyMemoryPressure({ usedBytes: 0, limitBytes: 0 }).reason, 'unsupported');
+  assert.equal(classifyMemoryPressure({
+    usedBytes: 300 * 1024 * 1024,
+    limitBytes: 2 * 1024 * 1024 * 1024,
+    previousUsedBytes: 100 * 1024 * 1024,
+    elapsedMs: 60000
+  }).reason, 'rapid_growth_error');
+}
+
+{
+  const now = Date.parse('2026-07-17T04:00:00Z');
+  assert.equal(evaluatePreviousRuntimeSession({
+    startedAt: '2026-07-17T03:50:00Z',
+    lastHeartbeatAt: '2026-07-17T03:59:50Z',
+    closedCleanly: false
+  }, now).unclean, true);
+  assert.equal(evaluatePreviousRuntimeSession({
+    lastHeartbeatAt: '2026-07-17T03:59:50Z',
+    closedCleanly: true
+  }, now).reason, 'clean');
+  assert.equal(evaluatePreviousRuntimeSession({
+    lastHeartbeatAt: '2026-07-10T03:59:50Z',
+    closedCleanly: false
+  }, now).reason, 'stale');
+}
+
+{
+  assert.deepEqual(classifyMainThreadStall(1499), { detected: false, severity: 'ok', lagMs: 1499 });
+  assert.equal(classifyMainThreadStall(1500).severity, 'warning');
+  assert.equal(classifyMainThreadStall(5000).severity, 'error');
+  assert.equal(classifyMainThreadStall(9000, { visible: false }).detected, false);
 }
 
 console.log('momo-core tests passed');

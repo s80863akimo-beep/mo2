@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.17-memory-stability-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.17-runtime-monitoring-1">
 
   <!-- Vue 3 Global Build (local copy for reliable PWA startup) -->
-  <script src="/assets/vue.global.prod.js?v=2026.07.17-memory-stability-1"></script>
+  <script src="/assets/vue.global.prod.js?v=2026.07.17-runtime-monitoring-1"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.17-memory-stability-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.17-runtime-monitoring-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -3767,8 +3767,8 @@
               </div>
 
               <div v-else id="safety-maintenance-panel-system" class="safety-system-view" role="tabpanel" aria-labelledby="safety-maintenance-tab-system">
-                <div class="safety-system-status-grid grid grid-cols-1 sm:grid-cols-3">
-                  <div v-for="item in systemStatusItems.filter(row => ['version', 'cloud', 'runtime'].includes(row.key))"
+                <div class="safety-system-status-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                  <div v-for="item in systemStatusItems.filter(row => ['version', 'cloud', 'runtime', 'monitor'].includes(row.key))"
                        :key="'safety-system-' + item.key" class="safety-system-status-item">
                     <div class="flex items-center justify-between gap-2">
                       <span class="text-[10px] font-black text-slate-400">{{ item.label }}</span>
@@ -3779,12 +3779,14 @@
                   </div>
                 </div>
 
-                <div class="safety-system-actions grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div class="safety-system-actions grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
                   <button type="button" @click="updateAvailable ? applyPwaUpdate() : checkPwaUpdate(true)" :disabled="pwaCheckingUpdate || pwaUpdateApplying" :aria-busy="pwaCheckingUpdate || pwaUpdateApplying ? 'true' : 'false'"
                           class="momo-state-button safety-system-action safety-system-action--primary disabled:opacity-50">
                     {{ pwaUpdateApplying ? '更新中…' : updateAvailable ? (hasProtectedAppActivity ? '完成目前操作後更新' : '套用 App 更新') : pwaCheckingUpdate ? '檢查中…' : '檢查 App 更新' }}
                   </button>
                   <button type="button" @click="showOperationLogModal = true" class="safety-system-action">查看操作紀錄</button>
+                  <button type="button" @click="runRuntimeMonitorCheck(true)" class="safety-system-action">立即檢查效能</button>
+                  <button type="button" @click="exportRuntimeDiagnostics" class="safety-system-action">下載診斷報告</button>
                   <button type="button" @click="clearPwaCachesAndReload" :disabled="pwaClearingCache" :aria-busy="pwaClearingCache ? 'true' : 'false'" class="momo-state-button safety-system-action disabled:opacity-50">
                     {{ pwaClearingCache ? '清理中…' : '清除 App 舊快取' }}
                   </button>
@@ -3793,13 +3795,18 @@
                 <div class="safety-runtime-diagnostics">
                   <div class="safety-runtime-header">
                     <div>
-                      <div class="text-xs font-black text-slate-700">啟動與同步紀錄</div>
-                      <p class="mt-0.5 text-[10px] font-bold text-slate-400">保留最近 30 筆，方便確認卡住、重試或更新原因。</p>
+                      <div class="text-xs font-black text-slate-700">自動監控紀錄</div>
+                      <p class="mt-0.5 text-[10px] font-bold text-slate-400">記錄卡頓、記憶體、同步與程式錯誤；保留最近 50 筆，不匯出業績明細、顧客清單或登入資料。</p>
                     </div>
-                    <span class="text-[10px] font-black text-slate-400">最近 {{ runtimeDiagnosticRows.length }} 筆</span>
+                    <div class="flex items-center gap-2">
+                      <button v-if="runtimeDiagnosticRows.length > 6" type="button" @click="runtimeDiagnosticsExpanded = !runtimeDiagnosticsExpanded" class="text-[10px] font-black text-slate-500 underline underline-offset-2">
+                        {{ runtimeDiagnosticsExpanded ? '收合' : '查看更多' }}
+                      </button>
+                      <span class="text-[10px] font-black text-slate-400">共 {{ runtimeDiagnosticRows.length }} 筆</span>
+                    </div>
                   </div>
                   <div v-if="runtimeDiagnosticRows.length" class="safety-runtime-list">
-                    <div v-for="row in runtimeDiagnosticRows" :key="row.id" class="safety-runtime-row">
+                    <div v-for="row in visibleRuntimeDiagnosticRows" :key="row.id" class="safety-runtime-row">
                       <span class="w-2 h-2 rounded-full shrink-0" :class="statusToneClasses(row.tone, 'dot')"></span>
                       <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center justify-between gap-1.5">
@@ -3807,10 +3814,11 @@
                           <span class="text-[9px] font-bold text-slate-400">{{ formatDateTime(row.at) }}</span>
                         </div>
                         <p class="mt-0.5 text-[11px] font-bold text-slate-600 leading-relaxed">{{ row.message }}</p>
+                        <p v-if="runtimeDiagnosticMetaText(row)" class="mt-1 text-[9px] font-bold text-slate-400 leading-relaxed">{{ runtimeDiagnosticMetaText(row) }}</p>
                       </div>
                     </div>
                   </div>
-                  <div v-else class="safety-runtime-empty">尚無啟動或同步異常紀錄</div>
+                  <div v-else class="safety-runtime-empty">尚無卡頓、記憶體或同步異常紀錄</div>
                 </div>
 
                 <div class="safety-system-note">
@@ -4254,9 +4262,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.17-memory-stability-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.17-runtime-monitoring-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.17-memory-stability-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.17-runtime-monitoring-1"></script>
 </body>
 </html>

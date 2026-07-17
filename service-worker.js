@@ -1,4 +1,4 @@
-const APP_VERSION = '2026.07.17-memory-stability-1';
+const APP_VERSION = '2026.07.17-runtime-monitoring-1';
 // Cache identity is derived from the release identity so a failed install can
 // never partially overwrite the currently active app shell.
 const CACHE_NAME = `momohair-shell-${APP_VERSION}`;
