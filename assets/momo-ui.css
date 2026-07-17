@@ -5097,6 +5097,7 @@
 
     body.momo-polish .safety-overview-panel,
     body.momo-polish .safety-panel,
+    body.momo-polish .data-correction-panel,
     body.momo-polish .safety-attention-panel,
     body.momo-polish .safety-maintenance-panel,
     body.momo-polish .safety-advanced-panel {
@@ -5107,6 +5108,7 @@
     }
 
     body.momo-polish .safety-overview-header,
+    body.momo-polish .data-correction-header,
     body.momo-polish .safety-panel-header {
       min-height: 56px;
       padding: 0.875rem 1rem !important;
@@ -5185,6 +5187,46 @@
 
     body.momo-polish .safety-attention-panel .safety-panel-header {
       background: var(--momo-surface-muted) !important;
+    }
+
+    body.momo-polish .data-correction-header {
+      background: #FFF8F3 !important;
+    }
+
+    body.momo-polish .data-correction-metrics,
+    body.momo-polish .data-correction-filters {
+      border-color: var(--momo-line) !important;
+    }
+
+    body.momo-polish .data-correction-metrics > div,
+    body.momo-polish .data-correction-row {
+      background: var(--momo-surface) !important;
+    }
+
+    body.momo-polish .data-correction-row {
+      position: relative;
+      min-height: 92px;
+      border-color: var(--momo-line) !important;
+    }
+
+    body.momo-polish .data-correction-row:has(.is-danger) {
+      box-shadow: inset 4px 0 0 var(--momo-danger);
+    }
+
+    body.momo-polish .data-correction-row:has(.is-warn) {
+      box-shadow: inset 4px 0 0 var(--momo-warning);
+    }
+
+    body.momo-polish .data-correction-action,
+    body.momo-polish .data-correction-panel button {
+      border-radius: 6px !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .data-correction-action {
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted) !important;
+      color: var(--momo-ink) !important;
     }
 
     body.momo-polish .safety-issue-row {

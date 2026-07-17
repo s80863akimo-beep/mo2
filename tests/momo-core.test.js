@@ -17,6 +17,7 @@ const {
   classifyCrmServiceCycle,
   classifyMemoryPressure,
   classifyMainThreadStall,
+  buildDataCorrectionQueue,
   buildCrmObservationProfile,
   buildCrmServiceObservations,
   calculateCrmSpendTrend,
@@ -30,10 +31,12 @@ const {
   getOrderPrepaidBucket,
   getOrderPrepaidTarget,
   groupRecentRowsByCustomer,
+  findPotentialDuplicateCustomerGroups,
   isCorrectionSlip,
   isFiniteNumericInput,
   isValidISODate,
   normalizeServiceName,
+  normalizePotentialDuplicateCustomerName,
   normalizeExpensePaymentMethod,
   orderMoneyVector,
   prepaidEntryReversed,
@@ -45,6 +48,61 @@ const {
   upsertGeneratedSalaryExpense,
   validateAndNormalizeBackupPayload
 } = MomoCore;
+
+{
+  assert.equal(normalizePotentialDuplicateCustomerName(' Ｍａｒｕｋｏ '), 'maruko');
+  assert.equal(normalizePotentialDuplicateCustomerName('王 小 明'), '王小明');
+
+  const groups = findPotentialDuplicateCustomerGroups([
+    { id: 'cust_1', name: '王小明', updatedAt: '2026-07-01T00:00:00Z' },
+    { id: 'cust_2', name: ' 王 小明 ', updatedAt: '2026-07-02T00:00:00Z' },
+    { id: 'cust_3', name: '王小美' },
+    { id: 'cust_4', name: '王小明', archivedAt: '2026-07-03T00:00:00Z' },
+    { id: 'cust_5', name: '王小明', mergedIntoCustomerId: 'cust_1' }
+  ], { cust_1: 2, cust_2: 3, cust_4: 99 });
+
+  assert.equal(groups.length, 1);
+  assert.deepEqual(groups[0].customerIds, ['cust_1', 'cust_2']);
+  assert.equal(groups[0].count, 2);
+  assert.equal(groups[0].orderCount, 5);
+  assert.equal(groups[0].latestUpdatedAt, '2026-07-02T00:00:00Z');
+}
+
+{
+  const duplicateGroup = {
+    key: 'maruko',
+    displayName: 'Maruko',
+    count: 2,
+    customerIds: ['cust_a', 'cust_b'],
+    customers: [{ id: 'cust_a', name: 'Maruko' }, { id: 'cust_b', name: 'Ｍａｒｕｋｏ' }]
+  };
+  const queue = buildDataCorrectionQueue({
+    operationalIssues: [
+      { code: 'order_zero_amount', severity: 'error', message: '2026-07-07 Maruko 剪髮 金額為 0', orderId: 'ord_zero' },
+      { code: 'order_missing_payment', severity: 'error', message: '2026-07-07 Maruko 剪髮 缺少付款方式', orderId: 'ord_zero' }
+    ],
+    integrityIssues: [
+      { code: 'order_zero_amount', severity: 'error', message: '同一筆金額為 0', orderId: 'ord_zero' }
+    ],
+    syncIssues: [
+      { type: 'zero_amount', severity: 'error', message: '同步金額為 0', orderId: 'ord_zero' }
+    ],
+    pricingRows: [
+      { serviceName: '頭皮初淨調理+剪髮', count: 3, latestDate: '2026-07-07' }
+    ],
+    duplicateCustomerGroups: [duplicateGroup]
+  });
+
+  assert.equal(queue.filter(row => row.code === 'amount_zero' && row.orderId === 'ord_zero').length, 1);
+  assert.equal(queue.find(row => row.code === 'amount_zero').sourceLabels.length, 3);
+  assert.equal(queue.find(row => row.code === 'payment_invalid').action, 'order');
+  assert.equal(queue.find(row => row.code === 'service_unmatched').affectedCount, 3);
+  assert.equal(queue.find(row => row.code === 'service_unmatched').category, 'pricing');
+  assert.equal(queue.find(row => row.code === 'customer_duplicate_possible').action, 'customer_merge');
+  assert.equal(queue.find(row => row.code === 'customer_duplicate_possible').category, 'customers');
+  assert(queue.every(row => !Object.hasOwn(row, 'suggestedAmount') && !Object.hasOwn(row, 'suggestedPaymentMethod')));
+  assert(queue.find(row => row.category === 'money').impact.includes('打烊對帳'));
+}
 
 function baseOrder(overrides = {}) {
   return {

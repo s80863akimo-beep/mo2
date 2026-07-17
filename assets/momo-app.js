@@ -1,5 +1,5 @@
     const { createApp, markRaw } = Vue;
-    const APP_VERSION = '2026.07.17-crm-observation-3';
+    const APP_VERSION = '2026.07.17-data-correction-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
@@ -197,6 +197,9 @@
           safetyMaintenanceSection: '',
           safetyMaintenanceView: 'backup',
           safetyShowAllIssues: false,
+          dataCorrectionFilter: 'all',
+          dataCorrectionShowAll: false,
+          dataCorrectionScanning: false,
           safetyShowAllCloudBackups: false,
           safetyShowAllLocalSnapshots: false,
           pendingActionStartDate: '2026-07-01',
@@ -600,6 +603,74 @@
               unmatchedServices: Array.from(row.unmatchedServices).filter(Boolean)
             }))
             .sort((a, b) => b.count - a.count || String(b.latestDate).localeCompare(String(a.latestDate)));
+        },
+        duplicateCustomerGroups() {
+          const orderCounts = {};
+          (this.orders || []).forEach(order => {
+            if (!order?.customerId || !this.isOrderActive(order) || this.isCorrectionSlip(order)) return;
+            orderCounts[order.customerId] = (orderCounts[order.customerId] || 0) + 1;
+          });
+          return MomoCore.findPotentialDuplicateCustomerGroups(this.customers || [], orderCounts);
+        },
+        dataCorrectionItems() {
+          const syncTypes = new Set([
+            'zero_amount', 'invalid_mixed_payment', 'invalid_payment', 'unmatched_service_config',
+            'ambiguous_customer_name', 'invalid_customer_id', 'unknown_customer_id', 'customer_id_name_mismatch',
+            'missing_event_id', 'missing_order_id', 'duplicate_order_id', 'date_locked', 'cancelled_locked'
+          ]);
+          const syncIssues = (this.syncIssueItems || [])
+            .filter(issue => syncTypes.has(issue.type))
+            .map(issue => ({
+              ...issue,
+              code: issue.type,
+              severity: issue.severity === 'error' ? 'error' : 'warning'
+            }));
+          return MomoCore.buildDataCorrectionQueue({
+            operationalIssues: this.collectOperationalIssues(),
+            integrityIssues: this.integrityReport?.issues || [],
+            syncIssues,
+            pricingRows: this.priceMatchWorkbenchRows.map(row => ({
+              ...row,
+              code: 'unmatched_service_config',
+              affectedCount: row.count,
+              message: `${row.serviceName} 尚未加入價目表，共影響 ${row.count} 筆紀錄`,
+              payload: row
+            })),
+            duplicateCustomerGroups: this.duplicateCustomerGroups
+          });
+        },
+        dataCorrectionSummary() {
+          const rows = this.dataCorrectionItems;
+          const categoryCount = category => rows.filter(row => row.category === category).length;
+          return {
+            total: rows.length,
+            errorCount: rows.filter(row => row.severity === 'error').length,
+            warningCount: rows.filter(row => row.severity !== 'error').length,
+            affectedRecords: rows.reduce((sum, row) => sum + Math.max(1, Number(row.affectedCount) || 1), 0),
+            money: categoryCount('money'),
+            pricing: categoryCount('pricing'),
+            customers: categoryCount('customers'),
+            duplicates: categoryCount('duplicates'),
+            integrity: categoryCount('integrity')
+          };
+        },
+        dataCorrectionFilters() {
+          const summary = this.dataCorrectionSummary;
+          return [
+            { key: 'all', label: '全部', count: summary.total },
+            { key: 'money', label: '金額付款', count: summary.money },
+            { key: 'pricing', label: '價目服務', count: summary.pricing },
+            { key: 'customers', label: '顧客資料', count: summary.customers },
+            { key: 'duplicates', label: '重複紀錄', count: summary.duplicates },
+            { key: 'integrity', label: '其他完整性', count: summary.integrity }
+          ].filter(item => item.key === 'all' || item.count > 0);
+        },
+        filteredDataCorrectionItems() {
+          if (this.dataCorrectionFilter === 'all') return this.dataCorrectionItems;
+          return this.dataCorrectionItems.filter(row => row.category === this.dataCorrectionFilter);
+        },
+        visibleDataCorrectionItems() {
+          return this.filteredDataCorrectionItems.slice(0, this.dataCorrectionShowAll ? 50 : 8);
         },
         localDataCount() {
           return (this.orders?.length || 0)
@@ -1017,6 +1088,23 @@
         },
         visibleHealthIssueRows() {
           return this.healthIssueRows.slice(0, this.safetyShowAllIssues ? 50 : 3);
+        },
+        systemHealthIssueRows() {
+          const correctionMessages = new Set(this.dataCorrectionItems.map(issue => String(issue.message || '').trim()));
+          return this.healthIssueRows.filter(issue => !correctionMessages.has(String(issue.message || '').trim()));
+        },
+        visibleSystemHealthIssueRows() {
+          return this.systemHealthIssueRows.slice(0, this.safetyShowAllIssues ? 50 : 3);
+        },
+        systemHealthIssueSummary() {
+          const errorCount = this.systemHealthIssueRows.filter(issue => issue.severity === 'error').length;
+          const warningCount = this.systemHealthIssueRows.filter(issue => issue.severity !== 'error').length;
+          return {
+            total: this.systemHealthIssueRows.length,
+            errorCount,
+            warningCount,
+            status: errorCount ? 'error' : warningCount ? 'warning' : 'ok'
+          };
         },
         healthIssueSummary() {
           const errorCount = this.healthIssueRows.filter(issue => issue.severity === 'error').length;
@@ -3355,10 +3443,15 @@
           const params = new URLSearchParams(window.location.search);
           const runtimeMonitorCheck = params.get('runtime_monitor_check') === '1';
           const crmObservationCheck = params.get('crm_observation_check') === '1';
-          if (!runtimeMonitorCheck && !crmObservationCheck) return false;
-          this.localQaRoute = crmObservationCheck ? 'crm-observation' : 'runtime-monitor';
+          const dataCorrectionCheck = params.get('data_correction_check') === '1';
+          if (!runtimeMonitorCheck && !crmObservationCheck && !dataCorrectionCheck) return false;
+          this.localQaRoute = dataCorrectionCheck ? 'data-correction' : crmObservationCheck ? 'crm-observation' : 'runtime-monitor';
           this.showAuthSheet = false;
-          if (crmObservationCheck) {
+          if (dataCorrectionCheck) {
+            this.activeTab = 'safety';
+            this.safetyMaintenanceSection = '';
+            this.dataCorrectionFilter = 'all';
+          } else if (crmObservationCheck) {
             this.activeTab = 'crm';
             this.crmViewMode = 'customers';
             this.crmShowInsights = true;
@@ -4778,6 +4871,7 @@
             after: this.orderAuditFields().reduce((acc, field) => ({ ...acc, [field]: order?.[field] ?? null }), {})
           });
           this.clearOrderDraft(order.id);
+          this.runIntegrityCheck(false);
           this.showToast('業績修正已儲存');
           return true;
         },
@@ -4850,6 +4944,7 @@
           this.saveExpenses();
           this.recordOperation('expense_update', '修改支出', `${expense.date} ${expense.category || ''} NT$ ${this.formatNumber(expense.amount || 0)} · ${changed.join('、')}`, { expenseId: expense.id });
           this.clearExpenseDraft(expense.id);
+          this.runIntegrityCheck(false);
           this.showToast('支出修正已儲存');
           return true;
         },
@@ -5928,6 +6023,7 @@
           });
           this.saveOrders();
           this.recordOperation('customer_update', '修改顧客資料', `${customer.name} · ${customer.gender}`, { customerId: customer.id });
+          this.runIntegrityCheck(false);
           this.showToast('顧客資料已更新');
         },
         toggleCustomerTag(customerId, tag) {
@@ -6074,6 +6170,7 @@
               targetId,
               transferredLedgerEntryIds: createdLedgerEntries.map(entry => entry.id)
             });
+            this.runIntegrityCheck(false);
             if (this.cloudReady && this.authUser) {
               try {
                 this.clearQueuedCloudSync();
@@ -6217,6 +6314,75 @@
             return;
           }
           this.goToAnomaly(issue);
+        },
+        dataCorrectionCategoryLabel(category) {
+          return {
+            money: '金額付款',
+            pricing: '價目服務',
+            customers: '顧客資料',
+            duplicates: '重複紀錄',
+            integrity: '完整性'
+          }[category] || '資料';
+        },
+        async refreshDataCorrectionCenter(showResult = true) {
+          if (this.dataCorrectionScanning) return;
+          this.dataCorrectionScanning = true;
+          try {
+            await this.$nextTick();
+            this.runIntegrityCheck(false);
+            this.dataCorrectionShowAll = false;
+            if (showResult) {
+              const summary = this.dataCorrectionSummary;
+              this.showToast(
+                summary.total
+                  ? `掃描完成：${summary.errorCount} 個錯誤、${summary.warningCount} 個提醒`
+                  : '掃描完成，目前沒有待修正資料',
+                summary.errorCount ? 'error' : summary.warningCount ? 'warning' : 'success',
+                6500
+              );
+            }
+          } finally {
+            this.dataCorrectionScanning = false;
+          }
+        },
+        openDuplicateCustomerGroup(group = {}) {
+          const ids = Array.isArray(group.customerIds) ? group.customerIds : [];
+          this.activeTab = 'crm';
+          this.crmViewMode = 'customers';
+          this.crmFilterMode = 'all';
+          this.crmSortMode = 'name';
+          this.crmVisibleLimit = Math.max(this.crmVisibleLimit || 20, 50);
+          this.crmSearchQuery = String(group.displayName || group.normalizedName || '').trim();
+          this.expandedCrmCustomerName = ids[0] || null;
+          this.scrollToTopForNavigation();
+          this.showToast(`找到 ${Math.max(2, Number(group.count) || ids.length)} 筆同名資料，請先比對紀錄，再選擇要保留的顧客`, 'warning', 7500);
+        },
+        handleDataCorrectionItem(item) {
+          if (!item) return;
+          if (item.action === 'pricing') {
+            this.addUnmatchedServiceToConfig(item.payload || item);
+            return;
+          }
+          if (item.action === 'customer_merge') {
+            this.openDuplicateCustomerGroup(item.payload || item);
+            return;
+          }
+          if (item.action === 'sync') {
+            this.openSyncIssueModal(item.category === 'pricing' ? 'pricing' : item.category === 'money' ? 'money' : 'all');
+            return;
+          }
+          const target = {
+            ...(item.payload || item),
+            tab: item.action === 'order' ? 'orders' : item.action === 'expense' ? 'expenses' : item.action === 'customer' ? 'crm' : (item.payload?.tab || item.tab),
+            orderId: item.orderId || item.payload?.orderId,
+            expenseId: item.expenseId || item.payload?.expenseId,
+            customerId: item.customerId || item.payload?.customerId || item.customerIds?.[0]
+          };
+          if (target.tab) {
+            this.goToAnomaly(target);
+            return;
+          }
+          this.showToast('此問題沒有可安全自動定位的欄位，請先重新掃描後查看完整性說明', 'warning', 7000);
         },
         expenseWarnings(expense, periodTotal = this.expensesSummary?.total || 0) {
           const amount = Number(expense?.amount) || 0;
