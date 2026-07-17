@@ -10052,6 +10052,69 @@
       pointer-events: none;
     }
 
+    /* CRM visual close-out: use the same calm grouped-iOS surfaces as Home. */
+    body.momo-polish .momo-crm-page .crm-overview-panel,
+    body.momo-polish .momo-crm-page .customer-operation-kpi-panel,
+    body.momo-polish .momo-crm-page .crm-directory-toolbar,
+    body.momo-polish .momo-crm-page .crm-insights-panel,
+    body.momo-polish .momo-crm-page .crm-empty-state,
+    body.momo-polish .momo-crm-page .crm-ledger-controls,
+    body.momo-polish .momo-crm-page .crm-ledger-group,
+    body.momo-polish .momo-crm-page .crm-customer-list {
+      border-color: transparent !important;
+      background: var(--momo-surface) !important;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035), 0 12px 30px -28px rgba(15, 23, 42, 0.32) !important;
+    }
+
+    body.momo-polish .momo-crm-page .crm-overview-header,
+    body.momo-polish .momo-crm-page .customer-operation-kpi-header,
+    body.momo-polish .momo-crm-page .crm-insights-header {
+      border-bottom-color: var(--momo-line) !important;
+      background: var(--momo-surface) !important;
+    }
+
+    body.momo-polish .momo-crm-page .crm-overview-grid,
+    body.momo-polish .momo-crm-page .customer-operation-kpi-grid {
+      gap: 1px !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: var(--momo-line) !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .momo-crm-page .crm-overview-metric,
+    body.momo-polish .momo-crm-page .customer-operation-kpi-card {
+      border-radius: 0 !important;
+      background: var(--momo-surface) !important;
+      box-shadow: none !important;
+    }
+
+    body.momo-polish .momo-crm-page .crm-overview-metric > div:last-child,
+    body.momo-polish .momo-crm-page .customer-operation-kpi-card > div:nth-child(2) {
+      color: var(--momo-ink) !important;
+    }
+
+    body.momo-polish .momo-crm-page .customer-operation-kpi-card {
+      min-height: 126px;
+    }
+
+    body.momo-polish .momo-crm-page .customer-operation-kpi-badge {
+      border-color: #DDEAE2 !important;
+      background: #F3F8F5 !important;
+      color: #4D6B5B !important;
+    }
+
+    body.momo-polish .momo-crm-page .crm-view-switch-wrap,
+    body.momo-polish .momo-crm-page .customer-operation-kpi-source {
+      background: var(--momo-surface-muted) !important;
+    }
+
+    @media (max-width: 640px) {
+      body.momo-polish .momo-crm-page .customer-operation-kpi-card {
+        min-height: 136px;
+      }
+    }
+
     body.momo-polish .momo-form-primary.momo-state-button,
     body.momo-polish .momo-form-warning.momo-state-button,
     body.momo-polish .momo-form-danger.momo-state-button {
