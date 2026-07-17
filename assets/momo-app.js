@@ -1,5 +1,5 @@
     const { createApp, markRaw } = Vue;
-    const APP_VERSION = '2026.07.17-crm-ios-style-1';
+    const APP_VERSION = '2026.07.17-customer-kpis-1';
     if (!window.MomoCore) throw new Error('MomoCore not loaded');
     const MomoCore = window.MomoCore;
 
