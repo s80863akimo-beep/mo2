@@ -31,6 +31,190 @@
       .replace(/\s+/g, ' ');
   }
 
+  function normalizePotentialDuplicateCustomerName(value) {
+    return String(value || '')
+      .normalize('NFKC')
+      .trim()
+      .replace(/\s+/g, '')
+      .toLocaleLowerCase('zh-TW');
+  }
+
+  function findPotentialDuplicateCustomerGroups(customers = [], orderCountsByCustomer = {}) {
+    const counts = orderCountsByCustomer instanceof Map
+      ? orderCountsByCustomer
+      : new Map(Object.entries(orderCountsByCustomer || {}));
+    const groups = new Map();
+
+    (Array.isArray(customers) ? customers : []).forEach(customer => {
+      if (!customer?.id || customer.archivedAt || customer.mergedIntoCustomerId) return;
+      const name = String(customer.name || '').trim();
+      const key = normalizePotentialDuplicateCustomerName(name);
+      if (!key) return;
+      const rows = groups.get(key) || [];
+      rows.push({
+        id: customer.id,
+        name,
+        orderCount: Math.max(0, Number(counts.get(String(customer.id))) || 0),
+        updatedAt: customer.updatedAt || customer.createdAt || ''
+      });
+      groups.set(key, rows);
+    });
+
+    return Array.from(groups.entries())
+      .filter(([, rows]) => rows.length > 1)
+      .map(([key, rows]) => {
+        const orderCount = rows.reduce((sum, row) => sum + row.orderCount, 0);
+        const updateTimes = rows.map(row => row.updatedAt).filter(Boolean).sort();
+        return {
+          key,
+          normalizedName: key,
+          displayName: rows[0]?.name || key,
+          count: rows.length,
+          orderCount,
+          customerIds: rows.map(row => row.id),
+          customers: rows,
+          latestUpdatedAt: updateTimes[updateTimes.length - 1] || ''
+        };
+      })
+      .sort((a, b) => b.count - a.count || b.orderCount - a.orderCount || a.displayName.localeCompare(b.displayName, 'zh-TW'));
+  }
+
+  function buildDataCorrectionQueue(options = {}) {
+    const sourceLabels = {
+      operation: '營運檢查',
+      integrity: '完整性檢查',
+      sync: '行事曆同步',
+      pricing: '價目匹配',
+      customers: '顧客檔案'
+    };
+    const canonicalCode = rawCode => {
+      const code = String(rawCode || 'unknown').toLowerCase();
+      if (['order_zero_amount', 'zero_amount', 'correction_zero_amount'].includes(code)) return 'amount_zero';
+      if (['order_missing_payment', 'order_invalid_payment', 'invalid_payment'].includes(code)) return 'payment_invalid';
+      if (['order_invalid_mixed_payment', 'invalid_mixed_payment'].includes(code)) return 'mixed_payment_invalid';
+      if (['order_invalid_topup_channel', 'invalid_topup_channel'].includes(code)) return 'topup_channel_invalid';
+      if (['unmatched_service_config', 'unmatched_service', 'pricing_unmatched'].includes(code)) return 'service_unmatched';
+      if (['duplicate_same_day_order'].includes(code)) return 'order_duplicate_possible';
+      if (['duplicate_customer_name', 'potential_duplicate_customer'].includes(code)) return 'customer_duplicate_possible';
+      return code;
+    };
+    const categoryFor = code => {
+      if (['amount_zero', 'order_invalid_amount', 'expense_invalid_amount', 'ledger_invalid_amount', 'payment_invalid', 'expense_invalid_payment', 'mixed_payment_invalid', 'topup_channel_invalid', 'topup_marked_as_service', 'calendar_payment_default_cash', 'negative_prepaid_balance'].includes(code)) return 'money';
+      if (code === 'service_unmatched') return 'pricing';
+      if (['customer_duplicate_possible', 'ambiguous_customer_name', 'invalid_customer_id', 'unknown_customer_id', 'customer_id_name_mismatch', 'customer_missing_name', 'customer_merge_target_missing', 'customer_merge_not_archived', 'order_orphan_customer', 'ledger_orphan_customer', 'orphan_crm_note'].includes(code)) return 'customers';
+      if (code.includes('duplicate')) return 'duplicates';
+      return 'integrity';
+    };
+    const titleFor = (code, row) => {
+      const titles = {
+        amount_zero: '金額需要確認',
+        order_invalid_amount: '業績金額格式錯誤',
+        expense_invalid_amount: '支出金額格式錯誤',
+        ledger_invalid_amount: '儲值分錄金額錯誤',
+        payment_invalid: '付款方式需要確認',
+        expense_invalid_payment: '支出付款來源錯誤',
+        mixed_payment_invalid: '混合付款金額不完整',
+        topup_channel_invalid: '儲值收款方式需要確認',
+        topup_marked_as_service: '疑似儲值被記成服務',
+        calendar_payment_default_cash: '行事曆付款方式未標示',
+        negative_prepaid_balance: '儲值餘額為負數',
+        service_unmatched: '服務尚未加入價目表',
+        order_duplicate_possible: '可能有重複業績',
+        customer_duplicate_possible: '可能有重複顧客',
+        ambiguous_customer_name: '同名顧客無法自動判定'
+      };
+      return row.title || titles[code] || row.message || '資料需要確認';
+    };
+    const impactFor = category => ({
+      money: '會影響營收、金流或打烊對帳。',
+      pricing: '會影響自動帶入價格、服務分類與時間產值。',
+      customers: '可能分散 CRM、消費次數或儲值餘額。',
+      duplicates: '可能重複計算筆數、營收或其他指標。',
+      integrity: '可能影響資料關聯、查詢或備份還原。'
+    }[category]);
+    const keyTarget = row => {
+      if (row.orderId) return `order:${row.orderId}`;
+      if (row.expenseId) return `expense:${row.expenseId}`;
+      if (row.customerId) return `customer:${row.customerId}`;
+      if (Array.isArray(row.customerIds) && row.customerIds.length) return `customers:${[...row.customerIds].sort().join(',')}`;
+      if (row.serviceName) return `service:${normalizeServiceName(row.serviceName).toLocaleLowerCase('zh-TW')}`;
+      if (row.key) return `key:${row.key}`;
+      return `message:${String(row.message || row.title || '').trim().toLocaleLowerCase('zh-TW')}`;
+    };
+    const queue = new Map();
+    const add = (source, original = {}) => {
+      if (!original || typeof original !== 'object') return;
+      const row = { ...original };
+      const code = canonicalCode(row.code || row.type);
+      const category = categoryFor(code);
+      const key = `${code}|${keyTarget(row)}`;
+      const action = code === 'service_unmatched'
+        ? 'pricing'
+        : code === 'customer_duplicate_possible'
+          ? 'customer_merge'
+          : row.orderId
+            ? 'order'
+            : row.expenseId
+              ? 'expense'
+              : row.customerId || (Array.isArray(row.customerIds) && row.customerIds.length)
+                ? 'customer'
+                : source === 'sync'
+                  ? 'sync'
+                  : 'integrity';
+      const existing = queue.get(key);
+      if (existing) {
+        if (!existing.sourceLabels.includes(sourceLabels[source] || source)) existing.sourceLabels.push(sourceLabels[source] || source);
+        existing.sourceLabel = existing.sourceLabels.join('、');
+        existing.affectedCount = Math.max(existing.affectedCount, Math.max(1, Number(row.affectedCount ?? row.count) || 1));
+        if (row.severity === 'error') existing.severity = 'error';
+        return;
+      }
+      const labels = [sourceLabels[source] || source].filter(Boolean);
+      const severity = row.severity === 'error' ? 'error' : 'warning';
+      queue.set(key, {
+        ...row,
+        key,
+        code,
+        category,
+        severity,
+        tone: severity === 'error' ? 'error' : 'warn',
+        title: titleFor(code, row),
+        message: String(row.message || '').trim() || titleFor(code, row),
+        impact: impactFor(category),
+        sourceLabels: labels,
+        sourceLabel: labels.join('、'),
+        affectedCount: Math.max(1, Number(row.affectedCount ?? row.count) || 1),
+        action,
+        actionLabel: action === 'pricing' ? '設定價目' : action === 'customer_merge' ? '比對顧客' : action === 'order' ? '修正業績' : action === 'expense' ? '修正支出' : action === 'customer' ? '查看顧客' : action === 'sync' ? '查看同步' : '查看資料',
+        confidence: code === 'customer_duplicate_possible' || code === 'order_duplicate_possible' ? 'review_required' : 'located',
+        payload: row.payload || row
+      });
+    };
+
+    (Array.isArray(options.operationalIssues) ? options.operationalIssues : []).forEach(row => add('operation', row));
+    (Array.isArray(options.integrityIssues) ? options.integrityIssues : []).forEach(row => add('integrity', row));
+    (Array.isArray(options.syncIssues) ? options.syncIssues : []).forEach(row => add('sync', row));
+    (Array.isArray(options.pricingRows) ? options.pricingRows : []).forEach(row => add('pricing', { ...row, code: row.code || 'unmatched_service_config', affectedCount: row.affectedCount ?? row.count, payload: row.payload || row }));
+    (Array.isArray(options.duplicateCustomerGroups) ? options.duplicateCustomerGroups : []).forEach(group => add('customers', {
+      code: 'duplicate_customer_name',
+      severity: 'warning',
+      title: `「${group.displayName || group.normalizedName || '未命名'}」可能有重複顧客`,
+      message: `找到 ${Math.max(2, Number(group.count) || 0)} 筆同名的獨立顧客資料，需人工確認後再合併。`,
+      customerIds: group.customerIds || [],
+      affectedCount: group.count,
+      key: group.key,
+      payload: group
+    }));
+
+    const severityRank = { error: 0, warning: 1 };
+    const categoryRank = { money: 0, pricing: 1, customers: 2, duplicates: 3, integrity: 4 };
+    return Array.from(queue.values()).sort((a, b) =>
+      (severityRank[a.severity] ?? 9) - (severityRank[b.severity] ?? 9)
+      || (categoryRank[a.category] ?? 9) - (categoryRank[b.category] ?? 9)
+      || String(a.title).localeCompare(String(b.title), 'zh-TW')
+    );
+  }
+
   function buildServiceMetricDictionary(services = [], field = 'duration') {
     const dictionary = {};
     (Array.isArray(services) ? services : []).forEach(service => {
@@ -1259,6 +1443,9 @@
     EXPENSE_PAYMENT,
     toMoney,
     normalizeServiceName,
+    normalizePotentialDuplicateCustomerName,
+    findPotentialDuplicateCustomerGroups,
+    buildDataCorrectionQueue,
     buildServiceMetricDictionary,
     resolveServiceMetric,
     calculatePeriodKpis,

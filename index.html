@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.17-crm-observation-3">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.17-data-correction-1">
 
   <!-- Vue 3 Global Build (local copy for reliable PWA startup) -->
-  <script src="/assets/vue.global.prod.js?v=2026.07.17-crm-observation-3"></script>
+  <script src="/assets/vue.global.prod.js?v=2026.07.17-data-correction-1"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.17-crm-observation-3">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.17-data-correction-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -3435,28 +3435,112 @@
             </div>
           </section>
 
-          <section class="safety-attention-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
-            <div class="safety-panel-header px-4 py-4 sm:px-6 border-b border-slate-100 flex items-center justify-between gap-3">
+          <section class="data-correction-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <div class="data-correction-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div class="min-w-0">
-                <h3 class="text-base font-black text-slate-800">需要處理</h3>
-                <p class="text-[10px] font-bold text-slate-400 mt-0.5">錯誤優先，其次確認提醒</p>
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-base font-black text-slate-800">資料修正中心</h3>
+                  <span class="momo-status-badge momo-status-tone px-2 py-0.5 rounded-full text-[9px] font-black"
+                        :class="dataCorrectionSummary.errorCount ? 'is-danger' : dataCorrectionSummary.total ? 'is-warn' : 'is-success'">
+                    {{ dataCorrectionSummary.total ? `${dataCorrectionSummary.total} 項待確認` : '目前正常' }}
+                  </span>
+                </div>
+                <p class="text-[10px] font-bold text-slate-400 mt-1">集中檢查金額、付款、價目與重複顧客；不會自行猜金額、付款或合併資料</p>
               </div>
-              <span class="safety-attention-count" :class="healthIssueSummary.status === 'error' ? 'is-danger' : healthIssueSummary.status === 'warning' ? 'is-warning' : ''">
-                {{ healthIssueSummary.total ? `${healthIssueSummary.errorCount} 錯誤 · ${healthIssueSummary.warningCount} 提醒` : '正常' }}
-              </span>
+              <button @click="refreshDataCorrectionCenter(true)" :disabled="dataCorrectionScanning" :aria-busy="dataCorrectionScanning ? 'true' : 'false'"
+                      class="momo-state-button min-h-[38px] px-3 rounded-xl bg-slate-900 text-white text-[11px] font-black disabled:opacity-50 shrink-0">
+                {{ dataCorrectionScanning ? '掃描中…' : '重新掃描' }}
+              </button>
             </div>
 
-            <div v-if="!healthIssueRows.length" class="safety-empty-state momo-empty-state momo-empty-state--compact is-success p-8 text-center">
+            <div class="data-correction-metrics grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100">
+              <div class="p-4 sm:px-6">
+                <div class="text-[10px] font-black text-slate-400">錯誤</div>
+                <div class="mt-1 text-xl font-black" :class="dataCorrectionSummary.errorCount ? 'text-rose-600' : 'text-slate-800'">{{ dataCorrectionSummary.errorCount }}</div>
+                <div class="mt-0.5 text-[9px] font-bold text-slate-400">優先修正</div>
+              </div>
+              <div class="p-4 sm:px-6">
+                <div class="text-[10px] font-black text-slate-400">提醒</div>
+                <div class="mt-1 text-xl font-black" :class="dataCorrectionSummary.warningCount ? 'text-amber-600' : 'text-slate-800'">{{ dataCorrectionSummary.warningCount }}</div>
+                <div class="mt-0.5 text-[9px] font-bold text-slate-400">需要人工確認</div>
+              </div>
+              <div class="p-4 sm:px-6">
+                <div class="text-[10px] font-black text-slate-400">影響筆次</div>
+                <div class="mt-1 text-xl font-black text-slate-800">{{ dataCorrectionSummary.affectedRecords }}</div>
+                <div class="mt-0.5 text-[9px] font-bold text-slate-400">依來源彙整</div>
+              </div>
+            </div>
+
+            <div v-if="dataCorrectionItems.length" class="data-correction-filters px-4 py-3 sm:px-6 border-b border-slate-100 flex gap-2 overflow-x-auto">
+              <button v-for="filter in dataCorrectionFilters" :key="'correction-filter-' + filter.key"
+                      @click="dataCorrectionFilter = filter.key; dataCorrectionShowAll = false"
+                      class="min-h-[34px] px-3 rounded-xl border text-[10px] font-black whitespace-nowrap"
+                      :class="dataCorrectionFilter === filter.key ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-200 text-slate-500'">
+                {{ filter.label }} {{ filter.count }}
+              </button>
+            </div>
+
+            <div v-if="!dataCorrectionItems.length" class="momo-empty-state momo-empty-state--compact is-success p-8 text-center">
               <div class="momo-empty-content">
                 <span class="momo-empty-icon">
                   <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.5 2.5L16.5 9"></path></svg>
                 </span>
-                <div class="momo-empty-title">目前沒有需要處理的問題</div>
-                <p class="momo-empty-description">資料、同步與備份狀態正常。</p>
+                <div class="momo-empty-title">目前沒有待修正資料</div>
+                <p class="momo-empty-description">金額、付款、價目與顧客重複檢查均未發現問題。</p>
+              </div>
+            </div>
+            <div v-else-if="!filteredDataCorrectionItems.length" class="momo-inline-empty m-4 sm:m-6">此分類目前沒有問題</div>
+            <div v-else class="data-correction-list divide-y divide-slate-100">
+              <div v-for="item in visibleDataCorrectionItems" :key="item.key"
+                   class="data-correction-row px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                   :class="item.severity === 'error' ? 'bg-rose-50/25' : 'bg-amber-50/20'">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="momo-status-badge momo-status-tone px-2 py-0.5 rounded-full text-[9px] font-black" :class="item.severity === 'error' ? 'is-danger' : 'is-warn'">
+                      {{ item.severity === 'error' ? '錯誤' : '提醒' }}
+                    </span>
+                    <span class="text-[10px] font-black text-slate-500">{{ dataCorrectionCategoryLabel(item.category) }}</span>
+                    <span class="text-[10px] font-bold text-slate-400">{{ item.sourceLabel }}</span>
+                    <span v-if="item.affectedCount > 1" class="text-[9px] font-black text-slate-400">{{ item.affectedCount }} 筆</span>
+                  </div>
+                  <div class="mt-1.5 text-sm font-black text-slate-800 leading-relaxed">{{ item.title }}</div>
+                  <div class="mt-0.5 text-[11px] font-bold text-slate-500 leading-relaxed">{{ item.message }}</div>
+                  <div class="mt-1 text-[10px] font-bold text-slate-400">影響：{{ item.impact }}</div>
+                </div>
+                <button @click="handleDataCorrectionItem(item)" class="data-correction-action min-h-[38px] px-3 rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-black shrink-0">
+                  {{ item.actionLabel }}
+                </button>
+              </div>
+            </div>
+            <div v-if="filteredDataCorrectionItems.length > 8" class="px-4 py-3 sm:px-6 border-t border-slate-100 text-center">
+              <button @click="dataCorrectionShowAll = !dataCorrectionShowAll" class="min-h-[36px] px-4 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-black">
+                {{ dataCorrectionShowAll ? '收合修正清單' : `查看全部 ${Math.min(filteredDataCorrectionItems.length, 50)} 項` }}
+              </button>
+            </div>
+          </section>
+
+          <section class="safety-attention-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
+            <div class="safety-panel-header px-4 py-4 sm:px-6 border-b border-slate-100 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h3 class="text-base font-black text-slate-800">系統與備份提醒</h3>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">版本、雲端、備份與執行狀態</p>
+              </div>
+              <span class="safety-attention-count" :class="systemHealthIssueSummary.status === 'error' ? 'is-danger' : systemHealthIssueSummary.status === 'warning' ? 'is-warning' : ''">
+                {{ systemHealthIssueSummary.total ? `${systemHealthIssueSummary.errorCount} 錯誤 · ${systemHealthIssueSummary.warningCount} 提醒` : '正常' }}
+              </span>
+            </div>
+
+            <div v-if="!systemHealthIssueRows.length" class="safety-empty-state momo-empty-state momo-empty-state--compact is-success p-8 text-center">
+              <div class="momo-empty-content">
+                <span class="momo-empty-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.5 2.5L16.5 9"></path></svg>
+                </span>
+                <div class="momo-empty-title">目前沒有系統提醒</div>
+                <p class="momo-empty-description">版本、雲端、備份與執行狀態正常。</p>
               </div>
             </div>
             <div v-else class="safety-issue-list divide-y divide-slate-100">
-              <div v-for="issue in visibleHealthIssueRows" :key="'health-' + issue.source + '-' + issue.code + '-' + issue.message"
+              <div v-for="issue in visibleSystemHealthIssueRows" :key="'health-' + issue.source + '-' + issue.code + '-' + issue.message"
                    class="safety-issue-row px-4 py-3 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                    :class="issue.severity === 'error' ? 'safety-issue-row--error' : 'safety-issue-row--warning'">
                 <div class="min-w-0">
@@ -3474,16 +3558,16 @@
                 </button>
               </div>
             </div>
-            <div v-if="healthIssueRows.length > 3" class="safety-issue-footer px-4 py-3 sm:px-6 border-t border-slate-100 text-center">
+            <div v-if="systemHealthIssueRows.length > 3" class="safety-issue-footer px-4 py-3 sm:px-6 border-t border-slate-100 text-center">
               <button @click="safetyShowAllIssues = !safetyShowAllIssues" class="min-h-[36px] px-4 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-black">
-                {{ safetyShowAllIssues ? '收合問題清單' : `查看全部 ${Math.min(healthIssueRows.length, 50)} 項` }}
+                {{ safetyShowAllIssues ? '收合問題清單' : `查看全部 ${Math.min(systemHealthIssueRows.length, 50)} 項` }}
               </button>
             </div>
           </section>
 
           <div class="safety-section-heading">
-            <h3 class="text-base sm:text-lg font-black text-slate-800">異常工作台</h3>
-            <p class="mt-0.5 text-[10px] font-bold text-slate-400">同步與價目問題集中處理</p>
+            <h3 class="text-base sm:text-lg font-black text-slate-800">同步來源</h3>
+            <p class="mt-0.5 text-[10px] font-bold text-slate-400">查看行事曆同步明細與價目來源</p>
           </div>
 
           <section class="safety-sync-panel safety-maintenance-panel momo-surface bg-white border border-slate-200 rounded-3xl overflow-hidden macaron-shadow-sm">
@@ -4336,9 +4420,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.17-crm-observation-3"></script>
+  <script src="/assets/momo-core.js?v=2026.07.17-data-correction-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.17-crm-observation-3"></script>
+  <script src="/assets/momo-app.js?v=2026.07.17-data-correction-1"></script>
 </body>
 </html>
