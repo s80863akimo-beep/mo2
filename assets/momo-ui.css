@@ -4225,6 +4225,7 @@
     }
 
     body.momo-polish .crm-overview-panel,
+    body.momo-polish .customer-operation-kpi-panel,
     body.momo-polish .crm-directory-toolbar,
     body.momo-polish .crm-insights-panel,
     body.momo-polish .crm-empty-state,
@@ -4234,6 +4235,48 @@
       border-radius: 8px !important;
       background: var(--momo-surface) !important;
       box-shadow: var(--momo-panel-shadow) !important;
+    }
+
+    body.momo-polish .customer-operation-kpi-header {
+      border-color: var(--momo-line) !important;
+      background: #FFF8F3 !important;
+    }
+
+    body.momo-polish .customer-operation-kpi-grid {
+      gap: 1px;
+      border-color: var(--momo-line) !important;
+      background: var(--momo-line);
+    }
+
+    body.momo-polish .customer-operation-kpi-card {
+      min-height: 142px;
+      border: 0 !important;
+      background: var(--momo-surface) !important;
+    }
+
+    body.momo-polish .customer-operation-kpi-card > div:nth-child(2) {
+      overflow: hidden;
+      font-variant-numeric: tabular-nums;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    body.momo-polish .customer-operation-kpi-dot {
+      width: 7px;
+      height: 7px;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background: #94A3B8;
+    }
+
+    body.momo-polish .customer-operation-kpi-dot.is-emerald { background: #10B981; }
+    body.momo-polish .customer-operation-kpi-dot.is-sky { background: #0EA5E9; }
+    body.momo-polish .customer-operation-kpi-dot.is-amber { background: #F59E0B; }
+    body.momo-polish .customer-operation-kpi-dot.is-violet { background: #8B5CF6; }
+
+    body.momo-polish .customer-operation-kpi-source {
+      border-color: var(--momo-line) !important;
+      background: var(--momo-surface-muted) !important;
     }
 
     body.momo-polish .crm-overview-header {
@@ -4877,6 +4920,23 @@
 
       body.momo-polish .crm-overview-header {
         padding: 0.875rem !important;
+      }
+
+      body.momo-polish .customer-operation-kpi-header {
+        padding: 0.875rem !important;
+      }
+
+      body.momo-polish .customer-operation-kpi-card {
+        min-height: 150px;
+        padding: 0.875rem !important;
+      }
+
+      body.momo-polish .customer-operation-kpi-card > div:nth-child(2) {
+        font-size: 1.05rem !important;
+      }
+
+      body.momo-polish .customer-operation-kpi-source {
+        padding: 0.65rem 0.875rem !important;
       }
 
       body.momo-polish .crm-overview-actions {

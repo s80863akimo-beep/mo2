@@ -26,13 +26,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800;900&family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS production build -->
-  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.17-data-correction-1">
+  <link rel="stylesheet" href="/assets/tailwind.css?v=2026.07.17-customer-kpis-1">
 
   <!-- Vue 3 Global Build (local copy for reliable PWA startup) -->
-  <script src="/assets/vue.global.prod.js?v=2026.07.17-data-correction-1"></script>
+  <script src="/assets/vue.global.prod.js?v=2026.07.17-customer-kpis-1"></script>
 
   <!-- App visual system -->
-  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.17-data-correction-1">
+  <link rel="stylesheet" href="/assets/momo-ui.css?v=2026.07.17-customer-kpis-1">
 </head>
 <body class="momo-polish text-slate-800 antialiased selection:bg-macaron-peach-200 overflow-x-hidden" ontouchstart="">
   <div id="app" class="pb-28 flex flex-col min-height-screen" v-cloak>
@@ -2492,6 +2492,43 @@
           </section>
 
           <template v-if="crmViewMode === 'customers'">
+            <section class="customer-operation-kpi-panel momo-surface bg-white rounded-3xl border border-slate-200 macaron-shadow overflow-hidden">
+              <div class="customer-operation-kpi-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-800">顧客經營 KPI</h3>
+                    <span class="px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-[9px] font-black text-emerald-700">純觀察 · 不聯絡顧客</span>
+                  </div>
+                  <p class="text-[10px] font-bold text-slate-400 mt-1">{{ customerOperationKpiPeriodLabel }}</p>
+                </div>
+                <span class="text-[9px] font-bold text-slate-400 shrink-0">只顯示四項經營結果</span>
+              </div>
+
+              <div class="customer-operation-kpi-grid grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-slate-100">
+                <article v-for="card in customerOperationKpiCards" :key="card.key" :data-kpi-key="card.key"
+                         class="customer-operation-kpi-card p-4 sm:p-5 min-w-0"
+                         :aria-label="card.label + '：' + card.value">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-[10px] font-black text-slate-500">{{ card.label }}</span>
+                    <span class="customer-operation-kpi-dot" :class="'is-' + card.tone" aria-hidden="true"></span>
+                  </div>
+                  <div class="mt-2 text-xl sm:text-2xl font-black tracking-tight"
+                       :class="card.tone === 'emerald' ? 'text-emerald-700' : card.tone === 'sky' ? 'text-sky-700' : card.tone === 'amber' ? 'text-amber-700' : 'text-violet-700'">
+                    {{ card.value }}
+                  </div>
+                  <div class="mt-1.5 text-[10px] font-black text-slate-600 leading-relaxed">{{ card.detail }}</div>
+                  <div class="mt-1 text-[9px] font-bold text-slate-400 leading-relaxed">口徑：{{ card.definition }}</div>
+                </article>
+              </div>
+
+              <div class="customer-operation-kpi-source px-4 py-2.5 sm:px-6 border-t border-slate-100 bg-slate-50/70 text-[9px] font-bold text-slate-400 space-y-1">
+                <p>來源：有效服務業績；排除儲值進帳、取消紀錄與重複 Order ID。合併顧客依最終顧客 ID 彙總。</p>
+                <p v-if="duplicateCustomerGroups.length" class="text-amber-700">
+                  資料提醒：目前有 {{ duplicateCustomerGroups.length }} 組同名顧客待確認；合併前回流率與固定客比例可能偏低。
+                </p>
+              </div>
+            </section>
+
             <section v-if="crmShowInsights" class="crm-insights-panel momo-surface bg-white rounded-3xl border border-slate-200 macaron-shadow overflow-hidden">
               <div class="crm-insights-header px-4 py-4 sm:px-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="min-w-0">
@@ -4420,9 +4457,9 @@
   </div>
 
   <!-- Core accounting rules -->
-  <script src="/assets/momo-core.js?v=2026.07.17-data-correction-1"></script>
+  <script src="/assets/momo-core.js?v=2026.07.17-customer-kpis-1"></script>
 
   <!-- Vue application -->
-  <script src="/assets/momo-app.js?v=2026.07.17-data-correction-1"></script>
+  <script src="/assets/momo-app.js?v=2026.07.17-customer-kpis-1"></script>
 </body>
 </html>
